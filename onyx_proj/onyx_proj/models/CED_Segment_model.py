@@ -1,4 +1,4 @@
-from common.mysql_helper import *
+from onyx_proj.common.mysql_helper import *
 
 
 class CEDSegment:
@@ -17,6 +17,23 @@ class CEDSegment:
         if not params_dict:
             return []
         if limit != 0:
-            return dict_fetch_all(self.curr, self.table_name, params_dict, order_args=[f"{order_by_field} DESC "], limit=limit)
+            return dict_fetch_all(self.curr, self.table_name, params_dict, order_args=[f"{order_by_field} DESC "],
+                                  limit=limit)
         else:
             return dict_fetch_all(self.curr, self.table_name, params_dict, order_args=[f"{order_by_field} DESC "])
+
+    def get_headers_for_custom_segment(self, params_dict: dict, headers_list="Extra") -> list:
+        """
+        Member function to fetch headers for custom segment
+        params_dict: dictionary with keys UniqueId (segment_id) and Title (segment_title) (Title is optional)
+        returns: list of dictionaries
+        """
+
+        if not params_dict:
+            return []
+
+        if headers_list == "Extra":
+            headers_list = [headers_list]
+
+        return dict_fetch_all(cursor=self.curr, table_name=self.table_name, data_dict=params_dict,
+                              select_args=headers_list)

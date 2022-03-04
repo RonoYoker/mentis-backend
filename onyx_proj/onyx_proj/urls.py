@@ -15,8 +15,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from apps.segments import urls as segment_urls
-from apps.home import urls as home_urls
+from onyx_proj.apps.segments import urls as segment_urls
+from onyx_proj.apps.home import urls as home_urls
 
 urlpatterns = [
     path("admin/", admin.site.urls),

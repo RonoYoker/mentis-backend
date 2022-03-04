@@ -2,7 +2,7 @@ from .base import *
 
 DEBUG = True
 
-# *********** S3 CONFIGURATION ***********
+# *********** DATABASES ***********
 
 DATABASES = {
     "default": {
@@ -21,12 +21,9 @@ DATABASES = {
         "HOST": "localhost",
         "PORT": "3306"
     },
-    "indusindcollection":  {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "indusindcollection",
-        "USER": "root",
-        "PASSWORD": "root",
-        "HOST": "localhost",
-        "PORT": "3306"
-    }
+}
+
+
+HYPERION_LOCAL_DOMAIN = {
+    "TEST_TCL": "https://3.111.61.77/"  # https://tclctpay.tatacapital.com/hyperioncampaigntooldashboard
 }

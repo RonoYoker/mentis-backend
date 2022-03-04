@@ -1,4 +1,4 @@
-from common.mysql_helper import *
+from onyx_proj.common.mysql_helper import *
 
 
 class CEDDataIDDetails:

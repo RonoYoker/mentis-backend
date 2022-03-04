@@ -13,7 +13,9 @@ import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.path.dirname(PROJECT_ROOT)
+BASE_DIR = os.path.dirname(PROJECT_DIR)
 
 
 # Quick-start development settings - unsuitable for production
@@ -54,7 +56,7 @@ ROOT_URLCONF = 'onyx_proj.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [os.path.join(BASE_DIR, 'onyx_proj/templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -76,7 +78,7 @@ WSGI_APPLICATION = 'onyx_proj.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 
