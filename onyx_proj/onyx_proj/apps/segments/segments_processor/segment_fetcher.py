@@ -36,7 +36,7 @@ def fetch_segments(data) -> json:
         params_dict["Type"] = mode
 
     try:
-        db_res = CEDSegment().fetch_from_CED_Segments(params_dict=params_dict, order_by_field="UpdationDate")
+        db_res = CEDSegment().get_all_custom_segments(params_dict=params_dict, order_by_field="UpdationDate")
     except Exception as ex:
         return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,
                                               details_message="Error while executing fetch query.",

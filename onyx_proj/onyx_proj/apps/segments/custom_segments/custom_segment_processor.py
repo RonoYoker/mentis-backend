@@ -64,7 +64,7 @@ def custom_segment_processor(request_data) -> json:
         return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,
                                               details_message="Custom query should begin with SELECT keyword.")
 
-    domain = settings.HYPERION_LOCAL_ENDPOINTS.get(project_name)
+    domain = settings.HYPERION_LOCAL_DOMAIN.get(project_name)
 
     if not domain:
         return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,

@@ -24,6 +24,6 @@ DATABASES = {
 }
 
 
-HYPERION_LOCAL_ENDPOINTS = {
+HYPERION_LOCAL_DOMAIN = {
     "TEST_TCL": "https://3.111.61.77/"  # https://tclctpay.tatacapital.com/hyperioncampaigntooldashboard
 }
