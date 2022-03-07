@@ -11,7 +11,7 @@ import json
 def save_custom_segment(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
-    data = create_dictionary_using_kwargs(body=request_body, headers=request_headers)
+    data = dict(body=request_body, headers=request_headers)
     # query processor call
     response = custom_segment_processor(data)
     status_code = response.pop("status_code", 500)

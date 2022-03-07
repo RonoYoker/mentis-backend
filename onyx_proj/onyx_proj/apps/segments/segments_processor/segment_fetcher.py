@@ -25,27 +25,24 @@ def fetch_segments(data) -> json:
 
     # check if request has data_id and project_id
     if project_id is None or data_id is None:
-        return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,
-                                              details_message="Missing parameters project_id/data_id in request body.")
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Missing parameters project_id/data_id in request body.")
 
     # check if mode is supported
     if mode and mode not in [TAG_KEY_CUSTOM, TAG_KEY_DEFAULT]:
-        return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,
-                                              details_message=f"Mode should be either {TAG_KEY_DEFAULT} or {TAG_KEY_CUSTOM}.")
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message=f"Mode should be either {TAG_KEY_DEFAULT} or {TAG_KEY_CUSTOM}.")
     elif mode in [TAG_KEY_CUSTOM, TAG_KEY_DEFAULT]:
         params_dict["Type"] = mode
 
     try:
         db_res = CEDSegment().get_all_custom_segments(params_dict=params_dict, order_by_field="UpdationDate")
     except Exception as ex:
-        return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,
-                                              details_message="Error while executing fetch query.",
-                                              ex=str(ex))
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Error while executing fetch query.",
+                    ex=str(ex))
 
-    response = {"data": {"segments_list": db_res,
-                         "segments_count": len(db_res)},
-                "method": "fetch_segments",
-                "selected_mode": mode
-                }
+    response = dict(data={"segments_list": db_res,
+                          "segments_count": len(db_res)}, method="fetch_segments", selected_mode=mode)
 
-    return create_dictionary_using_kwargs(status_code=200, result=TAG_SUCCESS, response=response)
+    return dict(status_code=200, result=TAG_SUCCESS, response=response)

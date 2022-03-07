@@ -38,37 +38,37 @@ def custom_segment_processor(request_data) -> json:
 
     # check if request has data_id and project_id
     if project_id is None or data_id is None:
-        return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,
-                                              details_message="Missing parameters project_id/data_id in request body.")
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Missing parameters project_id/data_id in request body.")
 
     # check if query is null
     if sql_query is None or sql_query == "":
-        return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,
-                                              details_message="Custom query cannot be null/empty.")
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Custom query cannot be null/empty.")
 
     # check if Title is valid
     if str(body.get("title")) is None or str(body.get("title")) == "":
-        return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,
-                                              details_message="Custom segment cannot be saved without a title.")
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Custom segment cannot be saved without a title.")
 
     # check for limit in query
     pattern = re.compile(r"limit \d+")
     matches = pattern.findall(sql_query)
     if matches:
-        return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,
-                                              details_message="Custom segment query cannot have LIMIT keyword.")
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Custom segment query cannot have LIMIT keyword.")
 
     # check if query begins with SELECT
     query_array = sql_query.split()
     if query_array[0].lower() != "select":
-        return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,
-                                              details_message="Custom query should begin with SELECT keyword.")
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Custom query should begin with SELECT keyword.")
 
     domain = settings.HYPERION_LOCAL_DOMAIN.get(project_name)
 
     if not domain:
-        return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,
-                                              details_message=f"Hyperion local credentials not found for {project_name}.")
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message=f"Hyperion local credentials not found for {project_name}.")
 
     url = domain + CUSTOM_QUERY_EXECUTION_API_PATH
 
@@ -84,14 +84,14 @@ def custom_segment_processor(request_data) -> json:
     response_data = validation_response.get("data", {})
 
     if not response_data:
-        return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,
-                                              details_message="Query response data is empty/null.")
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Query response data is empty/null.")
 
     extra_field_string = json.dumps({"headers_list": [*response_data[0]]})
 
     segment_id = uuid.uuid4().hex
 
-    user = CEDUserSession().get_user_details(create_dictionary_using_kwargs(SessionId=session_id))
+    user = CEDUserSession().get_user_details(dict(SessionId=session_id))
 
     user_name = user[0].get("UserName", None)
     # user_name = "test_user"
@@ -150,13 +150,13 @@ def save_custom_segment(params_dict: dict):
     try:
         db_res = CEDSegment().save_custom_segment(params_dict)
     except Exception as ex:
-        return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,
-                                              details_message="Error during save segment execution.",
-                                              ex=str(ex))
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Error during save segment execution.",
+                    ex=str(ex))
 
     if not db_res:
-        return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,
-                                              details_message="Error during save segment request.")
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Error during save segment request.")
     else:
         return {"isSaved": True, "status_code": 200}
 
@@ -173,20 +173,20 @@ def fetch_headers_list(data) -> dict:
     try:
         db_res = CEDSegment().get_headers_for_custom_segment(params_dict=params_dict)
     except Exception as ex:
-        return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,
-                                              details_message=f"Error while executing headers fetch for {segment_id}.",
-                                              ex=str(ex))
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message=f"Error while executing headers fetch for {segment_id}.",
+                    ex=str(ex))
 
     if not db_res:
-        return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,
-                                              details_message="Response null from CED_Segments table.")
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Response null from CED_Segments table.")
 
     headers_list = db_res[0].get("Extra", {})
 
     if not headers_list:
-        return create_dictionary_using_kwargs(status_code=405, result=TAG_FAILURE,
-                                              details_message="Headers list empty.")
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Headers list empty.")
 
     data_dict = {"segment_title": segment_title, "segment_id": segment_id, "headers_list": json.loads(headers_list)}
-    return create_dictionary_using_kwargs(status_code=200, result=TAG_SUCCESS,
-                                          data=data_dict)
+    return dict(status_code=200, result=TAG_SUCCESS,
+                data=data_dict)
