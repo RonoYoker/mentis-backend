@@ -3,7 +3,6 @@ from onyx_proj.apps.segments.custom_segments.custom_segment_processor import *
 from onyx_proj.apps.segments.segments_processor.segment_fetcher import *
 from onyx_proj.apps.segments.segments_processor.segment_headers_processor import *
 from django.views.decorators.csrf import csrf_exempt
-from onyx_proj.common.common_helpers import *
 import json
 
 
@@ -41,5 +40,22 @@ def check_headers_compatibility(request):
     data = json.loads(request.body.decode("utf-8"))
     # custom segments fetch call
     response = check_headers_compatibility_with_content_template(data)
+    status_code = response.pop("status_code", 500)
+    return HttpResponse(json.dumps(response, default=str), status=status_code)
+
+
+@csrf_exempt
+def get_segment_by_unique_id(request):
+    data = json.loads(request.body.decode("utf-8"))
+    # segment fetch by unique id
+    response = fetch_segment_by_id(data)
+    status_code = response.pop("status_code", 500)
+    return HttpResponse(json.dumps(response, default=str), status=status_code)
+
+
+def update_custom_segment(request):
+    data = json.loads(request.body.decode("utf-8"))
+    # update thr given custom segment
+    response = update_custom_segment_process(data)
     status_code = response.pop("status_code", 500)
     return HttpResponse(json.dumps(response, default=str), status=status_code)

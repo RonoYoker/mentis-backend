@@ -37,3 +37,20 @@ class CEDSegment:
 
         return dict_fetch_all(cursor=self.curr, table_name=self.table_name, data_dict=params_dict,
                               select_args=headers_list)
+
+    def get_segment_by_unique_id(self, params_dict: dict) -> list:
+        """
+        Member function to fetch segment details via segment_id (UniqueId)
+        """
+        if not params_dict:
+            return []
+
+        return dict_fetch_all(cursor=self.curr, table_name=self.table_name, data_dict=params_dict)
+
+    def update_segment(self, params_dict: dict, update_dict: dict):
+        """
+        Member function to update segment
+        """
+        if not update_dict:
+            return []
+        return update_row(cursor=self.curr, table=self.table_name, q_data=params_dict, u_data=update_dict)

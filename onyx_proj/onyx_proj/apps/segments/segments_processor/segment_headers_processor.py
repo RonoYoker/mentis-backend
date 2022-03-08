@@ -1,7 +1,6 @@
 import json
 from onyx_proj.common.constants import *
 from onyx_proj.models.CED_Segment_model import *
-from onyx_proj.common.common_helpers import *
 from onyx_proj.models.CED_CampaignContentVariableMapping_model import *
 
 

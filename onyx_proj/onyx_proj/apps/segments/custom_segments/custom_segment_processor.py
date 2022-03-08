@@ -2,7 +2,6 @@ from datetime import datetime
 import json
 import re
 from onyx_proj.common.constants import *
-from onyx_proj.common.common_helpers import *
 from onyx_proj.models.CED_Segment_model import *
 from onyx_proj.models.CED_Projects_model import *
 from onyx_proj.models.CED_DataID_Details_model import *
@@ -18,7 +17,7 @@ def custom_segment_processor(request_data) -> json:
     parameters: request data
     returns: json ({
                         "status_code": 200/405,
-                        "validation_response": {
+                        "data": {
                             "isSaved": True/False,
                             "result": (validation_failure/validation_success),
                             "details_string": (return in case of validation_failure),
@@ -51,18 +50,10 @@ def custom_segment_processor(request_data) -> json:
         return dict(status_code=405, result=TAG_FAILURE,
                     details_message="Custom segment cannot be saved without a title.")
 
-    # check for limit in query
-    pattern = re.compile(r"limit \d+")
-    matches = pattern.findall(sql_query)
-    if matches:
-        return dict(status_code=405, result=TAG_FAILURE,
-                    details_message="Custom segment query cannot have LIMIT keyword.")
+    query_validation_response = query_validation_check(sql_query)
 
-    # check if query begins with SELECT
-    query_array = sql_query.split()
-    if query_array[0].lower() != "select":
-        return dict(status_code=405, result=TAG_FAILURE,
-                    details_message="Custom query should begin with SELECT keyword.")
+    if query_validation_response.get("result") == TAG_FAILURE:
+        return query_validation_response
 
     domain = settings.HYPERION_LOCAL_DOMAIN.get(project_name)
 
@@ -70,13 +61,7 @@ def custom_segment_processor(request_data) -> json:
         return dict(status_code=405, result=TAG_FAILURE,
                     details_message=f"Hyperion local credentials not found for {project_name}.")
 
-    url = domain + CUSTOM_QUERY_EXECUTION_API_PATH
-
-    validation_response = json.loads(RequestClient(
-        url=url,
-        headers={"Content-Type": "application/json"},
-        request_body=json.dumps({"sql_query": sql_query}),
-        request_type=TAG_REQUEST_POST).get_api_response())
+    validation_response = hyperion_local_rest_call(project_name, sql_query)
 
     if validation_response.get("result") == TAG_FAILURE:
         return validation_response
@@ -190,3 +175,113 @@ def fetch_headers_list(data) -> dict:
     data_dict = {"segment_title": segment_title, "segment_id": segment_id, "headers_list": json.loads(headers_list)}
     return dict(status_code=200, result=TAG_SUCCESS,
                 data=data_dict)
+
+
+def update_custom_segment_process(data) -> dict:
+    """
+    Function to update/edit the custom segment. Has capability to change custom query.
+    parameters: request data (dictionary containing segment_id, updated_title and updated sql_query)
+    returns: json ({
+                        "status_code": 200/405,
+                        "data": {
+                            "isUpdated": True/False,
+                            "result": (validation_failure/validation_success),
+                            "details_string": (return in case of validation_failure),
+                            "headers_list": [header1, header2, ...],
+                            "records": number of records returned for the segment query
+                            }
+                    })
+    """
+
+    sql_query = data.get("sql_query", None)
+    segment_id = data.get("segment_id", None)
+    title = data.get("title", None)
+    project_name = data.get("project_name", None)
+
+    if not sql_query or not segment_id or not title:
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Request body has missing fields.")
+
+    query_validation_response = query_validation_check(sql_query)
+
+    if query_validation_response.get("result") == TAG_FAILURE:
+        return query_validation_response
+
+    request_response = hyperion_local_rest_call(project_name, sql_query)
+
+    if request_response.get("result") == TAG_FAILURE:
+        return request_response
+
+    response_data = request_response.get("data", {})
+
+    if not response_data:
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Query response data is empty/null.")
+
+    extra_field_string = json.dumps({"headers_list": [*response_data[0]]})
+
+    params_dict = dict(UniqueId=segment_id)
+
+    update_dict = dict(SqlQuery=sql_query,
+                       CampaignSqlQuery=sql_query,
+                       Title=title,
+                       Records=request_response.get("count"),
+                       Extra=extra_field_string,
+                       UpdationDate=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+    try:
+        db_res = CEDSegment().update_segment(params_dict=params_dict, update_dict=update_dict)
+    except Exception as ex:
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Exception during update query execution.",
+                    ex=str(ex))
+
+    if db_res.get("row_count") <= 0 or not db_res:
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Unable to update")
+
+    data_dict = dict(headers_list=[*response_data[0]],
+                     count=request_response.get("count"))
+
+    return dict(status_code=200, result=TAG_SUCCESS,
+                details_message="Updated segment",
+                data=data_dict)
+
+
+def query_validation_check(sql_query: str) -> dict:
+    """
+    Basic validation check of sql_query for custom_segment creation/updation
+    """
+    # check for limit in query
+    pattern = re.compile(r"limit \d+")
+    matches = pattern.findall(sql_query)
+
+    if matches:
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Custom segment query cannot have LIMIT keyword.")
+
+    # check if query begins with SELECT
+    query_array = sql_query.split()
+    if query_array[0].lower() != "select":
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Custom query should begin with SELECT keyword.")
+
+    return dict(result=TAG_SUCCESS)
+
+
+def hyperion_local_rest_call(project_name: str, sql_query: str):
+    domain = settings.HYPERION_LOCAL_DOMAIN.get(project_name)
+
+    if not domain:
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message=f"Hyperion local credentials not found for {project_name}.")
+
+    url = domain + CUSTOM_QUERY_EXECUTION_API_PATH
+
+    request_response = json.loads(RequestClient(
+        url=url,
+        headers={"Content-Type": "application/json"},
+        request_body=json.dumps({"sql_query": sql_query}),
+        request_type=TAG_REQUEST_POST).get_api_response())
+
+    return request_response
