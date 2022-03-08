@@ -8,9 +8,9 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "creditascampaignengine",
-        "USER": "root",
-        "PASSWORD": "root",
-        "HOST": "localhost",
+        "USER": "hypprodcollecApp",
+        "PASSWORD": "hypprodcollecApp#23$56",
+        "HOST": "prod-hyperion.cluster-cc5jz0tb7qeu.ap-south-1.rds.amazonaws.com",
         "PORT": "3306"
     },
     "creditascampaignengine":  {
