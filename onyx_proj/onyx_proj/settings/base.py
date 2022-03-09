@@ -120,6 +120,4 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CSRF_COOKIE_SECURE = True
-
-CORS_ALLOWED_ORIGIN_REGEXES = [r"*"]
+CORS_ALLOWED_ORIGIN_REGEXES = [".*"]
