@@ -53,6 +53,7 @@ def get_segment_by_unique_id(request):
     return HttpResponse(json.dumps(response, default=str), status=status_code)
 
 
+@csrf_exempt
 def update_custom_segment(request):
     data = json.loads(request.body.decode("utf-8"))
     # update thr given custom segment
