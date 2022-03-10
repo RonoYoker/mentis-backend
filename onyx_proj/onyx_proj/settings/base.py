@@ -141,3 +141,8 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
     'x-authtoken'
 ]
+
+CORS_ALLOWED_ORIGINS = [
+"http://localhost:8084",
+"http://localhost:4200"
+]
