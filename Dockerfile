@@ -72,7 +72,7 @@ WORKDIR /usr/local/creditas/Onyx/
 
 COPY onyx_proj/config/supervisord /etc/rc.d/init.d/supervisord
 ADD  onyx_proj/config/services/* /etc/supervisord.d/
-COPY onyx_proj/config/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY onyx_proj/config/uwsgi/onyx.conf /etc/nginx/nginx.conf
 COPY onyx_proj/config/nginx/uwsgi_params /etc/nginx/uwsgi_params
 COPY onyx_proj/config/nginx/uwsgi_params /etc/nginx/conf.d/uwsgi_params
 COPY onyx_proj/config/uwsgi/onyx_uwsgi.ini /etc/onyx_uwsgi.ini
