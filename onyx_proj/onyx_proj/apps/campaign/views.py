@@ -1,5 +1,5 @@
 from django.shortcuts import HttpResponse
-from apps.campaign.campaign_processor.test_campaign_processor import *
+from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import *
 from django.views.decorators.csrf import csrf_exempt
 import json
 
