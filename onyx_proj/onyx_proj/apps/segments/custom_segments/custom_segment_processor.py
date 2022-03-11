@@ -212,7 +212,7 @@ def update_custom_segment_process(data) -> dict:
     project_name = data.get("project_name", None)
     project_id = data.get("project_id", None)
 
-    if not sql_query or not segment_id or not title or project_id:
+    if not sql_query or not segment_id or not title or not project_id:
         return dict(status_code=405, result=TAG_FAILURE,
                     details_message="Request body has missing fields.")
 
