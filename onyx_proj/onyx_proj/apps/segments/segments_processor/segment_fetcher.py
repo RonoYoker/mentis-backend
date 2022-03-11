@@ -15,15 +15,13 @@ def fetch_segments(data) -> json:
 
     mode = data.get("mode", None)
     project_id = data.get("project_id", None)
-    data_id = data.get("data_id", None)
 
     params_dict = {
         "ProjectId": project_id,
-        "DataId": data_id,
     }
 
     # check if request has data_id and project_id
-    if project_id is None or data_id is None:
+    if project_id is None:
         return dict(status_code=405, result=TAG_FAILURE,
                     details_message="Missing parameters project_id/data_id in request body.")
 

@@ -6,6 +6,7 @@ from onyx_proj.models.CED_Segment_model import *
 from onyx_proj.models.CED_Projects_model import *
 from onyx_proj.models.CED_DataID_Details_model import *
 from onyx_proj.models.CED_UserSession_model import *
+from onyx_proj.apps.content.content_procesor import *
 import uuid
 from onyx_proj.common.request_helper import RequestClient
 from django.conf import settings
@@ -72,7 +73,9 @@ def custom_segment_processor(request_data) -> json:
         return dict(status_code=405, result=TAG_FAILURE,
                     details_message="Query response data is empty/null.")
 
-    extra_field_string = json.dumps({"headers_list": [*response_data[0]]})
+    headers_data = content_headers_processor([*response_data[0]], project_id)
+
+    extra_field_string = json.dumps({"headers_list": headers_data})
 
     segment_id = uuid.uuid4().hex
 
@@ -80,6 +83,15 @@ def custom_segment_processor(request_data) -> json:
 
     user_name = user[0].get("UserName", None)
     # user_name = "test_user"
+
+    headers = []
+    for ele in json.loads(extra_field_string).get("headers_list", []):
+        headers.append(ele.get("headerName"))
+
+    test_sql_query_response = generate_test_query(sql_query, headers)
+
+    if test_sql_query_response.get("result") == TAG_FAILURE:
+        return test_sql_query_response
 
     # create parameter mapping to insert custom segment
     save_segment_dict = get_save_segment_dict(Title=body.get("title"),
@@ -90,7 +102,8 @@ def custom_segment_processor(request_data) -> json:
                                               CampaignSqlQuery=sql_query,
                                               Records=validation_response.get("count"),
                                               User=user_name,
-                                              Headers=extra_field_string)
+                                              Headers=extra_field_string,
+                                              TestCampaignSqlQuery=test_sql_query_response.get("query"))
 
     db_res = save_custom_segment(save_segment_dict)
     if db_res.get("status_code") != 200:
@@ -114,6 +127,7 @@ def get_save_segment_dict(**kwargs) -> dict:
         "IncludeAll": 1,
         "SqlQuery": kwargs.get("SqlQuery"),
         "CampaignSqlQuery": kwargs.get("CampaignSqlQuery"),
+        "TestCampaignSqlQuery": kwargs.get("TestCampaignSqlQuery"),
         "Records": kwargs.get("Records", 0),
         "Status": "SAVED",
         "CreatedBy": kwargs.get("User", None),
@@ -151,9 +165,8 @@ def fetch_headers_list(data) -> dict:
     Fetch headers for the given segment from CED_Segments table (column name Extra)
     """
     segment_id = data.get("segment_id", None)
-    segment_title = data.get("segment_title", None)
 
-    params_dict = {"UniqueId": segment_id, "Title": segment_title}
+    params_dict = {"UniqueId": segment_id}
 
     try:
         db_res = CEDSegment().get_headers_for_custom_segment(params_dict=params_dict)
@@ -172,7 +185,7 @@ def fetch_headers_list(data) -> dict:
         return dict(status_code=405, result=TAG_FAILURE,
                     details_message="Headers list empty.")
 
-    data_dict = {"segment_title": segment_title, "segment_id": segment_id, "headers_list": json.loads(headers_list)}
+    data_dict = {"segment_id": segment_id, "headers_list": json.loads(headers_list)}
     return dict(status_code=200, result=TAG_SUCCESS,
                 data=data_dict)
 
@@ -197,8 +210,9 @@ def update_custom_segment_process(data) -> dict:
     segment_id = data.get("segment_id", None)
     title = data.get("title", None)
     project_name = data.get("project_name", None)
+    project_id = data.get("project_id", None)
 
-    if not sql_query or not segment_id or not title:
+    if not sql_query or not segment_id or not title or project_id:
         return dict(status_code=405, result=TAG_FAILURE,
                     details_message="Request body has missing fields.")
 
@@ -218,7 +232,18 @@ def update_custom_segment_process(data) -> dict:
         return dict(status_code=405, result=TAG_FAILURE,
                     details_message="Query response data is empty/null.")
 
-    extra_field_string = json.dumps({"headers_list": [*response_data[0]]})
+    headers_data = content_headers_processor([*response_data[0]], project_id)
+
+    extra_field_string = json.dumps({"headers_list": headers_data})
+
+    headers = []
+    for ele in json.loads(extra_field_string).get("headers_list", []):
+        headers.append(ele.get("headerName"))
+
+    test_sql_query_response = generate_test_query(sql_query, headers)
+
+    if test_sql_query_response.get("result") == TAG_FAILURE:
+        return test_sql_query_response
 
     params_dict = dict(UniqueId=segment_id)
 
@@ -227,6 +252,7 @@ def update_custom_segment_process(data) -> dict:
                        Title=title,
                        Records=request_response.get("count"),
                        Extra=extra_field_string,
+                       TestCampaignSqlQuery=test_sql_query_response.get("query"),
                        UpdationDate=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     try:
@@ -285,3 +311,17 @@ def hyperion_local_rest_call(project_name: str, sql_query: str):
         request_type=TAG_REQUEST_POST).get_api_response())
 
     return request_response
+
+
+def generate_test_query(sql_query: str, headers_list: list) -> dict:
+    if not all(x in [y.lower() for y in headers_list] for x in [y.lower() for y in CUSTOM_TEST_QUERY_PARAMETERS]):
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message=f"Query must contains {CUSTOM_TEST_QUERY_PARAMETERS} as headers.")
+
+    if sql_query.split(' ')[1] == '*':
+        headers_string = ", ".join(headers_list)
+        sql_query = sql_query.replace("*", headers_string)
+
+    test_sql_query = sql_query.replace(" Name", 'IFNULL(@NAME, "") as Name').replace("Email", 'IFNULL(@EMAIL_ID, "") as Email').replace("Mobile", 'IFNULL(@MOBILE_NUMBER, "") as Mobile')
+    test_sql_query = test_sql_query + " LIMIT @LIMIT_NUMBER"
+    return dict(result=TAG_SUCCESS, query=test_sql_query)
