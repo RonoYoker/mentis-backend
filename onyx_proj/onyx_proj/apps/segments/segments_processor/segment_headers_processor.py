@@ -18,6 +18,8 @@ def check_headers_compatibility_with_content_template(request_data) -> json:
     content_id = request_data.get("content_id", None)
     template_type = request_data.get("template_type", None)
 
+    headers_list_extracted = []
+
     if content_id is None or segment_id is None or template_type is None:
         return dict(status_code=405, result=TAG_FAILURE,
                     details_message="Invalid Request! Missing segment_id/content_id/template_type.")
@@ -41,7 +43,10 @@ def check_headers_compatibility_with_content_template(request_data) -> json:
         return dict(status_code=405, result=TAG_FAILURE,
                     details_message=f"Headers list empty for the given segment_id: {segment_id}.")
 
-    headers_list = [x.lower() for x in headers_list]
+    for ele in headers_list:
+        headers_list_extracted.append(ele.get("headerName"))
+
+    headers_list = [x.lower() for x in headers_list_extracted]
 
     fetch_columns_params_dict = {"ContentId": content_id}
 
