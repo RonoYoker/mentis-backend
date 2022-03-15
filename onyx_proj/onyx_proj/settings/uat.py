@@ -25,5 +25,6 @@ DATABASES = {
 
 
 HYPERION_LOCAL_DOMAIN = {
-    "TEST_TCL": "https://3.111.61.77/"  # https://tclctpay.tatacapital.com/hyperioncampaigntooldashboard
+    "TEST_TCL": "https://3.111.61.77/", # https://tclctpay.tatacapital.com/hyperioncampaigntooldashboard,
+    # "TEST_IBL": "https://13.232.224.207/"
 }
