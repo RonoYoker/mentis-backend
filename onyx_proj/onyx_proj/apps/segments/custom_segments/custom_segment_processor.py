@@ -86,9 +86,16 @@ def custom_segment_processor(request_data) -> json:
 
     headers = []
     for ele in json.loads(extra_field_string).get("headers_list", []):
-        headers.append(ele.get("headerName"))
+        headers.append(ele.get("columnName"))
 
-    test_sql_query_response = generate_test_query(sql_query, headers)
+    formatted_sql_query = format_sql_query(sql_query, headers)
+
+    if formatted_sql_query.get("result") == TAG_FAILURE:
+        return formatted_sql_query
+
+    formatted_sql_query = formatted_sql_query.get("formatted_sql_query", None)
+
+    test_sql_query_response = generate_test_query(formatted_sql_query, headers)
 
     if test_sql_query_response.get("result") == TAG_FAILURE:
         return test_sql_query_response
@@ -99,11 +106,12 @@ def custom_segment_processor(request_data) -> json:
                                               ProjectId=project_id,
                                               DataId=data_id,
                                               SqlQuery=sql_query,
-                                              CampaignSqlQuery=sql_query,
+                                              CampaignSqlQuery=formatted_sql_query,
                                               Records=validation_response.get("count"),
                                               User=user_name,
                                               Headers=extra_field_string,
-                                              TestCampaignSqlQuery=test_sql_query_response.get("query"))
+                                              TestCampaignSqlQuery=test_sql_query_response.get("query"),
+                                              DataImageSqlQuery=formatted_sql_query)
 
     db_res = save_custom_segment(save_segment_dict)
     if db_res.get("status_code") != 200:
@@ -128,6 +136,7 @@ def get_save_segment_dict(**kwargs) -> dict:
         "SqlQuery": kwargs.get("SqlQuery"),
         "CampaignSqlQuery": kwargs.get("CampaignSqlQuery"),
         "TestCampaignSqlQuery": kwargs.get("TestCampaignSqlQuery"),
+        "DataImageSqlQuery": kwargs.get("DataImageSqlQuery"),
         "Records": kwargs.get("Records", 0),
         "Status": "SAVED",
         "CreatedBy": kwargs.get("User", None),
@@ -238,9 +247,16 @@ def update_custom_segment_process(data) -> dict:
 
     headers = []
     for ele in json.loads(extra_field_string).get("headers_list", []):
-        headers.append(ele.get("headerName"))
+        headers.append(ele.get("columnName"))
 
-    test_sql_query_response = generate_test_query(sql_query, headers)
+    formatted_sql_query = format_sql_query(sql_query, headers)
+
+    if formatted_sql_query.get("result") == TAG_FAILURE:
+        return formatted_sql_query
+
+    formatted_sql_query = formatted_sql_query.get("formatted_sql_query", None)
+
+    test_sql_query_response = generate_test_query(formatted_sql_query, headers)
 
     if test_sql_query_response.get("result") == TAG_FAILURE:
         return test_sql_query_response
@@ -249,6 +265,7 @@ def update_custom_segment_process(data) -> dict:
 
     update_dict = dict(SqlQuery=sql_query,
                        CampaignSqlQuery=sql_query,
+                       DataImageSqlQuery=formatted_sql_query,
                        Title=title,
                        Records=request_response.get("count"),
                        Extra=extra_field_string,
@@ -270,7 +287,7 @@ def update_custom_segment_process(data) -> dict:
                      count=request_response.get("count"))
 
     return dict(status_code=200, result=TAG_SUCCESS,
-                details_message="Updated segment",
+                details_message="Segment Updated!",
                 data=data_dict)
 
 
@@ -318,10 +335,22 @@ def generate_test_query(sql_query: str, headers_list: list) -> dict:
         return dict(status_code=405, result=TAG_FAILURE,
                     details_message=f"Query must contains {CUSTOM_TEST_QUERY_PARAMETERS} as headers.")
 
-    if sql_query.split(' ')[1] == '*':
-        headers_string = ", ".join(headers_list)
-        sql_query = sql_query.replace("*", headers_string)
+    select_string = sql_query.split("FROM")
 
-    test_sql_query = sql_query.replace(" Name", 'IFNULL(@NAME, "") as Name').replace("Email", 'IFNULL(@EMAIL_ID, "") as Email').replace("Mobile", 'IFNULL(@MOBILE_NUMBER, "") as Mobile')
-    test_sql_query = test_sql_query + " LIMIT @LIMIT_NUMBER"
+    test_sql_query = select_string[0].replace("IFNULL(CED_BankData.Name", "IFNULL(@NAME").\
+        replace("IFNULL(CED_BankData.Email", "IFNULL(@EMAIL_ID").\
+        replace("IFNULL(CED_BankData.Mobile", "IFNULL(@MOBILE_NUMBER")
+    test_sql_query = test_sql_query + "FROM" + select_string[1] + " LIMIT @LIMIT_NUMBER"
+
     return dict(result=TAG_SUCCESS, query=test_sql_query)
+
+
+def format_sql_query(sql_query: str, headers_list: list) -> dict:
+    if not headers_list:
+        return dict(status_code=405, result=TAG_FAILURE,
+                    details_message="Error formatting Query.")
+
+    for ele in headers_list:
+        sql_query = sql_query.replace(f'CED_BankData.{ele}', f'IFNULL(CED_BankData.{ele}, "")')
+
+    return dict(result=TAG_SUCCESS, formatted_sql_query=sql_query)
