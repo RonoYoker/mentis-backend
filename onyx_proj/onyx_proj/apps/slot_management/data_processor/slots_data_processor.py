@@ -43,7 +43,8 @@ def vaildate_campaign_for_scheduling(request_data):
         key = (camp_date,camp_type)
         if key not in campaigns_date_type_data:
             continue
-
+        if campaign.get("StartDateTime") is None or campaign.get("EndDateTime") is None:
+            continue
         campaigns_date_type_data[key].append({
             "start":campaign.get("StartDateTime"),
             "end":campaign.get("EndDateTime"),
