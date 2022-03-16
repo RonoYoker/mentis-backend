@@ -274,6 +274,18 @@ def delete_multiple_rows(cursor, query, params=[]):
         return None
 
 
+def delete_rows_from_table(cursor,table_name,q_data):
+    where_q = ' AND '.join([f"{key} = %s" for key in q_data])
+    query = "DELETE from %s where %s" % (table_name,where_q)
+    try:
+        cursor.execute(query)
+        return {'last_row_id': cursor.lastrowid, 'row_count': cursor.rowcount}
+    except Exception as e:
+        logging.error({'error': f'Error thrown while deleting data : {query}', 'exception': str(e),
+                       'log_key': 'mysql_helper'})
+        return None
+
+
 def get_current_datetime():
     return time.strftime('%Y-%m-%d %H:%M:%S')
 

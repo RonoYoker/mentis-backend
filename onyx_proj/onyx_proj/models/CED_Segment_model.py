@@ -54,3 +54,7 @@ class CEDSegment:
         if not update_dict:
             return []
         return update_row(cursor=self.curr, table=self.table_name, q_data=params_dict, u_data=update_dict)
+
+    def get_segment_count_by_unique_id(self,unique_id):
+        result = dict_fetch_one(self.curr,self.table_name,{"UniqueId":unique_id},["Records"])
+        return int(result.get("Records",0)) if result is not None else 0
