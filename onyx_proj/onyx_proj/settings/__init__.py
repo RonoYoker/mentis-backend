@@ -1,6 +1,6 @@
 import os
 
-curr_env = os.environ.get("CURR_ENV","dev")
+curr_env = os.environ.get("CURR_ENV", "dev")
 
 if curr_env == "dev":
     from .dev import *
