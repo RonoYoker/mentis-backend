@@ -1,4 +1,5 @@
 import json
+import http
 from onyx_proj.common.constants import *
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import *
 from onyx_proj.models.CED_User_model import *
@@ -18,7 +19,7 @@ def fetch_test_campaign_data(request_data) -> json:
     project_name = body.get("project_name", None)
 
     if not project_name or not segment_id or not session_id:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Missing project_name/segment_id/auth-token in request.")
 
     user = CEDUserSession().get_user_details(dict(SessionId=session_id))
@@ -28,7 +29,7 @@ def fetch_test_campaign_data(request_data) -> json:
     domain = settings.HYPERION_LOCAL_DOMAIN.get(project_name)
 
     if not domain:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Hyperion local credentials not found for {project_name}.")
 
     segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))[0]
@@ -36,13 +37,17 @@ def fetch_test_campaign_data(request_data) -> json:
     sql_query = segment_data.get("SqlQuery", None)
 
     if not sql_query:
-        return dict(status_code=405, result=TAG_FAILURE,
-                    details_message=f"Unable to find query for the given {segment_id}")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message=f"Unable to find query for the given {segment_id}.")
 
     validation_response = hyperion_local_rest_call(project_name, sql_query)
 
     if validation_response.get("result") == TAG_FAILURE:
         return validation_response
+
+    if len(validation_response.get("data")) == 0:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message=f"Empty response for segment_id: {segment_id}.")
 
     query_data = validation_response.get("data")[0]
     query_data["Mobile"] = user_data.get("MobileNumber", None)
@@ -50,5 +55,5 @@ def fetch_test_campaign_data(request_data) -> json:
     query_data["LastName"] = user_data.get("LastName", None)
     query_data["Name"] = user_data.get("FirstName", None) + " " + user_data.get("LastName", None)
 
-    return dict(status_code=200, active=False, campaignId=campaign_id, sampleData=[query_data])
+    return dict(status_code=http.HTTPStatus.OK, active=False, campaignId=campaign_id, sampleData=[query_data])
 
