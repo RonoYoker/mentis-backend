@@ -1,4 +1,5 @@
 from datetime import datetime
+import http
 import json
 import re
 from onyx_proj.common.constants import *
@@ -17,7 +18,7 @@ def custom_segment_processor(request_data) -> json:
     Function to validate custom segment query as per project.
     parameters: request data
     returns: json ({
-                        "status_code": 200/405,
+                        "status_code": 200/400,
                         "data": {
                             "isSaved": True/False,
                             "result": (validation_failure/validation_success),
@@ -38,29 +39,23 @@ def custom_segment_processor(request_data) -> json:
 
     # check if request has data_id and project_id
     if project_id is None or data_id is None:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Missing parameters project_id/data_id in request body.")
 
     # check if query is null
     if sql_query is None or sql_query == "":
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Custom query cannot be null/empty.")
 
     # check if Title is valid
     if str(body.get("title")) is None or str(body.get("title")) == "":
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Custom segment cannot be saved without a title.")
 
     query_validation_response = query_validation_check(sql_query)
 
     if query_validation_response.get("result") == TAG_FAILURE:
         return query_validation_response
-
-    domain = settings.HYPERION_LOCAL_DOMAIN.get(project_name)
-
-    if not domain:
-        return dict(status_code=405, result=TAG_FAILURE,
-                    details_message=f"Hyperion local credentials not found for {project_name}.")
 
     validation_response = hyperion_local_rest_call(project_name, sql_query)
 
@@ -70,7 +65,7 @@ def custom_segment_processor(request_data) -> json:
     response_data = validation_response.get("data", {})
 
     if not response_data:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Query response data is empty/null.")
 
     headers_data = content_headers_processor([*response_data[0]], project_id)
@@ -87,13 +82,6 @@ def custom_segment_processor(request_data) -> json:
     headers = []
     for ele in json.loads(extra_field_string).get("headers_list", []):
         headers.append(ele.get("columnName"))
-    #
-    # formatted_sql_query = format_sql_query(sql_query, headers, project_name)
-    #
-    # if formatted_sql_query.get("result") == TAG_FAILURE:
-    #     return formatted_sql_query
-
-    # formatted_sql_query = formatted_sql_query.get("formatted_sql_query", None)
 
     test_sql_query_response = generate_test_query(sql_query, headers)
 
@@ -158,12 +146,12 @@ def save_custom_segment(params_dict: dict):
     try:
         db_res = CEDSegment().save_custom_segment(params_dict)
     except Exception as ex:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Error during save segment execution.",
                     ex=str(ex))
 
     if not db_res:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Error during save segment request.")
     else:
         return {"isSaved": True, "status_code": 200}
@@ -180,18 +168,18 @@ def fetch_headers_list(data) -> dict:
     try:
         db_res = CEDSegment().get_headers_for_custom_segment(params_dict=params_dict)
     except Exception as ex:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Error while executing headers fetch for {segment_id}.",
                     ex=str(ex))
 
     if not db_res:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Response null from CED_Segments table.")
 
     headers_list = db_res[0].get("Extra", {})
 
     if not headers_list:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Headers list empty.")
 
     data_dict = {"segment_id": segment_id, "headers_list": json.loads(headers_list)}
@@ -204,7 +192,7 @@ def update_custom_segment_process(data) -> dict:
     Function to update/edit the custom segment. Has capability to change custom query.
     parameters: request data (dictionary containing segment_id, updated_title and updated sql_query)
     returns: json ({
-                        "status_code": 200/405,
+                        "status_code": 200/400,
                         "data": {
                             "isUpdated": True/False,
                             "result": (validation_failure/validation_success),
@@ -222,7 +210,7 @@ def update_custom_segment_process(data) -> dict:
     project_id = data.get("project_id", None)
 
     if not sql_query or not segment_id or not title or not project_id:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Request body has missing fields.")
 
     query_validation_response = query_validation_check(sql_query)
@@ -238,7 +226,7 @@ def update_custom_segment_process(data) -> dict:
     response_data = request_response.get("data", {})
 
     if not response_data:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Query response data is empty/null.")
 
     headers_data = content_headers_processor([*response_data[0]], project_id)
@@ -248,13 +236,6 @@ def update_custom_segment_process(data) -> dict:
     headers = []
     for ele in json.loads(extra_field_string).get("headers_list", []):
         headers.append(ele.get("columnName"))
-
-    # formatted_sql_query = format_sql_query(sql_query, headers)
-
-    # if formatted_sql_query.get("result") == TAG_FAILURE:
-    #     return formatted_sql_query
-
-    # formatted_sql_query = formatted_sql_query.get("formatted_sql_query", None)
 
     test_sql_query_response = generate_test_query(sql_query, headers)
 
@@ -275,12 +256,12 @@ def update_custom_segment_process(data) -> dict:
     try:
         db_res = CEDSegment().update_segment(params_dict=params_dict, update_dict=update_dict)
     except Exception as ex:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Exception during update query execution.",
                     ex=str(ex))
 
     if db_res.get("row_count") <= 0 or not db_res:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Unable to update")
 
     data_dict = dict(headers_list=[*response_data[0]],
@@ -300,13 +281,13 @@ def query_validation_check(sql_query: str) -> dict:
     matches = pattern.findall(sql_query)
 
     if matches:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Custom segment query cannot have LIMIT keyword.")
 
     # check if query begins with SELECT
     query_array = sql_query.split()
     if query_array[0].lower() != "select":
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Custom query should begin with SELECT keyword.")
 
     return dict(result=TAG_SUCCESS)
@@ -316,7 +297,7 @@ def hyperion_local_rest_call(project_name: str, sql_query: str):
     domain = settings.HYPERION_LOCAL_DOMAIN.get(project_name)
 
     if not domain:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Hyperion local credentials not found for {project_name}.")
 
     url = domain + CUSTOM_QUERY_EXECUTION_API_PATH
@@ -332,13 +313,13 @@ def hyperion_local_rest_call(project_name: str, sql_query: str):
 
 def generate_test_query(sql_query: str, headers_list: list) -> dict:
     if not all(x in [y.lower() for y in headers_list] for x in [y.lower() for y in CUSTOM_TEST_QUERY_PARAMETERS]):
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Query must contains {CUSTOM_TEST_QUERY_PARAMETERS} as headers.")
 
     sql_query_split = sql_query.split("FROM")
 
     if "AccountId" not in sql_query_split[0]:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Query must contain AccountId as header alias.")
 
     select_string_list = sql_query_split[0].split(",")
@@ -356,15 +337,3 @@ def generate_test_query(sql_query: str, headers_list: list) -> dict:
     test_sql_query = select_string_formatted + " FROM " + sql_query_split[1] + " LIMIT @LIMIT_NUMBER"
 
     return dict(result=TAG_SUCCESS, query=test_sql_query)
-
-
-# def format_sql_query(sql_query: str, headers_list: list, project: str) -> dict:
-#     if not headers_list:
-#         return dict(status_code=405, result=TAG_FAILURE,
-#                     details_message="Error formatting Query.")
-#
-#     for ele in headers_list:
-#         for table_name in ACCESS_TABLES[project]:
-#             sql_query = sql_query.replace(f'{table_name}.{ele}', f'IFNULL({table_name}.{ele}, "")')
-#
-#     return dict(result=TAG_SUCCESS, formatted_sql_query=sql_query)

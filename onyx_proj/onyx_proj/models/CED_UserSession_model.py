@@ -15,3 +15,13 @@ class CEDUserSession:
             return []
         return dict_fetch_all(cursor=self.curr, table_name=self.table_name, data_dict=data_dict,
                               select_args=["UserName"])
+
+    def get_user_logged_in_status(self, data_dict: dict) -> list:
+        """
+            Returns user session variable (logged_in or logged_out) based on X-AuthToken
+        """
+        if not data_dict:
+            return []
+        return dict_fetch_all(cursor=self.curr, table_name=self.table_name, data_dict=data_dict,
+                              select_args=["Expired"])
+

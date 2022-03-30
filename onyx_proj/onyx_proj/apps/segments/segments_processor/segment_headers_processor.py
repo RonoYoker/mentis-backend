@@ -1,3 +1,4 @@
+import http
 import json
 from onyx_proj.common.constants import *
 from onyx_proj.models.CED_Segment_model import *
@@ -9,7 +10,7 @@ def check_headers_compatibility_with_content_template(request_data) -> json:
     Method checks compatibility of custom segment headers with template
     parameters: request data consisting of segment_id, content_id, template_type
     returns: json ({
-                        "status_code": 200/405,
+                        "status_code": 200/400,
                         "isCompatible": True/False (bool)
                     })
     """
@@ -21,11 +22,11 @@ def check_headers_compatibility_with_content_template(request_data) -> json:
     headers_list_extracted = []
 
     if content_id is None or segment_id is None or template_type is None:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid Request! Missing segment_id/content_id/template_type.")
 
     if template_type not in COMMUNICATION_SOURCE_LIST:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid value for template_type parameter.")
 
     fetch_headers_params_dict = {"UniqueId": segment_id}
@@ -33,14 +34,14 @@ def check_headers_compatibility_with_content_template(request_data) -> json:
     extra_field = CEDSegment().get_headers_for_custom_segment(fetch_headers_params_dict)
 
     if not extra_field:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Unable to fetch headers.")
 
     headers_list = json.loads(extra_field[0].get("Extra"))
     headers_list = headers_list.get("headers_list", [])
 
     if not headers_list:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Headers list empty for the given segment_id: {segment_id}.")
 
     for ele in headers_list:
@@ -54,7 +55,7 @@ def check_headers_compatibility_with_content_template(request_data) -> json:
         fetch_columns_params_dict)
 
     if not columns_dict_list:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Unable to fetch columns for content_id: {content_id}.")
 
     columns_list = []
@@ -65,8 +66,8 @@ def check_headers_compatibility_with_content_template(request_data) -> json:
     flag = all(x in headers_list for x in columns_list)
 
     if flag is False:
-        return dict(status_code=405, result=TAG_FAILURE,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Segment compatibility failure.")
     else:
-        return dict(status_code=200, result=TAG_SUCCESS,
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                     details_message="Segment compatibility success.")
