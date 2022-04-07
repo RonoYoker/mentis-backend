@@ -30,3 +30,10 @@ HYPERION_LOCAL_DOMAIN = {
     "IBL_Ethera": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
     "TCL_Ethera": "http://m-prod-tatacapital-hyp-1407059969.ap-south-1.elb.amazonaws.com/"
 }
+
+CAMPAIGN_THRESHOLDS_PER_MINUTE = {
+    "SMS":1000,
+    "EMAIL":1000,
+    "IVR":1000,
+    "WHATSAPP":1000
+}

@@ -58,3 +58,12 @@ class CEDSegment:
     def get_segment_count_by_unique_id(self,unique_id):
         result = dict_fetch_one(self.curr,self.table_name,{"UniqueId":unique_id},["Records"])
         return int(result.get("Records",0)) if result is not None else 0
+
+    def get_project_id_by_segment_id(self,unique_id):
+        result = dict_fetch_one(self.curr, self.table_name, {"UniqueId": unique_id}, ["ProjectId"])
+        return result.get("ProjectId") if result is not None else None
+
+    def get_data_id_expiry_by_segment_id(self,unique_id):
+        query = """ Select did.ExpireDate from CED_Segment s join CED_DataID_Details did on did.UniqueId = s.DataId  where s.UniqueId = '%s' """ % (unique_id)
+        result = dict_fetch_query_all(self.curr,query=query)
+        return result
