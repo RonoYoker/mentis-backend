@@ -1,0 +1,31 @@
+import http
+from onyx_proj.models.CED_Projects_model import *
+from onyx_proj.apps.content.content_procesor import *
+
+
+def fetch_vendor_config_data(request_data) -> json:
+    """
+    Campaign Content Processor function which returns the vendor config based on the project_id provided in the request.
+    parameters: request data (containing project_id)
+    returns: json object of the vendor config for the given project_id
+    """
+
+    body = request_data.get("body", {})
+
+    if not body.get("project_id", None):
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Missing parameter project_id in request body.")
+
+    project_details = CEDProjects().get_vendor_config_by_project_id(body.get("project_id"))
+
+    if not project_details:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="No data in database for the given project_id.")
+
+    vendor_config = json.loads(project_details[0].get("VendorConfig", None))
+
+    if not vendor_config:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Vendor config not available for the given project_id.")
+
+    return dict(status_code=http.HTTPStatus.OK, vendor_config=vendor_config)
