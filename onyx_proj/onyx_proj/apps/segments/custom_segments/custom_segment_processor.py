@@ -28,89 +28,85 @@ def custom_segment_processor(request_data) -> json:
                             }
                     })
     """
-    try:
-        body = request_data.get("body", {})
-        headers = request_data.get("headers", {})
-        session_id = headers.get("X-AuthToken", None)
-        sql_query = body.get("sql_query", None)
-        project_name = body.get("project_name", None)
-        project_id = body.get("project_id", None)
-        data_id = body.get("data_id", None)
+    body = request_data.get("body", {})
+    headers = request_data.get("headers", {})
+    session_id = headers.get("X-AuthToken", None)
+    sql_query = body.get("sql_query", None)
+    project_name = body.get("project_name", None)
+    project_id = body.get("project_id", None)
+    data_id = body.get("data_id", None)
 
-        # check if request has data_id and project_id
-        if project_id is None or data_id is None:
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Missing parameters project_id/data_id in request body.")
-
-        # check if query is null
-        if sql_query is None or sql_query == "":
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Custom query cannot be null/empty.")
-
-        # check if Title is valid
-        if str(body.get("title")) is None or str(body.get("title")) == "":
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Custom segment cannot be saved without a title.")
-
-        query_validation_response = query_validation_check(sql_query)
-
-        if query_validation_response.get("result") == TAG_FAILURE:
-            return query_validation_response
-
-        validation_response = hyperion_local_rest_call(project_name, sql_query)
-
-        if validation_response.get("result") == TAG_FAILURE:
-            return validation_response
-
-        response_data = validation_response.get("data", {})
-
-        if not response_data:
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Query response data is empty/null.")
-
-        headers_data = content_headers_processor([*response_data[0]], project_id)
-
-        extra_field_string = json.dumps({"headers_list": headers_data})
-
-        segment_id = uuid.uuid4().hex
-
-        user = CEDUserSession().get_user_details(dict(SessionId=session_id))
-
-        user_name = user[0].get("UserName", None)
-        # user_name = "test_user"
-
-        headers = []
-        for ele in json.loads(extra_field_string).get("headers_list", []):
-            headers.append(ele.get("columnName"))
-
-        test_sql_query_response = generate_test_query(sql_query, headers)
-
-        if test_sql_query_response.get("result") == TAG_FAILURE:
-            return test_sql_query_response
-
-        # create parameter mapping to insert custom segment
-        save_segment_dict = get_save_segment_dict(Title=body.get("title"),
-                                                  UniqueId=segment_id,
-                                                  ProjectId=project_id,
-                                                  DataId=data_id,
-                                                  SqlQuery=sql_query,
-                                                  CampaignSqlQuery=sql_query,
-                                                  Records=validation_response.get("count"),
-                                                  User=user_name,
-                                                  Headers=extra_field_string,
-                                                  TestCampaignSqlQuery=test_sql_query_response.get("query"),
-                                                  DataImageSqlQuery=sql_query)
-
-        db_res = save_custom_segment(save_segment_dict)
-        if db_res.get("status_code") != 200:
-            return db_res
-        else:
-            db_res["data"] = validation_response
-            db_res["data"]["segment_id"] = segment_id
-            return db_res
-    except Exception as ex:
+    # check if request has data_id and project_id
+    if project_id is None or data_id is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message=str(ex))
+                    details_message="Missing parameters project_id/data_id in request body.")
+
+    # check if query is null
+    if sql_query is None or sql_query == "":
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Custom query cannot be null/empty.")
+
+    # check if Title is valid
+    if str(body.get("title")) is None or str(body.get("title")) == "":
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Custom segment cannot be saved without a title.")
+
+    query_validation_response = query_validation_check(sql_query)
+
+    if query_validation_response.get("result") == TAG_FAILURE:
+        return query_validation_response
+
+    validation_response = hyperion_local_rest_call(project_name, sql_query)
+
+    if validation_response.get("result") == TAG_FAILURE:
+        return validation_response
+
+    response_data = validation_response.get("data", {})
+
+    if not response_data:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Query response data is empty/null.")
+
+    headers_data = content_headers_processor([*response_data[0]], project_id)
+
+    extra_field_string = json.dumps({"headers_list": headers_data})
+
+    segment_id = uuid.uuid4().hex
+
+    user = CEDUserSession().get_user_details(dict(SessionId=session_id))
+
+    user_name = user[0].get("UserName", None)
+    # user_name = "test_user"
+
+    headers = []
+    for ele in json.loads(extra_field_string).get("headers_list", []):
+        headers.append(ele.get("columnName"))
+
+    test_sql_query_response = generate_test_query(sql_query, headers)
+
+    if test_sql_query_response.get("result") == TAG_FAILURE:
+        return test_sql_query_response
+
+    # create parameter mapping to insert custom segment
+    save_segment_dict = get_save_segment_dict(Title=body.get("title"),
+                                              UniqueId=segment_id,
+                                              ProjectId=project_id,
+                                              DataId=data_id,
+                                              SqlQuery=sql_query,
+                                              CampaignSqlQuery=sql_query,
+                                              Records=validation_response.get("count"),
+                                              User=user_name,
+                                              Headers=extra_field_string,
+                                              TestCampaignSqlQuery=test_sql_query_response.get("query"),
+                                              DataImageSqlQuery=sql_query)
+
+    db_res = save_custom_segment(save_segment_dict)
+    if db_res.get("status_code") != 200:
+        return db_res
+    else:
+        db_res["data"] = validation_response
+        db_res["data"]["segment_id"] = segment_id
+        return db_res
 
 
 def get_save_segment_dict(**kwargs) -> dict:
