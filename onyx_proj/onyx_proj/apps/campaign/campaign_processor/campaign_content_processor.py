@@ -28,4 +28,16 @@ def fetch_vendor_config_data(request_data) -> json:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Vendor config not available for the given project_id.")
 
-    return dict(status_code=http.HTTPStatus.OK, vendor_config=vendor_config)
+    config_dict, nested_dict = {}, {}
+
+    for key, val in vendor_config.items():
+        temp_config_dict = vendor_config[key].get("Conf", {})
+        config_dict[key] = []
+        for temp_key, temp_val in temp_config_dict.items():
+            nested_dict = {}
+            if temp_val.get('active', 0) == 1:
+                nested_dict = {"id": temp_key,
+                               "display_name": temp_val.get("display_name", None)}
+                config_dict[key].append(nested_dict)
+
+    return dict(status_code=http.HTTPStatus.OK, vendor_config=config_dict)
