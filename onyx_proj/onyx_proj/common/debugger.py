@@ -1,6 +1,5 @@
-import datetime
-import logging
 
+import datetime
 
 def get_available_slot_count(start_time, end_time, curr_segments):
     slot_limit = 500
@@ -98,9 +97,8 @@ def get_avail_count():
 
 
 
-import logging
-logger = logging.getLogger(__name__)
 
-def test_logging():
-    for i in range(1,10000):
-        logger.info(f"wfwerwfwewrewrewrew:{i}")
+
+
+
+

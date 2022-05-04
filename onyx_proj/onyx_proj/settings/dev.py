@@ -3,7 +3,7 @@ from .base import *
 DEBUG = True
 
 # *********** DATABASES ***********
-
+#
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
@@ -39,3 +39,5 @@ CAMPAIGN_THRESHOLDS_PER_MINUTE = {
     "IVR":1,
     "WHATSAPP":1
 }
+
+
