@@ -98,7 +98,8 @@ def custom_segment_processor(request_data) -> json:
                                               User=user_name,
                                               Headers=extra_field_string,
                                               TestCampaignSqlQuery=test_sql_query_response.get("query"),
-                                              DataImageSqlQuery=sql_query)
+                                              DataImageSqlQuery=sql_query,
+                                              EmailCampaignSqlQuery=sql_query)
 
     db_res = save_custom_segment(save_segment_dict)
     if db_res.get("status_code") != 200:
@@ -132,7 +133,8 @@ def get_save_segment_dict(**kwargs) -> dict:
         "EverScheduled": 0,
         "CreationDate": datetime.now(),
         "UpdationDate": datetime.now(),
-        "Extra": kwargs.get("Headers")
+        "Extra": kwargs.get("Headers"),
+        "EmailCampaignSqlQuery": kwargs.get("EmailCampaignSqlQuery")
     }
 
     return save_segment_dict
