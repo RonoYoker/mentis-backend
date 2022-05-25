@@ -1,7 +1,7 @@
 from django.shortcuts import HttpResponse
 from onyx_proj.common.decorators import *
 from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import save_or_update_campaign_data, \
-    get_min_max_date_for_scheduler, get_time_range_from_date
+    get_min_max_date_for_scheduler, get_time_range_from_date, get_campaign_data_in_period
 from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import *
 from onyx_proj.apps.campaign.campaign_processor.campaign_content_processor import *
 from django.views.decorators.csrf import csrf_exempt
@@ -65,3 +65,46 @@ def get_vendor_config_data(request):
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
 
+
+@csrf_exempt
+def get_campaign_data_for_period(request):
+    start_date_time = request.GET.get('start_date_time')
+    end_date_time = request.GET.get('end_date_time')
+    project_id = request.GET.get('project_id')
+
+    if start_date_time is None or end_date_time is None or project_id is None:
+        return HttpResponse(json.dumps({"success": False, "info": "mandatory params missing"}, default=str), content_type = "application/json")
+
+    data = get_campaign_data_in_period(project_id, start_date_time, end_date_time)
+    final_processed_data = []
+    for campaign in data:
+
+        if campaign.get('cssd_status',"") == 'COMPLETED':
+            campaign['final_processed_status'] = 'COMPLETED'
+
+        if campaign.get('campaign_builder_status', 'SAVED') == 'SAVED':
+            campaign['final_processed_status'] = 'CAMPAIGN_NOT_INITIALISED'
+
+        if campaign['campaign_type'] == 'SCHEDULED' and campaign.get('campaign_builder_status', 'SAVED') == 'APPROVED' and campaign.get('campaign_id') is None:
+            campaign['final_processed_status'] = 'APPROVED_NOT_SCHEDULED'
+
+        if campaign['campaign_type'] == 'SCHEDULED' and campaign.get('cssd_status',"") == 'ERROR':
+            campaign['final_processed_status'] = 'ISSUE_IN_SCHEDULER'
+
+        if campaign['campaign_type'] == 'SCHEDULED' and campaign.get('cssd_status',"") == 'SUCCESS':
+            campaign['final_processed_status'] = 'SCHEDULED'
+
+        if campaign['campaign_type'] == 'SIMPLE' and campaign.get('campaign_id') is None:
+            campaign['final_processed_status'] = 'ISSUE_IN_SCHEDULER'
+
+        if campaign['campaign_type'] == 'SIMPLE' and campaign.get('cssd_status',"") != 'COMPLETED':
+            if campaign.get('cssd_status',"") == "LAMBAD_TRIGGERED":
+                campaign['final_processed_status'] = 'SCHEDULED'
+
+
+
+        final_processed_data.append(campaign)
+
+
+
+    return HttpResponse(json.dumps({"success":True,"data":data}, default=str), content_type="application/json")
