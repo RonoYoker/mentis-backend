@@ -127,3 +127,10 @@ def get_time_range_from_date(request_data):
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                 data=resp)
 
+
+
+def get_campaign_data_in_period(project_id, start_date_time, end_date_time):
+    data = CED_CampaignBuilder().get_campaign_data_for_period(project_id, start_date_time,end_date_time)
+    return data
+
+
