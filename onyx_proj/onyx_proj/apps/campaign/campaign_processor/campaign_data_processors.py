@@ -129,8 +129,8 @@ def get_time_range_from_date(request_data):
 
 
 
-def get_campaign_data_in_period(project_id, start_date_time, end_date_time):
-    data = CED_CampaignBuilder().get_campaign_data_for_period(project_id, start_date_time,end_date_time)
+def get_campaign_data_in_period(project_id, content_type, start_date_time, end_date_time):
+    data = CED_CampaignBuilder().get_campaign_data_for_period(project_id, content_type, start_date_time,end_date_time)
     return data
 
 

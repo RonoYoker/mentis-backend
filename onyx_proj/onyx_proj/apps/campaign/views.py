@@ -71,11 +71,12 @@ def get_campaign_data_for_period(request):
     start_date_time = request.GET.get('start_date_time')
     end_date_time = request.GET.get('end_date_time')
     project_id = request.GET.get('project_id')
+    content_type = request.GET.get('content_type')
 
-    if start_date_time is None or end_date_time is None or project_id is None:
+    if start_date_time is None or end_date_time is None or project_id is None or content_type is None:
         return HttpResponse(json.dumps({"success": False, "info": "mandatory params missing"}, default=str), content_type = "application/json")
 
-    data = get_campaign_data_in_period(project_id, start_date_time, end_date_time)
+    data = get_campaign_data_in_period(project_id, content_type, start_date_time, end_date_time)
     final_processed_data = []
     for campaign in data:
 
