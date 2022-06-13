@@ -106,7 +106,7 @@ def validate_schedule(schedule,content_type):
         min_time = min(min_time, segment["start"])
     total_slot_count = int((max_time - min_time) / timedelta(minutes=SLOT_INTERVAL_MINUTES))
     curr_segments = sorted(curr_segments, key=lambda x: (x["end"], x["start"]))
-    ordered_list = list({(x["start"], x["end"]) for x in curr_segments})
+    ordered_list = [(x["start"], x["end"]) for x in curr_segments]
 
     for slot_index in range(0, total_slot_count, 1):
         slot_start_time = min_time + timedelta(minutes=SLOT_INTERVAL_MINUTES * (slot_index))
