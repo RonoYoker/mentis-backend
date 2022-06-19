@@ -97,6 +97,7 @@ def validate_schedule(schedule,content_type):
         curr_segments_map.setdefault((x["start"], x["end"]), 0)
         curr_segments_map[(x["start"], x["end"])] += x["count"]
 
+    schedule = [{"start":key[0],"end":key[1],"count":count} for key,count in curr_segments_map.items()]
     curr_segments = sorted(schedule, key=lambda x: (x["end"], x["start"]), reverse=True)
 
     max_time = curr_segments[0]["end"]
