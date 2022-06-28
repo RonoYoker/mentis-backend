@@ -115,8 +115,8 @@ def validate_schedule(schedule,content_type):
         slot_key_pair = (slot_start_time, slot_end_time)
         keys_remove = []
         for key_pair in ordered_list:
-            if key_pair[0] > slot_key_pair[0]:
-                break
+            if key_pair[0] > slot_key_pair[1] or key_pair[1] < slot_key_pair[0]:
+                continue
             used_limit = min(curr_segments_map[key_pair], slot_limit - filled_segment_count.get(slot_key_pair, 0))
             filled_segment_count.setdefault(slot_key_pair, 0)
             filled_segment_count[slot_key_pair] += used_limit

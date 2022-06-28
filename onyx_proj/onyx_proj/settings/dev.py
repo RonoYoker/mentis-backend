@@ -34,10 +34,11 @@ HYPERION_LOCAL_DOMAIN = {
 }
 
 CAMPAIGN_THRESHOLDS_PER_MINUTE = {
-    "SMS":5,
-    "EMAIL":1,
-    "IVR":1,
-    "WHATSAPP":1
-}
 
+    "SMS":5000,
+    "EMAIL":5000,
+    "IVR":2000,
+    "WHATSAPP":5000
+
+}
 
