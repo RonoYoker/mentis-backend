@@ -150,8 +150,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # CORS_ALLOW_CREDENTIALS = True
 
 
-log_format = f"[%(asctime)s] %(levelname)s " \
-             f"[%(name)s:%(lineno)s] %(message)s"
+log_format = f"[%(asctime)s] %(levelname)s filename: %(pathname)s method: %(funcName)s %(message)s"
 
 # LOGGING = {
 #     'version': 1,

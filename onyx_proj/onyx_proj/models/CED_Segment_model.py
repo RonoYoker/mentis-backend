@@ -67,3 +67,6 @@ class CEDSegment:
         query = """ Select did.ExpireDate from CED_Segment s join CED_DataID_Details did on did.UniqueId = s.DataId  where s.UniqueId = '%s' """ % (unique_id)
         result = dict_fetch_query_all(self.curr,query=query)
         return result
+
+    def update_segment_record_count(self, segment_count: int,segment_unique_id: str):
+        return update_row(self.curr,self.table_name,{"UniqueId":segment_unique_id},{"Records":segment_count})
