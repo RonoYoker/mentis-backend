@@ -1,8 +1,11 @@
+import datetime
+from datetime import timedelta
+
 from django.shortcuts import HttpResponse
 from onyx_proj.common.decorators import *
 from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import save_or_update_campaign_data, \
-    get_min_max_date_for_scheduler, get_time_range_from_date, get_campaign_data_in_period, \
-    update_segment_count_and_status_for_campaign
+    get_min_max_date_for_scheduler, get_time_range_from_date, get_campaign_data_in_period, validate_campaign, \
+    get_filtered_recurring_date_time,update_segment_count_and_status_for_campaign
 from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import *
 from onyx_proj.apps.campaign.campaign_processor.campaign_content_processor import *
 from django.views.decorators.csrf import csrf_exempt
@@ -111,6 +114,29 @@ def get_campaign_data_for_period(request):
 
     return HttpResponse(json.dumps({"success":True,"data":data}, default=str), content_type="application/json")
 
+
+@csrf_exempt
+def generate_recurring_schedule(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    data = dict(body=request_body, headers=request_headers)
+    response = get_filtered_recurring_date_time(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+
+
+@csrf_exempt
+@user_authentication
+def validate_recurring_campaign(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    data = dict(body=request_body, headers=request_headers)
+    # query processor call
+    response = validate_campaign(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
 
 @csrf_exempt
 def update_campaign_progress_status(request):

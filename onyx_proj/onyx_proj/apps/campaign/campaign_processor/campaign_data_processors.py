@@ -6,6 +6,7 @@ import logging
 from onyx_proj.apps.campaign.campaign_processor import app_settings
 from onyx_proj.apps.campaign.campaign_processor.app_settings import SCHEDULED_CAMPAIGN_TIME_RANGE_UTC
 from onyx_proj.common.constants import TAG_FAILURE,TAG_SUCCESS
+from onyx_proj.models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
 from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
 from onyx_proj.models.CED_CampaignExecutionProgress_model import CED_CampaignExecutionProgress
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetails_model import CED_CampaignSchedulingSegmentDetails
@@ -141,6 +142,71 @@ def get_campaign_data_in_period(project_id, content_type, start_date_time, end_d
     data = CED_CampaignBuilder().get_campaign_data_for_period(project_id, content_type, start_date_time,end_date_time)
     return data
 
+
+def get_filtered_recurring_date_time(data):
+    start_date = data.get("body").get('start_date')
+    campaign_type = data.get("body").get('campaign_type')
+    end_date = data.get("body").get('end_date')
+    repeat_type = data.get("body").get('repeat_type')
+    days = data.get("body").get('days')
+    number_of_days = data.get("body").get('number_of_days')
+    start_time = data.get("body").get('start_time')
+    end_time = data.get("body").get('end_time')
+
+    if start_date is None or end_date is None or start_time is None or end_time is None or campaign_type is None or (
+            campaign_type == "SCHEDULELATER" and repeat_type is None):
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="mandatory params missing.")
+
+    dates = []
+    if campaign_type == "SCHEDULENOW":
+        dates.append(start_date)
+
+    if campaign_type == "SCHEDULELATER" and repeat_type == "ONE_TIME":
+        dates.append(start_date)
+
+    if campaign_type == "SCHEDULELATER" and repeat_type == "DAILY":
+        dates = get_all_dates_between_dates(start_date, end_date)
+
+    if campaign_type == "SCHEDULELATER" and repeat_type == "WEEKDAYS":
+        all_dates_between_dates = get_all_dates_between_dates(start_date, end_date)
+        for date_between_dates in all_dates_between_dates:
+            if str((datetime.datetime.strptime(date_between_dates, '%Y-%m-%d')).weekday() + 1) in days:
+                dates.append(date_between_dates)
+
+    if campaign_type == "SCHEDULELATER" and repeat_type == "DELAY":
+        all_dates_between_dates = get_all_dates_between_dates(start_date, end_date)
+        for index in range(0, len(all_dates_between_dates), int(number_of_days)):
+            dates.append((datetime.datetime.strptime(all_dates_between_dates[index], '%Y-%m-%d')).strftime('%Y-%m-%d'))
+
+    recurring_date_time = []
+    time = datetime.datetime.strptime(start_time, '%H:%M:%S').time()
+    curr_datetime_60_mints = datetime.datetime.utcnow() + datetime.timedelta(minutes=40)
+    for date in dates:
+        date = datetime.datetime.strptime(date, '%Y-%m-%d').date()
+        combined = datetime.datetime.combine(date, time)
+        if combined < curr_datetime_60_mints:
+            pass
+        else:
+            recurring_date_time.append({"date": date, "start_time": start_time, "end_time": end_time})
+
+    if dates is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="dates not found.")
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                data=recurring_date_time)
+
+
+def get_all_dates_between_dates(start_date,end_date):
+    delta = datetime.datetime.strptime(end_date,'%Y-%m-%d') - datetime.datetime.strptime(start_date,'%Y-%m-%d')  # as timedelta
+    days = [datetime.datetime.strptime(start_date,'%Y-%m-%d') + datetime.timedelta(days=i) for i in range(delta.days + 1)]
+    dates = []
+    for day in days:
+        dates.append(day.strftime('%Y-%m-%d'))
+    return dates
+
+
 def update_segment_count_and_status_for_campaign(request_data):
     body = request_data.get("body", {})
     encrypted_data = body.get("data")
@@ -197,3 +263,22 @@ def update_segment_count_and_status_for_campaign(request_data):
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                 data=resp)
 
+
+def validate_campaign(request_data):
+    body = request_data.get("body", {})
+    headers = request_data.get("headers", {})
+    session_id = headers.get("X-AuthToken", None)
+    campaign_id = body.get("campaign_id")
+
+    if campaign_id is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Campaign Id not present")
+
+
+    updated = CED_CampaignBuilderCampaign().validate_campaign_builder_campaign(campaign_id)
+
+    resp = {
+        "success":updated
+    }
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                data=resp)

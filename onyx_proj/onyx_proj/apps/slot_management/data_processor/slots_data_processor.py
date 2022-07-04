@@ -16,6 +16,7 @@ def vaildate_campaign_for_scheduling(request_data):
     session_id = headers.get("X-AuthToken", None)
     segment_id = body.get("segmentId", "")
     campaigns_list = body.get("campaigns", [])
+    campaign_id = body.get("campaignId")
 
     dates_to_validate = set()
     campaigns_date_type_data={}
@@ -37,7 +38,11 @@ def vaildate_campaign_for_scheduling(request_data):
         content_date_keys_to_validate.add(key)
 
     campaign_validate_resp = []
-    curr_campaigns = CED_CampaignBuilderCampaign().get_campaigns_segment_info_by_dates([seg_date.strftime("%Y-%m-%d") for seg_date in dates_to_validate],project_id,segment_id)
+
+    if campaign_id is not None:
+        curr_campaigns = CED_CampaignBuilderCampaign().get_campaigns_segment_info_by_dates_campaignId([seg_date.strftime("%Y-%m-%d") for seg_date in dates_to_validate],project_id,segment_id,campaign_id)
+    else:
+        curr_campaigns = CED_CampaignBuilderCampaign().get_campaigns_segment_info_by_dates([seg_date.strftime("%Y-%m-%d") for seg_date in dates_to_validate], project_id, segment_id)
     for campaign in curr_campaigns:
         try:
             camp_date = campaign.get("StartDateTime").date()
@@ -77,7 +82,11 @@ def vaildate_campaign_for_scheduling(request_data):
         campaign_validate_resp.append(
             {
                 "content_type":camp_type,
-                "valid_schedule" : valid_schedule
+                "valid_schedule" : valid_schedule,
+                "date": camp_info["start"].strftime("%Y-%m-%d"),
+                "start_time": camp_info["start"].strftime("%H:%M:%S"),
+                "end_time": camp_info["end"].strftime("%H:%M:%S"),
+                "day_of_week": camp_info["start"].strftime("%A")
             }
         )
 

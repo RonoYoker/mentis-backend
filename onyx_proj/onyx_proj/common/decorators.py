@@ -13,7 +13,7 @@ def user_authentication(view_func):
 
         if not auth_token:
             response = dict(result=TAG_FAILURE, details_message="Cannot fulfil request without X-AuthToken header.")
-            return HttpResponse(response=json.dumps(response),
+            return HttpResponse(json.dumps(response),
                                 content_type="application/json",
                                 status=http.HTTPStatus.BAD_REQUEST)
 
@@ -21,20 +21,20 @@ def user_authentication(view_func):
 
         if not is_logged_in:
             response = dict(result=TAG_FAILURE, details_message="User not logged in.")
-            return HttpResponse(response=json.dumps(response),
+            return HttpResponse(json.dumps(response),
                                 content_type="application/json",
                                 status=http.HTTPStatus.BAD_REQUEST)
 
         if is_logged_in[0].get("Expired") == 1:
             response = dict(result=TAG_FAILURE, details_message="User session expired.")
-            return HttpResponse(response=json.dumps(response),
+            return HttpResponse(json.dumps(response),
                                 content_type="application/json",
                                 status=http.HTTPStatus.BAD_REQUEST)
         elif is_logged_in[0].get("Expired") == 0:
             return view_func(request, *args, **kwargs)
 
         response = dict(result=TAG_FAILURE, details_message="Error during user authentication.")
-        return HttpResponse(response=json.dumps(response),
+        return HttpResponse(json.dumps(response),
                             content_type="application/json",
                             status=http.HTTPStatus.BAD_REQUEST)
 
