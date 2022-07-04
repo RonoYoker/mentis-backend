@@ -4,6 +4,7 @@ from onyx_proj.common.constants import *
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import *
 from onyx_proj.models.CED_User_model import *
 from onyx_proj.models.CED_Segment_model import *
+from onyx_proj.models.CED_CampaignBuilder import *
 
 
 def fetch_test_campaign_data(request_data) -> json:
@@ -18,9 +19,13 @@ def fetch_test_campaign_data(request_data) -> json:
     campaign_id = body.get("campaign_id", None)
     project_name = body.get("project_name", None)
 
-    if not project_name or not segment_id or not session_id:
+    if not project_name or not session_id:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Missing project_name/segment_id/auth-token in request.")
+                    details_message="Missing project_name/auth-token in request.")
+
+    if not segment_id and not campaign_id:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Missing segment_id/campaign_id in request.")
 
     user = CEDUserSession().get_user_details(dict(SessionId=session_id))
 
@@ -32,7 +37,13 @@ def fetch_test_campaign_data(request_data) -> json:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Hyperion local credentials not found for {project_name}.")
 
-    segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))[0]
+    segment_data = None
+
+    if segment_id:
+        segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))[0]
+    elif campaign_id:
+        segment_id = CED_CampaignBuilder().fetch_segment_id_from_campaign_id(campaign_id)[0][0]
+        segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))[0]
 
     sql_query = segment_data.get("SqlQuery", None)
 
@@ -54,6 +65,7 @@ def fetch_test_campaign_data(request_data) -> json:
     query_data["FirstName"] = user_data.get("FirstName", None)
     query_data["LastName"] = user_data.get("LastName", None)
     query_data["Name"] = user_data.get("FirstName", None) + " " + user_data.get("LastName", None)
+    query_data["Email"] = user_data.get("EmailId", None)
 
     return dict(status_code=http.HTTPStatus.OK, active=False, campaignId=campaign_id, sampleData=[query_data])
 

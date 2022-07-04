@@ -2,6 +2,7 @@ import json
 import http
 from onyx_proj.common.constants import *
 from onyx_proj.models.CED_Segment_model import *
+from onyx_proj.models.CED_CampaignBuilder import *
 
 
 def fetch_segments(data) -> json:
@@ -19,6 +20,7 @@ def fetch_segments(data) -> json:
 
     params_dict = {
         "ProjectId": project_id,
+        "isActive": 1
     }
 
     # check if request has data_id and project_id
@@ -26,11 +28,7 @@ def fetch_segments(data) -> json:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Missing parameters project_id/data_id in request body.")
 
-    # check if mode is supported
-    if mode and mode not in [TAG_KEY_CUSTOM, TAG_KEY_DEFAULT]:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message=f"Mode should be either {TAG_KEY_DEFAULT} or {TAG_KEY_CUSTOM}.")
-    elif mode in [TAG_KEY_CUSTOM, TAG_KEY_DEFAULT]:
+    if mode in [TAG_KEY_CUSTOM, TAG_KEY_DEFAULT]:
         params_dict["Type"] = mode
 
     try:
@@ -48,7 +46,7 @@ def fetch_segments(data) -> json:
 
 def fetch_segment_by_id(data) -> json:
     """
-    Function to return a list of all custom Segments for the provided project_id
+    Function to segment details by segment_id or campaign_id
     parameters: request data
     returns: json ({
                         "status_code": 200/400,
@@ -56,21 +54,35 @@ def fetch_segment_by_id(data) -> json:
                     })
     """
     segment_id = data.get("segment_id", None)
+    campaign_id = data.get("campaign_id", None)
 
-    if not segment_id:
+    if not segment_id and not campaign_id:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Missing parameters segment_id in request body.")
+                    details_message="Missing parameters segment_id/campaign_id in request body.")
 
-    params_dict = dict(UniqueId=segment_id)
+    db_res = None
 
-    try:
-        db_res = CEDSegment().get_segment_by_unique_id(params_dict)
-    except Exception as ex:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message=str(ex))
+    if segment_id:
+        try:
+            db_res = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))
+        except Exception as ex:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message=str(ex))
 
-    if not db_res:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="No segment found for this segment_id.")
+        if not db_res:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="No segment found for this segment_id.")
+
+    elif campaign_id:
+        try:
+            segment_id = CED_CampaignBuilder().fetch_segment_id_from_campaign_id(campaign_id)[0][0]
+            db_res = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))
+        except Exception as ex:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message=str(ex))
+
+        if not db_res:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="No segment found for this campaign_id.")
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=dict(data=db_res))

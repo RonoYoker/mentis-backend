@@ -30,3 +30,7 @@ class CED_CampaignBuilder:
 
         result = dict_fetch_query_all(self.curr, query=query)
         return result
+
+    def fetch_segment_id_from_campaign_id(self, campaign_id: str):
+        query = f"SELECT SegmentId from {self.table_name} WHERE UniqueId = '{campaign_id}'"
+        return query_executor(self.curr, query)
