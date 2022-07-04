@@ -122,7 +122,8 @@ def generate_recurring_schedule(request):
     data = dict(body=request_body, headers=request_headers)
     response = get_filtered_recurring_date_time(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
-    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+    data = response.pop("data",[])
+    return HttpResponse(json.dumps({"success":True,"data":data}, default=str), status=status_code, content_type="application/json")
 
 
 
