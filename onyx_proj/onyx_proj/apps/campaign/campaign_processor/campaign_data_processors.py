@@ -171,7 +171,7 @@ def get_filtered_recurring_date_time(data):
     if campaign_type == "SCHEDULELATER" and repeat_type == "WEEKDAYS":
         all_dates_between_dates = get_all_dates_between_dates(start_date, end_date)
         for date_between_dates in all_dates_between_dates:
-            if str((datetime.datetime.strptime(date_between_dates, '%Y-%m-%d')).weekday() + 1) in days:
+            if ((datetime.datetime.strptime(date_between_dates, '%Y-%m-%d')).weekday() + 1) in days:
                 dates.append(date_between_dates)
 
     if campaign_type == "SCHEDULELATER" and repeat_type == "DELAY":
