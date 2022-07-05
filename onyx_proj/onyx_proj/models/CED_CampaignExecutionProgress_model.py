@@ -9,3 +9,9 @@ class CED_CampaignExecutionProgress:
 
     def update_campaign_status(self, status: str,campaign_id: int):
         return update_row(self.curr,self.table_name,{"CampaignId":campaign_id},{"Status":status})
+
+    def execute_customised_query(self, query):
+        return query_executor(self.curr, query)
+
+    def update_table_data_by_campaign_id(self, where_dict: dict, params_dict: dict):
+        return update_row(self.curr, self.table_name, where_dict, params_dict)

@@ -8,6 +8,7 @@ from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import 
     get_filtered_recurring_date_time,update_segment_count_and_status_for_campaign
 from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import *
 from onyx_proj.apps.campaign.campaign_processor.campaign_content_processor import *
+from onyx_proj.apps.campaign.campaign_monitoring.campaign_stats_processor import *
 from django.views.decorators.csrf import csrf_exempt
 import json
 
@@ -139,6 +140,7 @@ def validate_recurring_campaign(request):
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
 
+
 @csrf_exempt
 def update_campaign_progress_status(request):
     request_body = json.loads(request.body.decode("utf-8"))
@@ -146,5 +148,28 @@ def update_campaign_progress_status(request):
     data = dict(body=request_body, headers=request_headers)
     # process and save campaign status
     response = update_segment_count_and_status_for_campaign(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+@user_authentication
+def get_campaign_monitoring_stats(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    data = dict(body=request_body, headers=request_headers)
+    # query processor call
+    response = get_filtered_campaign_stats(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+def update_campaign_stats(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    data = dict(body=request_body, headers=request_headers)
+    # query processor call
+    response = update_campaign_stats_to_central_db(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
