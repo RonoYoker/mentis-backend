@@ -338,6 +338,6 @@ def generate_test_query(sql_query: str, headers_list=None) -> dict:
     for index in range(1, len(sql_query_split)):
         select_string_formatted += " FROM " + sql_query_split[index]
 
-    select_string_formatted = select_string_formatted + " LIMIT @LIMITNUMBER"
+    select_string_formatted = select_string_formatted + " LIMIT @LIMIT_NUMBER"
 
     return dict(result=TAG_SUCCESS, query=select_string_formatted)
