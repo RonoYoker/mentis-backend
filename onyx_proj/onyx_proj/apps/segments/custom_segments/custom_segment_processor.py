@@ -312,7 +312,7 @@ def hyperion_local_rest_call(project_name: str, sql_query: str):
     return request_response
 
 
-def generate_test_query(sql_query: str, headers_list: list) -> dict:
+def generate_test_query(sql_query: str, headers_list=None) -> dict:
     if not all(x in [y.lower() for y in headers_list] for x in [y.lower() for y in CUSTOM_TEST_QUERY_PARAMETERS]):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Query must contains {CUSTOM_TEST_QUERY_PARAMETERS} as headers.")
@@ -335,6 +335,9 @@ def generate_test_query(sql_query: str, headers_list: list) -> dict:
 
     select_string_formatted = ",".join(select_string_list)
 
-    test_sql_query = select_string_formatted + " FROM " + sql_query_split[1] + " LIMIT @LIMIT_NUMBER"
+    for index in range(1, len(sql_query_split)):
+        select_string_formatted += " FROM " + sql_query_split[index]
 
-    return dict(result=TAG_SUCCESS, query=test_sql_query)
+    select_string_formatted = select_string_formatted + " LIMIT @LIMITNUMBER"
+
+    return dict(result=TAG_SUCCESS, query=select_string_formatted)
