@@ -337,6 +337,6 @@ def generate_test_query(sql_query: str, headers_list=None) -> dict:
     sql_query = re.sub("(?i)as email", "AS SampOrgEmail", sql_query)
     sql_query = re.sub("(?i)as mobile", "AS SampOrgMobile", sql_query)
 
-    test_sql_query = "SELECT derived_table.*, @MOBILE_NUMBER as Mobile, @EMAIL_ID as Email FROM (" + sql_query + " LIMIT @LIMIT_NUMBER) derviced_table"
+    test_sql_query = "SELECT derived_table.*, @MOBILE_NUMBER as Mobile, @EMAIL_ID as Email FROM (" + sql_query + " LIMIT @LIMIT_NUMBER) derived_table"
 
     return dict(result=TAG_SUCCESS, query=test_sql_query)
