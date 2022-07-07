@@ -317,27 +317,26 @@ def generate_test_query(sql_query: str, headers_list=None) -> dict:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Query must contains {CUSTOM_TEST_QUERY_PARAMETERS} as headers.")
 
-    sql_query_split = sql_query.split("FROM")
-
-    if "AccountId" not in sql_query_split[0]:
+    regexp = re.compile(r'as accountid', re.IGNORECASE)
+    if not regexp.search(sql_query):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Query must contain AccountId as header alias.")
+                    details_message=f"Account Id missing.")
 
-    select_string_list = sql_query_split[0].split(",")
+    for alias_pattern in TAG_TEST_CAMPAIGN_QUERY_ALIAS_PATTERNS:
+        pattern = re.compile(alias_pattern, re.IGNORECASE)
+        iterator = re.finditer(pattern, sql_query)
+        match_count = 0
 
-    for index, ele in enumerate(select_string_list):
-        if "as name" in ele.lower():
-            select_string_list[index] = "@NAME as Name"
-        elif "as mobile" in ele.lower():
-            select_string_list[index] = "@MOBILE_NUMBER as Mobile"
-        elif "as email" in ele.lower():
-            select_string_list[index] = "@EMAIL_ID as Email"
+        for match in iterator:
+            match_count += 1
 
-    select_string_formatted = ",".join(select_string_list)
+        if match_count > 1:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message=f"As Mobile, As Email alias can only be used once.")
 
-    for index in range(1, len(sql_query_split)):
-        select_string_formatted += " FROM " + sql_query_split[index]
+    sql_query = re.sub("(?i)as email", "AS SampOrgEmail", sql_query)
+    sql_query = re.sub("(?i)as mobile", "AS SampOrgMobile", sql_query)
 
-    select_string_formatted = select_string_formatted + " LIMIT @LIMIT_NUMBER"
+    test_sql_query = "SELECT derived_table.*, @MOBILE_NUMBER as Mobile, @EMAIL_ID as Email FROM (" + sql_query + " LIMIT @LIMIT_NUMBER) derviced_table"
 
-    return dict(result=TAG_SUCCESS, query=select_string_formatted)
+    return dict(result=TAG_SUCCESS, query=test_sql_query)
