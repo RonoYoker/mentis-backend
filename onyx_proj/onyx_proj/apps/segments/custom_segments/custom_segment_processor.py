@@ -322,6 +322,12 @@ def generate_test_query(sql_query: str, headers_list=None) -> dict:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Account Id missing.")
 
+    regexp = re.compile(r'as id', re.IGNORECASE)
+    if not regexp.search(sql_query):
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message=f"Id missing.")
+
+    contact_found = False
     for alias_pattern in TAG_TEST_CAMPAIGN_QUERY_ALIAS_PATTERNS:
         pattern = re.compile(alias_pattern, re.IGNORECASE)
         iterator = re.finditer(pattern, sql_query)
@@ -330,9 +336,16 @@ def generate_test_query(sql_query: str, headers_list=None) -> dict:
         for match in iterator:
             match_count += 1
 
+        if match_count == 1 and alias_pattern in TEST_CAMPAIGN_QUERY_CONTACT_ALIAS_PATTERNS:
+            contact_found = True
+
         if match_count > 1:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message=f"As Mobile, As Email alias can only be used once.")
+
+    if contact_found is False:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message=f"Atleast one of 'As Mobile, As Email' should be present")
 
     sql_query = re.sub("(?i)as email", "AS SampOrgEmail", sql_query)
     sql_query = re.sub("(?i)as mobile", "AS SampOrgMobile", sql_query)

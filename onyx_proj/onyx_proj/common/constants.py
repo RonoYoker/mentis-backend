@@ -341,3 +341,5 @@ FROM
 
 
 TAG_TEST_CAMPAIGN_QUERY_ALIAS_PATTERNS = ["as mobile", "as email"]
+
+TEST_CAMPAIGN_QUERY_CONTACT_ALIAS_PATTERNS = ["as mobile", "as email"]
