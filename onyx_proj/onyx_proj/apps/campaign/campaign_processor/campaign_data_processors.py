@@ -1,15 +1,17 @@
 import datetime
 import http
+import json
 import jwt
 import logging
 
+from onyx_proj.apps.campaign.campaign_processor.campaign_processor_helper import add_filter_to_query_using_params
 from onyx_proj.apps.campaign.campaign_processor import app_settings
 from onyx_proj.apps.campaign.campaign_processor.app_settings import SCHEDULED_CAMPAIGN_TIME_RANGE_UTC
-from onyx_proj.common.constants import TAG_FAILURE,TAG_SUCCESS
+from onyx_proj.common.constants import *
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
 from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
-from onyx_proj.models.CED_CampaignExecutionProgress_model import CED_CampaignExecutionProgress
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetails_model import CED_CampaignSchedulingSegmentDetails
+from onyx_proj.models.CED_CampaignExecutionProgress_model import CED_CampaignExecutionProgress
 from onyx_proj.models.CED_DataID_Details_model import CEDDataIDDetails
 from onyx_proj.models.CED_Projects import CED_Projects
 from onyx_proj.models.CED_Segment_model import CEDSegment
@@ -141,6 +143,45 @@ def get_time_range_from_date(request_data):
 def get_campaign_data_in_period(project_id, content_type, start_date_time, end_date_time):
     data = CED_CampaignBuilder().get_campaign_data_for_period(project_id, content_type, start_date_time,end_date_time)
     return data
+
+def get_filtered_dashboard_tab_data(data) -> json:
+    """
+    Function to return dashboard tabs data based on filters provided in POST request body
+    """
+    logger.debug(f"request data :: {data}")
+    request_body = data.get("body", {})
+    project_id = request_body.get("project_id", None)
+    filter_type = request_body.get("filter_type", None)
+    start_date = request_body.get("start_date", None)
+    end_date = request_body.get("end_date", None)
+
+    if project_id is None or filter_type is None or start_date is None or end_date is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="mandatory params missing.")
+
+    if filter_type is None or (filter_type not in [DashboardTab.ALL.value, DashboardTab.SCHEDULED.value, DashboardTab.EXECUTED.value]):
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="filter type is not correct.")
+
+    query = add_filter_to_query_using_params(filter_type).format(project_id = project_id,start_date = start_date, end_date = end_date)
+    logger.debug(f"request data query :: {query}")
+    camps_data = CED_CampaignExecutionProgress().execute_customised_query(query)
+    now = datetime.datetime.utcnow()
+    for camp_data in camps_data:
+        if camp_data.get('start_date_time') <= now and camp_data.get('scheduling_status') != TAG_SUCCESS and camp_data.get('is_active') == 1:
+            camp_data["status"] = DashboardTab.ERROR.value
+        elif camp_data.get('status') == DashboardTab.SCHEDULED and camp_data.get('scheduling_status') == TAG_SUCCESS and camp_data.get('is_active') == 1:
+            camp_data["status"] = DashboardTab.DISPATCHED.value
+        elif camp_data.get('is_active') == 0:
+            camp_data["status"] = DashboardTab.DEACTIVATED.value
+        camp_data.pop('scheduling_status')
+        camp_data.pop('is_active')
+
+    logger.debug(f"response data :: {camps_data}")
+    return dict(status_code=http.HTTPStatus.OK, data=camps_data)
+
+
+
 
 
 def get_filtered_recurring_date_time(data):

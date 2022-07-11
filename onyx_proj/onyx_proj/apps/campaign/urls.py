@@ -11,6 +11,7 @@ urlpatterns = [
     path("update_campaign_progress_status/", views.update_campaign_progress_status),
     path("generate_recurring_schedule/", views.generate_recurring_schedule),
     path("validate_recurring_campaign/", views.validate_recurring_campaign),
+    path("get_dashboard_tab_campaign_data/", views.get_dashboard_tab_campaign_data),
     path("get_campaign_monitoring_stats/", views.get_campaign_monitoring_stats),
     path("update_campaign_stats/", views.update_campaign_stats)
 ]

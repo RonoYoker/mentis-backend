@@ -1,3 +1,5 @@
+from enum import Enum
+
 IBL_DATABASE = "indusindcollection"
 HYPERION_CENTRAL_DATABASE = "creditascampaignengine"
 
@@ -7,6 +9,15 @@ TAG_SUCCESS = "SUCCESS"
 TAG_FAILURE = "FAILURE"
 TAG_REQUEST_POST = "POST"
 TAG_REQUEST_GET = "GET"
+
+class DashboardTab(Enum):
+    ALL = "ALL"
+    SCHEDULED = "SCHEDULED"
+    EXECUTED = "EXECUTED"
+    ERROR = "SCHEDULER ERROR"
+    DISPATCHED = "DISPATCHED"
+    DEACTIVATED = "DEACTIVATED"
+
 
 TAG_DATE_FILTER = "DATE_FILTER"
 TAG_CAMP_TITLE_FILTER = "CAMPAIGN_TITLE_FILTER"
@@ -20,6 +31,40 @@ COMMUNICATION_SOURCE_LIST = ["SMS", "IVR", "EMAIL", "WHATSAPP"]
 CUSTOM_QUERY_EXECUTION_API_PATH = "hyperioncampaigntooldashboard/segment/customQueryExecution"
 
 CUSTOM_TEST_QUERY_PARAMETERS = ["FirstName", "Mobile"]
+
+BASE_DASHBOARD_TAB_QUERY = """
+SELECT 
+  cb.Id as campaign_id, 
+  cb.Name as campaign_title,
+  cb.UniqueId as campaign_builder_unique_id,
+  cbc.UniqueId as campaign_builder_campaign_unique_id, 
+  cbc.ContentType as channel, 
+  cssd.Id as campaign_instance_id, 
+  cb.SegmentName as segment_title,
+  cb.Type as campaign_type, 
+  IF(
+    cep.Status = "SCHEDULED", "0", cssd.Records
+  ) AS segment_count, 
+  cbc.StartDateTime as start_date_time, 
+  cbc.EndDateTime as end_date_time, 
+  cb.CreatedBy as created_by, 
+  cb.ApprovedBy as approved_by, 
+  cep.Status as status,
+  cssd.SchedulingStatus as scheduling_status,
+  cbc.IsActive as is_active
+FROM 
+  CED_CampaignExecutionProgress cep 
+  JOIN CED_CampaignSchedulingSegmentDetails cssd ON cep.CampaignId = cssd.Id 
+  JOIN CED_CampaignBuilderCampaign cbc ON cbc.UniqueId = cssd.CampaignId 
+  JOIN CED_CampaignBuilder cb ON cb.UniqueId = cbc.CampaignBuilderId 
+  JOIN CED_Segment s ON s.UniqueId = cb.SegmentId
+WHERE 
+  cep.TestCampaign = 0 
+  AND cb.Type != "SIMPLE"
+  AND s.ProjectId = '{project_id}'
+  AND DATE(cbc.StartDateTime) >= DATE('{start_date}')
+  AND DATE(cbc.StartDateTime) <= DATE('{end_date}')
+"""
 
 FIXED_HEADER_MAPPING_COLUMN_DETAILS = [
     {
