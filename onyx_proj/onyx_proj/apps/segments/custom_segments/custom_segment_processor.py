@@ -291,6 +291,13 @@ def query_validation_check(sql_query: str) -> dict:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Custom query should begin with SELECT keyword.")
 
+    sql_query = re.sub('[^A-Za-z0-9]+', ' ', sql_query)
+    for key in CUSTOM_QUERY_FORBIDDEN_KEYWORDS:
+        for word in sql_query.lower().split():
+            if key == word:
+                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                            details_message="Custom query cannot perform write operations.")
+
     return dict(result=TAG_SUCCESS)
 
 
@@ -347,8 +354,10 @@ def generate_test_query(sql_query: str, headers_list=None) -> dict:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Atleast one of 'As Mobile, As Email' should be present")
 
-    sql_query = re.sub("(?i)as email", "AS SampOrgEmail", sql_query)
-    sql_query = re.sub("(?i)as mobile", "AS SampOrgMobile", sql_query)
+    sql_query = re.sub("(?i)as email", "AS SampOrgEmail ", sql_query)
+    sql_query = re.sub("(?i)as mobile", "AS SampOrgMobile ", sql_query)
+    sql_query = re.sub("(?i)group by mobile ", "GROUP BY SampOrgMobile ", sql_query)
+    sql_query = re.sub("(?i)group by email ", "GROUP BY SampOrgEmail ", sql_query)
 
     test_sql_query = "SELECT derived_table.*, @MOBILE_NUMBER as Mobile, @EMAIL_ID as Email FROM (" + sql_query + " LIMIT 1 ) derived_table"
 

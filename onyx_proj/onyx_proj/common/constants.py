@@ -388,3 +388,7 @@ FROM
 TAG_TEST_CAMPAIGN_QUERY_ALIAS_PATTERNS = ["as mobile", "as email"]
 
 TEST_CAMPAIGN_QUERY_CONTACT_ALIAS_PATTERNS = ["as mobile", "as email"]
+
+CUSTOM_QUERY_FORBIDDEN_KEYWORDS = ["update", "delete", "alter", "drop", "modify"]
+
+TEST_CAMPAIGN_CONDITION = " AND cep.TestCampaign = 0"

@@ -62,10 +62,9 @@ def fetch_test_campaign_data(request_data) -> json:
 
     query_data = validation_response.get("data")[0]
     query_data["Mobile"] = user_data.get("MobileNumber", None)
-    query_data["FirstName"] = user_data.get("FirstName", None)
-    query_data["LastName"] = user_data.get("LastName", None)
-    query_data["Name"] = user_data.get("FirstName", None) + " " + user_data.get("LastName", None)
+    # query_data["FirstName"] = user_data.get("FirstName", None)
+    # query_data["LastName"] = user_data.get("LastName", None)
+    # query_data["Name"] = user_data.get("FirstName", None) + " " + user_data.get("LastName", None)
     query_data["Email"] = user_data.get("EmailId", None)
 
     return dict(status_code=http.HTTPStatus.OK, active=False, campaignId=campaign_id, sampleData=[query_data])
-
