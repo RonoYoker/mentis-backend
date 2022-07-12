@@ -168,6 +168,10 @@ def get_filtered_dashboard_tab_data(data) -> json:
     camps_data = CED_CampaignExecutionProgress().execute_customised_query(query)
     now = datetime.datetime.utcnow()
     for camp_data in camps_data:
+        if camp_data.get('start_date_time') is not None:
+            camp_data['start_date_time'] = camp_data['start_date_time'] + datetime.timedelta(hours=5, minutes=30)
+        if camp_data.get('end_date_time') is not None:
+            camp_data['end_date_time'] = camp_data['end_date_time'] + datetime.timedelta(hours=5, minutes=30)
         if camp_data.get('start_date_time') <= now and camp_data.get('scheduling_status') != TAG_SUCCESS and camp_data.get('is_active') == 1:
             camp_data["status"] = DashboardTab.ERROR.value
         elif camp_data.get('status') == DashboardTab.SCHEDULED and camp_data.get('scheduling_status') == TAG_SUCCESS and camp_data.get('is_active') == 1:
