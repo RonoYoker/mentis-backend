@@ -371,7 +371,8 @@ STATS_VIEW_BASE_QUERY = """SELECT
     cep.CallBackCount AS CallBackCount,
     cep.TestCampaign AS TestCampaign,
     cep.Status AS Status,
-    cep.Extra AS Extra
+    cep.Extra AS Extra,
+    cep.UpdationDate AS LastRefreshTime
 FROM
     CED_CampaignExecutionProgress cep
         JOIN
