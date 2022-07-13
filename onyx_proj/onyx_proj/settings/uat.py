@@ -13,7 +13,7 @@ DATABASES = {
         "HOST": "uat-web-instance-1.cc5jz0tb7qeu.ap-south-1.rds.amazonaws.com",
         "PORT": "3306"
     },
-    "creditascampaignengine":  {
+    "creditascampaignengine": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "creditascampaignengine",
         "USER": "hypuatcollect",
@@ -22,7 +22,6 @@ DATABASES = {
         "PORT": "3306"
     },
 }
-
 
 HYPERION_LOCAL_DOMAIN = {
     "TEST_TCL": "https://3.111.61.77/",  # https://tclctpay.tatacapital.com/hyperioncampaigntooldashboard
@@ -37,10 +36,11 @@ HYPERION_LOCAL_DOMAIN = {
 }
 
 CAMPAIGN_THRESHOLDS_PER_MINUTE = {
-    "SMS":5,
-    "EMAIL":1,
-    "IVR":1,
-    "WHATSAPP":1
+    "SMS": 5,
+    "EMAIL": 1,
+    "IVR": 1,
+    "WHATSAPP": 1
 }
 
 JWT_ENCRYPTION_KEY = "3j2379yxb274g22bc40298294yx2388x223498x2x424"
+CENTRAL_TO_LOCAL_ENCRYPTION_KEY = "prodcenter$123@123 - Prod"
