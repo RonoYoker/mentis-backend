@@ -318,6 +318,8 @@ STATS_VIEW_BASE_QUERY = """SELECT
     cbc.ContentType AS Channel,
     cep.StartDateTime AS StartDate,
     cep.EndDateTime AS CompletionDate,
+    cbc.StartDateTime AS ScheduleStartDate,
+    cbc.EndDateTime AS ScheduleEndDate,
     IF(cbc.ContentType = 'SMS',
         (SELECT 
                 csc.Id
@@ -392,4 +394,4 @@ TEST_CAMPAIGN_QUERY_CONTACT_ALIAS_PATTERNS = ["as mobile", "as email"]
 
 CUSTOM_QUERY_FORBIDDEN_KEYWORDS = ["update", "delete", "alter", "drop", "modify"]
 
-TEST_CAMPAIGN_CONDITION = " AND cep.TestCampaign = 0"
+STATS_VIEW_QUERY_CONDITIONS = " AND cep.TestCampaign = 0 AND cep.Status != 'SCHEDULED'"

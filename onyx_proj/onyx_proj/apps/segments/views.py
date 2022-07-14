@@ -18,8 +18,8 @@ def save_custom_segment(request):
     data = dict(body=request_body, headers=request_headers)
     # query processor call
     response = custom_segment_processor(data)
-    # status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
-    status_code = http.HTTPStatus.OK
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    # status_code = http.HTTPStatus.OK
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
 
 

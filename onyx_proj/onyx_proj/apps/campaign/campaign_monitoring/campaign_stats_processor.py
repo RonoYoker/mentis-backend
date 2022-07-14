@@ -20,7 +20,7 @@ def get_filtered_campaign_stats(data) -> json:
 
     mapping_dict = create_filter_mapping_dict(filter_dict)
     query = add_filter_to_query_using_params(filter_dict, mapping_dict, project_id)
-    sql_query = query + TEST_CAMPAIGN_CONDITION
+    sql_query = query + STATS_VIEW_QUERY_CONDITIONS
     data = CED_CampaignExecutionProgress().execute_customised_query(sql_query)
     return dict(status_code=http.HTTPStatus.OK, data=data)
 
