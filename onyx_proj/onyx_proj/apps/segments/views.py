@@ -2,6 +2,7 @@ from django.shortcuts import HttpResponse
 from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import fetch_test_campaign_data
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import custom_segment_processor, fetch_headers_list, \
     update_custom_segment_process
+from onyx_proj.apps.segments.segments_processor.get_sample_data import *
 from onyx_proj.apps.segments.segments_processor.segment_fetcher import *
 from onyx_proj.apps.segments.segments_processor.segment_headers_processor import *
 from django.views.decorators.csrf import csrf_exempt
@@ -84,4 +85,15 @@ def get_test_campaign_data(request):
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
 
+
+@csrf_exempt
+@user_authentication
+def fetch_sample_data(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    data = dict(body=request_body, headers=request_headers)
+    # query processor call
+    response = get_sample_data_by_unique_id(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response["data"], default=str), status=status_code, content_type="application/json")
 

@@ -301,7 +301,7 @@ def query_validation_check(sql_query: str) -> dict:
     return dict(result=TAG_SUCCESS)
 
 
-def hyperion_local_rest_call(project_name: str, sql_query: str):
+def hyperion_local_rest_call(project_name: str, sql_query: str, limit=1):
     domain = settings.HYPERION_LOCAL_DOMAIN.get(project_name)
 
     if not domain:
@@ -313,7 +313,7 @@ def hyperion_local_rest_call(project_name: str, sql_query: str):
     request_response = json.loads(RequestClient(
         url=url,
         headers={"Content-Type": "application/json"},
-        request_body=json.dumps({"sql_query": sql_query}),
+        request_body=json.dumps({"sql_query": sql_query, "limit": limit}),
         request_type=TAG_REQUEST_POST).get_api_response())
 
     return request_response
