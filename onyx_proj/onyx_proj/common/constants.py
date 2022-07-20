@@ -17,6 +17,8 @@ class DashboardTab(Enum):
     ERROR = "SCHEDULER ERROR"
     DISPATCHED = "DISPATCHED"
     DEACTIVATED = "DEACTIVATED"
+    PARTIALLY_EXECUTED = "PARTIALLY_EXECUTED"
+    IN_PROGRESS = "IN_PROGRESS"
 
 
 TAG_DATE_FILTER = "DATE_FILTER"
@@ -51,7 +53,10 @@ SELECT
   cb.ApprovedBy as approved_by, 
   cep.Status as status,
   cssd.SchedulingStatus as scheduling_status,
-  cbc.IsActive as is_active
+  cbc.IsActive as is_active,
+  cb.IsRecurring as is_recurring,
+  cb.RecurringDetail as recurring_detail,
+  cb.CreationDate as creation_date
 FROM 
   CED_CampaignExecutionProgress cep 
   JOIN CED_CampaignSchedulingSegmentDetails cssd ON cep.CampaignId = cssd.Id 
