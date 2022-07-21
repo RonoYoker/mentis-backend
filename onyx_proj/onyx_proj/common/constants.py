@@ -376,6 +376,7 @@ STATS_VIEW_BASE_QUERY = """SELECT
     cb.Id AS CampaignId,
     cep.AcknowledgeCount AS AcknowledgeCount,
     cep.CallBackCount AS CallBackCount,
+    cep.DeliveredCount AS DeliveredCount,
     cep.TestCampaign AS TestCampaign,
     cep.Status AS Status,
     cep.Extra AS Extra,
@@ -399,4 +400,4 @@ TEST_CAMPAIGN_QUERY_CONTACT_ALIAS_PATTERNS = ["as mobile", "as email"]
 
 CUSTOM_QUERY_FORBIDDEN_KEYWORDS = ["update", "delete", "alter", "drop", "modify"]
 
-STATS_VIEW_QUERY_CONDITIONS = " AND cep.TestCampaign = 0 AND cep.Status != 'SCHEDULED'"
+STATS_VIEW_QUERY_CONDITIONS = " AND cep.TestCampaign = 0 AND cep.Status NOT IN ('SCHEDULED', 'ERROR', 'IN_QUEUE')"
