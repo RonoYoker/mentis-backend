@@ -23,7 +23,7 @@ def get_filtered_campaign_stats(data) -> json:
     sql_query = query + STATS_VIEW_QUERY_CONDITIONS
     data = CED_CampaignExecutionProgress().execute_customised_query(sql_query)
     last_refresh_time = get_last_refresh_time(data)
-    return dict(status_code=http.HTTPStatus.OK, data={"data": data, "last_refresh_time": last_refresh_time})
+    return dict(status_code=http.HTTPStatus.OK, data=data, last_refresh_time=last_refresh_time)
 
 
 def update_campaign_stats_to_central_db(data):
