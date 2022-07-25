@@ -22,3 +22,10 @@ def create_filter_mapping_dict(filter_dict: dict):
         return dict(column=STATS_HEADER_MAPPING.get(TAG_DEFAULT_VIEW),
                     condition=FILTER_BASED_CONDITIONS_MAPPING.get(TAG_DEFAULT_VIEW),
                     values={'value': str(datetime.now().date())})
+
+
+def get_last_refresh_time(data: list):
+    if len(data) <= 0:
+        return None
+
+    return data[0].get("LastRefreshTime")
