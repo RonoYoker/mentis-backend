@@ -32,7 +32,8 @@ HYPERION_LOCAL_DOMAIN = {
     "KOTAK_Ethera": "https://pay.kotak.com/",
     "TEST_RBL": "http://uat-pay.rblbank.com/",
     "TEST_PRL": "http://15.207.224.106/",
-    "TEST_ABL": "http://uatpay.axisbank.com/"
+    "TEST_ABL": "http://uatpay.axisbank.com/",
+    "TEST_PRL": "http://uatpay.piramalfinance.com/"
 }
 
 CAMPAIGN_THRESHOLDS_PER_MINUTE = {

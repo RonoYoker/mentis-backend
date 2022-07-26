@@ -97,7 +97,57 @@ def get_avail_count():
 
 
 
+from sqlalchemy import create_engine
+engine = create_engine("mysql://root:root@localhost/creditascampaignengine",
+                                     echo=True)
 
+from sqlalchemy.orm import sessionmaker
+Session = sessionmaker()
+Session.configure(bind= engine)
+session = Session()
+
+from sqlalchemy import Column,Integer,String, ForeignKey
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.automap import automap_base
+
+Base = automap_base()
+
+
+class CED_CampaignBuilderCampaign(Base):
+    __tablename__ = 'CED_CampaignBuilderCampaign'
+
+    id = Column("Id", Integer, primary_key=True)
+    campaign_builder_id = Column("CampaignBuilderId",String,ForeignKey("CED_CampaignBuilder.Id"))
+
+
+
+class CED_CampaignBuilder(Base):
+    __tablename__ = 'CED_CampaignBuilder'
+
+    id = Column("Id", Integer, primary_key=True)
+    name = Column("Name",String)
+    segment_id = Column("SegmentId",String,ForeignKey("CED_Segment.Id"))
+    campaign_builder_campaign_list = relationship(CED_CampaignBuilderCampaign,lazy="joined")
+
+
+
+class CED_Segment(Base):
+    __tablename__ = 'CED_Segment'
+
+    id = Column("Id",Integer,primary_key=True)
+    title = Column("Title",String)
+    project_id = Column("ProjectId",String)
+    campaigns = relationship(CED_CampaignBuilder,lazy="joined")
+
+Base.prepare()
+
+
+
+def temp(idx):
+
+    segment = session.query(CED_Segment).filter(CED_Segment.id == idx)
+    result = [{"seg_id":x.id , "camps": x.campaigns } for x  in segment]
+    print (result)
 
 
 

@@ -32,7 +32,8 @@ HYPERION_LOCAL_DOMAIN = {
     "TCL_Ethera": "http://m-prod-tatacapital-hyp-1407059969.ap-south-1.elb.amazonaws.com/",
     "KOTAK_Ethera": "https://pay.kotak.com/",
     "RBL_Ethera":"https://pay.rblbank.com/",
-    "CMD_Ethera": "http://m-prod-cmd-hyp-1732303524.ap-south-1.elb.amazonaws.com/"
+    "CMD_Ethera": "http://m-prod-cmd-hyp-1732303524.ap-south-1.elb.amazonaws.com/",
+    "PRL_Ethera": "http://pay.piramal.com/"
 }
 
 CAMPAIGN_THRESHOLDS_PER_MINUTE = {
