@@ -82,17 +82,29 @@ def find_banking_name_similarity(first_str, second_str):
             second_str_processed_tokens['multi'].append(token)
 
     if (len(first_str_processed_tokens['single']) > 0 or len(second_str_processed_tokens['single']) > 0) and len(first_str_processed_tokens['multi']) == 1 and len(second_str_processed_tokens['multi']) == 1:
-        first_str_combinations = ["".join(sorted(first_str_processed_tokens['single']))+"".join(sorted(first_str_processed_tokens['multi'])),"".join(sorted(first_str_processed_tokens['multi']))+"".join(sorted(first_str_processed_tokens['single']))]
-        second_str_combinations = ["".join(sorted(second_str_processed_tokens['single']))+"".join(sorted(second_str_processed_tokens['multi'])),"".join(sorted(second_str_processed_tokens['multi']))+"".join(sorted(second_str_processed_tokens['single']))]
 
-        for comb in first_str_combinations:
-            for comb1 in second_str_combinations:
-                if comb == comb1:
-                    return round((len(comb1) - len(max(first_str_processed_tokens['single'],second_str_processed_tokens['single'])))/len(comb1)*100,2)
 
-                bank_similar = find_banking_name_similarity(comb,comb1)
-                if bank_similar >= 75:
-                    return bank_similar
+        main_similarity = find_banking_name_similarity(first_str_processed_tokens['multi'][0],second_str_processed_tokens['multi'][0])
+
+        if main_similarity < 95:
+            #single tokens appended inside name on any side
+            first_str_combinations = ["".join(sorted(first_str_processed_tokens['single']))+"".join(sorted(first_str_processed_tokens['multi'])),"".join(sorted(first_str_processed_tokens['multi']))+"".join(sorted(first_str_processed_tokens['single']))]
+            second_str_combinations = ["".join(sorted(second_str_processed_tokens['single']))+"".join(sorted(second_str_processed_tokens['multi'])),"".join(sorted(second_str_processed_tokens['multi']))+"".join(sorted(second_str_processed_tokens['single']))]
+
+            comb_max_similarity = 0
+            for comb in first_str_combinations:
+                for comb1 in second_str_combinations:
+                    if comb == comb1:
+                        return round((len(comb1) - len(max(first_str_processed_tokens['single'],second_str_processed_tokens['single'])))/len(comb1)*100,2)
+
+                    bank_similar = find_banking_name_similarity(comb,comb1)
+                    if bank_similar > comb_max_similarity:
+                        comb_max_similarity = bank_similar
+
+
+
+            if abs(main_similarity - comb_max_similarity) < 10 :
+                return comb_max_similarity
 
 
 
