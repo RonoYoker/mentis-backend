@@ -77,7 +77,7 @@ COPY onyx_proj/config/nginx/uwsgi_params /etc/nginx/uwsgi_params
 COPY onyx_proj/config/nginx/uwsgi_params /etc/nginx/conf.d/uwsgi_params
 COPY onyx_proj/config/uwsgi/onyx_uwsgi.ini /etc/onyx_uwsgi.ini
 COPY onyx_proj/config/uwsgi/onyx.conf /etc/nginx/conf.d/onyx.conf
-# COPY flock_proj/config/newrelic/* /etc/newrelic/
+COPY onyx_proj/config/newrelic/* /etc/newrelic/
 
 
 

@@ -152,39 +152,39 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 log_format = f"[%(asctime)s] %(levelname)s filename: %(pathname)s method: %(funcName)s %(message)s"
 
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_loggers': False,
-#     'handlers': {
-#         'file': {
-#             'level': 'DEBUG',
-#             'class': 'logging.FileHandler',
-#             'filename': '/opt/logs/debug.log',
-#             'formatter': 'simple',
-#         },
-#         'file1': {
-#             'level': 'DEBUG',
-#             'class': 'logging.handlers.RotatingFileHandler',
-#             'filename': '/opt/logs/debug.log',
-#             'maxBytes': 15728640,  # 1024 * 1024 * 15B = 15MB
-#             'backupCount': 10,
-#             'formatter': 'verbose',
-#         },
-#
-#     },
-#     'loggers': {
-#         'apps': {
-#             'handlers': ['file1'],
-#             'level': 'DEBUG',
-#             'propagate': True,
-#         },
-#     },
-#     'formatters': {
-#         'verbose': {
-#             'format': log_format
-#         },
-#         'simple': {
-#             'format': log_format
-#         },
-#     },
-# }
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': '/opt/logs/debug.log',
+            'formatter': 'simple',
+        },
+        'file1': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/opt/logs/debug.log',
+            'maxBytes': 15728640,  # 1024 * 1024 * 15B = 15MB
+            'backupCount': 10,
+            'formatter': 'verbose',
+        },
+
+    },
+    'loggers': {
+        'apps': {
+            'handlers': ['file1'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+    'formatters': {
+        'verbose': {
+            'format': log_format
+        },
+        'simple': {
+            'format': log_format
+        },
+    },
+}
