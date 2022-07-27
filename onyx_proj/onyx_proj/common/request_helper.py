@@ -37,7 +37,7 @@ class RequestClient:
         encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(json.dumps(body))
         headers = {"Content-Type": "application/json"}
         try:
-            response = requests.post(api_url, data=encrypted_data, headers=headers)
+            response = requests.post(api_url, data=encrypted_data, headers=headers,verify=False)
             if response.status_code == 200:
                 encypted_data = response.text
                 encypted_data_dict = json.loads(encypted_data)
