@@ -6,6 +6,8 @@ from onyx_proj.apps.segments.segments_processor.get_sample_data import *
 from onyx_proj.apps.segments.segments_processor.segment_fetcher import *
 from onyx_proj.apps.segments.segments_processor.segment_headers_processor import *
 from django.views.decorators.csrf import csrf_exempt
+
+from onyx_proj.apps.segments.segments_processor.segment_processor import update_segment_count, trigger_update_segment_count
 from onyx_proj.common.decorators import *
 import json
 import http
@@ -85,6 +87,27 @@ def get_test_campaign_data(request):
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
 
+
+@csrf_exempt
+@user_authentication
+def update_segment_refresh_count(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    data = dict(body=request_body, headers=request_headers)
+    # update segment count and refresh date
+    response = update_segment_count(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+@csrf_exempt
+def segment_refresh_count(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    data = dict(body=request_body, headers=request_headers)
+    # call localdb api for segment refreshed count and will also provide
+    response = trigger_update_segment_count(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
 
 @csrf_exempt
 @user_authentication

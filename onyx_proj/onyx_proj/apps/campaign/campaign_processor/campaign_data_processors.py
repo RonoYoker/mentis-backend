@@ -270,7 +270,7 @@ def update_segment_count_and_status_for_campaign(request_data):
     campaign_id = data.get("campaign_id")
     segment_count = data.get("segment_count")
     status = data.get("status")
-
+    curr_date_time = datetime.datetime.utcnow()
     resp = {
         "upd_segment_table":False,
         "upd_sched_table":False,
@@ -290,8 +290,9 @@ def update_segment_count_and_status_for_campaign(request_data):
                     details_message="Invalid campaign_id")
 
     if segment_count is not None:
-        upd_resp = CEDSegment().update_segment_record_count(segment_count=segment_count,
-                                                            segment_unique_id=segment_unique_id)
+        upd_resp = CEDSegment().update_segment_record_count_refresh_date(segment_count=segment_count,
+                                                                            segment_unique_id=segment_unique_id,
+                                                                            refresh_date=curr_date_time)
         if upd_resp is not None and upd_resp.get("row_count",0) > 0:
             resp["upd_segment_table"] = True
 

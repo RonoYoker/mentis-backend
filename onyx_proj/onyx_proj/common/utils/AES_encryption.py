@@ -3,7 +3,7 @@ from Crypto.Cipher import AES
 import base64
 
 
-class encrypt_decrypt:
+class AesEncryptDecrypt:
     def __init__(self, key: str, mode: AES.MODE_ECB = AES.MODE_ECB, block_size: int = 16):
         self.key = self.setKey(key)
         self.mode = mode

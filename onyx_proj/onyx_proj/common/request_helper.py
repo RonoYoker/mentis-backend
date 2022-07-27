@@ -1,7 +1,13 @@
+import http
 import json
+import logging
+
 import requests
 from onyx_proj.common.constants import *
+from django.conf import settings
+from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 
+logger = logging.getLogger("apps")
 
 class RequestClient:
 
@@ -23,3 +29,26 @@ class RequestClient:
 
         unzipped_response = json.dumps(response_obj.json())
         return unzipped_response
+
+    @staticmethod
+    def post_local_api_request(body, bank, api_path):
+        # request send
+        api_url = f"{settings.HYPERION_LOCAL_DOMAIN[f'{bank}']}{api_path}"
+        encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(json.dumps(body))
+        headers = {"Content-Type": "application/json"}
+        try:
+            response = requests.post(api_url, data=encrypted_data, headers=headers)
+            if response.status_code == 200:
+                encypted_data = response.text
+                encypted_data_dict = json.loads(encypted_data)
+                decrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).decrypt(
+                    encypted_data_dict["data"])
+                resp = json.loads(decrypted_data)
+            else:
+                logger.debug(f"local api response code :: {response.status_code}")
+                return None
+            logger.debug(f"local api response :: {response}")
+        except Exception as e:
+            logger.debug(f"Unable to process localdb api, Exception message :: {e}")
+            return None
+        return resp

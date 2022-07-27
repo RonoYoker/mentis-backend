@@ -32,6 +32,8 @@ COMMUNICATION_SOURCE_LIST = ["SMS", "IVR", "EMAIL", "WHATSAPP"]
 
 CUSTOM_QUERY_EXECUTION_API_PATH = "hyperioncampaigntooldashboard/segment/customQueryExecution"
 
+REFRESH_COUNT_LOCAL_API_PATH = "hyperioncampaigntooldashboard/segment/localdb/triggerlambdaForSegmentRefreshCount"
+
 CUSTOM_TEST_QUERY_PARAMETERS = ["FirstName", "Mobile"]
 
 BASE_DASHBOARD_TAB_QUERY = """
@@ -69,6 +71,12 @@ WHERE
   AND s.ProjectId = '{project_id}'
   AND DATE(cbc.StartDateTime) >= DATE('{start_date}')
   AND DATE(cbc.StartDateTime) <= DATE('{end_date}')
+"""
+
+MIN_REFRESH_COUNT_DELAY=15
+
+SEGMENT_COUNT_QUERY = """
+SELECT s.*,NAME FROM CED_Projects p JOIN CED_Segment s on p.UniqueId = s.ProjectId WHERE s.UniqueId = '{unique_id}'
 """
 
 FIXED_HEADER_MAPPING_COLUMN_DETAILS = [
