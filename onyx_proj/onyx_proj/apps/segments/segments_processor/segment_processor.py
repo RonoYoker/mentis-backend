@@ -45,7 +45,7 @@ def trigger_update_segment_count(data):
     query = SEGMENT_COUNT_QUERY.format(unique_id=unique_id)
     logger.debug(f"request data query :: {query}")
     segs_data = CEDSegment().execute_customised_query(query)
-    if len(segs_data != 1):
+    if len(segs_data)!= 1:
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                     details_message="Segment data not found.",
                     data=data)
