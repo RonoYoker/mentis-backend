@@ -85,7 +85,7 @@ jobs:
                         TAG=$ECR_REPO_URL/$ECR_REPOSITORY:$IMAGE_TAG docker-compose --file $DOCKER_COMPOSE_FILE down
                         exit 1
                     fi
-            #TAG=$ECR_REPO_URL/$ECR_REPOSITORY:$IMAGE_TAG docker-compose --file $DOCKER_COMPOSE_FILE down
+            TAG=$ECR_REPO_URL/$ECR_REPOSITORY:$IMAGE_TAG docker-compose --file $DOCKER_COMPOSE_FILE down
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
