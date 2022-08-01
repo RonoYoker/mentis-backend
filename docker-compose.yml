@@ -1,0 +1,9 @@
+version: '3.3'
+services:
+    onyx:
+        command: /bin/bash -c "/usr/bin/supervisord -n -c /etc/supervisord.d/onyx_web_service.conf"
+        ports:
+            - '8080:80'
+        environment:
+            - CURR_ENV=prod
+        image: '$TAG'
