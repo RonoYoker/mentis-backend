@@ -334,6 +334,11 @@ def generate_test_query(sql_query: str, headers_list=None) -> dict:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Id missing.")
 
+    regexp = re.compile(r'as accountnumber', re.IGNORECASE)
+    if not regexp.search(sql_query):
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message=f"AccountNumber missing.")
+
     contact_found = False
     for alias_pattern in TAG_TEST_CAMPAIGN_QUERY_ALIAS_PATTERNS:
         pattern = re.compile(alias_pattern, re.IGNORECASE)

@@ -31,7 +31,6 @@ HYPERION_LOCAL_DOMAIN = {
     "TCL_Ethera": "http://m-prod-tatacapital-hyp-1407059969.ap-south-1.elb.amazonaws.com/",
     "KOTAK_Ethera": "https://pay.kotak.com/",
     "TEST_RBL": "http://uat-pay.rblbank.com/",
-    "TEST_PRL": "http://15.207.224.106/",
     "TEST_ABL": "http://uatpay.axisbank.com/",
     "TEST_PRL": "http://uatpay.piramalfinance.com/"
 }
