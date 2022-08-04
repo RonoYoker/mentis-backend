@@ -68,8 +68,11 @@ class CEDSegment:
         result = dict_fetch_query_all(self.curr,query=query)
         return result
 
-    def update_segment_record_count_refresh_date(self, segment_count: int,segment_unique_id: str, refresh_date):
-        return update_row(self.curr,self.table_name,{"UniqueId":segment_unique_id},{"Records":segment_count,"RefreshDate":refresh_date})
+    def update_segment_record_count_refresh_date(self, segment_count: int,segment_unique_id: str, refresh_date, refresh_status):
+        return update_row(self.curr,self.table_name,{"UniqueId":segment_unique_id},{"Records":segment_count, "RefreshDate":refresh_date, "RefreshStatus":refresh_status})
+
+    def update_segment_refresh_status(self, segment_unique_id: str, refresh_status: str):
+        return update_row(self.curr,self.table_name,{"UniqueId":segment_unique_id},{"RefreshStatus":refresh_status})
 
     def execute_customised_query(self, query):
         return dict_fetch_query_all(self.curr, query)

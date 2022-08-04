@@ -5,7 +5,7 @@ import logging
 
 
 from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, SEGMENT_COUNT_QUERY, MIN_REFRESH_COUNT_DELAY, \
-    REFRESH_COUNT_LOCAL_API_PATH
+    REFRESH_COUNT_LOCAL_API_PATH, SegmentRefreshStatus
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.models.CED_Segment_model import CEDSegment
 
@@ -23,7 +23,7 @@ def update_segment_count(data):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Missing parameter request body.")
 
-    update_resp = CEDSegment().update_segment_record_count_refresh_date(segment_count=segment_count, segment_unique_id=segment_unique_id,refresh_date=curr_date_time)
+    update_resp = CEDSegment().update_segment_record_count_refresh_date(segment_count=segment_count, segment_unique_id=segment_unique_id,refresh_date=curr_date_time,refresh_status=None)
     logger.debug(f"update_resp :: {update_resp}")
     if update_resp is not None and update_resp.get("row_count", 0) > 0:
         resp["update_segment_table"] = True
@@ -32,7 +32,6 @@ def update_segment_count(data):
 
 def trigger_update_segment_count(data):
     unique_id = data.get("body").get('unique_id')
-    sql_query = ""
     logger.debug(f"segment_unique_id :: {unique_id}")
     data = {
         "success": False
@@ -47,9 +46,11 @@ def trigger_update_segment_count(data):
     segs_data = CEDSegment().execute_customised_query(query)
     if len(segs_data)!= 1:
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
-                    details_message="Segment data not found.",
-                    data=data)
+                    details_message="Segment data not found.")
     seg_data = segs_data[0]
+    if seg_data.get('RefreshStatus') == SegmentRefreshStatus.PENDING.value:
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                    details_message="Request already under process.")
     data["records"] = seg_data.get('Records')
     data["refreshDate"] = seg_data.get('RefreshDate')
     sql_query =f"SELECT COUNT(*) AS row_count FROM ({seg_data.get('SqlQuery')}) derived_table"
@@ -57,6 +58,11 @@ def trigger_update_segment_count(data):
     if seg_data.get('RefreshDate') is not None and seg_data.get('RefreshDate')>delay_date_time:
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                     details_message="Segment count has been refreshed in last 15 minutes. Please try again after sometime.", data=data)
+    update_resp = CEDSegment().update_segment_refresh_status(segment_unique_id=unique_id, refresh_status=SegmentRefreshStatus.PENDING.value)
+    if update_resp is None:
+        logger.debug(f"refresh status didn't get updated in db :: {update_resp}")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Unable to process segment")
     body["unique_id"] = unique_id
     body["count_sql_query"] = sql_query
     logger.debug(f"segment count and refreshed date :: {data}")
@@ -65,6 +71,7 @@ def trigger_update_segment_count(data):
                     details_message="segment not found")
     resp = RequestClient.post_local_api_request(body, bank, REFRESH_COUNT_LOCAL_API_PATH)
     if resp is None:
+        logger.debug(f"not able to hit hyperionBackend api :: {resp}")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Unable to process segment")
     data['success'] = resp.get('success')

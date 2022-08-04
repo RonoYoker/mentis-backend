@@ -292,7 +292,7 @@ def update_segment_count_and_status_for_campaign(request_data):
     if segment_count is not None:
         upd_resp = CEDSegment().update_segment_record_count_refresh_date(segment_count=segment_count,
                                                                             segment_unique_id=segment_unique_id,
-                                                                            refresh_date=curr_date_time)
+                                                                            refresh_date=curr_date_time, refresh_status=None)
         if upd_resp is not None and upd_resp.get("row_count",0) > 0:
             resp["upd_segment_table"] = True
 
