@@ -168,7 +168,11 @@ def get_similarity(request):
         response = _get_similarity(input_name,primary_name)
 
 
-    return HttpResponse(json.dumps(response))
+    formatted_repsonse = {"success":True}
+    formatted_repsonse['score'] = 100 if response["match"]["case"] == "exact_match" else response["match"]["similarity_v2"]
+
+
+    return HttpResponse(json.dumps(formatted_repsonse))
 
 
 def _get_similarity(input_name,primary_name):
