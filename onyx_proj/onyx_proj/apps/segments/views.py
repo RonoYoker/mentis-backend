@@ -1,6 +1,8 @@
 import logging
 
-from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import fetch_test_campaign_data
+from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import fetch_test_campaign_data\
+from onyx_proj.apps.segments.custom_segments.custom_segment_processor import custom_segment_processor, fetch_headers_list, \
+    update_custom_segment_process
 from onyx_proj.apps.segments.segments_processor.get_sample_data import *
 from onyx_proj.apps.segments.segments_processor.segment_fetcher import *
 from onyx_proj.apps.segments.segments_processor.segment_headers_processor import *
