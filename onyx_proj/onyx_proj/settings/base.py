@@ -156,6 +156,11 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'DEBUG',
+            'formatter': 'verbose',
+        },
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
@@ -173,8 +178,13 @@ LOGGING = {
 
     },
     'loggers': {
+        'app': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
         'apps': {
-            'handlers': ['file1'],
+            'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': True,
         },
