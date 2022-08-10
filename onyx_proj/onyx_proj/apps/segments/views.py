@@ -1,12 +1,10 @@
-from django.shortcuts import HttpResponse
+import logging
+
 from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import fetch_test_campaign_data
-from onyx_proj.apps.segments.custom_segments.custom_segment_processor import custom_segment_processor, fetch_headers_list, \
-    update_custom_segment_process
 from onyx_proj.apps.segments.segments_processor.get_sample_data import *
 from onyx_proj.apps.segments.segments_processor.segment_fetcher import *
 from onyx_proj.apps.segments.segments_processor.segment_headers_processor import *
 from django.views.decorators.csrf import csrf_exempt
-
 from onyx_proj.apps.segments.segments_processor.segment_processor import update_segment_count, trigger_update_segment_count
 from onyx_proj.common.decorators import *
 import json
@@ -119,4 +117,19 @@ def fetch_sample_data(request):
     response = get_sample_data_by_unique_id(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response["data"], default=str), status=status_code, content_type="application/json")
-
+@csrf_exempt
+def segment_records_count(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    logging.debug(request.body)
+    request_headers = request.headers
+    data = dict(body=request_body, headers=request_headers)
+    # query processor call
+    body = data.get("body", {})
+    query_type = body.get("type", None)
+    if query_type == "custom_segment":
+        response = custom_segment_count(data)
+    elif query_type == "non_custom_segment":
+        response = non_custom_segment_count(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    # status_code = http.HTTPStatus.OK
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")

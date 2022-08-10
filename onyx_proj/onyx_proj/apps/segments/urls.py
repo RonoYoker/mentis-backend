@@ -10,5 +10,6 @@ urlpatterns = [
     path("update_custom_segment/", views.update_custom_segment),
     path("update_segment_refresh_count/", views.update_segment_refresh_count),
     path("segment_refresh_count/", views.segment_refresh_count),
-    path("get_sample_data/", views.fetch_sample_data)
+    path("get_sample_data/", views.fetch_sample_data),
+    path("segment_records_count/",views.segment_records_count)
 ]

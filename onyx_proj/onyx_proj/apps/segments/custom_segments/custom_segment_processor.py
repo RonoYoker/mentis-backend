@@ -367,3 +367,91 @@ def generate_test_query(sql_query: str, headers_list=None) -> dict:
     test_sql_query = "SELECT derived_table.*, @MOBILE_NUMBER as Mobile, @EMAIL_ID as Email FROM (" + sql_query + " LIMIT 1 ) derived_table"
 
     return dict(result=TAG_SUCCESS, query=test_sql_query)
+
+def custom_segment_count(request_data) -> json:
+    """
+    Function to validate custom segment query as per project.
+    parameters: request data
+    returns: json ({
+                        "status_code": 200/400,
+                        "data": {
+                            "isSaved": True/False,
+                            "result": (validation_failure/validation_success),
+                            "details_string": (return in case of validation_failure),
+                            "headers_list": [header1, header2, ...],
+                            "records": number of records returned for the segment query
+                            }
+                    })
+    """
+    body = request_data.get("body", {})
+    sql_query = body.get("sql_query", None)
+    project_name = body.get("project_name", None)
+
+    # check if request has data_id and project_id
+    # check if query is null
+    if sql_query is None or sql_query == "":
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Custom query cannot be null/empty.")
+
+    query_validation_response = query_validation_check(sql_query)
+
+    if query_validation_response.get("result") == TAG_FAILURE:
+        return query_validation_response
+
+    validation_response = hyperion_local_rest_call(project_name, sql_query)
+
+    if validation_response.get("result") == TAG_FAILURE:
+        return validation_response
+
+    total_records = validation_response.get("count", {})
+
+    if not total_records:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Query response data is empty/null.")
+    return dict(status_code=200, result=TAG_SUCCESS, data=total_records)
+
+def non_custom_segment_count(request_data) -> json:
+    # domain = settings.HYPERION_LOCAL_DOMAIN.get(project_name)
+    body = request_data.get("body", {})
+    title = body.get("title", None)
+    project_id = body.get("projectId", None)
+    include_all = body.get("includeAll", None)
+    filters = body.get("filters", None)
+    data_id = body.get("dataId", None)
+    headers = request_data.get("headers", {})
+    session_id = headers.get("X-AuthToken", None)
+
+    if title is None or project_id is None or include_all is None or filters is None or data_id is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Request body has missing fields.")
+    payload = {"title": title, "projectId": project_id, "includeAll": include_all, "filters": filters, "dataId": data_id}
+    validation_response = hyperion_rest_call(payload, session_id)
+
+    if validation_response.get("result") == TAG_FAILURE:
+        return validation_response
+
+    total_records = validation_response.get("count", {})
+
+    if not total_records:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Query response data is empty/null.")
+    return dict(status_code=200, result=TAG_SUCCESS, data=total_records)
+
+def hyperion_rest_call(payload: dict , session_id:str):
+    domain = "http://uatdev.hyperiontool.com/"
+
+    if not domain:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message=f"Hyperion central credentials not found")
+
+    url = domain + "hyperioncampaigntooldashboard/segment/recordcount"
+
+    request_response = json.loads(RequestClient(
+        url=url,
+        headers={"Content-Type": "application/json", "X-AuthToken": session_id},
+        request_body=json.dumps(payload),
+        request_type=TAG_REQUEST_POST).get_api_response())
+
+    return request_response
+
+
