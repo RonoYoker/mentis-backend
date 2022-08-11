@@ -2,6 +2,7 @@ from datetime import datetime
 import http
 import json
 import re
+import logging
 from onyx_proj.common.constants import *
 from onyx_proj.models.CED_Segment_model import *
 from onyx_proj.models.CED_Projects_model import *
@@ -11,6 +12,7 @@ from onyx_proj.apps.content.content_procesor import *
 import uuid
 from onyx_proj.common.request_helper import RequestClient
 from django.conf import settings
+logger = logging.getLogger("apps")
 
 
 def custom_segment_processor(request_data) -> json:
@@ -393,6 +395,10 @@ def custom_segment_count(request_data) -> json:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Custom query cannot be null/empty.")
 
+    if project_name is None or sql_query == "":
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="project name cannot be null/empty.")
+
     query_validation_response = query_validation_check(sql_query)
 
     if query_validation_response.get("result") == TAG_FAILURE:
@@ -408,7 +414,7 @@ def custom_segment_count(request_data) -> json:
     if not total_records:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Query response data is empty/null.")
-    return dict(status_code=200, result=TAG_SUCCESS, data=total_records)
+    return dict(status_code=200, result=TAG_SUCCESS, data={"count": total_records})
 
 def non_custom_segment_count(request_data) -> json:
     # domain = settings.HYPERION_LOCAL_DOMAIN.get(project_name)
@@ -425,8 +431,12 @@ def non_custom_segment_count(request_data) -> json:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Request body has missing fields.")
     payload = {"title": title, "projectId": project_id, "includeAll": include_all, "filters": filters, "dataId": data_id}
-    validation_response = hyperion_rest_call(payload, session_id)
-
+    request_type = TAG_REQUEST_POST
+    validation_response = RequestClient.central_api_request(json.dumps(payload), SEGMENT_RECORDS_COUNT_API_PATH, session_id, request_type)
+    if validation_response is None:
+        logger.debug(f"not able to hit hyperionCentral api ")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Unable to get the segment count")
     if validation_response.get("result") == TAG_FAILURE:
         return validation_response
 
@@ -435,23 +445,4 @@ def non_custom_segment_count(request_data) -> json:
     if not total_records:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Query response data is empty/null.")
-    return dict(status_code=200, result=TAG_SUCCESS, data=total_records)
-
-def hyperion_rest_call(payload: dict , session_id:str):
-    domain = "http://uatdev.hyperiontool.com/"
-
-    if not domain:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message=f"Hyperion central credentials not found")
-
-    url = domain + "hyperioncampaigntooldashboard/segment/recordcount"
-
-    request_response = json.loads(RequestClient(
-        url=url,
-        headers={"Content-Type": "application/json", "X-AuthToken": session_id},
-        request_body=json.dumps(payload),
-        request_type=TAG_REQUEST_POST).get_api_response())
-
-    return request_response
-
-
+    return dict(status_code=200, result=TAG_SUCCESS, data={"count": total_records})
