@@ -411,7 +411,7 @@ def custom_segment_count(request_data) -> json:
 
     total_records = validation_response.get("count", {})
 
-    if not total_records:
+    if total_records is {}:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Query response data is empty/null.")
     return dict(status_code=200, result=TAG_SUCCESS, data={"count": total_records})
@@ -442,7 +442,7 @@ def non_custom_segment_count(request_data) -> json:
 
     total_records = validation_response.get("count", {})
 
-    if not total_records:
+    if total_records is {}:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Query response data is empty/null.")
     return dict(status_code=200, result=TAG_SUCCESS, data={"count": total_records})
