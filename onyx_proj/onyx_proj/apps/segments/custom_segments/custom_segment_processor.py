@@ -395,7 +395,7 @@ def custom_segment_count(request_data) -> json:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Custom query cannot be null/empty.")
 
-    if project_name is None or sql_query == "":
+    if project_name is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="project name cannot be null/empty.")
 
@@ -404,14 +404,14 @@ def custom_segment_count(request_data) -> json:
     if query_validation_response.get("result") == TAG_FAILURE:
         return query_validation_response
 
-    validation_response = hyperion_local_rest_call(project_name, sql_query)
+    api_response = hyperion_local_rest_call(project_name, sql_query)
 
-    if validation_response.get("result") == TAG_FAILURE:
-        return validation_response
+    if api_response.get("result") == TAG_FAILURE:
+        return api_response
 
-    total_records = validation_response.get("count", {})
+    total_records = api_response.get("count", None)
 
-    if total_records is {}:
+    if total_records is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Query response data is empty/null.")
     return dict(status_code=200, result=TAG_SUCCESS, data={"count": total_records})
@@ -432,17 +432,17 @@ def non_custom_segment_count(request_data) -> json:
                     details_message="Request body has missing fields.")
     payload = {"title": title, "projectId": project_id, "includeAll": include_all, "filters": filters, "dataId": data_id}
     request_type = TAG_REQUEST_POST
-    validation_response = RequestClient.central_api_request(json.dumps(payload), SEGMENT_RECORDS_COUNT_API_PATH, session_id, request_type)
-    if validation_response is None:
+    api_response = RequestClient.central_api_request(json.dumps(payload), SEGMENT_RECORDS_COUNT_API_PATH, session_id, request_type)
+    if api_response is None:
         logger.debug(f"not able to hit hyperionCentral api ")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Unable to get the segment count")
-    if validation_response.get("result") == TAG_FAILURE:
-        return validation_response
+    if api_response.get("result") == TAG_FAILURE:
+        return api_response
 
-    total_records = validation_response.get("count", {})
+    total_records = api_response.get("count", None)
 
-    if total_records is {}:
+    if total_records is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Query response data is empty/null.")
     return dict(status_code=200, result=TAG_SUCCESS, data={"count": total_records})

@@ -54,15 +54,15 @@ class RequestClient:
         return resp
 
     @staticmethod
-    def central_api_request(body, api_path, session_id, request_type):
+    def central_api_request(body, api_path, session_id, request_type, exceed_limit=30):
         # request send
         api_url = f"{settings.HYPERION_CENTRAL_DOMAIN}{api_path}"
         headers = {"Content-Type": "application/json", "X-AuthToken": session_id}
         try:
             if request_type == TAG_REQUEST_POST:
-                response = requests.post(api_url, data=body, headers=headers, verify=False)
+                response = requests.post(api_url, data=body, headers=headers, verify=False, timeout=exceed_limit)
             elif request_type == TAG_REQUEST_GET:
-                response = requests.get(api_url, data=body, headers=headers, verify=False)
+                response = requests.get(api_url, params=body, headers=headers, verify=False, timeout=exceed_limit)
             if response.status_code == 200:
                 response_data = response.text
                 resp = json.loads(response_data)
