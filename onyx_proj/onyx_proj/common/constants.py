@@ -34,6 +34,8 @@ CUSTOM_QUERY_EXECUTION_API_PATH = "hyperioncampaigntooldashboard/segment/customQ
 
 REFRESH_COUNT_LOCAL_API_PATH = "hyperioncampaigntooldashboard/segment/localdb/triggerlambdaForSegmentRefreshCount"
 
+SEGMENT_RECORDS_COUNT_API_PATH = "hyperioncampaigntooldashboard/segment/recordcount"
+
 CUSTOM_TEST_QUERY_PARAMETERS = ["FirstName", "Mobile"]
 
 BASE_DASHBOARD_TAB_QUERY = """

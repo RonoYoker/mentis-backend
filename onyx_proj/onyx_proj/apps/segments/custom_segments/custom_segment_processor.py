@@ -2,6 +2,7 @@ from datetime import datetime
 import http
 import json
 import re
+import logging
 from onyx_proj.common.constants import *
 from onyx_proj.models.CED_Segment_model import *
 from onyx_proj.models.CED_Projects_model import *
@@ -11,6 +12,7 @@ from onyx_proj.apps.content.content_procesor import *
 import uuid
 from onyx_proj.common.request_helper import RequestClient
 from django.conf import settings
+logger = logging.getLogger("apps")
 
 
 def custom_segment_processor(request_data) -> json:
@@ -367,3 +369,80 @@ def generate_test_query(sql_query: str, headers_list=None) -> dict:
     test_sql_query = "SELECT derived_table.*, @MOBILE_NUMBER as Mobile, @EMAIL_ID as Email FROM (" + sql_query + " LIMIT 1 ) derived_table"
 
     return dict(result=TAG_SUCCESS, query=test_sql_query)
+
+def custom_segment_count(request_data) -> json:
+    """
+    Function to validate custom segment query as per project.
+    parameters: request data
+    returns: json ({
+                        "status_code": 200/400,
+                        "data": {
+                            "isSaved": True/False,
+                            "result": (validation_failure/validation_success),
+                            "details_string": (return in case of validation_failure),
+                            "headers_list": [header1, header2, ...],
+                            "records": number of records returned for the segment query
+                            }
+                    })
+    """
+    body = request_data.get("body", {})
+    sql_query = body.get("sql_query", None)
+    project_name = body.get("project_name", None)
+
+    # check if request has data_id and project_id
+    # check if query is null
+    if sql_query is None or sql_query == "":
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Custom query cannot be null/empty.")
+
+    if project_name is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="project name cannot be null/empty.")
+
+    query_validation_response = query_validation_check(sql_query)
+
+    if query_validation_response.get("result") == TAG_FAILURE:
+        return query_validation_response
+
+    api_response = hyperion_local_rest_call(project_name, sql_query)
+
+    if api_response.get("result") == TAG_FAILURE:
+        return api_response
+
+    total_records = api_response.get("count", None)
+
+    if total_records is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Query response data is empty/null.")
+    return dict(status_code=200, result=TAG_SUCCESS, data={"count": total_records})
+
+def non_custom_segment_count(request_data) -> json:
+    # domain = settings.HYPERION_LOCAL_DOMAIN.get(project_name)
+    body = request_data.get("body", {})
+    title = body.get("title", None)
+    project_id = body.get("projectId", None)
+    include_all = body.get("includeAll", None)
+    filters = body.get("filters", None)
+    data_id = body.get("dataId", None)
+    headers = request_data.get("headers", {})
+    session_id = headers.get("X-AuthToken", None)
+
+    if title is None or project_id is None or include_all is None or filters is None or data_id is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Request body has missing fields.")
+    payload = {"title": title, "projectId": project_id, "includeAll": include_all, "filters": filters, "dataId": data_id}
+    request_type = TAG_REQUEST_POST
+    api_response = RequestClient.central_api_request(json.dumps(payload), SEGMENT_RECORDS_COUNT_API_PATH, session_id, request_type)
+    if api_response is None:
+        logger.debug(f"not able to hit hyperionCentral api ")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Unable to get the segment count")
+    if api_response.get("result") == TAG_FAILURE:
+        return api_response
+
+    total_records = api_response.get("count", None)
+
+    if total_records is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Query response data is empty/null.")
+    return dict(status_code=200, result=TAG_SUCCESS, data={"count": total_records})
