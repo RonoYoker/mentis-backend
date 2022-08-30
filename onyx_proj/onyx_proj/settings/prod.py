@@ -40,7 +40,7 @@ CAMPAIGN_THRESHOLDS_PER_MINUTE = {
 
     "SMS":5000,
     "EMAIL":5000,
-    "IVR":2000,
+    "IVR":4000,
     "WHATSAPP":5000
 
 }
