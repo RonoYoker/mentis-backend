@@ -19,6 +19,8 @@ from onyx_proj.apps.slot_management.app_settings import SLOT_INTERVAL_MINUTES
 
 from django.conf import settings
 
+from onyx_proj.models.CED_UserSession_model import *
+
 logger = logging.getLogger("apps")
 
 
@@ -329,3 +331,46 @@ def validate_campaign(request_data):
     }
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                 data=resp)
+
+
+def filter_list(request, session_id):
+    start_time = request.get("start_time")
+    end_time = request.get("end_time")
+    tab_name = request.get("tab_name")
+    project_id = request.get("project_id")
+    segment_ids = request.get("segment_ids", [])
+
+    logger.debug(
+        f"start_time :: {start_time}, end_time :: {end_time}, tab_name :: {tab_name}, project_id :: {project_id}, segment_ids :: {segment_ids} ")
+
+    if start_time is None or end_time is None or tab_name is None or project_id is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid Input")
+
+    segment_filter_placeholder = ""
+    if len(segment_ids) > 0:
+        seg_ids_str = ",".join([f"'{idx}'" for idx in segment_ids])
+        segment_filter_placeholder = f" and cb.SegmentId in ( %s ) " % (seg_ids_str)
+
+    logger.debug(f" segment_filter_placeholder :: {segment_filter_placeholder}  ")
+
+    user = CEDUserSession().get_user_details(dict(SessionId=session_id))
+    logger.debug(f"user :: {user}")
+    created_by = user[0].get("UserName", None)
+    logger.debug(f"created_by :: {created_by}")
+
+    if tab_name == TabName.APPROVAL_PENDING.value:
+        filters = f" cb.Status = 'APPROVAL_PENDING' and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' and cs.ProjectId='{project_id}' {segment_filter_placeholder}"
+    elif tab_name == TabName.ALL.value:
+        filters = f" DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' and cs.ProjectId ='{project_id}' {segment_filter_placeholder} "
+    elif tab_name == TabName.MY_CAMPAIGN.value:
+        filters = f" cb.CreatedBy = '{created_by}' and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' and cs.ProjectId='{project_id}' {segment_filter_placeholder} "
+    else:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid Tab")
+
+    data = CED_CampaignBuilder().get_campaign_list(filters)
+    logger.debug(f"data :: {data}")
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                data=data)

@@ -10,6 +10,7 @@ from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import 
 from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import *
 from onyx_proj.apps.campaign.campaign_processor.campaign_content_processor import *
 from onyx_proj.apps.campaign.campaign_monitoring.campaign_stats_processor import *
+from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import *
 from django.views.decorators.csrf import csrf_exempt
 import json
 
@@ -185,3 +186,14 @@ def get_dashboard_tab_campaign_data(request):
     response = get_filtered_dashboard_tab_data(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+@user_authentication
+def fetch_lists(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    session_id = request_headers.get('X-Authtoken', '')
+    data = filter_list(request_body, session_id)
+    status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
