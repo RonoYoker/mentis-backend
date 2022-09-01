@@ -21,4 +21,3 @@ class CEDCampaignContentVariableMapping:
 
         return dict_fetch_all(cursor=self.curr, table_name=self.table_name, data_dict=params_dict,
                               select_args=headers_list)
-

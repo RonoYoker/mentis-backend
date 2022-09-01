@@ -22,7 +22,7 @@ class CEDSegment:
         else:
             return dict_fetch_all(self.curr, self.table_name, params_dict, order_args=[f"{order_by_field} DESC "])
 
-    def get_headers_for_custom_segment(self, params_dict: dict, headers_list="Extra") -> list:
+    def get_headers_for_custom_segment(self, params_dict: dict, headers_list=["Extra", "Type"]) -> list:
         """
         Member function to fetch headers for custom segment
         params_dict: dictionary with keys UniqueId (segment_id) and Title (segment_title) (Title is optional)
@@ -31,9 +31,6 @@ class CEDSegment:
 
         if not params_dict:
             return []
-
-        if headers_list == "Extra":
-            headers_list = [headers_list]
 
         return dict_fetch_all(cursor=self.curr, table_name=self.table_name, data_dict=params_dict,
                               select_args=headers_list)
@@ -67,6 +64,9 @@ class CEDSegment:
         query = """ Select did.ExpireDate from CED_Segment s join CED_DataID_Details did on did.UniqueId = s.DataId  where s.UniqueId = '%s' """ % (unique_id)
         result = dict_fetch_query_all(self.curr,query=query)
         return result
+
+    def update_segment_record_count(self, segment_count: int,segment_unique_id: str):
+        return update_row(self.curr,self.table_name,{"UniqueId":segment_unique_id},{"Records":segment_count})
 
     def update_segment_record_count_refresh_date(self, segment_count: int,segment_unique_id: str, refresh_date, refresh_status):
         return update_row(self.curr,self.table_name,{"UniqueId":segment_unique_id},{"Records":segment_count, "RefreshDate":refresh_date, "RefreshStatus":refresh_status})

@@ -119,6 +119,8 @@ def fetch_sample_data(request):
     response = get_sample_data_by_unique_id(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response["data"], default=str), status=status_code, content_type="application/json")
+
+
 @csrf_exempt
 def segment_records_count(request):
     request_body = json.loads(request.body.decode("utf-8"))

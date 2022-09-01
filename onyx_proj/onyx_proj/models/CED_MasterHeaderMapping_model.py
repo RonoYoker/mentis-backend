@@ -12,3 +12,4 @@ class CEDMasterHeaderMapping:
         Member function to fetch all available Master Header Mappings for the given project
         """
         return dict_fetch_all(self.curr, self.table_name, params_dict)
+
