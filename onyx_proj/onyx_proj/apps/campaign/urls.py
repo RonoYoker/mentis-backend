@@ -14,5 +14,5 @@ urlpatterns = [
     path("get_dashboard_tab_campaign_data/", views.get_dashboard_tab_campaign_data),
     path("get_campaign_monitoring_stats/", views.get_campaign_monitoring_stats),
     path("update_campaign_stats/", views.update_campaign_stats),
-    path("fetch_campaign_lists/", views.fetch_lists),
+    path("fetch_campaign_lists/", views.fetch_campaign_list)
 ]

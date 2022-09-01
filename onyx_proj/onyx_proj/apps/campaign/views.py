@@ -190,7 +190,7 @@ def get_dashboard_tab_campaign_data(request):
 
 @csrf_exempt
 @user_authentication
-def fetch_lists(request):
+def fetch_campaign_list(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
     session_id = request_headers.get('X-Authtoken', '')
