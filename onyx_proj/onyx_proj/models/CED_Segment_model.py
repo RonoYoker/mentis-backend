@@ -13,14 +13,9 @@ class CEDSegment:
                     "details_string": "check params dictionary"}
         return insert_single_row(self.curr, self.table_name, params_dict)
 
-    def get_all_custom_segments(self, params_dict: dict, order_by_field: str, limit=0) -> list:
-        if not params_dict:
-            return []
-        if limit != 0:
-            return dict_fetch_all(self.curr, self.table_name, params_dict, order_args=[f"{order_by_field} DESC "],
-                                  limit=limit)
-        else:
-            return dict_fetch_all(self.curr, self.table_name, params_dict, order_args=[f"{order_by_field} DESC "])
+    def get_all_custom_segments(self, filter, limit=0) -> list:
+        base_query = """SELECT ApprovedBy as approved_by,CreatedBy as created_by,CreationDate as creation_date,DataId as data_id,everScheduled as ever_scheduled,Id as id, IncludeAll as include_all, MappingId as mapping_id, Records as records, ProjectId as project_id,Records as records, RefreshDate as refresh_date,Status as status, Title as title, UniqueId as unique_id, UpdationDate as updation_date from CED_Segment where %s order by CreationDate""" % filter
+        return dict_fetch_query_all(self.curr, base_query)
 
     def get_headers_for_custom_segment(self, params_dict: dict, headers_list=["Extra", "Type"]) -> list:
         """

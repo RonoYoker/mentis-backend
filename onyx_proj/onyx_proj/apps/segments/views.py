@@ -29,9 +29,9 @@ def save_custom_segment(request):
 @csrf_exempt
 @user_authentication
 def get_all_segments(request):
-    data = json.loads(request.body.decode("utf-8"))
+    request_body = json.loads(request.body.decode("utf-8"))
     # custom segments fetch call
-    response = fetch_segments(data)
+    response = fetch_segments(request_body)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
 

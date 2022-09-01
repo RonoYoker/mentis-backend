@@ -18,21 +18,14 @@ def fetch_segments(data) -> json:
     mode = data.get("mode", None)
     project_id = data.get("project_id", None)
 
-    params_dict = {
-        "ProjectId": project_id,
-        "isActive": 1
-    }
-
     # check if request has data_id and project_id
     if project_id is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Missing parameters project_id/data_id in request body.")
 
-    if mode in [TAG_KEY_CUSTOM, TAG_KEY_DEFAULT]:
-        params_dict["Type"] = mode
-
+    filter = f" ProjectId='{project_id}' and isActive=1 and Status in ('APPROVED','APPROVAL_PENDING') "
     try:
-        db_res = CEDSegment().get_all_custom_segments(params_dict=params_dict, order_by_field="UpdationDate")
+        db_res = CEDSegment().get_all_custom_segments(filter)
     except Exception as ex:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Error while executing fetch query.",
