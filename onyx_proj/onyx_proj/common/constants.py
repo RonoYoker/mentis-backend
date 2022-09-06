@@ -422,3 +422,9 @@ STATS_VIEW_QUERY_CONDITIONS = " AND cep.TestCampaign = 0 AND cep.Status NOT IN (
 
 class SegmentRefreshStatus(Enum):
     PENDING= "PENDING"
+
+class CampaignTablesStatus(Enum):
+    SUCCESS = "SUCCESS"
+    SCHEDULED = "SCHEDULED"
+    ERROR = "ERROR"
+    APPROVED = "APPROVED"

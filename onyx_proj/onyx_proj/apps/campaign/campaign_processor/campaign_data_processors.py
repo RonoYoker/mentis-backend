@@ -4,7 +4,8 @@ import json
 import jwt
 import logging
 
-from onyx_proj.apps.campaign.campaign_processor.campaign_processor_helper import add_filter_to_query_using_params
+from onyx_proj.apps.campaign.campaign_processor.campaign_processor_helper import add_filter_to_query_using_params, \
+    add_status_to_query_using_params
 from onyx_proj.apps.campaign.campaign_processor import app_settings
 from onyx_proj.apps.campaign.campaign_processor.app_settings import SCHEDULED_CAMPAIGN_TIME_RANGE_UTC
 from onyx_proj.common.constants import *
@@ -187,9 +188,31 @@ def get_filtered_dashboard_tab_data(data) -> json:
     logger.debug(f"response data :: {final_camp_data}")
     return dict(status_code=http.HTTPStatus.OK, data=final_camp_data)
 
+def update_campaign_status(data) -> json:
+    """
+    Function to update campaign status in campaign tables in POST request body
+    """
+    logger.debug(f"request data :: {data}")
+    request_body = data.get("body", {})
+    cssd_id = request_body.get("campaign_id", None)
+    status = request_body.get("status", None)
+    error_msg = request_body.get("error_msg", None)
 
+    if cssd_id is None or status is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="mandatory params missing.")
 
+    if status is None or (status.lower() not in ["error", "success"]):
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="status type is not correct.")
 
+    query = add_status_to_query_using_params(cssd_id, status, error_msg)
+    logger.debug(f"request data query :: {query}")
+    if query == "":
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="did not get filtered query.")
+    CED_CampaignExecutionProgress().execute_customised_query(query)
+    return dict(status_code=http.HTTPStatus.OK)
 
 def get_filtered_recurring_date_time(data):
     start_date = data.get("body").get('start_date')
