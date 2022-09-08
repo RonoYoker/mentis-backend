@@ -1,8 +1,16 @@
+import http
+
 from django.shortcuts import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 import json
 import re
 import Levenshtein
 import difflib
+from jsonschema import validate
+
+
+from onyx_proj.apps.name_matcher.schemas import NAME_MATCHING_INPUT_SCHEMA
+
 
 def process_str_for_similarity_cmp(input_str, normalized=False, ignore_list=[], norm_seperator = ''):
     """ Processes string for similarity comparison , method cleans special characters and extra whitespaces
@@ -175,6 +183,31 @@ def get_similarity(request):
     return HttpResponse(json.dumps(formatted_repsonse))
 
 
+def get_similarity_v2(request):
+    input_name = request.GET.get('input_name')
+    primary_names = request.GET.get('primary_name')
+
+    resp = {
+        "success":False,
+        "data":[]
+        }
+
+    if input_name is None or primary_names is None:
+        response = {"success": False, "info": "mandatory params missing"}
+    else:
+        for name in primary_names:
+            response = _get_similarity(input_name,name)
+            score = 100 if response["match"]["case"] == "exact_match" else response["match"]["similarity_v2"]
+            resp["data"].append({
+                "input_name": input_name,
+                "primary_name": name,
+                "score": score
+            })
+    resp["success"] = True
+
+
+    return HttpResponse(json.dumps(resp))
+
 def _get_similarity(input_name,primary_name):
     process_applied = []
     #check exact match
@@ -319,3 +352,35 @@ def compare_with_payu(request):
 
 
     return HttpResponse(json.dumps({"data":rows}),content_type="application/json")
+
+@csrf_exempt
+def compare_names(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    try:
+        validate(instance=request_body, schema=NAME_MATCHING_INPUT_SCHEMA)
+    except Exception as e:
+        response = {"success": False, "err": str(e)}
+        return HttpResponse(json.dumps(response, default=str), status=http.HTTPStatus.BAD_REQUEST, content_type="application/json")
+    input_name = request_body['input_name']
+    primary_names = request_body['primary_names']
+
+    resp = {
+        "success":False,
+        "data":{
+            "input_name":input_name,
+            "match_results":[]
+        }
+    }
+
+    for name in primary_names:
+        resp["data"]["match_results"].append({
+            "primary_name":name,
+            "matched": find_name_similarity(input_name,name)
+        })
+    resp["success"] = True
+
+    return HttpResponse(json.dumps(resp),status=http.HTTPStatus.OK,content_type="application/json")
+
+
+def find_name_similarity(first_name,second_name):
+    pass
