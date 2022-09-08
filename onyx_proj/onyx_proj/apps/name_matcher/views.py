@@ -184,8 +184,9 @@ def get_similarity(request):
 
 
 def get_similarity_v2(request):
-    input_name = request.GET.get('input_name')
-    primary_names = request.GET.get('primary_name')
+    request_body = json.loads(request.body.decode("utf-8"))
+    input_name = request_body.get('input_name')
+    primary_names = request_body.get('primary_names')
 
     resp = {
         "success":False,
