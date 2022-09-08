@@ -182,7 +182,7 @@ def get_similarity(request):
 
     return HttpResponse(json.dumps(formatted_repsonse))
 
-
+@csrf_exempt
 def get_similarity_v2(request):
     request_body = json.loads(request.body.decode("utf-8"))
     input_name = request_body.get('input_name')
