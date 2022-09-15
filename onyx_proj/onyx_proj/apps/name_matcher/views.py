@@ -396,12 +396,12 @@ def find_name_similarity(first_name,second_name):
     #remove salutations
     exhaustive_salutations = ["Mr", "Mrs", "Dr", "S/O"]
     regex = r'\b(?:' + '|'.join(exhaustive_salutations) + ')\.?\s*'
-    first_name = {k: re.sub(regex, '', v) for k, v in first_name.items()}
-    second_name = {k: re.sub(regex, '', v)  for k, v in second_name.items()}
+    first_name = {k: re.sub(regex, '', v,flags=re.I) for k, v in first_name.items()}
+    second_name = {k: re.sub(regex, '', v,flags=re.I)  for k, v in second_name.items()}
 
     #remove specailchars and numbers
-    first_name = {k: re.sub('[^A-Za-z]+', '', v) for k, v in first_name.items()}
-    second_name = {k: re.sub('[^A-Za-z]+', '', v) for k, v in second_name.items()}
+    first_name = {k: re.sub('[^A-Za-z ]+', '', v) for k, v in first_name.items()}
+    second_name = {k: re.sub('[^A-Za-z ]+', '', v) for k, v in second_name.items()}
 
     first_name_tokens = []
     second_name_tokens = []
@@ -412,7 +412,7 @@ def find_name_similarity(first_name,second_name):
         second_name_tokens.extend(v.split(" "))
 
     #check if both names have same tokens
-    if "#".join(sorted(first_name_tokens)) == "#".join(sorted(second_name_tokens)):
+    if "".join(sorted(first_name_tokens)) == "".join(sorted(second_name_tokens)):
         return True
 
     token_matching_results={
