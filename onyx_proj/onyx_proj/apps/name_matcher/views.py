@@ -9,7 +9,7 @@ import difflib
 from jsonschema import validate
 
 
-from onyx_proj.apps.name_matcher.schemas import NAME_MATCHING_INPUT_SCHEMA
+from onyx_proj.apps.name_matcher.schemas import NAME_MATCHING_INPUT_SCHEMA, VALID_TOKEN_MATCHING_RESULT
 
 
 def process_str_for_similarity_cmp(input_str, normalized=False, ignore_list=[], norm_seperator = ''):
@@ -384,4 +384,79 @@ def compare_names(request):
 
 
 def find_name_similarity(first_name,second_name):
-    pass
+
+    # lower case applied
+    first_name = {k:v.lower() for k,v in first_name.items()}
+    second_name = {k:v.lower() for k,v in second_name.items()}
+
+    #whitespace removed
+    first_name = {k: v.strip() for k, v in first_name.items()}
+    second_name = {k: v.strip() for k, v in second_name.items()}
+
+    #remove salutations
+    exhaustive_salutations = ["Mr", "Mrs", "Dr", "S/O"]
+    regex = r'\b(?:' + '|'.join(exhaustive_salutations) + ')\.?\s*'
+    first_name = {k: re.sub(regex, '', v) for k, v in first_name.items()}
+    second_name = {k: re.sub(regex, '', v)  for k, v in second_name.items()}
+
+    #remove specailchars and numbers
+    first_name = {k: re.sub('[^A-Za-z]+', '', v) for k, v in first_name.items()}
+    second_name = {k: re.sub('[^A-Za-z]+', '', v) for k, v in second_name.items()}
+
+    first_name_tokens = []
+    second_name_tokens = []
+
+    for k,v in first_name.items():
+        first_name_tokens.extend(v.split(" "))
+    for k,v in second_name.items():
+        second_name_tokens.extend(v.split(" "))
+
+    #check if both names have same tokens
+    if "#".join(sorted(first_name_tokens)) == "#".join(sorted(second_name_tokens)):
+        return True
+
+    token_matching_results={
+        "fname":compare_tokens(first_name["fname"],second_name["fname"]),
+        "mname":compare_tokens(first_name["mname"],second_name["mname"]),
+        "lname":compare_tokens(first_name["lname"],second_name["lname"]),
+    }
+
+    for valid_seq in VALID_TOKEN_MATCHING_RESULT:
+        if(all(token_matching_results[k][v] for k,v in valid_seq.items())):
+            return True
+    return False
+
+
+def compare_tokens(first_name,second_name):
+
+    resp = {
+        "s_exact": False,         # single word exact match
+        "s_init": False,          # single word initials match
+        "missing": False,         # empty word
+        "m_exact":False,          # multiple words with atleast exaclty matching 1 word
+        "m_exact_init":False,     # multiple words with atleast exaclty matching 1 word and initials match of another word
+        "m_init": False           # multiple words with initials matching of atleast 1 word
+    }
+
+    if first_name == "" or second_name == "":
+        resp["missing"] = True
+        return resp
+
+    if len(first_name.split(" ")) == 1 and len(second_name.split(" ")) == 1:
+        if first_name == second_name:
+            resp["s_exact"] = True
+            return resp
+        if (len(first_name)==1 and str(second_name[0]) == first_name) or \
+            (len(second_name)==1 and str(first_name[0]) == second_name):
+            resp["s_init"] = True
+            return resp
+        return resp
+
+    first_name_tokens = first_name.split(" ")
+    second_name_tokens = second_name.split(" ")
+    if not set(first_name_tokens).isdisjoint(set(second_name_tokens)):
+        resp["m_exact"] = True
+        return resp
+
+    return resp
+
