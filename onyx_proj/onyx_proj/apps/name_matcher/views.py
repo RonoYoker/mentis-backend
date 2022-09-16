@@ -394,10 +394,16 @@ def find_name_similarity(first_name,second_name):
     second_name = {k: v.strip() for k, v in second_name.items()}
 
     #remove salutations
-    exhaustive_salutations = ["Mr", "Mrs", "Dr", "S/O"]
+    exhaustive_salutations = ["Mr", "Mrs", "Dr","Miss","Ms"]
     regex = r'\b(?:' + '|'.join(exhaustive_salutations) + ')\.?\s*'
     first_name = {k: re.sub(regex, '', v,flags=re.I) for k, v in first_name.items()}
     second_name = {k: re.sub(regex, '', v,flags=re.I)  for k, v in second_name.items()}
+
+    salutations = ["C/O","S/O","D/O"]
+    for salutation in salutations:
+        first_name = {k: re.sub(f'{salutation} [A-Za-z ]+', '', v,flags=re.I) for k, v in first_name.items()}
+        second_name = {k: re.sub(f'{salutation} [A-Za-z ]+', '', v,flags=re.I) for k, v in second_name.items()}
+
 
     #remove specailchars and numbers
     first_name = {k: re.sub('[^A-Za-z ]+', '', v) for k, v in first_name.items()}
@@ -415,11 +421,30 @@ def find_name_similarity(first_name,second_name):
     if "".join(sorted(first_name_tokens)) == "".join(sorted(second_name_tokens)):
         return True
 
+    #check if one name can be created using tokens of other
+    sorted_first_name = " ".join(sorted(first_name_tokens))
+    for token in second_name_tokens:
+        sorted_first_name = re.sub(f'{token}','',sorted_first_name,flags=re.I)
+    if sorted_first_name.strip()=="":
+        return True
+
+    sorted_sec_name = " ".join(sorted(second_name_tokens))
+    for token in first_name_tokens:
+        sorted_sec_name = re.sub(f'{token}', '', sorted_sec_name, flags=re.I)
+    if sorted_sec_name.strip() == "":
+        return True
+
+
     token_matching_results={
         "fname":compare_tokens(first_name["fname"],second_name["fname"]),
         "mname":compare_tokens(first_name["mname"],second_name["mname"]),
         "lname":compare_tokens(first_name["lname"],second_name["lname"]),
     }
+
+    #handle cases like raj kumar & Rajkumar
+    if "".join([first_name["fname"],first_name["mname"]]).lower() == second_name["fname"].lower() or \
+        "".join([second_name["fname"], second_name["mname"]]).lower() == first_name["fname"].lower():
+        token_matching_results["fname"]["s_exact"]= True
 
     for valid_seq in VALID_TOKEN_MATCHING_RESULT:
         if(all(token_matching_results[k][v] for k,v in valid_seq.items())):
