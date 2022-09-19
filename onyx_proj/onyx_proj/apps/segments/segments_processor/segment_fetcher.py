@@ -93,7 +93,6 @@ def get_segment_result(segment_data):
     else:
         segment_res = fetch_data_for_non_custom(segment_data)
 
-    print(segment_res)
     logger.debug(f"segment_result :: {segment_res}")
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=dict(data=segment_res[0]))
 
@@ -103,16 +102,22 @@ def fetch_data_for_non_custom(segment_data):
     segment_data[0]["original_record_count"] = 0
     segment_id = segment_data[0].get("unique_id")
 
-    filters = CEDSegmentFilter().get_segment_filter_data(segment_id)
+    filters_list = CEDSegmentFilter().get_segment_filter_data(segment_id)
 
-    if not filters:
+    if not filters_list or len(filters_list) == 0:
         return segment_data
 
-    filter_id = filters[0]["unique_id"]
-    in_values = CEDSegmentFilterValue().get_segment_filter_value_data(filter_id)
+    filter_data_list = []
+    for filter_element in filters_list:
+        filter_element["in_values"] = []
+        filter_data = CEDSegmentFilterValue().get_segment_filter_value_data_by_filter_id(filter_element.get("unique_id"))
+        if not filter_data or len(filter_data) == 0:
+            logger.debug(f"No filter data found for filter_id: {filter_element.get('unique_id')}")
+        elif len(filter_data) > 0:
+            filter_element["in_values"] = filter_data
+        filter_data_list.append(filter_element)
 
-    filters[0]["in_values"] = in_values
-    segment_data[0]["filters"] = filters
+    segment_data[0]["filters"] = filter_data_list
 
     logger.debug(f"segment_data :: {segment_data}")
     return segment_data
