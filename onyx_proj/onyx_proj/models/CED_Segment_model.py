@@ -71,3 +71,7 @@ class CEDSegment:
 
     def execute_customised_query(self, query):
         return dict_fetch_query_all(self.curr, query)
+
+    def get_segment_query(self, filters):
+        query = """select Id as id, Title as title, CreatedBy as created_by, ApprovedBy as approved_by, CreationDate as creation_date, RefreshDate as refresh_date, UniqueId as unique_id, Records as records, Status as status, Type as type, IncludeAll as include_all, IsActive as active FROM CED_Segment WHERE % s ORDER BY Id DESC """ % filters
+        return dict_fetch_query_all(self.curr, query)

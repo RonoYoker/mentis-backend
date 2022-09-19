@@ -8,6 +8,7 @@ from onyx_proj.apps.segments.segments_processor.segment_fetcher import *
 from onyx_proj.apps.segments.segments_processor.segment_headers_processor import *
 from django.views.decorators.csrf import csrf_exempt
 from onyx_proj.apps.segments.segments_processor.segment_processor import update_segment_count, trigger_update_segment_count
+from onyx_proj.apps.segments.segments_processor.segments_data_processors import *
 from onyx_proj.common.decorators import *
 import json
 import http
@@ -137,3 +138,14 @@ def segment_records_count(request):
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     # status_code = http.HTTPStatus.OK
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+@user_authentication
+def fetch_segments_list(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    session_id = request_headers.get('X-Authtoken', '')
+    data = get_segment_list(request_body, session_id)
+    status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")

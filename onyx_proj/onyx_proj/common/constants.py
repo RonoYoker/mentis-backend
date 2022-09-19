@@ -10,6 +10,11 @@ TAG_FAILURE = "FAILURE"
 TAG_REQUEST_POST = "POST"
 TAG_REQUEST_GET = "GET"
 
+class SegmentList(Enum):
+    ALL = "ALL"
+    PENDING_REQ = "PENDING_REQ"
+    MY_SEGMENT = "MY_SEGMENT"
+
 class TabName(Enum):
     ALL = "ALL"
     APPROVAL_PENDING = "APPROVAL_PENDING"
