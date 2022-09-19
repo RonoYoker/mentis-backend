@@ -157,62 +157,292 @@ import csv
 from onyx_proj.apps.segments.segments_processor.segment_headers_processor import *
 
 
-def test_fun():
-    # url2 = "http://onyxuat.hyperiontool.com/segments/header_compatibility_check/"
-    url2 = "http://127.0.0.1:8000/segments/header_compatibility_check/"
-    url = "http://uatdev.hyperiontool.com/hyperioncampaigntooldashboard/campaignbuilder/checksegmentcontentcompatible"
-    list1 = []
-    list2 = []
+# def test_fun():
+#     # url2 = "http://onyxuat.hyperiontool.com/segments/header_compatibility_check/"
+#     url2 = "http://127.0.0.1:8000/segments/header_compatibility_check/"
+#     url = "http://uatdev.hyperiontool.com/hyperioncampaigntooldashboard/campaignbuilder/checksegmentcontentcompatible"
+#     list1 = []
+#     list2 = []
+#
+#     with open('/home/siddharth/python/contentid.csv', 'r') as csv_file:
+#         csv_reader = csv.reader(csv_file)
+#         for x in csv_reader:
+#             x = x[0]
+#             list2.append(x)
+#
+#     with open('/home/siddharth/python/segmentid.csv') as csv_file:
+#         csv_reader = csv.reader(csv_file)
+#         for x in csv_reader:
+#             x = x[0]
+#             list1.append(x)
+#     length = len(list2)
+#     n = len(list1)
+#     listfinal = []
+#
+#     for i in range(n):
+#         listfinal.append([])
+#         listfinal[i].append(list1[i])
+#         listfinal[i].append(list2[i])
+#
+#     final_list = []
+#     final_list2 = []
+#
+#     for i in range(length):
+#         segment_id = list1[i]
+#         content_id = list2[i]
+#         dict1 = {"segmentId": segment_id,
+#                  "contentId": content_id,
+#                  "contentType": "EMAIL"}
+#         response1 = requests.post(url, data=json.dumps(dict1),
+#                                   headers={'X-AuthToken': '3081F968-2C1A-43CA-A8A5-0B57AF19DB47',
+#                                            'Content-Type': 'application/json'})
+#         listfinal[i].append(response1.text)
+#         print(response1.text)
+#
+#         dict2 = {"segment_id": segment_id,
+#                  "content_id": content_id,
+#                  "template_type": "EMAIL"}
+#         response = requests.post(url2, data=json.dumps(dict2),
+#                                  headers={'X-AuthToken': 'C7DE7DFF-8DE0-41C1-B72E-5C7805E9C5BF',
+#                                           'Content-Type': 'application/json'})
+#         listfinal[i].append(response.text)
+#         print(response.text)
+#         print(i+1)
+#
+#     with open('/home/siddharth/python/final2.csv', 'w') as csv_file:
+#         write = csv.writer(csv_file)
+#         write.writerows(listfinal)
 
-    with open('/home/siddharth/python/contentid.csv', 'r') as csv_file:
-        csv_reader = csv.reader(csv_file)
-        for x in csv_reader:
-            x = x[0]
-            list2.append(x)
-
-    with open('/home/siddharth/python/segmentid.csv') as csv_file:
-        csv_reader = csv.reader(csv_file)
-        for x in csv_reader:
-            x = x[0]
-            list1.append(x)
-    length = len(list2)
-    n = len(list1)
-    listfinal = []
-
-    for i in range(n):
-        listfinal.append([])
-        listfinal[i].append(list1[i])
-        listfinal[i].append(list2[i])
-
-    final_list = []
-    final_list2 = []
-
-    for i in range(length):
-        segment_id = list1[i]
-        content_id = list2[i]
-        dict1 = {"segmentId": segment_id,
-                 "contentId": content_id,
-                 "contentType": "EMAIL"}
-        response1 = requests.post(url, data=json.dumps(dict1),
-                                  headers={'X-AuthToken': '3081F968-2C1A-43CA-A8A5-0B57AF19DB47',
-                                           'Content-Type': 'application/json'})
-        listfinal[i].append(response1.text)
-        print(response1.text)
-
-        dict2 = {"segment_id": segment_id,
-                 "content_id": content_id,
-                 "template_type": "EMAIL"}
-        response = requests.post(url2, data=json.dumps(dict2),
-                                 headers={'X-AuthToken': 'C7DE7DFF-8DE0-41C1-B72E-5C7805E9C5BF',
-                                          'Content-Type': 'application/json'})
-        listfinal[i].append(response.text)
-        print(response.text)
-        print(i+1)
-
-    with open('/home/siddharth/python/final2.csv', 'w') as csv_file:
-        write = csv.writer(csv_file)
-        write.writerows(listfinal)
-
-test_fun()
+# test_fun()
 def connection_pooling_test():
     pass
+
+
+
+
+def check_name_similarity():
+    test_cases = [
+        {
+            "first": {
+                "fname":"Abhishek",
+                "mname":"",
+                "lname":"Gupta"
+            },
+            "second": {
+                "fname": "abhishek",
+                "mname": "",
+                "lname": "gupta"
+            }
+        },
+        {
+            "first": {
+                "fname": "Abhishek",
+                "mname": "",
+                "lname": "Gupta"
+            },
+            "second": {
+                "fname": "Mr. Abhishek",
+                "mname": "",
+                "lname": "Gupta"
+            }
+        },
+        {
+            "first": {
+                "fname": "gupta",
+                "mname": "",
+                "lname": "abhishek"
+            },
+            "second": {
+                "fname": "Mr. Abhishek",
+                "mname": "",
+                "lname": "Gupta"
+            }
+        },
+        {
+            "first": {
+                "fname": "Abhishek",
+                "mname": "",
+                "lname": "Gupta"
+            },
+            "second": {
+                "fname": "AbhishekGupta",
+                "mname": "",
+                "lname": ""
+            }
+        },
+        {
+            "first": {
+                "fname": "Karthik",
+                "mname": "",
+                "lname": "S"
+            },
+            "second": {
+                "fname": "karthik",
+                "mname": "",
+                "lname": "S .(2322223"
+            }
+        },
+        {
+            "first": {
+                "fname": "Abhishek",
+                "mname": "",
+                "lname": "Gupta"
+            },
+            "second": {
+                "fname": "Abhishek",
+                "mname": "kumar",
+                "lname": "Gupta"
+            }
+        },
+        {
+            "first": {
+                "fname": "Abhishek",
+                "mname": "kumar",
+                "lname": "Gupta"
+            },
+            "second": {
+                "fname": "Abhishek",
+                "mname": "Kumar",
+                "lname": "G"
+            }
+        },
+        {
+            "first": {
+                "fname": "Sooraj",
+                "mname": "Kumar",
+                "lname": ""
+            },
+            "second": {
+                "fname": "Soorajkumar S/O Shish",
+                "mname": "",
+                "lname": ""
+            }
+        },
+        {
+            "first": {
+                "fname": "Ankit",
+                "mname": "Kumar",
+                "lname": ""
+            },
+            "second": {
+                "fname": "AnkitKumarSoAjitKumar",
+                "mname": "",
+                "lname": ""
+            }
+        },
+        {
+            "first": {
+                "fname": "Abhishek",
+                "mname": "Kumar",
+                "lname": "Gupta"
+            },
+            "second": {
+                "fname": "Abhishek",
+                "mname": "kumar varma",
+                "lname": "gupta"
+            }
+        },
+        {
+            "first": {
+                "fname": "Abhishek",
+                "mname": "Gupta",
+                "lname": "Verma"
+            },
+            "second": {
+                "fname": "Abhishek",
+                "mname": "Kumar",
+                "lname": "Gupta"
+            }
+        },
+        {
+            "first": {
+                "fname": "Abhishek",
+                "mname": "",
+                "lname": "K"
+            },
+            "second": {
+                "fname": "Abhishek",
+                "mname": "G",
+                "lname": "K"
+            }
+        },
+        {
+            "first": {
+                "fname": "Abhishek",
+                "mname": "",
+                "lname": "Kumar"
+            },
+            "second": {
+                "fname": "Abhishek",
+                "mname": "",
+                "lname": "Gupta"
+            }
+        },
+        {
+            "first": {
+                "fname": "Abhishek",
+                "mname": "",
+                "lname": ""
+            },
+            "second": {
+                "fname": "Abhishek",
+                "mname": "Kumar",
+                "lname": "Gupta"
+            }
+        },
+        {
+            "first": {
+                "fname": "Abhishek",
+                "mname": "G",
+                "lname": "K"
+            },
+            "second": {
+                "fname": "Abhishek",
+                "mname": "Gupta",
+                "lname": "Kumar"
+            }
+        },
+        {
+            "first": {
+                "fname": "Abhishek",
+                "mname": "G",
+                "lname": "K"
+            },
+            "second": {
+                "fname": "Abhishek",
+                "mname": "Gupta",
+                "lname": "Kumar"
+            }
+        },
+        {
+            "first": {
+                "fname": "Abhishek",
+                "mname": "G",
+                "lname": "K"
+            },
+            "second": {
+                "fname": "Abhishek",
+                "mname": "Gupta",
+                "lname": "Kumar"
+            }
+        },
+        {
+            "first": {
+                "fname": "Raj",
+                "mname": "Kumar",
+                "lname": "L"
+            },
+            "second": {
+                "fname": "Rajkumar",
+                "mname": "",
+                "lname": "Lakshamanan"
+            }
+        }
+
+    ]
+    from onyx_proj.apps.name_matcher.views import find_name_similarity
+
+    for tc in test_cases :
+        result = find_name_similarity(tc["first"],tc["second"])
+        print(f"fname::{' '.join(list(tc['first'].values())) }  sname::{' '.join(list(tc['second'].values()))}  result::{result}")
+

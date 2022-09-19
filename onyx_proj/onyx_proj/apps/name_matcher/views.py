@@ -422,18 +422,22 @@ def find_name_similarity(first_name,second_name):
         return True
 
     #check if one name can be created using tokens of other
+    check_first = False
     sorted_first_name = " ".join(sorted(first_name_tokens))
     for token in second_name_tokens:
         sorted_first_name = re.sub(f'{token}','',sorted_first_name,flags=re.I)
     if sorted_first_name.strip()=="":
-        return True
+        check_first = True
 
+    check_sec = False
     sorted_sec_name = " ".join(sorted(second_name_tokens))
     for token in first_name_tokens:
         sorted_sec_name = re.sub(f'{token}', '', sorted_sec_name, flags=re.I)
     if sorted_sec_name.strip() == "":
-        return True
+        check_sec = True
 
+    if check_first and check_sec :
+        return True
 
     token_matching_results={
         "fname":compare_tokens(first_name["fname"],second_name["fname"]),
@@ -442,9 +446,11 @@ def find_name_similarity(first_name,second_name):
     }
 
     #handle cases like raj kumar & Rajkumar
-    if "".join([first_name["fname"],first_name["mname"]]).lower() == second_name["fname"].lower() or \
-        "".join([second_name["fname"], second_name["mname"]]).lower() == first_name["fname"].lower():
+    if "".join([first_name["fname"].strip(), first_name["mname"].strip()]).lower() == "".join(
+            [second_name["fname"].strip(), second_name["mname"].strip()]).lower():
         token_matching_results["fname"]["s_exact"]= True
+        token_matching_results["mname"]["s_exact"]= True
+
 
     for valid_seq in VALID_TOKEN_MATCHING_RESULT:
         if(all(token_matching_results[k][v] for k,v in valid_seq.items())):
@@ -462,6 +468,10 @@ def compare_tokens(first_name,second_name):
         "m_exact_init":False,     # multiple words with atleast exaclty matching 1 word and initials match of another word
         "m_init": False           # multiple words with initials matching of atleast 1 word
     }
+
+    if first_name == "" and second_name == "":
+        resp["s_exact"] = True
+        return resp
 
     if first_name == "" or second_name == "":
         resp["missing"] = True
