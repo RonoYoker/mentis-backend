@@ -8,7 +8,10 @@ def add_filter_to_query_using_params(filter_dict: dict, mapping_dict: dict, proj
     if not filter_dict or filter_dict.get("filter_type") in [TAG_CHANNEL_FILTER, TAG_CAMP_TITLE_FILTER, TAG_STATUS_FILTER, TAG_TEMPLATE_ID_FILTER]:
         query = STATS_VIEW_BASE_QUERY + f" WHERE s.ProjectId = '{project_id}' AND {mapping_dict.get('column')} {mapping_dict.get('condition')} {mapping_dict.get('values').get('value')}"
     elif filter_dict.get("filter_type") in [TAG_DATE_FILTER]:
-        query = STATS_VIEW_BASE_QUERY + f" WHERE s.ProjectId = '{project_id}' AND {mapping_dict.get('column')} {mapping_dict.get('condition').get('range').get('from')} '{mapping_dict.get('values').get('value').get('range').get('from_date')}'" \
+        if mapping_dict.get('values').get('value').get('range').get('from_date') == mapping_dict.get('values').get('value').get('range').get('to_date'):
+            query = STATS_VIEW_BASE_QUERY + f" WHERE s.ProjectId = '{project_id}' AND {mapping_dict.get('column')} = '{mapping_dict.get('values').get('value').get('range').get('from_date')}'"
+        else:
+            query = STATS_VIEW_BASE_QUERY + f" WHERE s.ProjectId = '{project_id}' AND {mapping_dict.get('column')} {mapping_dict.get('condition').get('range').get('from')} '{mapping_dict.get('values').get('value').get('range').get('from_date')}'" \
                                         f" AND {mapping_dict.get('column')} {mapping_dict.get('condition').get('range').get('to')} '{mapping_dict.get('values').get('value').get('range').get('to_date')}'"
     return query
 
