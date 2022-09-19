@@ -1,8 +1,11 @@
 import json
 import http
 from onyx_proj.common.constants import *
+from onyx_proj.models.CED_Segment_Filter_Value_model import *
+from onyx_proj.models.CED_Segment_Filter_model import *
 from onyx_proj.models.CED_Segment_model import *
 from onyx_proj.models.CED_CampaignBuilder import *
+logger = logging.getLogger("apps")
 
 
 def fetch_segments(data) -> json:
@@ -48,34 +51,68 @@ def fetch_segment_by_id(data) -> json:
     """
     segment_id = data.get("segment_id", None)
     campaign_id = data.get("campaign_id", None)
+    logger.debug(f"segment or campaign id: {segment_id} {campaign_id}")
 
     if not segment_id and not campaign_id:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Missing parameters segment_id/campaign_id in request body.")
 
-    db_res = None
+    segment_res = None
 
     if segment_id:
-        try:
-            db_res = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))
-        except Exception as ex:
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message=str(ex))
+        segment_data = CEDSegment().get_segment_data(segment_id)
 
-        if not db_res:
+        if not segment_data:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="No segment found for this segment_id.")
+                        details_message="Invalid segment id")
+
+        segment_res = get_segment_result(segment_data)
 
     elif campaign_id:
-        try:
-            segment_id = CED_CampaignBuilder().fetch_segment_id_from_campaign_id(campaign_id)[0][0]
-            db_res = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))
-        except Exception as ex:
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message=str(ex))
 
-        if not db_res:
+        segment_response = CED_CampaignBuilder().fetch_segment_id_from_campaign_id(campaign_id)
+        if not segment_response:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="No segment found for this campaign_id.")
 
-    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=dict(data=db_res))
+        segment_id = segment_response[0][0]
+        segment_data = CEDSegment().get_segment_data(segment_id)
+        segment_res = get_segment_result(segment_data)
+
+    logger.debug(f"segment result: {segment_res}")
+    return segment_res
+
+
+def get_segment_result(segment_data):
+    logger.debug(f"segment_id :: {segment_data}")
+    segment_type = segment_data[0].get("type")
+
+    if segment_type == "custom":
+        segment_res = segment_data
+
+    else:
+        segment_res = fetch_data_for_non_custom(segment_data)
+
+    print(segment_res)
+    logger.debug(f"segment_result :: {segment_res}")
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=dict(data=segment_res[0]))
+
+
+def fetch_data_for_non_custom(segment_data):
+    logger.debug(f"segment_id :: {segment_data}")
+    segment_data[0]["original_record_count"] = 0
+    segment_id = segment_data[0].get("unique_id")
+
+    filters = CEDSegmentFilter().get_segment_filter_data(segment_id)
+
+    if not filters:
+        return segment_data
+
+    filter_id = filters[0]["unique_id"]
+    in_values = CEDSegmentFilterValue().get_segment_filter_value_data(filter_id)
+
+    filters[0]["in_values"] = in_values
+    segment_data[0]["filters"] = filters
+
+    logger.debug(f"segment_data :: {segment_data}")
+    return segment_data
