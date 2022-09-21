@@ -1,3 +1,4 @@
+import copy
 import http
 
 from django.shortcuts import HttpResponse
@@ -363,20 +364,36 @@ def compare_names(request):
         response = {"success": False, "err": str(e)}
         return HttpResponse(json.dumps(response, default=str), status=http.HTTPStatus.BAD_REQUEST, content_type="application/json")
     input_name = request_body['input_name']
+    orig_inp_name = copy.deepcopy(input_name)
     primary_names = request_body['primary_names']
+    deducted_score = 0
+    if(request_body.get("mode","") == "unformatted"):
+        if input_name.get('fullname') is not None:
+            form_name,score = format_unformatted_name(input_name["fullname"])
+            deducted_score+=score
+            input_name = form_name
+
 
     resp = {
         "success":False,
         "data":{
-            "input_name":input_name,
+            "input_name":orig_inp_name,
             "match_results":[]
         }
     }
 
     for name in primary_names:
+        final_score = 100 - deducted_score
+        form_name = name
+        if (request_body.get("mode", "") == "unformatted"):
+            if name.get('fullname') is not None:
+                form_name, score = format_unformatted_name(name["fullname"])
+                final_score-= score
+        match_result,ded_score = find_name_similarity(input_name,form_name)
         resp["data"]["match_results"].append({
             "primary_name":name,
-            "matched": find_name_similarity(input_name,name)
+            "matched": match_result,
+            "score" : final_score - ded_score
         })
     resp["success"] = True
 
@@ -384,30 +401,55 @@ def compare_names(request):
 
 
 def find_name_similarity(first_name,second_name):
+    deducted_score = 0
 
     # lower case applied
-    first_name = {k:v.lower() for k,v in first_name.items()}
-    second_name = {k:v.lower() for k,v in second_name.items()}
+    final_first_name = {k:v.lower() for k,v in first_name.items()}
+    final_second_name = {k:v.lower() for k,v in second_name.items()}
+    first_name = final_first_name
+    second_name = final_second_name
 
     #whitespace removed
-    first_name = {k: v.strip() for k, v in first_name.items()}
-    second_name = {k: v.strip() for k, v in second_name.items()}
+    final_first_name = {k: v.strip() for k, v in first_name.items()}
+    final_second_name = {k: v.strip() for k, v in second_name.items()}
+    if "".join(list(first_name.values())) != "".join(list(final_first_name.values())) or "".join(
+            list(second_name.values())) != "".join(list(final_second_name.values())):
+        deducted_score+=2
+    first_name = final_first_name
+    second_name = final_second_name
+
 
     #remove salutations
     exhaustive_salutations = ["Mr", "Mrs", "Dr","Miss","Ms"]
     regex = r'\b(?:' + '|'.join(exhaustive_salutations) + ')\.?\s*'
-    first_name = {k: re.sub(regex, '', v,flags=re.I) for k, v in first_name.items()}
-    second_name = {k: re.sub(regex, '', v,flags=re.I)  for k, v in second_name.items()}
+    final_first_name = {k: re.sub(regex, '', v,flags=re.I) for k, v in first_name.items()}
+    final_second_name = {k: re.sub(regex, '', v,flags=re.I)  for k, v in second_name.items()}
+    if "".join(list(first_name.values())) != "".join(list(final_first_name.values())) or "".join(
+            list(second_name.values())) != "".join(list(final_second_name.values())):
+        deducted_score += 5
+    first_name = final_first_name
+    second_name = final_second_name
 
     salutations = ["C/O","S/O","D/O"]
     for salutation in salutations:
-        first_name = {k: re.sub(f'{salutation} [A-Za-z ]+', '', v,flags=re.I) for k, v in first_name.items()}
-        second_name = {k: re.sub(f'{salutation} [A-Za-z ]+', '', v,flags=re.I) for k, v in second_name.items()}
+        final_first_name = {k: re.sub(f'{salutation} [A-Za-z ]+', '', v,flags=re.I) for k, v in final_first_name.items()}
+        final_second_name = {k: re.sub(f'{salutation} [A-Za-z ]+', '', v,flags=re.I) for k, v in final_second_name.items()}
 
+    if "".join(list(first_name.values())) != "".join(list(final_first_name.values())) or "".join(
+            list(second_name.values())) != "".join(list(final_second_name.values())):
+        deducted_score += 10
+    first_name = final_first_name
+    second_name = final_second_name
 
     #remove specailchars and numbers
-    first_name = {k: re.sub('[^A-Za-z ]+', '', v) for k, v in first_name.items()}
-    second_name = {k: re.sub('[^A-Za-z ]+', '', v) for k, v in second_name.items()}
+    final_first_name = {k: re.sub('[^A-Za-z ]+', '', v) for k, v in first_name.items()}
+    final_second_name = {k: re.sub('[^A-Za-z ]+', '', v) for k, v in second_name.items()}
+    if "".join(list(first_name.values())) != "".join(list(final_first_name.values())) or "".join(
+            list(second_name.values())) != "".join(list(final_second_name.values())):
+        deducted_score += 5
+    first_name = final_first_name
+    second_name = final_second_name
+
 
     first_name_tokens = []
     second_name_tokens = []
@@ -419,7 +461,7 @@ def find_name_similarity(first_name,second_name):
 
     #check if both names have same tokens
     if "".join(sorted(first_name_tokens)) == "".join(sorted(second_name_tokens)):
-        return True
+        return True,deducted_score
 
     #check if one name can be created using tokens of other
     check_first = False
@@ -437,7 +479,8 @@ def find_name_similarity(first_name,second_name):
         check_sec = True
 
     if check_first and check_sec :
-        return True
+        deducted_score += 5
+        return True,deducted_score
 
     token_matching_results={
         "fname":compare_tokens(first_name["fname"],second_name["fname"]),
@@ -450,12 +493,15 @@ def find_name_similarity(first_name,second_name):
             [second_name["fname"].strip(), second_name["mname"].strip()]).lower():
         token_matching_results["fname"]["s_exact"]= True
         token_matching_results["mname"]["s_exact"]= True
+        deducted_score+=5
 
 
     for valid_seq in VALID_TOKEN_MATCHING_RESULT:
-        if(all(token_matching_results[k][v] for k,v in valid_seq.items())):
-            return True
-    return False
+        if(all(token_matching_results[k][v] for k,v in valid_seq["seq"].items())):
+            deducted_score += valid_seq["ded_score"]
+            return True,deducted_score
+    deducted_score += 30
+    return False,deducted_score
 
 
 def compare_tokens(first_name,second_name):
@@ -494,4 +540,35 @@ def compare_tokens(first_name,second_name):
         return resp
 
     return resp
+
+def format_unformatted_name(name):
+    deducted_score = 0
+
+    final_name = name.strip()
+    if final_name != name:
+        deducted_score+=2
+    name = final_name
+
+    exhaustive_salutations = ["Mr", "Mrs", "Dr", "Miss", "Ms"]
+    regex = r'\b(?:' + '|'.join(exhaustive_salutations) + ')\.?\s*'
+    final_name = re.sub(regex,'',name)
+    if final_name != name:
+        deducted_score+=5
+
+    name = final_name
+
+    salutations = ["C/O", "S/O", "D/O"]
+    for salutation in salutations:
+        final_name = re.sub(f'{salutation} [A-Za-z ]+','',final_name)
+
+    if final_name != name:
+        deducted_score+=5
+
+    name_tokens = final_name.split(" ")
+    formatted_name = {
+        "fname": name_tokens[0],
+        "mname": " ".join(name_tokens[1:-1]),
+        "lname": "" if len(name_tokens) <=1 else name_tokens[-1]
+    }
+    return formatted_name,deducted_score
 

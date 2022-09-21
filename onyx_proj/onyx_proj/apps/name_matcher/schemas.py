@@ -4,34 +4,35 @@ NAME_MATCHING_INPUT_SCHEMA = {
     "properties": {
         "input_name": {
             "type": "object",
-            "required": ["fname", "mname", "lname"],
             "properties": {
                 "fname": {"type": "string"},
                 "mname": {"type": "string"},
-                "lname": {"type": "string"}
+                "lname": {"type": "string"},
+                "fullname":{"type": "string"}
             }
         },
         "primary_names": {
             "type": "array",
             "items": {
                 "type": "object",
-                "required": ["fname", "mname", "lname"],
                 "properties": {
                     "fname": {"type": "string"},
                     "mname": {"type": "string"},
-                    "lname": {"type": "string"}
+                    "lname": {"type": "string"},
+                    "fullname": {"type": "string"}
                 }
             }
-        }
+        },
+        "mode": {"type":"string"}
     }
 }
 
 VALID_TOKEN_MATCHING_RESULT = [
-    {"fname": "s_exact", "mname": "missing", "lname": "s_exact"},
-    {"fname": "s_exact", "mname": "s_exact", "lname": "s_init"},
-    {"fname": "s_exact", "mname": "m_exact", "lname": "s_exact"},
-    {"fname": "s_exact", "mname": "missing", "lname": "s_init"},
-    {"fname": "s_exact", "mname": "s_init", "lname": "s_init"},
-    {"fname": "s_exact", "mname": "s_init", "lname": "s_exact"},
-    {"fname": "s_exact", "mname": "s_exact", "lname": "s_exact"},
+    {"seq":{"fname": "s_exact", "mname": "missing", "lname": "s_exact"},"ded_score":9},
+    {"seq":{"fname": "s_exact", "mname": "s_exact", "lname": "s_init"},"ded_score":7},
+    {"seq":{"fname": "s_exact", "mname": "m_exact", "lname": "s_exact"},"ded_score":7},
+    {"seq":{"fname": "s_exact", "mname": "missing", "lname": "s_init"},"ded_score":12},
+    {"seq":{"fname": "s_exact", "mname": "s_init", "lname": "s_init"},"ded_score":10},
+    {"seq":{"fname": "s_exact", "mname": "s_init", "lname": "s_exact"},"ded_score":7},
+    {"seq":{"fname": "s_exact", "mname": "s_exact", "lname": "s_exact"},"ded_score":5},
 ]
