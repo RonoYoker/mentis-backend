@@ -26,7 +26,11 @@ def fetch_segments(data) -> json:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Missing parameters project_id/data_id in request body.")
 
-    filter = f" ProjectId='{project_id}' and isActive=1 and Status in ('APPROVED','APPROVAL_PENDING') "
+    if mode:
+        filter = f" ProjectId='{project_id}' and Type='{mode}' and isActive=1 and Status in ('APPROVED','APPROVAL_PENDING') "
+    else:
+        filter = f" ProjectId='{project_id}' and isActive=1 and Status in ('APPROVED','APPROVAL_PENDING') "
+
     try:
         db_res = CEDSegment().get_all_custom_segments(filter)
     except Exception as ex:
