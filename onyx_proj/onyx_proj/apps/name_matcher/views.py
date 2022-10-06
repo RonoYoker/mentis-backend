@@ -305,9 +305,9 @@ def _get_similarity(input_name,primary_name):
 
 
 
-def compare_with_payu(request):
+def compare_with_payu():
     import csv
-    file = open('/tmp/ACQ_PaymentInfo.csv')
+    file = open('/tmp/ACQ_BankData.csv')
     csvreader = csv.reader(file)
     rows = []
     for row in csvreader:
@@ -335,10 +335,27 @@ def compare_with_payu(request):
                 final_data["name"] = input_name
 
                 #creditas similarty
-                similarity_check = _get_similarity(final_data["name"],final_data["beneficiary_name"])
-                #final_data["creditas_similarity"] = 100 if similarity_check["match"]["case"] == "exact_match" else similarity_check["match"]["similarity"]
-                final_data["creditas_similarity"] = 100 if similarity_check["match"]["case"] == "exact_match" else similarity_check["match"]["similarity_v2"]
+                # similarity_check = _get_similarity(final_data["name"],final_data["beneficiary_name"])
+                # #final_data["creditas_similarity"] = 100 if similarity_check["match"]["case"] == "exact_match" else similarity_check["match"]["similarity"]
+                # final_data["creditas_similarity"] = 100 if similarity_check["match"]["case"] == "exact_match" else similarity_check["match"]["similarity_v2"]
+                req = {
+                    "mode":"unformatted",
+                    "input_name":{
+                        "fullname": final_data["name"]
+                    },
+                    "primary_names":[
+                        {
+                        "fullname": final_data["beneficiary_name"]
+                }
+                    ]
+                }
+                resp = compare_names(req)
+                final_data["creditas_similarity"] = resp["data"]["match_results"][0]["score"]
+
                 final_data['diff'] = True if abs(final_data["creditas_similarity"] -final_data["payu_similarity"] > 20 ) else False
+                final_data["creditas_match"] = resp["data"]["match_results"][0]["matched"]
+                final_data["bank_status"] = row[15]
+
                 rows.append(final_data)
 
 
@@ -347,7 +364,7 @@ def compare_with_payu(request):
             continue
 
     with open('/tmp/payu.csv', 'w', encoding='UTF8', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=['name', 'beneficiary_name', 'payu_similarity', 'creditas_similarity' , 'diff'])
+        writer = csv.DictWriter(f, fieldnames=['name', 'beneficiary_name', 'payu_similarity', 'creditas_similarity' , 'diff','creditas_match','bank_status'])
         writer.writeheader()
         writer.writerows(rows)
 
@@ -393,7 +410,7 @@ def compare_names(request):
         resp["data"]["match_results"].append({
             "primary_name":name,
             "matched": match_result,
-            "score" : final_score - ded_score
+            "score" : min(100,(max(final_score - ded_score,0)))
         })
     resp["success"] = True
 
@@ -414,7 +431,7 @@ def find_name_similarity(first_name,second_name):
     final_second_name = {k: v.strip() for k, v in second_name.items()}
     if "".join(list(first_name.values())) != "".join(list(final_first_name.values())) or "".join(
             list(second_name.values())) != "".join(list(final_second_name.values())):
-        deducted_score+=2
+        deducted_score+=4
     first_name = final_first_name
     second_name = final_second_name
 
@@ -426,7 +443,7 @@ def find_name_similarity(first_name,second_name):
     final_second_name = {k: re.sub(regex, '', v,flags=re.I)  for k, v in second_name.items()}
     if "".join(list(first_name.values())) != "".join(list(final_first_name.values())) or "".join(
             list(second_name.values())) != "".join(list(final_second_name.values())):
-        deducted_score += 5
+        deducted_score += 7
     first_name = final_first_name
     second_name = final_second_name
 
@@ -437,7 +454,7 @@ def find_name_similarity(first_name,second_name):
 
     if "".join(list(first_name.values())) != "".join(list(final_first_name.values())) or "".join(
             list(second_name.values())) != "".join(list(final_second_name.values())):
-        deducted_score += 10
+        deducted_score += 15
     first_name = final_first_name
     second_name = final_second_name
 
@@ -453,34 +470,39 @@ def find_name_similarity(first_name,second_name):
 
     first_name_tokens = []
     second_name_tokens = []
+    first_name_chars = []
+    second_name_chars = []
 
     for k,v in first_name.items():
-        first_name_tokens.extend(v.split(" "))
+        first_name_tokens.extend([token for token in v.split(" ") if token!=""])
+        [first_name_chars.extend([char for char in token]) for token in v.split(" ")]
     for k,v in second_name.items():
-        second_name_tokens.extend(v.split(" "))
+        second_name_tokens.extend([token for token in v.split(" ") if token!=""])
+        [second_name_chars.extend([char for char in token]) for token in v.split(" ")]
+
 
     #check if both names have same tokens
     if "".join(sorted(first_name_tokens)) == "".join(sorted(second_name_tokens)):
         return True,deducted_score
 
-    #check if one name can be created using tokens of other
-    check_first = False
-    sorted_first_name = " ".join(sorted(first_name_tokens))
-    for token in second_name_tokens:
-        sorted_first_name = re.sub(f'{token}','',sorted_first_name,flags=re.I)
-    if sorted_first_name.strip()=="":
-        check_first = True
-
-    check_sec = False
-    sorted_sec_name = " ".join(sorted(second_name_tokens))
-    for token in first_name_tokens:
-        sorted_sec_name = re.sub(f'{token}', '', sorted_sec_name, flags=re.I)
-    if sorted_sec_name.strip() == "":
-        check_sec = True
-
-    if check_first and check_sec :
-        deducted_score += 5
+    #check if one permutation matches with spaces
+    first_name_perm = make_permutations(first_name_tokens,delimeter=" ")
+    second_name_perm = make_permutations(second_name_tokens,delimeter=" ")
+    matches_found = len(set(first_name_perm).intersection(set(second_name_perm)))
+    total_permutations = len(set(first_name_perm).union(second_name_perm))
+    deducted_score += 10*((total_permutations-matches_found)/total_permutations)
+    if matches_found >= 1:
         return True,deducted_score
+
+    # check if one permutation matches without spaces
+    first_name_perm = make_permutations(first_name_tokens, "")
+    second_name_perm = make_permutations(second_name_tokens, "")
+    matches_found = len(set(first_name_perm).intersection(set(second_name_perm)))
+    total_permutations = len(set(first_name_perm).union(second_name_perm))
+    deducted_score += 10* ((total_permutations - matches_found) / total_permutations)
+    if matches_found >= 1:
+        return True, deducted_score
+
 
     token_matching_results={
         "fname":compare_tokens(first_name["fname"],second_name["fname"]),
@@ -493,14 +515,32 @@ def find_name_similarity(first_name,second_name):
             [second_name["fname"].strip(), second_name["mname"].strip()]).lower():
         token_matching_results["fname"]["s_exact"]= True
         token_matching_results["mname"]["s_exact"]= True
-        deducted_score+=5
+        deducted_score+=10
 
 
     for valid_seq in VALID_TOKEN_MATCHING_RESULT:
         if(all(token_matching_results[k][v] for k,v in valid_seq["seq"].items())):
             deducted_score += valid_seq["ded_score"]
             return True,deducted_score
-    deducted_score += 30
+
+    deducted_score+=10  #because name also didn't matched through algo
+
+    total_score = 0
+    count=0
+    for fname in first_name_perm:
+        for sname in second_name_perm:
+            total_score+=find_string_similarity(fname,sname)*100
+            count+=1
+
+    first_name_perm = make_permutations(first_name_tokens," ")
+    second_name_perm = make_permutations(second_name_tokens," ")
+    for fname in first_name_perm:
+        for sname in second_name_perm:
+            total_score += find_string_similarity(fname, sname) * 100
+            count += 1
+
+    deducted_score += (70*(100-(total_score/count)))/100
+
     return False,deducted_score
 
 
@@ -572,3 +612,27 @@ def format_unformatted_name(name):
     }
     return formatted_name,deducted_score
 
+
+def make_permutations(strings = [],delimeter = ""):
+    if len(strings) == 0:
+        return []
+
+    if len(strings) == 1:
+        return strings
+
+    next_perm = []
+    final_results = []
+    for string in strings:
+        next_perm = copy.deepcopy(strings)
+        next_perm.remove(string)
+        next_permustations = make_permutations(next_perm,delimeter)
+        for perm in next_permustations:
+            final_results.append(f"{string}{delimeter}{perm}")
+    return list(set(final_results))
+
+
+def generate_ngrams(chars, chars_to_join):
+    output = []
+    for i in range(len(chars) - chars_to_join + 1):
+        output.append("".join(chars[i:i + chars_to_join]))
+    return output
