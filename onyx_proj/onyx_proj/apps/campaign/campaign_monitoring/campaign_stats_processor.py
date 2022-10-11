@@ -1,8 +1,11 @@
 import json
+import logging
 import http
 from onyx_proj.common.constants import *
 from onyx_proj.models.CED_CampaignExecutionProgress_model import *
 from onyx_proj.apps.campaign.campaign_monitoring.stats_process_helper import *
+
+logger = logging.getLogger("apps")
 
 
 def get_filtered_campaign_stats(data) -> json:
@@ -21,6 +24,7 @@ def get_filtered_campaign_stats(data) -> json:
     mapping_dict = create_filter_mapping_dict(filter_dict)
     query = add_filter_to_query_using_params(filter_dict, mapping_dict, project_id)
     sql_query = query + STATS_VIEW_QUERY_CONDITIONS
+    logger.info(f"sql_query: {sql_query}")
     data = CED_CampaignExecutionProgress().execute_customised_query(sql_query)
     last_refresh_time = get_last_refresh_time(data)
     return dict(status_code=http.HTTPStatus.OK, data=data, last_refresh_time=last_refresh_time)
