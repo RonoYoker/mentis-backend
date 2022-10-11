@@ -318,7 +318,7 @@ FIXED_HEADER_MAPPING_COLUMN_DETAILS = [
 
 
 STATS_HEADER_MAPPING = {
-    TAG_DATE_FILTER: "cssd.ScheduleDate",
+    TAG_DATE_FILTER: "DATE(cbc.StartDateTime)",
     TAG_CAMP_TITLE_FILTER: "cb.Name",
     TAG_STATUS_FILTER: "cep.Status",
     TAG_CHANNEL_FILTER: "cbc.ContentType",
