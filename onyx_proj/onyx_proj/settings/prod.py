@@ -32,7 +32,7 @@ HYPERION_LOCAL_DOMAIN = {
     "CMD_Ethera": "http://m-prod-cmd-hyp-1732303524.ap-south-1.elb.amazonaws.com/",
     "PRL_Ethera": "http://m-prod-piramal-hyp-357966708.ap-south-1.elb.amazonaws.com/",
     "IBL_AOC_Ethera": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
-    "VST_Ethera": "https://pay.vastuhfc.com/"
+    "VST_Ethera": "http://m-prod-hyp-1912236199.ap-south-1.elb.amazonaws.com/"
 }
 
 CAMPAIGN_THRESHOLDS_PER_MINUTE = {
