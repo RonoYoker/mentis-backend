@@ -14,3 +14,7 @@ class CEDUser:
         if not data_dict:
             return []
         return dict_fetch_all(cursor=self.curr, table_name=self.table_name, data_dict=data_dict)
+
+    def get_user_type(self, session_id):
+        query = f"select UserType as user_type from CED_User cu join CED_UserSession cus on cu.UserName = cus.UserName where cus.SessionId='{session_id}'"
+        return dict_fetch_query_all(self.curr, query)

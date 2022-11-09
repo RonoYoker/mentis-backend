@@ -32,3 +32,32 @@ def get_last_refresh_time(data: list):
         return None
 
     return data[0].get("LastRefreshTime")
+
+
+def get_last_refresh_time_v2(data: list):
+    if len(data) <= 0:
+        return None
+
+    return data[0].get("last_refresh_time")
+
+
+def add_filter_to_query_using_params_v2(filter_dict: dict, mapping_dict: dict):
+    query = ""
+    mapping_dict["values"]["value"] = "'" + str(mapping_dict["values"]["value"]) + "'" if mapping_dict.get(
+        'condition') == "=" else mapping_dict["values"]["value"]
+    if not filter_dict or filter_dict.get("filter_type") in [TAG_CAMP_TITLE_FILTER, TAG_TEMPLATE_ID_FILTER]:
+        query = STATS_VIEW_BASE_QUERY_FOR_ADMINS + f" WHERE {mapping_dict.get('column')} {mapping_dict.get('condition')} {mapping_dict.get('values').get('value')}"
+    elif filter_dict.get("filter_type") in [TAG_CHANNEL_FILTER, TAG_STATUS_FILTER]:
+        filter_dict.get("value")
+        filter_str = ",".join([f"'{idx}'" for idx in filter_dict.get("value")])
+        query = STATS_VIEW_BASE_QUERY_FOR_ADMINS + f" WHERE {mapping_dict.get('column')} {mapping_dict.get('condition')} (%s)" %filter_str
+
+    elif filter_dict.get("filter_type") in [TAG_DATE_FILTER]:
+        if mapping_dict.get('values').get('value').get('range').get('from_date') == mapping_dict.get('values').get(
+                'value').get('range').get('to_date'):
+            query = STATS_VIEW_BASE_QUERY_FOR_ADMINS + f" WHERE {mapping_dict.get('column')} = '{mapping_dict.get('values').get('value').get('range').get('from_date')}'"
+        else:
+            query = STATS_VIEW_BASE_QUERY_FOR_ADMINS + f" WHERE {mapping_dict.get('column')} {mapping_dict.get('condition').get('range').get('from')} '{mapping_dict.get('values').get('value').get('range').get('from_date')}'" \
+                                                       f" AND {mapping_dict.get('column')} {mapping_dict.get('condition').get('range').get('to')} '{mapping_dict.get('values').get('value').get('range').get('to_date')}'"
+    return query
+

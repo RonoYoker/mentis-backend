@@ -89,6 +89,10 @@ WHERE
 
 MIN_REFRESH_COUNT_DELAY=15
 
+MAX_CAMPAIGN_STATS_DURATION_DAYS = 7
+
+ADMIN = "admin"
+
 SEGMENT_COUNT_QUERY = """
 SELECT s.*,NAME FROM CED_Projects p JOIN CED_Segment s on p.UniqueId = s.ProjectId WHERE s.UniqueId = '{unique_id}'
 """
@@ -423,6 +427,90 @@ TEST_CAMPAIGN_QUERY_CONTACT_ALIAS_PATTERNS = ["as mobile", "as email"]
 CUSTOM_QUERY_FORBIDDEN_KEYWORDS = ["update", "delete", "alter", "drop", "modify"]
 
 STATS_VIEW_QUERY_CONDITIONS = " AND cep.TestCampaign = 0 AND cep.Status NOT IN ('SCHEDULED', 'ERROR', 'IN_QUEUE') ORDER BY cep.UpdationDate DESC"
+
+STATS_VIEW_QUERY_CONDITIONS_FOR_ADMINS = " AND cep.TestCampaign = 0 ORDER BY cep.UpdationDate DESC"
+
+STATS_VIEW_BASE_QUERY_FOR_ADMINS = """SELECT 
+    cb.Name AS campaign_title,
+    s.Title AS segment_title,
+    s.Id AS segment_id,
+    s.ProjectId as project_id,
+    cp.Name as project_name,
+    cp.BankName as bank_name,
+    cbc.ContentType AS channel,
+    cep.StartDateTime AS start_date,
+    cep.EndDateTime AS completion_date,
+    cbc.StartDateTime AS schedule_start_date,
+    cbc.EndDateTime AS schedule_end_date,
+    IF(cbc.ContentType = 'SMS',
+        (SELECT 
+                csc.Id
+            FROM
+                CED_CampaignSMSContent csc
+                    JOIN
+                CED_CampaignBuilderSMS cbs ON cbs.SmsId = csc.UniqueId
+                    JOIN
+                CED_CampaignBuilderCampaign cbc_ ON cbc_.UniqueId = cbs.MappingId
+            WHERE
+                cbc_.UniqueId = cbc.UniqueId),
+        IF(cbc.ContentType = 'IVR',
+            (SELECT 
+                    cic.Id
+                FROM
+                    CED_CampaignIvrContent cic
+                        JOIN
+                    CED_CampaignBuilderIVR cbi ON cbi.IvrId = cic.UniqueId
+                        JOIN
+                    CED_CampaignBuilderCampaign cbc_ ON cbc_.UniqueId = cbi.MappingId
+                WHERE
+                    cbc_.UniqueId = cbc.UniqueId),
+            IF(cbc.ContentType = 'EMAIL',
+                (SELECT 
+                        cec.Id
+                    FROM
+                        CED_CampaignEmailContent cec
+                            JOIN
+                        CED_CampaignBuilderEmail cbe ON cbe.EmailId = cec.UniqueId
+                            JOIN
+                        CED_CampaignBuilderCampaign cbc_ ON cbc_.UniqueId = cbe.MappingId
+                    WHERE
+                        cbc_.UniqueId = cbc.UniqueId),
+                IF(cbc.ContentType = 'WHATSAPP',
+                    (SELECT 
+                            cwc.Id
+                        FROM
+                            CED_CampaignWhatsAppContent cwc
+                                JOIN
+                            CED_CampaignBuilderWhatsApp cbw ON cbw.WhatsAppContentId = cwc.UniqueId
+                                JOIN
+                            CED_CampaignBuilderCampaign cbc_ ON cbc_.UniqueId = cbw.MappingId
+                        WHERE
+                            cbc_.UniqueId = cbc.UniqueId),
+                    NULL)))) AS template_id,
+    cssd.Records AS triggered_count,
+    cssd.CampaignServiceVendor AS service_provider,
+    cssd.Id AS campaign_instance_id,
+    cb.Id AS campaign_id,
+    cep.AcknowledgeCount AS acknowledge_count,
+    cep.CallBackCount AS call_back_count,
+    cep.DeliveredCount AS delivered_count,
+    cep.TestCampaign AS test_campaign,
+    cep.Status AS status,
+    cep.Extra AS extra,
+    cep.UpdationDate AS last_refresh_time
+FROM
+    CED_CampaignExecutionProgress cep
+        JOIN
+    CED_CampaignBuilderCampaign cbc ON cbc.UniqueId = cep.CampaignBuilderCampaignId
+        JOIN
+    CED_CampaignBuilder cb ON cb.UniqueId = cbc.CampaignBuilderId
+        JOIN
+    CED_Segment s ON s.UniqueId = cb.SegmentId
+        JOIN
+    CED_CampaignSchedulingSegmentDetails cssd ON cssd.CampaignId = cep.CampaignBuilderCampaignId 
+        JOIN
+    CED_Projects cp on cp.UniqueId = s.ProjectId
+"""
 
 
 class SegmentRefreshStatus(Enum):

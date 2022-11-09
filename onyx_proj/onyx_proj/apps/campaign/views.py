@@ -210,3 +210,16 @@ def fetch_campaign_list(request):
     data = filter_list(request_body, session_id)
     status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+@user_authentication
+def get_campaign_monitoring_stats_for_admins(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    session_id = request_headers.get('X-Authtoken', '')
+    data = dict(body=request_body, headers=session_id)
+    # query processor call
+    response = get_filtered_campaign_stats_v2(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
