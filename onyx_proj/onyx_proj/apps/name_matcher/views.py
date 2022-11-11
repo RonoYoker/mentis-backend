@@ -406,11 +406,12 @@ def compare_names(request):
             if name.get('fullname') is not None:
                 form_name, score = format_unformatted_name(name["fullname"])
                 final_score-= score
-        match_result,ded_score = find_name_similarity(input_name,form_name)
+        name_match_resp = find_name_similarity(input_name,form_name)
         resp["data"]["match_results"].append({
             "primary_name":name,
-            "matched": match_result,
-            "score" : min(100,(max(final_score - ded_score,0)))
+            "matched": name_match_resp["match_result"],
+            "score" : min(100,(max(final_score - name_match_resp["ded_score"],0))),
+            "exact_match": name_match_resp["exact_match"]
         })
     resp["success"] = True
 
@@ -483,7 +484,8 @@ def find_name_similarity(first_name,second_name):
 
     #check if both names have same tokens
     if "".join(sorted(first_name_tokens)) == "".join(sorted(second_name_tokens)):
-        return True,deducted_score
+        return {"match_result":True,"ded_score":deducted_score,"exact_match":True}
+
 
     #check if one permutation matches with spaces
     first_name_perm = make_permutations(first_name_tokens,delimeter=" ")
@@ -492,7 +494,7 @@ def find_name_similarity(first_name,second_name):
     total_permutations = len(set(first_name_perm).union(second_name_perm))
     deducted_score += 10*((total_permutations-matches_found)/total_permutations)
     if matches_found >= 1:
-        return True,deducted_score
+        return {"match_result":True,"ded_score":deducted_score,"exact_match":False}
 
     # check if one permutation matches without spaces
     first_name_perm = make_permutations(first_name_tokens, "")
@@ -501,7 +503,16 @@ def find_name_similarity(first_name,second_name):
     total_permutations = len(set(first_name_perm).union(second_name_perm))
     deducted_score += 10* ((total_permutations - matches_found) / total_permutations)
     if matches_found >= 1:
-        return True, deducted_score
+        return {"match_result":True,"ded_score":deducted_score,"exact_match":False}
+
+    # checking if a name is subset of other for len > 3
+    if len(set(first_name_tokens).difference(set(second_name_tokens))) == 0 and len(second_name_tokens) >=3 and len(set(second_name_tokens).difference(set(first_name_tokens))) <=1:
+        deducted_score += 20*(len(set(second_name_tokens).difference(set(first_name_tokens)))/len(first_name_tokens))
+        return {"match_result":True,"ded_score":deducted_score,"exact_match":False}
+    if len(set(second_name_tokens).difference(set(first_name_tokens))) == 0 and len(first_name_tokens) >= 3 and len(set(first_name_tokens).difference(set(second_name_tokens))) <=1:
+        deducted_score += 20 * (
+                    len(set(first_name_tokens).difference(set(second_name_tokens))) / len(second_name_tokens))
+        return {"match_result":True,"ded_score":deducted_score,"exact_match":False}
 
 
     token_matching_results={
@@ -521,7 +532,7 @@ def find_name_similarity(first_name,second_name):
     for valid_seq in VALID_TOKEN_MATCHING_RESULT:
         if(all(token_matching_results[k][v] for k,v in valid_seq["seq"].items())):
             deducted_score += valid_seq["ded_score"]
-            return True,deducted_score
+            return {"match_result": True, "ded_score": deducted_score, "exact_match": False}
 
     deducted_score+=10  #because name also didn't matched through algo
 
@@ -541,7 +552,7 @@ def find_name_similarity(first_name,second_name):
 
     deducted_score += (70*(100-(total_score/count)))/100
 
-    return False,deducted_score
+    return {"match_result": False, "ded_score": deducted_score, "exact_match": False}
 
 
 def compare_tokens(first_name,second_name):
@@ -552,7 +563,7 @@ def compare_tokens(first_name,second_name):
         "missing": False,         # empty word
         "m_exact":False,          # multiple words with atleast exaclty matching 1 word
         "m_exact_init":False,     # multiple words with atleast exaclty matching 1 word and initials match of another word
-        "m_init": False           # multiple words with initials matching of atleast 1 word
+        "m_init": False          # multiple words with initials matching of atleast 1 word
     }
 
     if first_name == "" and second_name == "":

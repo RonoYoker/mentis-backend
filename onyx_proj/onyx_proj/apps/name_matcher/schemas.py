@@ -29,6 +29,7 @@ NAME_MATCHING_INPUT_SCHEMA = {
 
 VALID_TOKEN_MATCHING_RESULT = [
     {"seq":{"fname": "s_exact", "mname": "missing", "lname": "s_exact"},"ded_score":9},
+    {"seq":{"fname": "s_exact", "mname": "s_exact", "lname": "missing"},"ded_score":7},
     {"seq":{"fname": "s_exact", "mname": "s_exact", "lname": "s_init"},"ded_score":7},
     {"seq":{"fname": "s_exact", "mname": "m_exact", "lname": "s_exact"},"ded_score":7},
     {"seq":{"fname": "s_exact", "mname": "missing", "lname": "s_init"},"ded_score":12},
