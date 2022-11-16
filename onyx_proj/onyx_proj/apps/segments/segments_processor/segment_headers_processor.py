@@ -86,29 +86,34 @@ def check_headers_compatibility_with_content_template(request_data) -> json:
 
     if segment_data[0]["Type"] is None:
 
-        sql_query = (segment_data[0]["SqlQuery"])
-        project_id = segment_data[0]["ProjectId"]
-        project_data = CED_Projects().get_active_project_id_entity(project_id)
-        logger.debug(f"sql_query :: {sql_query}, project_id :: {project_id}, project_data :: {project_data}")
-        if not project_data:
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Bank is no longer active or deleted")
-
-        project_name = project_data.get('Name')
-        logger.debug(f"project_name :: {project_name}")
-        sql_query_data = hyperion_local_rest_call(project_name, sql_query)
-        logger.debug(f"sql_query_data :: {sql_query_data}")
-
-        if not sql_query_data or sql_query_data["result"] == "FAILURE" or not sql_query_data["data"]:
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Segment is empty")
-
-        sql_query_dict = sql_query_data["data"][0]
-        logger.debug(f"sql_query_dict :: {sql_query_dict}")
         sql_query_headers = []
-        for key in sql_query_dict.keys():
-            sql_query_headers.append(key.lower())
-        logger.debug(f"sql_query_headers :: {sql_query_headers}")
+        if segment_data[0]["Extra"] is None:
+            sql_query = (segment_data[0]["SqlQuery"])
+            project_id = segment_data[0]["ProjectId"]
+            project_data = CED_Projects().get_active_project_id_entity(project_id)
+            logger.debug(f"sql_query :: {sql_query}, project_id :: {project_id}, project_data :: {project_data}")
+            if not project_data:
+                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                            details_message="Bank is no longer active or deleted")
+
+            project_name = project_data.get("Name")
+            logger.debug(f"project_name :: {project_name}")
+            sql_query_data = hyperion_local_rest_call(project_name, sql_query)
+            logger.debug(f"sql_query_data :: {sql_query_data}")
+
+            if not sql_query_data or sql_query_data["result"] == "FAILURE" or not sql_query_data["data"]:
+                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                            details_message="Segment is empty")
+
+            sql_query_dict = sql_query_data["data"][0]
+            logger.debug(f"sql_query_dict :: {sql_query_dict}")
+            sql_query_headers = []
+            for key in sql_query_dict.keys():
+                sql_query_headers.append(key.lower())
+            logger.debug(f"sql_query_headers :: {sql_query_headers}")
+
+        else:
+            sql_query_headers = get_headers_list_from_extra(segment_data)
 
         flag = all(x in sql_query_headers for x in columns_list)
         if flag is False:
@@ -123,16 +128,10 @@ def check_headers_compatibility_with_content_template(request_data) -> json:
                     details_message="Mapping not found")
 
     else:
-        headers_list_extracted = []
-        headers_list = json.loads(segment_data[0].get("Extra"))
-        headers_list = headers_list.get("headers_list", [])
+        headers_list = get_headers_list_from_extra(segment_data)
         if not headers_list:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message=f"Headers list empty for the given segment_id: {segment_id}.")
-        for ele in headers_list:
-            headers_list_extracted.append(ele.get("headerName").lower())
-        headers_list = [x.lower() for x in headers_list_extracted]
-        logger.debug(f"headers_list for custom:: {headers_list}")
 
     flag = all(x in headers_list for x in columns_list)
     if flag is False:
@@ -170,6 +169,19 @@ def get_headers_list_for_non_custom(segment_data):
     headers_list = list(set(master_headers_list) | set(fixed_headers_list))
     logger.debug(f"headers_list :: {headers_list}")
     return headers_list
+
+
+def get_headers_list_from_extra(segment_data):
+    headers_list_extracted = []
+    headers_list = json.loads(segment_data[0].get("Extra"))
+    headers_list = headers_list.get("headers_list", [])
+    if not headers_list:
+        return []
+    for ele in headers_list:
+        headers_list_extracted.append(ele.get("headerName").lower())
+    headers_list = [x.lower() for x in headers_list_extracted]
+    logger.debug(f"headers_list for custom:: {headers_list}")
+    return headers_list_extracted
 
 
 def check_template_in_content_table(content_id, template_type):
