@@ -7,8 +7,8 @@ class CED_CampaignExecutionProgress:
         self.table_name = "CED_CampaignExecutionProgress"
         self.curr = mysql_connect(self.database)
 
-    def update_campaign_status(self, status: str,campaign_id: int):
-        return update_row(self.curr,self.table_name,{"CampaignId":campaign_id},{"Status":status})
+    def update_campaign_status(self, status: str,campaign_id: int, error_msg=None):
+        return update_row(self.curr,self.table_name,{"CampaignId":campaign_id},{"Status":status,"ErrorMsg":error_msg})
 
     def execute_customised_query(self, query):
         return dict_fetch_query_all(self.curr, query)

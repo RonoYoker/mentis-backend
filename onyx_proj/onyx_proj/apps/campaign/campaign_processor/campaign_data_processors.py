@@ -302,6 +302,12 @@ def update_segment_count_and_status_for_campaign(request_data):
         "upd_campaign_status":False
     }
 
+    if segment_count == 0:
+        message = "segment count is empty"
+        CED_CampaignExecutionProgress().update_campaign_status(status, campaign_id, message)
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="segment count is empty")
+
     if campaign_id is None or (segment_count is None and status is None):
         logger.debug(f"API Resp ::{resp}")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
