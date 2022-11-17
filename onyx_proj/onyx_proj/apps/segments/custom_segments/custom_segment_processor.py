@@ -310,14 +310,12 @@ def hyperion_local_rest_call(project_name: str, sql_query: str, limit=1):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Hyperion local credentials not found for {project_name}.")
 
-    url = domain + CUSTOM_QUERY_EXECUTION_API_PATH
-
-    request_response = json.loads(RequestClient(
-        url=url,
-        headers={"Content-Type": "application/json"},
-        request_body=json.dumps({"sql_query": sql_query, "limit": limit}),
-        request_type=TAG_REQUEST_POST).get_api_response())
-
+    url = CUSTOM_QUERY_EXECUTION_API_PATH
+    request_body = {"sql_query": sql_query, "limit": str(limit)}
+    request_response = RequestClient.post_local_api_request(request_body, project_name, url)
+    logger.debug(f"request response: {request_response}")
+    if request_response is None:
+        return {"result": TAG_FAILURE}
     return request_response
 
 
