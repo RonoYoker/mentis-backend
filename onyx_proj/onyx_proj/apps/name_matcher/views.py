@@ -420,7 +420,7 @@ def compare_names(request):
 
 def find_name_similarity(first_name,second_name):
     deducted_score = 0
-
+    exact_match = False
     # lower case applied
     final_first_name = {k:v.lower() for k,v in first_name.items()}
     final_second_name = {k:v.lower() for k,v in second_name.items()}
@@ -484,7 +484,11 @@ def find_name_similarity(first_name,second_name):
 
     #check if both names have same tokens
     if "".join(sorted(first_name_tokens)) == "".join(sorted(second_name_tokens)):
-        return {"match_result":True,"ded_score":deducted_score,"exact_match":True}
+        exact_match = True
+        return {"match_result":True,"ded_score":deducted_score,"exact_match":exact_match}
+
+    if dedupe_and_check_for_exact_match(first_name_tokens,second_name_tokens) is True:
+        exact_match = True
 
 
     #check if one permutation matches with spaces
@@ -494,7 +498,7 @@ def find_name_similarity(first_name,second_name):
     total_permutations = len(set(first_name_perm).union(second_name_perm))
     deducted_score += 10*((total_permutations-matches_found)/total_permutations)
     if matches_found >= 1:
-        return {"match_result":True,"ded_score":deducted_score,"exact_match":False}
+        return {"match_result":True,"ded_score":deducted_score,"exact_match":exact_match}
 
     # check if one permutation matches without spaces
     first_name_perm = make_permutations(first_name_tokens, "")
@@ -503,16 +507,16 @@ def find_name_similarity(first_name,second_name):
     total_permutations = len(set(first_name_perm).union(second_name_perm))
     deducted_score += 10* ((total_permutations - matches_found) / total_permutations)
     if matches_found >= 1:
-        return {"match_result":True,"ded_score":deducted_score,"exact_match":False}
+        return {"match_result":True,"ded_score":deducted_score,"exact_match":exact_match}
 
     # checking if a name is subset of other for len > 3
     if len(set(first_name_tokens).difference(set(second_name_tokens))) == 0 and len(second_name_tokens) >=3 and len(set(second_name_tokens).difference(set(first_name_tokens))) <=1:
         deducted_score += 20*(len(set(second_name_tokens).difference(set(first_name_tokens)))/len(first_name_tokens))
-        return {"match_result":True,"ded_score":deducted_score,"exact_match":False}
+        return {"match_result":True,"ded_score":deducted_score,"exact_match":exact_match}
     if len(set(second_name_tokens).difference(set(first_name_tokens))) == 0 and len(first_name_tokens) >= 3 and len(set(first_name_tokens).difference(set(second_name_tokens))) <=1:
         deducted_score += 20 * (
                     len(set(first_name_tokens).difference(set(second_name_tokens))) / len(second_name_tokens))
-        return {"match_result":True,"ded_score":deducted_score,"exact_match":False}
+        return {"match_result":True,"ded_score":deducted_score,"exact_match":exact_match}
 
 
     token_matching_results={
@@ -532,7 +536,7 @@ def find_name_similarity(first_name,second_name):
     for valid_seq in VALID_TOKEN_MATCHING_RESULT:
         if(all(token_matching_results[k][v] for k,v in valid_seq["seq"].items())):
             deducted_score += valid_seq["ded_score"]
-            return {"match_result": True, "ded_score": deducted_score, "exact_match": False}
+            return {"match_result": True, "ded_score": deducted_score, "exact_match": exact_match}
 
     deducted_score+=10  #because name also didn't matched through algo
 
@@ -552,7 +556,7 @@ def find_name_similarity(first_name,second_name):
 
     deducted_score += (70*(100-(total_score/count)))/100
 
-    return {"match_result": False, "ded_score": deducted_score, "exact_match": False}
+    return {"match_result": False, "ded_score": deducted_score, "exact_match": exact_match}
 
 
 def compare_tokens(first_name,second_name):
@@ -647,3 +651,14 @@ def generate_ngrams(chars, chars_to_join):
     for i in range(len(chars) - chars_to_join + 1):
         output.append("".join(chars[i:i + chars_to_join]))
     return output
+
+def dedupe_and_check_for_exact_match(first_name_tokens,second_name_tokens):
+    fname_initials = [token for token in first_name_tokens if len(token)==1]
+    sname_initials = [token for token in second_name_tokens if len(token)==1]
+
+    fname_full_tokens = list(set([token for token in first_name_tokens if len(token)>1]))
+    sname_full_tokens = list(set([token for token in second_name_tokens if len(token)>1]))
+
+    if ("".join(sorted(fname_full_tokens+fname_initials))) == ("".join(sorted(sname_full_tokens+sname_initials))):
+        return True
+    return False
