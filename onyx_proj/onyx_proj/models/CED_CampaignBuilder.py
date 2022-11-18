@@ -38,3 +38,6 @@ class CED_CampaignBuilder:
     def get_campaign_list(self, filters):
         baseQuery = """SELECT cb.Id AS id, cb.UniqueId AS unique_id, cb.Name AS name, cb.SegmentName AS segment_name, cb.Status AS status, cb.CreatedBy AS created_by, min(cbc.StartDateTime) AS start_date_time, cb.ApprovedBy AS approved_by, cb.RecordsInSegment AS segment_records, cb.Type AS type, cb.IsActive as active, cb.IsRecurring AS is_recurring, cb.RecurringDetail AS recurring_details, cbc.ContentType AS channel, COUNT(*) AS instance_count FROM CED_CampaignBuilder cb JOIN CED_Segment cs ON cs.UniqueId = cb.SegmentId JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId WHERE % s GROUP BY 1, 2, 3, 4, 5 order by cb.Id DESC""" % filters
         return dict_fetch_query_all(self.curr, baseQuery)
+
+    def execute_fetch_campaigns_list_query(self, query) -> list:
+        return dict_fetch_query_all(self.curr, query)

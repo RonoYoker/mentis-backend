@@ -20,6 +20,7 @@ from onyx_proj.apps.campaign import urls as campaign_urls
 from onyx_proj.apps.home import urls as home_urls
 from onyx_proj.apps.slot_management import urls as slot_urls
 from onyx_proj.apps.name_matcher import urls as name_matcher_urls
+from onyx_proj.apps.content import urls as content_urls
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -27,5 +28,6 @@ urlpatterns = [
     path("segments/", include(segment_urls)),
     path("campaign/", include(campaign_urls)),
     path("slots/", include(slot_urls)),
-    path("name_matcher/", include(name_matcher_urls))
+    path("name_matcher/", include(name_matcher_urls)),
+    path("content/", include(content_urls))
 ]

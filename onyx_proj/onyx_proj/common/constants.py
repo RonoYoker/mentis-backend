@@ -10,15 +10,18 @@ TAG_FAILURE = "FAILURE"
 TAG_REQUEST_POST = "POST"
 TAG_REQUEST_GET = "GET"
 
+
 class SegmentList(Enum):
     ALL = "ALL"
     PENDING_REQ = "PENDING_REQ"
     MY_SEGMENT = "MY_SEGMENT"
 
+
 class TabName(Enum):
     ALL = "ALL"
     APPROVAL_PENDING = "APPROVAL_PENDING"
     MY_CAMPAIGN = "MY_CAMPAIGN"
+
 
 class DashboardTab(Enum):
     ALL = "ALL"
@@ -87,7 +90,7 @@ WHERE
   AND DATE(cbc.StartDateTime) <= DATE('{end_date}')
 """
 
-MIN_REFRESH_COUNT_DELAY=15
+MIN_REFRESH_COUNT_DELAY = 15
 
 MAX_CAMPAIGN_STATS_DURATION_DAYS = 7
 
@@ -96,6 +99,16 @@ ADMIN = "admin"
 SEGMENT_COUNT_QUERY = """
 SELECT s.*,NAME FROM CED_Projects p JOIN CED_Segment s on p.UniqueId = s.ProjectId WHERE s.UniqueId = '{unique_id}'
 """
+
+FETCH_CAMPAIGN_QUERY = """select cb.Id as id, cb.Name as campaign_name, cbc.StartDateTime as start_date_time, 
+                        cbc.ContentType as content_type, cb.Type as campaign_type from 
+                        CED_CampaignBuilder cb join CED_CampaignBuilderCampaign cbc on cb.uniqueId = cbc.campaignBuilderId 
+                        join {campaign_table} cam_t on cbc.campaignId = cam_t.uniqueId 
+                        join {content_table} con_t on cam_t.{channel_id} = con_t.uniqueId 
+                        where con_t.uniqueId = '{content_id}' and cb.IsDeleted = '0' and cb.IsActive = '1' 
+                        and cbc.EndDateTime > now()
+                        and cb.status = 'APPROVED' and cbc.IsDeleted = '0' and cbc.IsActive = '1' 
+                        and cam_t.IsDeleted = '0' and cam_t.IsActive = '1' and con_t.IsDeleted = '0' and con_t.IsActive = '1'"""
 
 FIXED_HEADER_MAPPING_COLUMN_DETAILS = [
     {
@@ -320,7 +333,6 @@ FIXED_HEADER_MAPPING_COLUMN_DETAILS = [
     }
 ]
 
-
 STATS_HEADER_MAPPING = {
     TAG_DATE_FILTER: "DATE(cbc.StartDateTime)",
     TAG_CAMP_TITLE_FILTER: "cb.Name",
@@ -419,7 +431,6 @@ FROM
     CED_CampaignSchedulingSegmentDetails cssd ON cssd.CampaignId = cep.CampaignBuilderCampaignId 
 """
 
-
 TAG_TEST_CAMPAIGN_QUERY_ALIAS_PATTERNS = ["as mobile", "as email"]
 
 TEST_CAMPAIGN_QUERY_CONTACT_ALIAS_PATTERNS = ["as mobile", "as email"]
@@ -514,10 +525,38 @@ FROM
 
 
 class SegmentRefreshStatus(Enum):
-    PENDING= "PENDING"
+    PENDING = "PENDING"
+
 
 class CampaignTablesStatus(Enum):
     SUCCESS = "SUCCESS"
     SCHEDULED = "SCHEDULED"
     ERROR = "ERROR"
     APPROVED = "APPROVED"
+
+
+CHANNELS_LIST = ["SMS", "IVR", "WHATSAPP", "EMAIL"]
+
+
+CHANNEL_CONTENT_TABLE_DATA = {
+    "SMS": {
+        "campaign_table": "CED_CampaignBuilderSMS",
+        "content_table": "CED_CampaignSMSContent",
+        "channel_id": "smsId"
+    },
+    "EMAIL": {
+        "campaign_table": "CED_CampaignBuilderEmail",
+        "content_table": "CED_CampaignEmailContent",
+        "channel_id": "emailId"
+    },
+    "IVR": {
+        "campaign_table": "CED_CampaignBuilderIVR",
+        "content_table": "CED_CampaignIvrContent",
+        "channel_id": "ivrId"
+    },
+    "WHATSAPP": {
+        "campaign_table": "CED_CampaignBuilderWhatsApp",
+        "content_table": "CED_CampaignWhatsAppContent",
+        "channel_id": "whatsAppContentId"
+    }
+}

@@ -185,14 +185,15 @@ def get_headers_list_from_extra(segment_data):
 
 
 def check_template_in_content_table(content_id, template_type):
+    status = "'APPROVED', 'APPROVAL_PENDING'"
     if template_type == "SMS":
-        result = CEDCampaignSMSContent().get_sms_data(content_id)
+        result = CEDCampaignSMSContent().get_sms_data(content_id, status)
     elif template_type == "EMAIL":
-        result = CEDCampaignEmailContent().get_email_data(content_id)
+        result = CEDCampaignEmailContent().get_email_data(content_id, status)
     elif template_type == "WHATSAPP":
-        result = CEDCampaignWhatsAppContent().get_whatsapp_data(content_id)
+        result = CEDCampaignWhatsAppContent().get_whatsapp_data(content_id, status)
     elif template_type == "IVR":
-        result = CEDCampaignIvrContent().get_ivr_data(content_id)
+        result = CEDCampaignIvrContent().get_ivr_data(content_id, status)
     elif template_type == "SUBJECT":
         result = CEDCampaignSubjectLineContent().get_subject_line_data(content_id)
     else:
