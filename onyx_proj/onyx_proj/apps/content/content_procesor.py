@@ -121,7 +121,7 @@ def get_campaigns(query):
                     response="No campaign found")
 
     for campaign in campaign_builder:
-        campaign["start_date_time"] = campaign.get('start_date_time').strftime("%m/%d/%Y, %H:%M:%S")
+        campaign["start_date_time"] = campaign.get('start_date_time').strftime("%Y-%m-%d %H:%M:%S")
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=campaign_builder)
 
 
