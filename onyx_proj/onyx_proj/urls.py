@@ -30,6 +30,6 @@ urlpatterns = [
     path("campaign/", include(campaign_urls)),
     path("slots/", include(slot_urls)),
     path("name_matcher/", include(name_matcher_urls)),
-    path("user/", include(user_urls))
+    path("user/", include(user_urls)),
     path("content/", include(content_urls))
 ]
