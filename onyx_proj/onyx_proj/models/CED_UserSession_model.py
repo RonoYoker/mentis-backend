@@ -25,3 +25,11 @@ class CEDUserSession:
         return dict_fetch_all(cursor=self.curr, table_name=self.table_name, data_dict=data_dict,
                               select_args=["Expired"])
 
+    def get_user_data_by_session_id(self, data_dict: dict) -> list:
+        """
+            Returns user session data (uid or team_id) based on X-AuthToken
+        """
+        if not data_dict:
+            return []
+        return dict_fetch_all(cursor=self.curr, table_name=self.table_name, data_dict=data_dict,
+                              select_args=["UserUId as user_id", "TeamId as team_id"])

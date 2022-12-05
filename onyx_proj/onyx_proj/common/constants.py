@@ -528,6 +528,7 @@ class SegmentRefreshStatus(Enum):
     PENDING = "PENDING"
 
 
+
 class CampaignTablesStatus(Enum):
     SUCCESS = "SUCCESS"
     SCHEDULED = "SCHEDULED"
@@ -535,8 +536,15 @@ class CampaignTablesStatus(Enum):
     APPROVED = "APPROVED"
 
 
-CHANNELS_LIST = ["SMS", "IVR", "WHATSAPP", "EMAIL"]
+USER_DATA_FROM_CED_USER = ["Id as id", "CreationDate as creation_date", "UserUID as unique_id",
+                           "IsActive as active",
+                           "CreatedBy as created_by", "UpdatedBy as updated_by", "FirstName as first_name",
+                           "LastName as last_name", "Category as category", "LastLoginTime as last_login_time",
+                           "ExpiryTime as expiry_time", "BranchOrLocationCode as branch_or_location_code",
+                           "DepartmentCode as department_code", "EmployeeCode as employee_code",
+                           "UserType as user_type"]
 
+CHANNELS_LIST = ["SMS", "IVR", "WHATSAPP", "EMAIL"]
 
 CHANNEL_CONTENT_TABLE_DATA = {
     "SMS": {

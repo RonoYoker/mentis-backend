@@ -7,13 +7,13 @@ class CEDUser:
         self.table_name = "CED_User"
         self.curr = mysql_connect(self.database)
 
-    def get_user_details(self, data_dict: dict) -> list:
+    def get_user_details(self, data_dict: dict, select_args="*") -> list:
         """
         Returns username based on X-AuthToken (request header field)
         """
         if not data_dict:
             return []
-        return dict_fetch_all(cursor=self.curr, table_name=self.table_name, data_dict=data_dict)
+        return dict_fetch_all(cursor=self.curr, table_name=self.table_name, data_dict=data_dict, select_args=select_args)
 
     def get_user_type(self, session_id):
         query = f"select UserType as user_type from CED_User cu join CED_UserSession cus on cu.UserName = cus.UserName where cus.SessionId='{session_id}'"
