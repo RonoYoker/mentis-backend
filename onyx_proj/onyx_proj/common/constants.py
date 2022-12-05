@@ -537,7 +537,7 @@ class CampaignTablesStatus(Enum):
 
 
 USER_DATA_FROM_CED_USER = ["Id as id", "CreationDate as creation_date", "UserUID as unique_id",
-                           "IsActive as active",
+                           "IsActive as active", "EmailId as email_id",
                            "CreatedBy as created_by", "UpdatedBy as updated_by", "FirstName as first_name",
                            "LastName as last_name", "Category as category", "LastLoginTime as last_login_time",
                            "ExpiryTime as expiry_time", "BranchOrLocationCode as branch_or_location_code",
