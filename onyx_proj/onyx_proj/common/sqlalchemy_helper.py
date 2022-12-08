@@ -10,7 +10,7 @@ def sql_alchemy_connect(database):
     engine = SqlAlchemyEngine().get_connection(database)
     return engine
 
-def insert(engine, table, entity):
+def insert(engine, entity):
     """
         Function to insert a single row into table.
         parameters:
@@ -18,6 +18,7 @@ def insert(engine, table, entity):
             entity: table entity to insert
         returns:
     """
+    table = entity.__class__
     class_object = table(entity._asdict())
     with Session(engine) as session:
         session.begin()

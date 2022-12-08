@@ -13,7 +13,16 @@ class Orm_helper():
             setattr(self, c.key, data.get(c.key))
 
     def _asdict(self):
-        return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
+        ins = inspect(self)
+        columns = set(ins.mapper.column_attrs.keys()).difference(ins.unloaded).difference(ins.expired_attributes)
+        relationships = set(ins.mapper.relationships.keys()).difference(ins.unloaded).difference(ins.expired_attributes)
+        data = {c: getattr(self, c) for c in columns}
+        for key in relationships:
+            if isinstance(getattr(self, key),list):
+                data.update({key: [obj._asdict() for obj in getattr(self, key)]})
+            else:
+                data.update({key:getattr(self, key)._asdict()})
+        return data
 
 class CEDTeam(Base, Orm_helper):
     __tablename__ = 'CED_Team'
