@@ -20,6 +20,7 @@ def fetch_segments(data) -> json:
 
     mode = data.get("mode", None)
     project_id = data.get("project_id", None)
+    segment_response_list = []
 
     # check if request has data_id and project_id
     if project_id is None:
@@ -27,19 +28,38 @@ def fetch_segments(data) -> json:
                     details_message="Missing parameters project_id/data_id in request body.")
 
     if mode:
-        filter = f" ProjectId='{project_id}' and Type='{mode}' and isActive=1 and Status in ('APPROVED','APPROVAL_PENDING') "
+        filter = f" seg.ProjectId='{project_id}' and seg.Type='{mode}' and seg.isActive=1 and seg.Status in ('APPROVED','APPROVAL_PENDING') "
     else:
-        filter = f" ProjectId='{project_id}' and isActive=1 and Status in ('APPROVED','APPROVAL_PENDING') "
+        filter = f" seg.ProjectId='{project_id}' and seg.isActive=1 and seg.Status in ('APPROVED','APPROVAL_PENDING') "
 
     try:
         db_res = CEDSegment().get_all_custom_segments(filter)
+        if db_res is None:
+            response = dict(data={"segments_list": [], "segments_count": 0}, method="fetch_segments", selected_mode=mode)
+            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                        response=response)
+        segment_collation_dict = {}
+        for segment in db_res:
+            seg_id = segment.get('id')
+            if segment_collation_dict.get(seg_id, None) is not None:
+                segment_details_dict = segment_collation_dict.get(seg_id)
+                segment_details_dict.get('tag_mapping').append(
+                    dict(tag_id=segment.get('tag_id'), tag_name=segment.get('tag_name'), short_name=segment.get('short_name')))
+            else:
+                tag_id = segment.pop('tag_id')
+                tag_name = segment.pop('tag_name')
+                short_name = segment.pop('short_name')
+                segment['tag_mapping'] = [dict(tag_id=tag_id, tag_name=tag_name, short_name=short_name)]
+                segment_collation_dict[seg_id] = segment
+        for key in segment_collation_dict.keys():
+            segment_response_list.append(segment_collation_dict.get(key))
     except Exception as ex:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Error while executing fetch query.",
                     ex=str(ex))
 
-    response = dict(data={"segments_list": db_res,
-                          "segments_count": len(db_res)}, method="fetch_segments", selected_mode=mode)
+    response = dict(data={"segments_list": segment_response_list,
+                          "segments_count": len(segment_response_list)}, method="fetch_segments", selected_mode=mode)
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=response)
 

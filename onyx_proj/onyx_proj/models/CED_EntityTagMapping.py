@@ -16,3 +16,8 @@ class CEDEntityTagMapping:
         values = records or [[]]
         resp = insert_multiple_rows(self.curr, self.table_name, data_dict={'columns': columns, 'values': values})
         return resp
+
+
+    def delete_records(self, segment_id, entity_type, entity_sub_type):
+        query = f"""DELETE FROM {self.table_name} WHERE EntityId = '{segment_id}' and EntityType = '{entity_type}' and EntitySubType = '{entity_sub_type}' """
+        return query_executor(self.curr, query)
