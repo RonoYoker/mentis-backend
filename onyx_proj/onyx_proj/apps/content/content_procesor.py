@@ -3,6 +3,12 @@ import logging
 
 from django.views.decorators.csrf import csrf_exempt
 
+from django.conf import settings
+
+from onyx_proj.apps.content import app_settings
+from onyx_proj.models.CED_CampaignSubjectLineContent_model import CEDCampaignSubjectLineContent
+from onyx_proj.models.CED_CampaignTagContent_model import CEDCampaignTagContent
+from onyx_proj.models.CED_CampaignURLContent_model import CEDCampaignURLlContent
 from onyx_proj.common.constants import CHANNELS_LIST, TAG_FAILURE, TAG_SUCCESS, FETCH_CAMPAIGN_QUERY, \
     CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS
 from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
@@ -130,3 +136,25 @@ def get_query_for_campaigns(content_id, content_type):
                                        campaign_table=CHANNEL_CONTENT_TABLE_DATA[content_type]["campaign_table"],
                                        content_table=CHANNEL_CONTENT_TABLE_DATA[content_type]["content_table"],
                                        channel_id=CHANNEL_CONTENT_TABLE_DATA[content_type]["channel_id"])
+
+@csrf_exempt
+def get_content_list(data) -> dict:
+    request_body = data.get("body", {})
+    content_type = request_body.get("content_type", None)
+    project_id = request_body.get("project_id", None)
+    if project_id is None or content_type is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Request body has missing field")
+
+    campaign_content_type = app_settings.CONTENT_TABLE_MAPPING[content_type]
+    if campaign_content_type is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid Content")
+    campaign_content_list = campaign_content_type().get_content_list(project_id)
+    if campaign_content_list is None:
+        return dict(status_code=http.HTTPStatus.NOT_FOUND, result=TAG_SUCCESS,
+                    response=[])
+    else:
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=campaign_content_list)
+
+

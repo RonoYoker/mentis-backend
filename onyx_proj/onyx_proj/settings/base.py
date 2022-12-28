@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 import os
 from pathlib import Path
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(PROJECT_ROOT)
