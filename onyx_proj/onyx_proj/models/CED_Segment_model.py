@@ -1,4 +1,6 @@
 from onyx_proj.common.mysql_helper import *
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows
+from onyx_proj.models.CreditasCampaignEngine import CED_Segment
 
 
 class CEDSegment:
@@ -6,6 +8,8 @@ class CEDSegment:
         self.database = "creditascampaignengine"
         self.table_name = "CED_Segment"
         self.curr = mysql_connect(self.database)
+        self.table = CED_Segment
+        self.engine = sql_alchemy_connect(self.database)
 
     def save_custom_segment(self, params_dict: dict):
         if not params_dict:
@@ -73,9 +77,14 @@ class CEDSegment:
         return dict_fetch_query_all(self.curr, query)
 
     def get_segment_data(self, segment_id):
-        query = f"""SELECT Id as id, CreationDate as creation_date, UpdationDate as updation_date, UniqueId as unique_id, IsActive as active, CreatedBy as created_by, ProjectId as project_id, DataId as data_id, IncludeAll as include_all, ApprovedBy as approved_by, Records as records, Status as status, Title as title, MappingId as mapping_id, EverScheduled as ever_scheduled, RefreshDate as refresh_date, Type as type, SqlQuery as sql_query, CampaignSqlQuery as campaign_sql_query, EmailCampaignSqlQuery as email_campaign_sql_query, DataImageSqlQuery as data_image_sql_query, TestCampaignSqlQuery as test_campaign_sql_query, RejectionReason as rejection_reason, IsDeleted as is_deleted, LastCampaignDate as last_campaign_date, HistoryId as history_id, Extra as extra, RefreshStatus as refresh_status FROM CED_Segment where UniqueId = '{segment_id}' and IsActive = 1 and IsDeleted = 0"""
-        return dict_fetch_query_all(self.curr, query)
+        filter_list = [
+            {"column": "unique_id", "value": segment_id, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "active", "value": 1, "op": "=="}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
 
-    def get_segment_query(self, filters):
-        query = """select Id as id, Title as title, CreatedBy as created_by, ApprovedBy as approved_by, CreationDate as creation_date, RefreshDate as refresh_date, UniqueId as unique_id, Records as records, Status as status, Type as type, IncludeAll as include_all, IsActive as active FROM CED_Segment WHERE % s ORDER BY Id DESC """ % filters
-        return dict_fetch_query_all(self.curr, query)
+    def get_segment_query(self, filter_list):
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res

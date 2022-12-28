@@ -4,6 +4,7 @@ import json
 import re
 import logging
 from onyx_proj.common.constants import *
+from onyx_proj.models.CED_EntityTagMapping import CEDEntityTagMapping
 from onyx_proj.models.CED_Segment_model import *
 from onyx_proj.models.CED_Projects_model import *
 from onyx_proj.models.CED_DataID_Details_model import *
@@ -37,6 +38,7 @@ def custom_segment_processor(request_data) -> json:
     project_name = body.get("project_name", None)
     project_id = body.get("project_id", None)
     data_id = body.get("data_id", None)
+    tag_mapping = body.get("tag_mapping", None)
 
     # check if request has data_id and project_id
     if project_id is None or data_id is None:
@@ -47,6 +49,10 @@ def custom_segment_processor(request_data) -> json:
     if sql_query is None or sql_query == "":
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Custom query cannot be null/empty.")
+
+    if tag_mapping is None or len(tag_mapping) == 0:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Tag Mapping cannot be null or empty")
 
     # check if Title is valid
     if str(body.get("title")) is None or str(body.get("title")) == "":
@@ -90,6 +96,7 @@ def custom_segment_processor(request_data) -> json:
         return test_sql_query_response
 
     # create parameter mapping to insert custom segment
+
     save_segment_dict = get_save_segment_dict(Title=body.get("title"),
                                               UniqueId=segment_id,
                                               ProjectId=project_id,
@@ -104,6 +111,7 @@ def custom_segment_processor(request_data) -> json:
                                               EmailCampaignSqlQuery=sql_query)
 
     db_res = save_custom_segment(save_segment_dict)
+    save_tags_for_segment(segment_id, tag_mapping)
     if db_res.get("status_code") != 200:
         return db_res
     else:
@@ -211,10 +219,15 @@ def update_custom_segment_process(data) -> dict:
     title = data.get("title", None)
     project_name = data.get("project_name", None)
     project_id = data.get("project_id", None)
+    tag_mapping = data.get("tag_mapping", None)
 
     if not sql_query or not segment_id or not title or not project_id:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Request body has missing fields.")
+
+    if tag_mapping is None or len(tag_mapping) == 0:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="TagMapping cannot be null or empty.")
 
     query_validation_response = query_validation_check(sql_query)
 
@@ -255,6 +268,13 @@ def update_custom_segment_process(data) -> dict:
                        Extra=extra_field_string,
                        TestCampaignSqlQuery=test_sql_query_response.get("query"),
                        UpdationDate=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    try:
+        CEDEntityTagMapping().delete_tags_from_segment(segment_id)
+        save_tags_for_segment(segment_id, tag_mapping)
+    except Exception as ex:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Exception during delete tags and saving updated tags  query execution.",
+                    ex=str(ex))
 
     try:
         db_res = CEDSegment().update_segment(params_dict=params_dict, update_dict=update_dict)
@@ -444,3 +464,16 @@ def non_custom_segment_count(request_data) -> json:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Query response data is empty/null.")
     return dict(status_code=200, result=TAG_SUCCESS, data={"count": total_records})
+
+def save_tags_for_segment(segment_id: str, tag_mapping: list):
+    segment_tag_list = []
+    segment_tag_dict = {}
+    for segment_tag in tag_mapping:
+        unique_id = uuid.uuid4().hex
+        segment_tag_dict = dict(UniqueId=unique_id,
+                                EntityId=segment_id,
+                                EntityType="SEGMENT",
+                                EntitySubType="CUSTOM_SEGMENT",
+                                TagId=segment_tag.get("tag_id"))
+        segment_tag_list.append(list(segment_tag_dict.values()))
+    CEDEntityTagMapping().insert_tags_for_segment(segment_tag_list, {"custom_columns": segment_tag_dict.keys()})

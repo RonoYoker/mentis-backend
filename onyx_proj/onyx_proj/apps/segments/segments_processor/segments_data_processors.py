@@ -1,9 +1,11 @@
 import http
 import logging
 
-from onyx_proj.common.constants import SegmentList, TAG_SUCCESS, TAG_FAILURE
+from onyx_proj.common.constants import SegmentList, TAG_SUCCESS, TAG_FAILURE, SEGMENT_END_DATE_FORMAT
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.models.CED_UserSession_model import *
+from datetime import datetime
+from datetime import timedelta
 
 logger = logging.getLogger("apps")
 
@@ -14,6 +16,10 @@ def get_segment_list(request, session_id=None):
     tab_name = request.get("tab_name")
     project_id = request.get("project_id")
 
+    end_date = datetime.strptime(end_time, SEGMENT_END_DATE_FORMAT)
+    end_date_delta = end_date + timedelta(days=1)
+    end_date_time = end_date_delta.strftime(SEGMENT_END_DATE_FORMAT)
+
     if validate_inputs(start_time, end_time, tab_name, project_id) is False:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid Input")
@@ -21,17 +27,32 @@ def get_segment_list(request, session_id=None):
     logger.debug(f"start_time:{start_time} end_time:{end_time} tab_name:{tab_name} project_id:{project_id}")
 
     if tab_name.lower() == SegmentList.ALL.value.lower():
-        filters = f" DATE(CreationDate) >= '{start_time}' and DATE(CreationDate) <= '{end_time}' and ProjectId = '{project_id}' "
+        filter_list = [
+            {"column": "creation_date", "value": start_time, "op": ">="},
+            {"column": "creation_date", "value": end_date_time, "op": "<="},
+            {"column": "project_id", "value": project_id, "op": "=="}
+        ]
     elif tab_name.lower() == SegmentList.PENDING_REQ.value.lower():
-        filters = f" DATE(CreationDate) >= '{start_time}' and DATE(CreationDate) <= '{end_time}' and Status='APPROVAL_PENDING' and ProjectId = '{project_id}' "
+        filter_list = [
+            {"column": "creation_date", "value": start_time, "op": ">="},
+            {"column": "creation_date", "value": end_date_time, "op": "<="},
+            {"column": "project_id", "value": project_id, "op": "=="},
+            {"column": "status", "value": "APPROVAL_PENDING", "op": "=="}
+        ]
     elif tab_name.lower() == SegmentList.MY_SEGMENT.value.lower():
         user = CEDUserSession().get_user_details(dict(SessionId=session_id))
         created_by = user[0].get("UserName", None)
-        filters = f" DATE(CreationDate) >= '{start_time}' and DATE(CreationDate) <= '{end_time}' and CreatedBy='{created_by}' and ProjectId = '{project_id}' "
+        filter_list = [
+            {"column": "creation_date", "value": start_time, "op": ">="},
+            {"column": "creation_date", "value": end_date_time, "op": "<="},
+            {"column": "created_by", "value": created_by, "op": "=="},
+            {"column": "project_id", "value": project_id, "op": "=="}
+        ]
     else:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="Invalid Tab")
 
-    data = CEDSegment().get_segment_query(filters)
+    data = CEDSegment().get_segment_query(filter_list)
+
     logger.debug(f"segment_data:{data}")
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=data)

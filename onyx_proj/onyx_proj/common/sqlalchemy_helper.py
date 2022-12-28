@@ -113,7 +113,8 @@ def fetch_rows(engine, table, filter_list):
             q = session.query(table)
             for filters in filter_list:
                 q = add_filter(q, filters["value"], getattr(table, filters["column"]), filters["op"])
-            result = q.all()
+            entity = q.all()
+            result = [x._asdict() for x in entity]
             return result
         except Exception as ex:
             logging.error(f"error while fetching from table {str(table)}, Error: ", ex)

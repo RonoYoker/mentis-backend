@@ -10,6 +10,8 @@ TAG_FAILURE = "FAILURE"
 TAG_REQUEST_POST = "POST"
 TAG_REQUEST_GET = "GET"
 
+SEGMENT_END_DATE_FORMAT = "%Y-%m-%d"
+
 
 class SegmentList(Enum):
     ALL = "ALL"

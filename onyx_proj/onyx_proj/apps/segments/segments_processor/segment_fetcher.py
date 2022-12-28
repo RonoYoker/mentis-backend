@@ -71,7 +71,6 @@ def fetch_segment_by_id(data) -> json:
                         details_message="Invalid segment id")
 
         segment_res = get_segment_result(segment_data)
-
     elif campaign_id:
 
         segment_response = CED_CampaignBuilder().fetch_segment_id_from_campaign_id(campaign_id)
@@ -96,7 +95,6 @@ def get_segment_result(segment_data):
 
     else:
         segment_res = fetch_data_for_non_custom(segment_data)
-
     logger.debug(f"segment_result :: {segment_res}")
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=dict(data=segment_res[0]))
 

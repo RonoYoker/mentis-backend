@@ -277,8 +277,9 @@ def delete_multiple_rows(cursor, query, params=[]):
 def delete_rows_from_table(cursor,table_name,q_data):
     where_q = ' AND '.join([f"{key} = %s" for key in q_data])
     query = "DELETE from %s where %s" % (table_name,where_q)
+    values =list(q_data.values())
     try:
-        cursor.execute(query)
+        cursor.execute(query, values)
         return {'last_row_id': cursor.lastrowid, 'row_count': cursor.rowcount}
     except Exception as e:
         logging.error({'error': f'Error thrown while deleting data : {query}', 'exception': str(e),
