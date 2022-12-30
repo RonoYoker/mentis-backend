@@ -2,9 +2,6 @@ from onyx_proj.common.utils.datautils import nested_path_get
 from onyx_proj.exceptions.permission_validation_exception import MethodPermissionValidationException, \
     UnauthorizedException
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
-from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
-from onyx_proj.models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
-from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.models.CED_UserSession_model import *
 
 logger = logging.getLogger("apps")
@@ -87,6 +84,9 @@ def parse_args(conf,*args,**kwargs):
 
 
 def fetch_project_id_from_conf(conf,*args,**kwargs):
+    from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
+    from onyx_proj.models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
+    from onyx_proj.models.CED_Segment_model import CEDSegment
     identifier_type = conf["entity_type"]
     identifier_id = parse_args(conf,*args,**kwargs)
     if identifier_type == "PROJECT":
