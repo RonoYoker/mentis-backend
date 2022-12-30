@@ -50,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'onyx_proj.middlewares.HttpRequestInterceptor.HttpRequestInterceptor'
 ]
 
 ROOT_URLCONF = 'onyx_proj.urls'

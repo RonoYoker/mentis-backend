@@ -41,3 +41,8 @@ class CED_CampaignBuilder:
 
     def execute_fetch_campaigns_list_query(self, query) -> list:
         return dict_fetch_query_all(self.curr, query)
+
+    def get_project_id_from_campaign_builder_id(self,campaign_id):
+        query = f"Select s.ProjectId as project_id from {self.table_name} cb join CED_Segment s on cb.SegmentId = s.UniqueId where cb.UniqueId = {campaign_id}"
+        result = query_executor(self.curr,query)
+        return result.get("project_id") if result is not None else None

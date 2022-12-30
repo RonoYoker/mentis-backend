@@ -10,13 +10,13 @@ from django.views.decorators.csrf import csrf_exempt
 from onyx_proj.apps.segments.segments_processor.segment_processor import update_segment_count, trigger_update_segment_count
 from onyx_proj.apps.segments.segments_processor.segments_data_processors import *
 from onyx_proj.apps.segments.segments_processor.temp import update_content_and_segment_tags
-from onyx_proj.common.decorators import *
 import json
 import http
-
+from onyx_proj.common.decorators import UserAuth
+from django.http import HttpResponse
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def save_custom_segment(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
@@ -29,7 +29,7 @@ def save_custom_segment(request):
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def get_all_segments(request):
     request_body = json.loads(request.body.decode("utf-8"))
     # custom segments fetch call
@@ -39,7 +39,7 @@ def get_all_segments(request):
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def fetch_headers_by_segment_id(request):
     data = json.loads(request.body.decode("utf-8"))
     # custom segments fetch call
@@ -49,7 +49,7 @@ def fetch_headers_by_segment_id(request):
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def check_headers_compatibility(request):
     data = json.loads(request.body.decode("utf-8"))
     # custom segments fetch call
@@ -59,7 +59,7 @@ def check_headers_compatibility(request):
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def get_segment_by_unique_id(request):
     data = json.loads(request.body.decode("utf-8"))
     # segment fetch by unique id
@@ -69,7 +69,7 @@ def get_segment_by_unique_id(request):
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def update_custom_segment(request):
     data = json.loads(request.body.decode("utf-8"))
     # update thr given custom segment
@@ -79,7 +79,7 @@ def update_custom_segment(request):
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def get_test_campaign_data(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
@@ -91,7 +91,7 @@ def get_test_campaign_data(request):
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def update_segment_refresh_count(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
@@ -112,7 +112,7 @@ def segment_refresh_count(request):
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def fetch_sample_data(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
@@ -142,7 +142,7 @@ def segment_records_count(request):
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def fetch_segments_list(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
@@ -153,7 +153,7 @@ def fetch_segments_list(request):
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def update_segment_tags(request):
     request_body = json.loads(request.body.decode("utf-8"))
     data = update_content_and_segment_tags(request_body)

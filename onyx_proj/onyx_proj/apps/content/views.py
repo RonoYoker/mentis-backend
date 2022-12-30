@@ -5,11 +5,10 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from onyx_proj.apps.content.content_procesor import fetch_campaign_processor, get_content_list
-from onyx_proj.common.decorators import user_authentication
-
+from onyx_proj.common.decorators import UserAuth
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def fetch_campaigns_by_content_id(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
@@ -21,7 +20,7 @@ def fetch_campaigns_by_content_id(request):
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def fetch_campaigns_content_list(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers

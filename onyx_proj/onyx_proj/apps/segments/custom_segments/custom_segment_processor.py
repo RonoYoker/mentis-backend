@@ -15,7 +15,6 @@ from onyx_proj.common.request_helper import RequestClient
 from django.conf import settings
 logger = logging.getLogger("apps")
 
-
 def custom_segment_processor(request_data) -> json:
     """
     Function to validate custom segment query as per project.

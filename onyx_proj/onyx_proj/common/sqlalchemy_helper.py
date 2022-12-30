@@ -87,16 +87,16 @@ def fetch_one_row(engine, table, filter_list):
             filter_list: list of dict of filters, format - [{"column": "col", "value": "val", "op": "=="}]
         returns: Class object of table
     """
-    with Session(engine) as session:
-        session.begin()
-        try:
-            q = session.query(table)
-            for filters in filter_list:
-                q = add_filter(q, filters["value"], getattr(table, filters["column"]), filters["op"])
-            result = q.first()
-            return result
-        except Exception as ex:
-            logging.error(f"error while fetching from table {str(table)}, Error: ", ex)
+    session = Session(engine)
+    try:
+        q = session.query(table)
+        for filters in filter_list:
+            q = add_filter(q, filters["value"], getattr(table, filters["column"]), filters["op"])
+        result = q.first()
+        return result
+    except Exception as ex:
+        logging.error(f"error while fetching from table {str(table)}, Error: ", ex)
+        return None
 
 
 def fetch_rows(engine, table, filter_list):

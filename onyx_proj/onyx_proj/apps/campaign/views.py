@@ -17,7 +17,7 @@ import json
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def get_test_campaign_data(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
@@ -29,7 +29,7 @@ def get_test_campaign_data(request):
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def save_campaign_data(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
@@ -63,7 +63,7 @@ def get_time_range_for_date(request):
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def get_vendor_config_data(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
@@ -133,7 +133,7 @@ def generate_recurring_schedule(request):
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def validate_recurring_campaign(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
@@ -156,7 +156,7 @@ def update_campaign_progress_status(request):
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def get_campaign_monitoring_stats(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
@@ -190,7 +190,7 @@ def get_dashboard_tab_campaign_data(request):
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def update_camp_status_in_camps_tables(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
@@ -202,7 +202,7 @@ def update_camp_status_in_camps_tables(request):
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def fetch_campaign_list(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
@@ -213,7 +213,7 @@ def fetch_campaign_list(request):
 
 
 @csrf_exempt
-@user_authentication
+@UserAuth.user_authentication()
 def get_campaign_monitoring_stats_for_admins(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers

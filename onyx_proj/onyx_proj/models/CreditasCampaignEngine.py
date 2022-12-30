@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta
 
 from sqlalchemy import and_, inspect, TIMESTAMP, text,  Column, Integer, String, ForeignKey, DateTime, \
-    Time
+    Time , Boolean
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-
+from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 class Orm_helper():
@@ -39,7 +39,7 @@ class CEDTeam(Base, Orm_helper):
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     creation_date = Column("CreationDate", TIMESTAMP, default=datetime.now() + timedelta(minutes=330))
     history_id = Column("HistoryId", String)
-    team_project_mapping_list = relationship("CEDTeamProjectMapping", lazy="joined", viewonly=True)
+    team_project_mapping_list = relationship("CEDTeamProjectMapping", viewonly=True)
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)
@@ -164,7 +164,6 @@ class CED_CampaignUrlContent(Base, Orm_helper):
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)
 
-# Base.prepare()
 class CED_Segment(Base, Orm_helper):
     __tablename__ = 'CED_Segment'
 
@@ -245,6 +244,95 @@ class CED_CampaignContentTag(Base,Orm_helper):
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)
+
+
+class CED_UserRole(Base, Orm_helper):
+    __tablename__ = 'CED_UserRole'
+
+    id = Column("Id", Integer, primary_key=True)
+    name = Column("Name", String)
+    is_active = Column("IsActive", Boolean)
+    unique_id = Column("UniqueId", String,unique=True)
+
+    roles_permissions_mapping_list = relationship("CED_RolePermissionMapping")
+
+
+    def __init__(self, data={}):
+        Orm_helper.__init__(self, data)
+
+class CED_RolePermission(Base, Orm_helper):
+    __tablename__ = 'CED_RolePermission'
+
+    id = Column("Id", Integer, primary_key=True)
+    unique_id = Column("UniqueId", String,unique=True)
+    permission = Column("Permission", String)
+    is_active = Column("IsActive",Boolean,default=1)
+    is_deleted = Column("IsDeleted", Boolean,default=0)
+
+    def __init__(self, data={}):
+        Orm_helper.__init__(self, data)
+
+class CED_RolePermissionMapping(Base, Orm_helper):
+    __tablename__ = 'CED_RolePermissionMapping'
+
+    id = Column("Id", Integer, primary_key=True)
+    role_id = Column("RoleId", String,ForeignKey("CED_UserRole.UniqueId"))
+    permission_id = Column("PermissionId", String,ForeignKey("CED_RolePermission.UniqueId"))
+    is_active = Column("IsActive",Boolean,default=1)
+    is_deleted = Column("IsDeleted", Boolean,default=0)
+
+    permission = relationship("CED_RolePermission")
+
+    def __init__(self, data={}):
+        Orm_helper.__init__(self, data)
+
+class CED_UserProjectRoleMapping(Base, Orm_helper):
+    __tablename__ = 'CED_UserProjectRoleMapping'
+
+    id = Column("Id", Integer, autoincrement=True, primary_key=True)
+    user_id = Column("UserUniqueId", String, ForeignKey("CED_User.UserUID"))
+    project_id = Column("ProjectUniqueId",String,ForeignKey("CED_Projects.UniqueId"))
+    role_id = Column("RoleUniqueId", String,ForeignKey("CED_UserRole.UniqueId"))
+
+    roles = relationship("CED_UserRole")
+
+    def __init__(self, data={}):
+        Orm_helper.__init__(self, data)
+
+class CED_User(Base, Orm_helper):
+    __tablename__ = 'CED_User'
+
+    id = Column("Id", Integer, primary_key=True)
+    user_uuid = Column("UserUID", String,unique=True)
+    first_name = Column("FirstName", String)
+    middle_name = Column("MiddleName", String)
+    last_name = Column("LastName", String)
+    mobile_number = Column("MobileNumber", Integer,unique=True)
+    email_id = Column("EmailId", String,unique=True)
+    user_name = Column("UserName", String,unique=True)
+    user_type = Column("UserType", String)
+
+    user_project_mapping_list = relationship("CED_UserProjectRoleMapping")
+
+    def __init__(self, data={}):
+        Orm_helper.__init__(self, data)
+
+
+class CED_UserSession(Base, Orm_helper):
+    __tablename__ = 'CED_UserSession'
+
+    id = Column("Id", Integer, primary_key=True)
+    user_uuid = Column("UserUID", String,ForeignKey("CED_User.UserUID"))
+    session_id = Column("SessionId", String,unique=True)
+    expire_time = Column("ExpireTime", DateTime)
+    expired = Column("Expired", Boolean)
+
+    user = relationship("CED_User",back_populates=False,viewonly=True)
+
+
+    def __init__(self, data={}):
+        Orm_helper.__init__(self, data)
+
 
 # Base.prepare()
 

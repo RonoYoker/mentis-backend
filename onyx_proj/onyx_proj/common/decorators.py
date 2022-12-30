@@ -1,41 +1,102 @@
-from django.http import HttpResponse
-import json
-import http
+from onyx_proj.common.utils.datautils import nested_path_get
+from onyx_proj.exceptions.permission_validation_exception import MethodPermissionValidationException, \
+    UnauthorizedException
+from onyx_proj.middlewares.HttpRequestInterceptor import Session
+from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
+from onyx_proj.models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
+from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.models.CED_UserSession_model import *
-from onyx_proj.common.constants import *
+
+logger = logging.getLogger("apps")
+
+class UserAuth(object):
+
+    @staticmethod
+    def user_authentication():
+        def decorator(view_func):
+            def dec_f(*args,**kwargs):
+
+                user_session = Session().get_user_session_object()
+                if user_session is None:
+                    raise UnauthorizedException
+                elif not user_session.expired:
+                    return view_func(*args, **kwargs)
+                else:
+                    raise UnauthorizedException
+            return dec_f
+        return decorator
+
+    @staticmethod
+    def user_validation(permissions,identifier_conf):
+        """
+            usage ::
+            @user_validation(permissions=["MAKER"],identifier_conf={
+                "param_type": "arg",
+                "param_key": 0,
+                "param_instance_type": "request_post",
+                "param_path": "x",
+                "entity_type": "PROJECT"
+            })
+        """
+        def decorator(view_func):
+            def dec_f(*args,**kwargs):
+                if len(permissions) == 0:
+                    return view_func(*args, **kwargs)
+                user_session = Session().get_user_session_object()
+                if user_session is None:
+                    raise MethodPermissionValidationException
+                if user_session.user.user_type == "Admin":
+                    return view_func(*args, **kwargs)
+                try:
+                    project_id = fetch_project_id_from_conf(identifier_conf,*args,**kwargs)
+                    project_permissions = Session().get_user_project_permissions()
+                    if len(set(project_permissions.get(project_id, [])).intersection(set(permissions))) == 0:
+                        raise Exception("No permission matched")
+                except Exception as e:
+                    logger.error(f"Error while validating method permissions conf::{identifier_conf} , error::{str(e)}")
+                    raise MethodPermissionValidationException
+
+                return view_func(*args, **kwargs)
+            return dec_f
+        return decorator
 
 
-def user_authentication(view_func):
 
-    def decorator(request, *args, **kwargs):
-        request_headers = request.headers
-        auth_token = request_headers.get("X-AuthToken", None)
 
-        if not auth_token:
-            response = dict(result=TAG_FAILURE, details_message="Cannot fulfil request without X-AuthToken header.")
-            return HttpResponse(json.dumps(response),
-                                content_type="application/json",
-                                status=http.HTTPStatus.BAD_REQUEST)
+def parse_args(conf,*args,**kwargs):
 
-        is_logged_in = CEDUserSession().get_user_logged_in_status(dict(SessionId=auth_token))
+    attr = None
+    param = None
+    if conf["param_type"] == "arg":
+        param = args[conf["param_key"]]
+    elif conf["param_type"] == "kwarg":
+        param = kwargs[conf["param_key"]]
 
-        if not is_logged_in:
-            response = dict(result=TAG_FAILURE, details_message="User not logged in.")
-            return HttpResponse(json.dumps(response),
-                                content_type="application/json",
-                                status=http.HTTPStatus.BAD_REQUEST)
+    if conf["param_instance_type"] in ["str","int"]:
+        attr = param
+    elif conf["param_instance_type"] == "json":
+        attr = nested_path_get(json.loads(param),conf["param_path"])
+    elif conf["param_instance_type"] == "dict":
+        attr = nested_path_get(param,conf["param_path"])
+    elif conf["param_instance_type"] == "request_post":
+        attr = nested_path_get(json.loads(param.body.decode("utf-8")),conf["param_path"])
+    elif conf["param_instance_type"] == "request_get":
+        attr = param.GET[conf["param_path"]]
 
-        if is_logged_in[0].get("Expired") == 1:
-            response = dict(result=TAG_FAILURE, details_message="User session expired.")
-            return HttpResponse(json.dumps(response),
-                                content_type="application/json",
-                                status=http.HTTPStatus.BAD_REQUEST)
-        elif is_logged_in[0].get("Expired") == 0:
-            return view_func(request, *args, **kwargs)
+    return attr
 
-        response = dict(result=TAG_FAILURE, details_message="Error during user authentication.")
-        return HttpResponse(json.dumps(response),
-                            content_type="application/json",
-                            status=http.HTTPStatus.BAD_REQUEST)
 
-    return decorator
+def fetch_project_id_from_conf(conf,*args,**kwargs):
+    identifier_type = conf["entity_type"]
+    identifier_id = parse_args(conf,*args,**kwargs)
+    if identifier_type == "PROJECT":
+        project_id = identifier_id
+    elif identifier_type == "SEGMENT":
+        project_id = CEDSegment().get_project_id_by_segment_id(identifier_id)
+    elif identifier_type == "CAMPAIGNBUILDER":
+        project_id = CED_CampaignBuilder().get_project_id_from_campaign_builder_id(identifier_id)
+    elif identifier_type == "CAMPAIGNBUILDERCAMPAIGN":
+        project_id = CED_CampaignBuilderCampaign().get_project_id_from_campaign_builder_campaign_id(identifier_id)
+    else:
+        raise MethodPermissionValidationException
+    return project_id
