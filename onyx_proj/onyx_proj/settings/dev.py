@@ -27,6 +27,7 @@ HYPERION_LOCAL_DOMAIN = {
     "TEST_TCL": "https://3.111.61.77/",  # https://tclctpay.tatacapital.com/hyperioncampaigntooldashboard
     "TEST_IBL": "http://uatpay.indusind.com/",
     "TEST_RBL": "http://uat-pay.rblbank.com/",
+    "TEST_VST": "http://uatpay.vastuhfc.com/",
     "TEST_PRL": "http://uatpay.piramalfinance.com/",
     "TEST_KOTAK": "http://uatpay.kotak.com/",
     "IBL_Ethera": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
@@ -34,6 +35,12 @@ HYPERION_LOCAL_DOMAIN = {
     "KOTAK_Ethera": "https://pay.kotak.com/",
     "TEST_ABL": "http://uatpay.axisbank.com/"
 }
+
+ONYX_LOCAL_DOMAIN = {
+    "TEST_VST": "http://m-stage-onyx-elb-1846785611.ap-south-1.elb.amazonaws.com/",
+}
+
+ONYX_LOCAL_CAMP_VALIDATION = ["TEST_VST"]
 
 CAMPAIGN_THRESHOLDS_PER_MINUTE = {
 

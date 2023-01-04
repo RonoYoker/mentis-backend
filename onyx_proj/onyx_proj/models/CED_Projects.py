@@ -19,3 +19,9 @@ class CED_Projects:
             {"column": "active", "value": "1", "op": "=="}
         ]
         return fetch_one_row(self.engine, self.table, filter_list)
+
+    def get_project_id_by_cbc_id(self, cbc_id):
+        query = f'SELECT CED_Projects.Name FROM CED_Projects INNER JOIN CED_Segment ON CED_Projects.UniqueId = CED_Segment.ProjectId' \
+                f' INNER JOIN CED_CampaignBuilder ON CED_Segment.UniqueId = CED_CampaignBuilder.SegmentId INNER JOIN CED_CampaignBuilderCampaign ' \
+                f'ON CED_CampaignBuilder.UniqueId = CED_CampaignBuilderCampaign.CampaignBuilderId WHERE CED_CampaignBuilderCampaign.UniqueId = "{cbc_id}"'
+        return dict_fetch_query_all(self.curr, query)

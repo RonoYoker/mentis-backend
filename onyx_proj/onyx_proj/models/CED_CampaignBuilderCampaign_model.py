@@ -29,6 +29,10 @@ class CED_CampaignBuilderCampaign:
                              {"CampaignBuilderId": campaign_builder_id})
         return True if result.get("row_count", 0) > 0 else False
 
+    def get_details_by_unique_id(self, cbc_id):
+        query = f"""SELECT UniqueId as UniqueId, ContentType as ContentType, TestCampignState as TestCampignState FROM CED_CampaignBuilderCampaign WHERE UniqueId = '%s' and IsActive = 1 and IsDeleted = 0""" % (cbc_id)
+        return fetch_one(self.curr, query)
+
     def get_project_id_from_campaign_builder_campaign_id(self,campaign_id):
         query = f"Select s.ProjectId as project_id from {self.table_name} cbc join CED_CampaignBuilderCampaign cb on cb.UniqueId = cbc.CampaignBuilderId join CED_Segment s on cb.SegmentId = s.UniqueId where cbc.UniqueId = {campaign_id}"
         result = query_executor(self.curr,query)

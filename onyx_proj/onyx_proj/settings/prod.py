@@ -37,6 +37,12 @@ HYPERION_LOCAL_DOMAIN = {
     "IBL_CRD_Ethera": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/"
 }
 
+ONYX_LOCAL_DOMAIN = {
+    "VST_Ethera": "http://m-prod-onyxlocal-elb-1286808968.ap-south-1.elb.amazonaws.com",
+}
+
+ONYX_LOCAL_CAMP_VALIDATION = ["VST_Ethera"]
+
 CAMPAIGN_THRESHOLDS_PER_MINUTE = {
 
     "SMS":5000,

@@ -17,4 +17,5 @@ urlpatterns = [
     path("update_campaign_status/", views.update_camp_status_in_camps_tables),
     path("fetch_campaign_lists/", views.fetch_campaign_list),
     path("get_campaign_monitoring_stats_for_admins/", views.get_campaign_monitoring_stats_for_admins),
+    path("test_campaign_validation_status/", views.test_campaign_validator),
 ]

@@ -1,5 +1,10 @@
 from enum import Enum
 
+from onyx_proj.models.CED_CampaignBuilderEmail_model import CEDCampaignBuilderEmail
+from onyx_proj.models.CED_CampaignBuilderIVR_model import CEDCampaignBuilderIVR
+from onyx_proj.models.CED_CampaignBuilderSMS_model import CEDCampaignBuilderSMS
+from onyx_proj.models.CED_CampaignBuilderWhatsApp_model import CEDCampaignBuilderWhatsApp
+
 IBL_DATABASE = "indusindcollection"
 HYPERION_CENTRAL_DATABASE = "creditascampaignengine"
 
@@ -48,6 +53,8 @@ COMMUNICATION_SOURCE_LIST = ["SMS", "IVR", "EMAIL", "WHATSAPP", "SUBJECT", "URL"
 CUSTOM_QUERY_EXECUTION_API_PATH = "hyperioncampaigntooldashboard/segment/customQueryExecution"
 
 REFRESH_COUNT_LOCAL_API_PATH = "hyperioncampaigntooldashboard/segment/localdb/triggerlambdaForSegmentRefreshCount"
+
+TEST_CAMPAIGN_VALIDATION_API_PATH = "campaign/check_test_campaign_validation_status_local/"
 
 SEGMENT_RECORDS_COUNT_API_PATH = "hyperioncampaigntooldashboard/segment/recordcount"
 
@@ -547,6 +554,15 @@ USER_DATA_FROM_CED_USER = ["Id as id", "CreationDate as creation_date", "UserUID
                            "UserType as user_type"]
 
 CHANNELS_LIST = ["SMS", "IVR", "WHATSAPP", "EMAIL"]
+
+CHANNEL_CAMPAIGN_BUILDER_TABLE_MAPPING = {
+    'SMS': (CEDCampaignBuilderSMS, 'MobileNumber'),
+    'IVR': (CEDCampaignBuilderIVR, 'MobileNumber'),
+    'WHATSAPP': (CEDCampaignBuilderWhatsApp, 'MobileNumber'),
+    "EMAIL": (CEDCampaignBuilderEmail, 'EmailId')
+}
+
+TEST_CAMPAIGN_VALIDATION_DURATION_MINUTES = 30
 
 CHANNEL_CONTENT_TABLE_DATA = {
     "SMS": {

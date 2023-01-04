@@ -39,6 +39,12 @@ HYPERION_LOCAL_DOMAIN = {
     "TEST_IBL_AOC": "http://uatpay.indusind.com/"
 }
 
+ONYX_LOCAL_DOMAIN = {
+    "TEST_VST": "http://m-stage-onyx-elb-1846785611.ap-south-1.elb.amazonaws.com/",
+}
+
+ONYX_LOCAL_CAMP_VALIDATION = ["TEST_VST"]
+
 CAMPAIGN_THRESHOLDS_PER_MINUTE = {
     "SMS": 5,
     "EMAIL": 1,

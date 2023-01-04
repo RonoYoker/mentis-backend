@@ -223,3 +223,15 @@ def get_campaign_monitoring_stats_for_admins(request):
     response = get_filtered_campaign_stats_v2(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def test_campaign_validator(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    session_id = request_headers.get('X-Authtoken', '')
+    data = dict(body=request_body, headers=session_id)
+    # query processor call
+    response = fetch_test_campaign_validation_status(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")

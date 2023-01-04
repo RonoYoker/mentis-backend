@@ -74,3 +74,25 @@ class RequestClient:
             logger.debug(f"Unable to process central api, Exception message :: {e}")
             return None
         return resp
+
+    @staticmethod
+    def post_onyx_local_api_request(body, bank, api_path):
+        # request send
+        api_url = f"{settings.ONYX_LOCAL_DOMAIN[f'{bank}']}{api_path}"
+        encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(json.dumps(body))
+        headers = {"Content-Type": "application/json"}
+        try:
+            response = requests.post(api_url, data=encrypted_data, headers=headers, verify=False)
+            if response.status_code == 200:
+                encypted_data = response.text
+                decrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).decrypt(
+                    encypted_data)
+                resp = json.loads(decrypted_data)
+            else:
+                logger.debug(f"local api response code :: {response.status_code}")
+                return None
+            logger.debug(f"local api response :: {response}")
+        except Exception as e:
+            logger.debug(f"Unable to process localdb api, Exception message :: {e}")
+            return None
+        return resp
