@@ -8,16 +8,16 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "creditascampaignengine",
-        "USER": "hypuatcollect",
-        "PASSWORD": "hypuatcollect#123$123",
+        "USER": "hyponyxuatcoll",
+        "PASSWORD": "hyponyxuatcoll#789$987",
         "HOST": "uat-web-instance-1.cc5jz0tb7qeu.ap-south-1.rds.amazonaws.com",
         "PORT": "3306"
     },
     "creditascampaignengine": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "creditascampaignengine",
-        "USER": "hypuatcollect",
-        "PASSWORD": "hypuatcollect#123$123",
+        "USER": "hyponyxuatcoll",
+        "PASSWORD": "hyponyxuatcoll#789$987",
         "HOST": "uat-web-instance-1.cc5jz0tb7qeu.ap-south-1.rds.amazonaws.com",
         "PORT": "3306"
     },
