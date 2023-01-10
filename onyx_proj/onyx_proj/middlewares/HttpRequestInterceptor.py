@@ -1,3 +1,5 @@
+import logging
+
 from onyx_proj.common.constants import TAG_FAILURE
 from onyx_proj.exceptions.permission_validation_exception import MethodPermissionValidationException, \
     UnauthorizedException
@@ -5,7 +7,7 @@ from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from django.http import HttpResponse
 import http
 import json
-
+logger = logging.getLogger("apps")
 class Singleton(type):
     _instances = {}
 
@@ -35,11 +37,15 @@ class HttpRequestInterceptor:
         session_obj.set_user_session_object(user_session)
 
         project_permissions = {}
-        for proj_roles in user_session.user.user_project_mapping_list:
-            project_permissions.setdefault(proj_roles.project_id, [])
-            for role_permission in proj_roles.roles.roles_permissions_mapping_list:
-                project_permissions[proj_roles.project_id].append(role_permission.permission.permission)
+        try:
+            for proj_roles in user_session.user.user_project_mapping_list:
+                project_permissions.setdefault(proj_roles.project_id, [])
+                for role_permission in proj_roles.roles.roles_permissions_mapping_list:
+                    project_permissions[proj_roles.project_id].append(role_permission.permission.permission)
+        except Exception as e:
+            logger.error(f"unable to fetch user project permissions, Exception: {e}.")
         session_obj.set_user_project_permissions(project_permissions)
+
 
     def process_exception(self,request, exception):
         if isinstance(exception,UnauthorizedException):

@@ -586,3 +586,17 @@ CHANNEL_CONTENT_TABLE_DATA = {
         "channel_id": "whatsAppContentId"
     }
 }
+
+class TestCampStatus(Enum):
+    NOT_DONE = "NOT_DONE"
+    VALIDATED = "VALIDATED"
+    MAKER_VALIDATED = "MAKER_VALIDATED"
+
+
+class Roles(Enum):
+    VIEWER = "VIEWER"
+    MAKER = "MAKER"
+    EXPORT = "EXPORT"
+    APPROVER = "APPROVER"
+    DEACTIVATE = "DEACTIVATE"
+    TECH = "TECH"

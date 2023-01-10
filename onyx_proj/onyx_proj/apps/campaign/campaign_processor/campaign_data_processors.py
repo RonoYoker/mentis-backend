@@ -4,6 +4,7 @@ import json
 import jwt
 import logging
 
+from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.apps.campaign.campaign_processor.campaign_processor_helper import add_filter_to_query_using_params, \
     add_status_to_query_using_params
 from onyx_proj.apps.campaign.campaign_processor import app_settings
@@ -343,23 +344,106 @@ def update_segment_count_and_status_for_campaign(request_data):
 
 
 def validate_campaign(request_data):
+    from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import fetch_test_campaign_validation_status
+    method_name = "validate_campaign"
+    logger.info(f"Trace entry, method name: {method_name}, request_data: {request_data}")
     body = request_data.get("body", {})
     headers = request_data.get("headers", {})
     session_id = headers.get("X-AuthToken", None)
-    campaign_id = body.get("campaign_id")
+    cbc_id = body.get("campaign_builder_campaign_id")
 
-    if campaign_id is None:
+    if cbc_id is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Campaign Id not present")
+                    details_message="Campaign Id not present.")
+
+    user_session = Session().get_user_session_object()
+    user_name = user_session.user.user_name
+    if user_session is None or user_name is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="can't find user session or user name")
+
+    validation_data = fetch_test_campaign_validation_status(request_data)
+    logger.info(f"method name: {method_name}, validation_data: {validation_data}")
+    if validation_data is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Didn't find test campaign data.")
+
+    result = validation_data.pop("result", TAG_FAILURE)
+    data = validation_data.pop("data", {})
+    details_message = validation_data.pop("details_message", "Something went wrong.")
+    if result is not TAG_SUCCESS:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=result,
+                    details_message=details_message)
+
+    if data.get("system_validated", False) is not True:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Test campaign was not delivered or url not clicked.")
+
+    data.pop("send_test_campaign")
+    data.pop("system_validated")
+    data['validated'] = False
+
+    resp = CED_CampaignBuilderCampaign().get_cb_id_is_rec_by_cbc_id(cbc_id)
+    logger.info(f"method name: {method_name}, resp: {resp}")
+    if resp is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Campaign data not found.")
+    cb_id = resp[0].get("UniqueId")
+    created_by = resp[0].get("CreatedBy")
+    maker_validator = resp[0].get("MakerValidator", None)
+    if resp[0].get("IsRecurring") == True:
+        camp_status = CED_CampaignBuilderCampaign().get_camp_status_by_cb_id(cb_id)
+        logger.info(f"method name: {method_name}, camp_status: {camp_status}")
+        if camp_status[0].get("camp_status") == TestCampStatus.NOT_DONE.value:
+            update_resp = CED_CampaignBuilderCampaign().maker_validate_campaign_builder_campaign(cb_id,
+                                                                     TestCampStatus.MAKER_VALIDATED.value, user_name)
+            if update_resp is True:
+                data['validated'] = True
+                return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                            data=data)
+        elif camp_status[0].get("camp_status") == TestCampStatus.MAKER_VALIDATED.value:
+            if maker_validator is None or maker_validator == user_name or created_by == user_name:
+                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                            details_message="Maker validator is not found or the same as approver validator")
+            else:
+                update_resp = CED_CampaignBuilderCampaign().approver_validate_campaign_builder_campaign(cb_id,
+                                                                           TestCampStatus.VALIDATED.value, user_name)
+                if update_resp is True:
+                    data['validated'] = True
+                    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                                data=data)
+        elif camp_status[0].get("camp_status") == TestCampStatus.VALIDATED.value:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Campaign is already validated.")
+
+    elif resp[0].get("IsRecurring") == False:
+        camp_status = CED_CampaignBuilderCampaign().get_camp_status_by_cbc_id(cbc_id)
+        logger.info(f"method name: {method_name}, camp_status: {camp_status}")
+        if camp_status[0].get("camp_status") == TestCampStatus.NOT_DONE.value:
+            update_resp = CED_CampaignBuilderCampaign().maker_validate_campaign_builder_campaign_by_unique_id(cbc_id,
+                                                                        TestCampStatus.MAKER_VALIDATED.value, user_name)
+            if update_resp is True:
+                data['validated'] = True
+                return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                            data=data)
+        elif camp_status[0].get("camp_status") == TestCampStatus.MAKER_VALIDATED.value:
+            if maker_validator is None or maker_validator == user_name or created_by == user_name:
+                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                            details_message="Maker validator is not found or the same as approver validator")
+            else:
+                update_resp = CED_CampaignBuilderCampaign().approver_validate_campaign_builder_campaign_by_unique_id(cbc_id,
+                                                                                TestCampStatus.VALIDATED.value, user_name)
+                if update_resp is True:
+                    data['validated'] = True
+                    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                                data=data)
+        elif camp_status[0].get("camp_status") == TestCampStatus.VALIDATED.value:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Campaign is already validated.")
 
 
-    updated = CED_CampaignBuilderCampaign().validate_campaign_builder_campaign(campaign_id)
-
-    resp = {
-        "success":updated
-    }
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
-                data=resp)
+                data=data)
 
 
 def filter_list(request, session_id):

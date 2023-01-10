@@ -134,7 +134,7 @@ def generate_recurring_schedule(request):
 
 @csrf_exempt
 @UserAuth.user_authentication()
-def validate_recurring_campaign(request):
+def validate_test_campaign(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
     data = dict(body=request_body, headers=request_headers)

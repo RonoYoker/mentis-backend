@@ -43,6 +43,6 @@ class CED_CampaignBuilder:
         return dict_fetch_query_all(self.curr, query)
 
     def get_project_id_from_campaign_builder_id(self,campaign_id):
-        query = f"Select s.ProjectId as project_id from {self.table_name} cb join CED_Segment s on cb.SegmentId = s.UniqueId where cb.UniqueId = {campaign_id}"
-        result = query_executor(self.curr,query)
-        return result.get("project_id") if result is not None else None
+        query = f"Select s.ProjectId as project_id from {self.table_name} cb join CED_Segment s on cb.SegmentId = s.UniqueId where cb.UniqueId = '{campaign_id}'"
+        result = dict_fetch_query_all(self.curr,query)
+        return result[0].get("project_id") if result is not None else None
