@@ -33,6 +33,8 @@ class HttpRequestInterceptor:
     def prehandle(self,request):
         session_obj = Session()
         auth_token = request.headers.get("X-AuthToken", None)
+        if auth_token is None:
+            return
         user_session = CEDUserSession().get_session_obj_from_session_id(session_id=auth_token)
         session_obj.set_user_session_object(user_session)
 
