@@ -8,7 +8,7 @@ from onyx_proj.models.CED_EntityTagMapping import CEDEntityTagMapping
 from onyx_proj.models.CED_Segment_model import *
 from onyx_proj.models.CED_Projects_model import *
 from onyx_proj.models.CED_DataID_Details_model import *
-from onyx_proj.models.CED_UserSession_model import *
+from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from onyx_proj.apps.content.content_procesor import *
 import uuid
 from onyx_proj.common.request_helper import RequestClient

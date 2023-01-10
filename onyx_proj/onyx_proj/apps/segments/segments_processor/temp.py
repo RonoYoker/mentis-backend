@@ -5,7 +5,7 @@ import uuid
 from onyx_proj.common.constants import TAG_SUCCESS, TAG_FAILURE
 from onyx_proj.models.CED_EntityTagMapping import CEDEntityTagMapping
 from onyx_proj.models.CED_Segment_model import CEDSegment
-from onyx_proj.models.CED_UserSession_model import *
+from onyx_proj.models.CED_UserSession_model import CEDUserSession
 
 logger = logging.getLogger("apps")
 

@@ -21,7 +21,7 @@ from onyx_proj.apps.slot_management.app_settings import SLOT_INTERVAL_MINUTES
 
 from django.conf import settings
 
-from onyx_proj.models.CED_UserSession_model import *
+from onyx_proj.models.CED_UserSession_model import CEDUserSession
 
 logger = logging.getLogger("apps")
 

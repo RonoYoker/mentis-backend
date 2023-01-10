@@ -3,7 +3,7 @@ import logging
 
 from onyx_proj.common.constants import SegmentList, TAG_SUCCESS, TAG_FAILURE, SEGMENT_END_DATE_FORMAT
 from onyx_proj.models.CED_Segment_model import CEDSegment
-from onyx_proj.models.CED_UserSession_model import *
+from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from datetime import datetime
 from datetime import timedelta
 

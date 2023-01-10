@@ -2,8 +2,8 @@ from onyx_proj.common.utils.datautils import nested_path_get
 from onyx_proj.exceptions.permission_validation_exception import MethodPermissionValidationException, \
     UnauthorizedException
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
-from onyx_proj.models.CED_UserSession_model import *
-
+from onyx_proj.models.CED_UserSession_model import CEDUserSession
+import logging
 logger = logging.getLogger("apps")
 
 class UserAuth(object):
