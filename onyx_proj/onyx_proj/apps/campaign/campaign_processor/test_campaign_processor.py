@@ -153,8 +153,11 @@ def fetch_test_campaign_validation_status(request_data) -> json:
     response = RequestClient.post_onyx_local_api_request(data, project_name, TEST_CAMPAIGN_VALIDATION_API_PATH)
     logger.info(f"method: {method_name}, local request response {response}")
 
-    if response is None or response.get("result", "FAILURE") != "SUCCESS":
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+    if response is None:
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result,
+                    details_message="Onyx local API not working")
+    elif response.get("result", "FAILURE") != "SUCCESS":
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result,
                     details_message=response.get('details_message', "Something Went Wrong"))
     elif response.get('data', None) is None:
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result,

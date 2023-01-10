@@ -38,7 +38,7 @@ HYPERION_LOCAL_DOMAIN = {
 }
 
 ONYX_LOCAL_DOMAIN = {
-    "VST_Ethera": "http://m-prod-onyxlocal-elb-1286808968.ap-south-1.elb.amazonaws.com",
+    "VST_Ethera": "http://m-prod-onyxlocal-elb-1286808968.ap-south-1.elb.amazonaws.com/",
 }
 
 ONYX_LOCAL_CAMP_VALIDATION = ["VST_Ethera"]
