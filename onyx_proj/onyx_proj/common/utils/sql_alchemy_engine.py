@@ -20,7 +20,7 @@ class SqlAlchemyEngine(object, metaclass=Singleton):
             engine = create_engine(
                 f"mysql://{settings.DATABASES[database]['USER']}:{settings.DATABASES[database]['PASSWORD']}@"
                 f"{settings.DATABASES[database]['HOST']}:{settings.DATABASES[database]['PORT']}/{settings.DATABASES[database]['NAME']}",
-                echo=True, pool_size=2, max_overflow=5, pool_pre_ping=True, pool_recycle=3600)
+                echo=True, pool_size=10, max_overflow=20, pool_pre_ping=True, pool_recycle=3600)
             self.engines[database] = engine
 
         return self.engines[database]
