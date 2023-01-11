@@ -374,14 +374,14 @@ def validate_campaign(request_data):
     if result is not TAG_SUCCESS:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=result,
                     details_message=details_message)
-
-    if data.get("system_validated", False) is not True:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Test campaign was not delivered or url not clicked.")
-
     data.pop("send_test_campaign")
-    data.pop("system_validated")
     data['validated'] = False
+    if data.get("system_validated", False) is not True:
+        data.pop("system_validated")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Test campaign was not delivered or url not clicked.", data=data)
+
+    data.pop("system_validated")
 
     resp = CED_CampaignBuilderCampaign().get_cb_id_is_rec_by_cbc_id(cbc_id)
     logger.info(f"method name: {method_name}, resp: {resp}")
