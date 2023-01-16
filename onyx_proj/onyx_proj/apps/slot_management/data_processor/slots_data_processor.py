@@ -1,13 +1,15 @@
-
+import json
 from datetime import datetime,timedelta
 from copy import deepcopy
-
+import logging
 from onyx_proj.apps.slot_management.app_settings import SLOT_INTERVAL_MINUTES
-from onyx_proj.common.constants import TAG_SUCCESS, TAG_FAILURE
+from onyx_proj.common.constants import TAG_SUCCESS, TAG_FAILURE, RateLimitationLevels
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
+from onyx_proj.models.CED_Projects import CED_Projects
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from django.conf import settings
 
+logger = logging.getLogger("apps")
 
 def vaildate_campaign_for_scheduling(request_data):
 
@@ -24,11 +26,21 @@ def vaildate_campaign_for_scheduling(request_data):
     content_date_keys_to_validate = set()
     project_id = CEDSegment().get_project_id_by_segment_id(segment_id)
     if project_id is None:
-        return dict(status_code=200, result=TAG_FAILURE, response={"error":"Invalid ProjectId Associated"})
-    segment_count = CEDSegment().get_segment_count_by_unique_id(segment_id)
+        return dict(status_code=200, result=TAG_FAILURE, response={"error": "Invalid ProjectId Associated"})
 
+    segment_count = CEDSegment().get_segment_count_by_unique_id(segment_id)
     if segment_count == 0:
         return dict(status_code=200, result=TAG_FAILURE, response={"error": "No data found for this Segment"})
+
+    project_data = CED_Projects().get_project_bu_limits_by_project_id(project_id)
+    if project_data is None:
+        return dict(status_code=200, result=TAG_FAILURE, response={"error": "No project data found for given project id"})
+    business_unit_id = project_data.get("business_unit_id",None)
+    project_threshold = json.loads(project_data.get("project_limit",None))
+    business_unit_threshold = json.loads(project_data.get("bu_limit", None))
+    if business_unit_id is None or project_threshold is None or business_unit_threshold is None\
+            or project_threshold == "" or business_unit_threshold == "":
+        return dict(status_code=200, result=TAG_FAILURE, response={"error": "Invalid project details Associated"})
 
     for campaign in campaigns_list:
         camp_date = datetime.strptime(campaign.get("startDateTime"),"%Y-%m-%d %H:%M:%S").date()
@@ -36,59 +48,74 @@ def vaildate_campaign_for_scheduling(request_data):
         key = (camp_date, camp_type)
         dates_to_validate.add(camp_date)
         content_date_keys_to_validate.add(key)
-
-    campaign_validate_resp = []
-
-    if campaign_id is not None:
-        curr_campaigns = CED_CampaignBuilderCampaign().get_campaigns_segment_info_by_dates_campaignId([seg_date.strftime("%Y-%m-%d") for seg_date in dates_to_validate],project_id,segment_id,campaign_id)
-    else:
-        curr_campaigns = CED_CampaignBuilderCampaign().get_campaigns_segment_info_by_dates([seg_date.strftime("%Y-%m-%d") for seg_date in dates_to_validate], project_id, segment_id)
-    for campaign in curr_campaigns:
-        try:
-            camp_date = campaign.get("StartDateTime").date()
-            camp_type = campaign.get("ContentType")
-        except:
-            continue
-        key = (camp_date,camp_type)
-        if key not in content_date_keys_to_validate:
-            continue
-        if campaign.get("StartDateTime") is None or campaign.get("EndDateTime") is None:
-            continue
-        campaign = {
-            "start":campaign.get("StartDateTime"),
-            "end":campaign.get("EndDateTime"),
-            "count":int(campaign.get("Records",0))
-        }
-        valid_campaigns_date_type_data.setdefault(key,[]).append(campaign)
-
-    for campaign in campaigns_list:
-        camp_date = datetime.strptime(campaign.get("startDateTime"),"%Y-%m-%d %H:%M:%S").date()
-        camp_type = campaign.get("contentType","")
-        key = (camp_date,camp_type)
-        campaigns_date_type_data = deepcopy(valid_campaigns_date_type_data)
-        camp_info = {
-            "start": datetime.strptime(campaign.get("startDateTime"), "%Y-%m-%d %H:%M:%S"),
-            "end": datetime.strptime(campaign.get("endDateTime"), "%Y-%m-%d %H:%M:%S"),
-            "count": segment_count
-        }
-        campaigns_date_type_data.setdefault(key,[]).append(camp_info)
-        valid_schedule = True
-        for key,schedule in campaigns_date_type_data.items():
-            valid_schedule = valid_schedule and validate_schedule(schedule,key[1])
-        # valid_schedule = validate_schedule(campaigns_date_type_data[camp_type],camp_type)
-        if valid_schedule is True:
-            valid_campaigns_date_type_data.setdefault(key,[]).append(camp_info)
-
-        campaign_validate_resp.append(
-            {
-                "content_type":camp_type,
-                "valid_schedule" : valid_schedule,
-                "date": camp_info["start"].strftime("%Y-%m-%d"),
-                "start_time": camp_info["start"].strftime("%H:%M:%S"),
-                "end_time": camp_info["end"].strftime("%H:%M:%S"),
-                "day_of_week": camp_info["start"].strftime("%A")
+    for rate_limitation_level in [RateLimitationLevels.BUSINESS_UNIT, RateLimitationLevels.PROJECT]:
+        campaign_validate_resp = []
+        if rate_limitation_level == RateLimitationLevels.BUSINESS_UNIT:
+            if campaign_id is not None:
+                curr_campaigns = CED_CampaignBuilderCampaign().get_campaigns_segment_info_by_dates_business_unit_id_campaignId([seg_date.strftime("%Y-%m-%d") for seg_date in dates_to_validate],business_unit_id,campaign_id)
+            else:
+                curr_campaigns = CED_CampaignBuilderCampaign().get_campaigns_segment_info_by_dates_business_unit_id([seg_date.strftime("%Y-%m-%d") for seg_date in dates_to_validate], business_unit_id)
+        elif rate_limitation_level == RateLimitationLevels.PROJECT:
+            if campaign_id is not None:
+                curr_campaigns = CED_CampaignBuilderCampaign().get_campaigns_segment_info_by_dates_campaignId([seg_date.strftime("%Y-%m-%d") for seg_date in dates_to_validate],project_id,campaign_id)
+            else:
+                curr_campaigns = CED_CampaignBuilderCampaign().get_campaigns_segment_info_by_dates([seg_date.strftime("%Y-%m-%d") for seg_date in dates_to_validate], project_id)
+        if curr_campaigns is None:
+            logger.error("Not able to fetch current campaign in method: vaildate_campaign_for_scheduling")
+            return dict(status_code=200, result=TAG_FAILURE, response={"error": "Something went wrong."})
+        for campaign in curr_campaigns:
+            try:
+                camp_date = campaign.get("StartDateTime").date()
+                camp_type = campaign.get("ContentType")
+            except:
+                continue
+            key = (camp_date,camp_type)
+            if key not in content_date_keys_to_validate:
+                continue
+            if campaign.get("StartDateTime") is None or campaign.get("EndDateTime") is None:
+                continue
+            campaign = {
+                "start":campaign.get("StartDateTime"),
+                "end":campaign.get("EndDateTime"),
+                "count":int(campaign.get("Records",0))
             }
-        )
+            valid_campaigns_date_type_data.setdefault(key,[]).append(campaign)
+
+        for campaign in campaigns_list:
+            camp_date = datetime.strptime(campaign.get("startDateTime"),"%Y-%m-%d %H:%M:%S").date()
+            camp_type = campaign.get("contentType","")
+            key = (camp_date,camp_type)
+            campaigns_date_type_data = deepcopy(valid_campaigns_date_type_data)
+            camp_info = {
+                "start": datetime.strptime(campaign.get("startDateTime"), "%Y-%m-%d %H:%M:%S"),
+                "end": datetime.strptime(campaign.get("endDateTime"), "%Y-%m-%d %H:%M:%S"),
+                "count": segment_count
+            }
+            campaigns_date_type_data.setdefault(key,[]).append(camp_info)
+            valid_schedule = True
+            slot_limit_per_min = None
+            for date_channel_key,schedule in campaigns_date_type_data.items():
+                if rate_limitation_level == RateLimitationLevels.BUSINESS_UNIT:
+                    slot_limit_per_min = business_unit_threshold[date_channel_key[1]]
+                elif rate_limitation_level == RateLimitationLevels.PROJECT:
+                    slot_limit_per_min = project_threshold[date_channel_key[1]]
+                if slot_limit_per_min is None:
+                    return dict(status_code=200, result=TAG_FAILURE, response={"error": f"Not getting channel : {date_channel_key[1]} slot limits"})
+                valid_schedule = valid_schedule and validate_schedule(schedule, slot_limit_per_min)
+            # valid_schedule = validate_schedule(campaigns_date_type_data[camp_type],camp_type)
+            if valid_schedule is True:
+                valid_campaigns_date_type_data.setdefault(key,[]).append(camp_info)
+
+            campaign_validate_resp.append(
+                {
+                    "content_type":camp_type,
+                    "valid_schedule" : valid_schedule,
+                    "date": camp_info["start"].strftime("%Y-%m-%d"),
+                    "start_time": camp_info["start"].strftime("%H:%M:%S"),
+                    "end_time": camp_info["end"].strftime("%H:%M:%S"),
+                    "day_of_week": camp_info["start"].strftime("%A")
+                }
+            )
 
     # valid_schedule = True
     # for key,schedule in campaigns_date_type_data.items():
@@ -98,8 +125,8 @@ def vaildate_campaign_for_scheduling(request_data):
     return dict(status_code=200, result=TAG_SUCCESS, response=campaign_validate_resp)
 
 
-def validate_schedule(schedule,content_type):
-    slot_limit = settings.CAMPAIGN_THRESHOLDS_PER_MINUTE[content_type] * SLOT_INTERVAL_MINUTES
+def validate_schedule(schedule,slot_limit_per_min):
+    slot_limit = slot_limit_per_min * SLOT_INTERVAL_MINUTES
     curr_segments_map = {}
     filled_segment_count = {}
     for x in schedule:
@@ -139,4 +166,3 @@ def validate_schedule(schedule,content_type):
             ordered_list.remove(keys)
 
     return True if len(ordered_list) == 0 else False
-

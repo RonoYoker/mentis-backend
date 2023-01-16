@@ -592,7 +592,6 @@ class TestCampStatus(Enum):
     VALIDATED = "VALIDATED"
     MAKER_VALIDATED = "MAKER_VALIDATED"
 
-
 class Roles(Enum):
     VIEWER = "VIEWER"
     MAKER = "MAKER"
@@ -600,3 +599,7 @@ class Roles(Enum):
     APPROVER = "APPROVER"
     DEACTIVATE = "DEACTIVATE"
     TECH = "TECH"
+
+class RateLimitationLevels(Enum):
+    BUSINESS_UNIT = "BUSINESS_UNIT"
+    PROJECT = "PROJECT"

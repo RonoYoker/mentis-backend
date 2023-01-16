@@ -25,3 +25,8 @@ class CED_Projects:
                 f' INNER JOIN CED_CampaignBuilder ON CED_Segment.UniqueId = CED_CampaignBuilder.SegmentId INNER JOIN CED_CampaignBuilderCampaign ' \
                 f'ON CED_CampaignBuilder.UniqueId = CED_CampaignBuilderCampaign.CampaignBuilderId WHERE CED_CampaignBuilderCampaign.UniqueId = "{cbc_id}"'
         return dict_fetch_query_all(self.curr, query)
+
+    def get_project_bu_limits_by_project_id(self,unique_id):
+        baseQuery = f""" SELECT bu.UniqueId as business_unit_id, bu.CampaignThreshold as bu_limit, p.CampaignThreshold as project_limit FROM CED_BusinessUnit bu JOIN CED_Projects p on p.BusinessUnitId = bu.UniqueId WHERE p.UniqueId = '{unique_id}' GROUP BY bu.UniqueId """
+        return fetch_one(self.curr, baseQuery)
+
