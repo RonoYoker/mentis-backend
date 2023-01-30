@@ -86,9 +86,9 @@ def vaildate_campaign_for_scheduling(request_data):
         slot_limit_per_min_project = project_threshold[date_channel_key[1]]
         valid_schedule = True
         for key,schedule in campaigns_date_type_data_project.items():
-            valid_schedule = valid_schedule and validate_schedule(schedule, slot_limit_per_min_project)
+            valid_schedule = valid_schedule and validate_campaign_schedule(schedule, slot_limit_per_min_project,valid_project_campaigns.get(key,[]))
         for key,schedule in campaigns_date_type_data_bu.items():
-            valid_schedule = valid_schedule and validate_schedule(schedule, slot_limit_per_min_bu)
+            valid_schedule = valid_schedule and validate_campaign_schedule(schedule, slot_limit_per_min_bu,valid_bu_campaigns.get(key,[]))
 
         if valid_schedule is True:
             valid_bu_campaigns.setdefault(date_channel_key,[]).append(camp_info)
@@ -110,6 +110,9 @@ def vaildate_campaign_for_scheduling(request_data):
 
 
 def validate_schedule(schedule,slot_limit_per_min):
+    if len(schedule) == 0:
+        return {"success": True, "campaigns_remaining": {}}
+
     slot_limit = slot_limit_per_min * SLOT_INTERVAL_MINUTES
     curr_segments_map = {}
     filled_segment_count = {}
@@ -149,7 +152,25 @@ def validate_schedule(schedule,slot_limit_per_min):
         for keys in keys_remove:
             ordered_list.remove(keys)
 
-    return True if len(ordered_list) == 0 else False
+    resp = {"success": True if len(ordered_list) == 0 else False ,"campaigns_remaining":curr_segments_map}
+    return resp
+
+def validate_campaign_schedule(new_schedule, slot_limit_per_min,old_schedule):
+    resp_new = validate_schedule(new_schedule,slot_limit_per_min)
+    resp_old = validate_schedule(old_schedule,slot_limit_per_min)
+
+    if resp_new["success"] is True:
+        return True
+    if resp_old["success"] is False:
+        for campaign,rem_count in resp_old["campaigns_remaining"].items():
+            if campaign not in resp_new["campaigns_remaining"] or resp_new["campaigns_remaining"][campaign] != rem_count:
+                return False
+        for campaign,rem_count in resp_new["campaigns_remaining"].items():
+            if campaign not in resp_old["campaigns_remaining"] or resp_old["campaigns_remaining"][campaign] != rem_count:
+                return False
+        return True
+    else:
+        return False
 
 
 def fetch_valid_bu_campaigns(content_date_keys_to_validate,dates_to_validate,business_unit_id,campaign_id):

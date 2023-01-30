@@ -45,7 +45,7 @@ class HttpRequestInterceptor:
                 for role_permission in proj_roles.roles.roles_permissions_mapping_list:
                     project_permissions[proj_roles.project_id].append(role_permission.permission.permission)
         except Exception as e:
-            logger.error(f"unable to fetch user project permissions, Exception: {e}.")
+            logger.error(f"unable to fetch user project permissions, Exception: {e}. project_permission::{project_permissions}")
         session_obj.set_user_project_permissions(project_permissions)
 
 
