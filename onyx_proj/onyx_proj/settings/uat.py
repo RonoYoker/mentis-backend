@@ -1,27 +1,16 @@
 from .base import *
+from ..common.secret_manager import fetch_secrets_from_secret_manager
 
 DEBUG = True
 
+secret_name = "uat/onyx/infra"
+region_name = "ap-south-1"
+
+INFRA_CONF = fetch_secrets_from_secret_manager(secret_name, region_name)
+
 # *********** DATABASES ***********
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "creditascampaignengine",
-        "USER": "hyponyxuatcoll",
-        "PASSWORD": "hyponyxuatcoll#789$987",
-        "HOST": "uat-web-instance-1.cc5jz0tb7qeu.ap-south-1.rds.amazonaws.com",
-        "PORT": "3306"
-    },
-    "creditascampaignengine": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "creditascampaignengine",
-        "USER": "hyponyxuatcoll",
-        "PASSWORD": "hyponyxuatcoll#789$987",
-        "HOST": "uat-web-instance-1.cc5jz0tb7qeu.ap-south-1.rds.amazonaws.com",
-        "PORT": "3306"
-    },
-}
+DATABASES = INFRA_CONF["DATABASE"]
 
 HYPERION_LOCAL_DOMAIN = {
     "TEST_TCL": "https://tclctpay.tatacapital.com/",  # https://tclctpay.tatacapital.com/hyperioncampaigntooldashboard
@@ -45,7 +34,7 @@ ONYX_LOCAL_DOMAIN = {
 
 ONYX_LOCAL_CAMP_VALIDATION = ["TEST_VST"]
 
+JWT_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["JWT_ENCRYPTION_KEY"]
+CENTRAL_TO_LOCAL_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["CENTRAL_TO_LOCAL_ENCRYPTION_KEY"]
 
-JWT_ENCRYPTION_KEY = "3j2379yxb274g22bc40298294yx2388x223498x2x424"
-CENTRAL_TO_LOCAL_ENCRYPTION_KEY = "test@123@123"
 HYPERION_CENTRAL_DOMAIN = "http://uatdev.hyperiontool.com/"

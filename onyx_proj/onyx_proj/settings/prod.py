@@ -1,27 +1,16 @@
 from .base import *
+from ..common.secret_manager import fetch_secrets_from_secret_manager
 
 DEBUG = True
 
+secret_name = "prod/onyx/infra"
+region_name = "ap-south-1"
+
+INFRA_CONF = fetch_secrets_from_secret_manager(secret_name, region_name)
+
 # *********** DATABASES ***********
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "creditascampaignengine",
-        "USER": "hypprodcollecApp",
-        "PASSWORD": "hypprodcollecApp#23$56",
-        "HOST": "prod-hyperion.cluster-cc5jz0tb7qeu.ap-south-1.rds.amazonaws.com",
-        "PORT": "3306"
-    },
-    "creditascampaignengine":  {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "creditascampaignengine",
-        "USER": "hypprodcollecApp",
-        "PASSWORD": "hypprodcollecApp#23$56",
-        "HOST": "prod-hyperion.cluster-cc5jz0tb7qeu.ap-south-1.rds.amazonaws.com",
-        "PORT": "3306"
-    },
-}
+DATABASES = INFRA_CONF["DATABASE"]
 
 
 HYPERION_LOCAL_DOMAIN = {
@@ -44,6 +33,6 @@ ONYX_LOCAL_DOMAIN = {
 ONYX_LOCAL_CAMP_VALIDATION = ["VST_Ethera"]
 
 
-JWT_ENCRYPTION_KEY = "fdsuo3283289y43279bdwudb29r9y283f29239r2t"
-CENTRAL_TO_LOCAL_ENCRYPTION_KEY = "prodcenter$123@123"
+JWT_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["JWT_ENCRYPTION_KEY"]
+CENTRAL_TO_LOCAL_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["CENTRAL_TO_LOCAL_ENCRYPTION_KEY"]
 HYPERION_CENTRAL_DOMAIN = "https://hyperiontool.com/"
