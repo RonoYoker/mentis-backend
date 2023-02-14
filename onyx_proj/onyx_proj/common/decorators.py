@@ -4,6 +4,7 @@ from onyx_proj.exceptions.permission_validation_exception import MethodPermissio
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
 import logging
+import json
 logger = logging.getLogger("apps")
 
 class UserAuth(object):
