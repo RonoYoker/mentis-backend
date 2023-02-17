@@ -23,6 +23,7 @@ HYPERION_LOCAL_DOMAIN = {
     "TEST_ABL": "http://uatpay.axisbank.com/",
     "TEST_PRL": "http://uatpay.piramalfinance.com/",
     "TEST_VST": "http://uatpay.vastuhfc.com/",
+    "TEST_HDB": "http://m-stage-uatwebservers-elb-2081502586.ap-south-1.elb.amazonaws.com/",
     "TEST_IBL_ACQ": "http://uatpay.indusind.com/",
     "TEST_IBL_CRD": "http://uatpay.indusind.com/",
     "TEST_IBL_AOC": "http://uatpay.indusind.com/"
