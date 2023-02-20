@@ -8,7 +8,7 @@ on:
 env:
   ECR_REPO_URL: ${{ secrets.onyx_PROD_ECR_REPO }}
   DOCKER_COMPOSE_FILE: docker-compose-central-prod.yml
-  HEALTHCHECK_URL: http://localhost:8000/ping
+  HEALTHCHECK_URL: http://localhost:8080/ping
   AWS_REGION: ${{ secrets.PROD_AWS_REGION }}                
   ECR_REPOSITORY: onyx-prod
   ECS_SERVICE: onyx-prod-svc                 
