@@ -1,10 +1,6 @@
-import os
+from .base import *
 
-curr_env = os.environ.get("CURR_ENV", "dev")
-
-if curr_env == "dev":
-    from .dev import *
-if curr_env == "prod":
-    from .prod import *
-if curr_env == "uat":
-    from .uat import *
+if os.environ["CURR_ENV"].lower() == "dev":
+    from .bank_settings.central_dev import *
+else:
+    from onyx_proj.settings.settings import *

@@ -196,6 +196,10 @@ class CED_Segment(Base, Orm_helper):
     type = Column("Type", String)
     refresh_date = Column("RefreshDate", TIMESTAMP)
     refresh_status = Column("RefreshStatus", String)
+    count_refresh_start_date = Column("DataRefreshStartDate", TIMESTAMP)
+    count_refresh_end_date = Column("DataRefreshEndDate", TIMESTAMP)
+    data_refresh_start_date = Column("CountRefreshStartDate", TIMESTAMP)
+    data_refresh_end_date = Column("CountRefreshEndDate", TIMESTAMP)
     tag_mapping = relationship("CED_EntityTagMapping")
 
     def __init__(self, data={}):

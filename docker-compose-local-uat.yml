@@ -1,0 +1,10 @@
+version: '3.3'
+services:
+    onyx:
+        command: /bin/bash -c "/usr/bin/supervisord -n -c /etc/supervisord.d/onyx_config.conf"
+        environment:
+            - CURR_ENV=uat
+        ports:
+            - '8080:80'
+        image: '$TAG'
+

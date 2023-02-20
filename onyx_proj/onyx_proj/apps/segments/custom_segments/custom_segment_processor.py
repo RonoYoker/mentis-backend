@@ -1,19 +1,21 @@
 from datetime import datetime
+import uuid
 import http
+import logging
 import json
 import re
-import logging
+
+from onyx_proj.apps.content.content_procesor import content_headers_processor
+from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.common.constants import *
 from onyx_proj.models.CED_EntityTagMapping import CEDEntityTagMapping
-from onyx_proj.models.CED_Segment_model import *
-from onyx_proj.models.CED_Projects_model import *
-from onyx_proj.models.CED_DataID_Details_model import *
+from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
-from onyx_proj.apps.content.content_procesor import *
-import uuid
-from onyx_proj.common.request_helper import RequestClient
+from onyx_proj.apps.segments.app_settings import QueryKeys, AsyncTaskCallbackKeys, AsyncTaskSourceKeys, AsyncTaskRequestKeys, SegmentStatusKeys
 from django.conf import settings
+
 logger = logging.getLogger("apps")
+
 
 def custom_segment_processor(request_data) -> json:
     """
@@ -35,12 +37,12 @@ def custom_segment_processor(request_data) -> json:
     session_id = headers.get("X-AuthToken", None)
     sql_query = body.get("sql_query", None)
     project_name = body.get("project_name", None)
-    project_id = body.get("project_id", None)
     data_id = body.get("data_id", None)
+    project_id = body.get("project_id", None)
     tag_mapping = body.get("tag_mapping", None)
 
     # check if request has data_id and project_id
-    if project_id is None or data_id is None:
+    if project_id is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Missing parameters project_id/data_id in request body.")
 
@@ -49,74 +51,107 @@ def custom_segment_processor(request_data) -> json:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Custom query cannot be null/empty.")
 
-    if tag_mapping is None or len(tag_mapping) == 0:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Tag Mapping cannot be null or empty")
-
     # check if Title is valid
     if str(body.get("title")) is None or str(body.get("title")) == "":
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Custom segment cannot be saved without a title.")
 
-    query_validation_response = query_validation_check(sql_query)
-
-    if query_validation_response.get("result") == TAG_FAILURE:
-        return query_validation_response
-
-    validation_response = hyperion_local_rest_call(project_name, sql_query)
-
-    if validation_response.get("result") == TAG_FAILURE:
-        return validation_response
-
-    response_data = validation_response.get("data", {})
-
-    if not response_data:
+    if tag_mapping is None or len(tag_mapping) == 0:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Query response data is empty/null.")
+                    details_message="Tag Mapping cannot be null or empty")
 
-    headers_data = content_headers_processor([*response_data[0]], project_id)
-
-    extra_field_string = json.dumps({"headers_list": headers_data})
+    query_validation_response = query_validation_check(sql_query)
 
     segment_id = uuid.uuid4().hex
 
     user = CEDUserSession().get_user_details(dict(SessionId=session_id))
 
     user_name = user[0].get("UserName", None)
-    # user_name = "test_user"
 
-    headers = []
-    for ele in json.loads(extra_field_string).get("headers_list", []):
-        headers.append(ele.get("columnName"))
+    if query_validation_response.get("result") == TAG_FAILURE:
+        return query_validation_response
 
-    test_sql_query_response = generate_test_query(sql_query, headers)
+    # hyperion local rest call changes here but only bank specific (currently for VST)
+    if project_name in ASYNC_QUERY_EXECUTION_ENABLED:
+        save_segment_dict = get_drafted_segment_dict(Title=body.get("title"),
+                                                     UniqueId=segment_id,
+                                                     ProjectId=project_id,
+                                                     DataId=data_id,
+                                                     SqlQuery=sql_query,
+                                                     CampaignSqlQuery=sql_query,
+                                                     Records=None,
+                                                     User=user_name,
+                                                     Headers=None,
+                                                     TestCampaignSqlQuery=None,
+                                                     DataImageSqlQuery=sql_query,
+                                                     EmailCampaignSqlQuery=sql_query)
 
-    if test_sql_query_response.get("result") == TAG_FAILURE:
-        return test_sql_query_response
+        db_res = save_custom_segment(save_segment_dict)
+        save_tags_for_segment(segment_id, tag_mapping)
+        if db_res.get("status_code") != 200:
+            return db_res
 
-    # create parameter mapping to insert custom segment
+        request_body = dict(
+            source=AsyncTaskSourceKeys.ONYX_CENTRAL.value,
+            request_type=AsyncTaskRequestKeys.ONYX_CUSTOM_SEGMENT_CREATION.value,
+            request_id=segment_id,
+            project_id=project_id,
+            callback=dict(callback_key=AsyncTaskCallbackKeys.ONYX_SAVE_CUSTOM_SEGMENT.value),
+            queries=generate_queries_for_async_task(sql_query),
+            project_name=project_name
+        )
 
-    save_segment_dict = get_save_segment_dict(Title=body.get("title"),
-                                              UniqueId=segment_id,
-                                              ProjectId=project_id,
-                                              DataId=data_id,
-                                              SqlQuery=sql_query,
-                                              CampaignSqlQuery=sql_query,
-                                              Records=validation_response.get("count"),
-                                              User=user_name,
-                                              Headers=extra_field_string,
-                                              TestCampaignSqlQuery=test_sql_query_response.get("query"),
-                                              DataImageSqlQuery=sql_query,
-                                              EmailCampaignSqlQuery=sql_query)
+        validation_response = hyperion_local_async_rest_call(CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, request_body)
 
-    db_res = save_custom_segment(save_segment_dict)
-    save_tags_for_segment(segment_id, tag_mapping)
-    if db_res.get("status_code") != 200:
-        return db_res
+        if validation_response.get("result", TAG_FAILURE) == TAG_SUCCESS:
+            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                        details_message="Segment creation under process.")
+        else:
+            return validation_response
     else:
-        db_res["data"] = validation_response
-        db_res["data"]["segment_id"] = segment_id
-        return db_res
+        validation_response = hyperion_local_rest_call(project_name, sql_query)
+
+        if validation_response.get("result") == TAG_FAILURE:
+            return validation_response
+
+        response_data = validation_response.get("data", {})
+
+        if not response_data:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Query response data is empty/null.")
+
+        headers_data = content_headers_processor([*response_data[0]], project_id)
+
+        extra_field_string = json.dumps({"headers_list": headers_data})
+
+        headers = []
+        for ele in json.loads(extra_field_string).get("headers_list", []):
+            headers.append(ele.get("columnName"))
+
+        test_sql_query_response = generate_test_query(sql_query, headers)
+
+        # create parameter mapping to insert custom segment
+        save_segment_dict = get_save_segment_dict(Title=body.get("title"),
+                                                  UniqueId=segment_id,
+                                                  ProjectId=project_id,
+                                                  DataId=data_id,
+                                                  SqlQuery=sql_query,
+                                                  CampaignSqlQuery=sql_query,
+                                                  Records=validation_response.get("count"),
+                                                  User=user_name,
+                                                  Headers=extra_field_string,
+                                                  TestCampaignSqlQuery=test_sql_query_response.get("query"),
+                                                  DataImageSqlQuery=sql_query,
+                                                  EmailCampaignSqlQuery=sql_query)
+
+        db_res = save_custom_segment(save_segment_dict)
+        save_tags_for_segment(segment_id, tag_mapping)
+        if db_res.get("status_code") != 200:
+            return db_res
+        else:
+            db_res["data"] = validation_response
+            db_res["data"]["segment_id"] = segment_id
+            return db_res
 
 
 def get_save_segment_dict(**kwargs) -> dict:
@@ -135,7 +170,7 @@ def get_save_segment_dict(**kwargs) -> dict:
         "TestCampaignSqlQuery": kwargs.get("TestCampaignSqlQuery"),
         "DataImageSqlQuery": kwargs.get("DataImageSqlQuery"),
         "Records": kwargs.get("Records", 0),
-        "Status": "SAVED",
+        "Status": SegmentStatusKeys.SAVED.value,
         "CreatedBy": kwargs.get("User", None),
         "isActive": 1,
         'IsDeleted': 0,
@@ -233,65 +268,94 @@ def update_custom_segment_process(data) -> dict:
     if query_validation_response.get("result") == TAG_FAILURE:
         return query_validation_response
 
-    request_response = hyperion_local_rest_call(project_name, sql_query)
-
-    if request_response.get("result") == TAG_FAILURE:
-        return request_response
-
-    response_data = request_response.get("data", {})
-
-    if not response_data:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Query response data is empty/null.")
-
-    headers_data = content_headers_processor([*response_data[0]], project_id)
-
-    extra_field_string = json.dumps({"headers_list": headers_data})
-
-    headers = []
-    for ele in json.loads(extra_field_string).get("headers_list", []):
-        headers.append(ele.get("columnName"))
-
-    test_sql_query_response = generate_test_query(sql_query, headers)
-
-    if test_sql_query_response.get("result") == TAG_FAILURE:
-        return test_sql_query_response
-
-    params_dict = dict(UniqueId=segment_id)
-
-    update_dict = dict(SqlQuery=sql_query,
-                       CampaignSqlQuery=sql_query,
-                       DataImageSqlQuery=sql_query,
-                       Title=title,
-                       Records=request_response.get("count"),
-                       Extra=extra_field_string,
-                       TestCampaignSqlQuery=test_sql_query_response.get("query"),
-                       UpdationDate=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    try:
-        CEDEntityTagMapping().delete_tags_from_segment(segment_id)
+    if project_name in ASYNC_QUERY_EXECUTION_ENABLED:
+        params_dict = dict(UniqueId=segment_id)
+        update_dict = dict(Title=title, Status="DRAFTED", UpdationDate=datetime.utcnow())
+        try:
+            db_resp = CEDSegment().update_segment(params_dict, update_dict)
+        except Exception as ex:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Exception during update query execution.",
+                        ex=str(ex))
         save_tags_for_segment(segment_id, tag_mapping)
-    except Exception as ex:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Exception during delete tags and saving updated tags  query execution.",
-                    ex=str(ex))
 
-    try:
-        db_res = CEDSegment().update_segment(params_dict=params_dict, update_dict=update_dict)
-    except Exception as ex:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Exception during update query execution.",
-                    ex=str(ex))
+        request_body = dict(
+            source=AsyncTaskSourceKeys.ONYX_CENTRAL.value,
+            request_type=AsyncTaskRequestKeys.ONYX_EDIT_CUSTOM_SEGMENT.value,
+            request_id=segment_id,
+            project_id=project_id,
+            callback=dict(callback_key=AsyncTaskCallbackKeys.ONYX_EDIT_CUSTOM_SEGMENT.value),
+            queries=generate_queries_for_async_task(sql_query),
+            project_name=project_name
+        )
 
-    if db_res.get("row_count") <= 0 or not db_res:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Unable to update")
+        validation_response = hyperion_local_async_rest_call(CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, request_body)
 
-    data_dict = dict(headers_list=[*response_data[0]],
-                     count=request_response.get("count"))
+        if validation_response.get("result", TAG_FAILURE) == TAG_SUCCESS:
+            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                        details_message="Segment update under process.")
+        else:
+            return validation_response
+    else:
+        request_response = hyperion_local_rest_call(project_name, sql_query)
 
-    return dict(status_code=200, result=TAG_SUCCESS,
-                details_message="Segment Updated!",
-                data=data_dict)
+        if request_response.get("result") == TAG_FAILURE:
+            return request_response
+
+        response_data = request_response.get("data", {})
+
+        if not response_data:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Query response data is empty/null.")
+
+        headers_data = content_headers_processor([*response_data[0]], project_id)
+
+        extra_field_string = json.dumps({"headers_list": headers_data})
+
+        headers = []
+        for ele in json.loads(extra_field_string).get("headers_list", []):
+            headers.append(ele.get("columnName"))
+
+        test_sql_query_response = generate_test_query(sql_query, headers)
+
+        if test_sql_query_response.get("result") == TAG_FAILURE:
+            return test_sql_query_response
+
+        params_dict = dict(UniqueId=segment_id)
+
+        update_dict = dict(SqlQuery=sql_query,
+                           CampaignSqlQuery=sql_query,
+                           DataImageSqlQuery=sql_query,
+                           Title=title,
+                           Records=request_response.get("count"),
+                           Extra=extra_field_string,
+                           TestCampaignSqlQuery=test_sql_query_response.get("query"),
+                           UpdationDate=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        try:
+            CEDEntityTagMapping().delete_tags_from_segment(segment_id)
+            save_tags_for_segment(segment_id, tag_mapping)
+        except Exception as ex:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Exception during delete tags and saving updated tags  query execution.",
+                        ex=str(ex))
+
+        try:
+            db_res = CEDSegment().update_segment(params_dict=params_dict, update_dict=update_dict)
+        except Exception as ex:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Exception during update query execution.",
+                        ex=str(ex))
+
+        if db_res.get("row_count") <= 0 or not db_res:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Unable to update")
+
+        data_dict = dict(headers_list=[*response_data[0]],
+                         count=request_response.get("count"))
+
+        return dict(status_code=200, result=TAG_SUCCESS,
+                    details_message="Segment Updated!",
+                    data=data_dict)
 
 
 def query_validation_check(sql_query: str) -> dict:
@@ -338,10 +402,24 @@ def hyperion_local_rest_call(project_name: str, sql_query: str, limit=1):
     return request_response
 
 
+def hyperion_local_async_rest_call(url: str, request_body):
+    domain = settings.ONYX_LOCAL_DOMAIN.get(request_body["project_id"])
+
+    if not domain:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message=f"Hyperion local credentials not found for {request_body['project_name']}.")
+
+    request_response = RequestClient.post_onyx_local_api_request(request_body, domain, url)
+    logger.debug(f"request response: {request_response}")
+    if request_response is None or request_response.get("success", False) is False:
+        return {"result": TAG_FAILURE}
+    return {"result": TAG_SUCCESS}
+
+
 def generate_test_query(sql_query: str, headers_list=None) -> dict:
     if not all(x in [y.lower() for y in headers_list] for x in [y.lower() for y in CUSTOM_TEST_QUERY_PARAMETERS]):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message=f"Query must contains {CUSTOM_TEST_QUERY_PARAMETERS} as headers.")
+                    details_message=f"Query must contain {CUSTOM_TEST_QUERY_PARAMETERS} as headers.")
 
     regexp = re.compile(r'as accountid', re.IGNORECASE)
     if not regexp.search(sql_query):
@@ -386,6 +464,7 @@ def generate_test_query(sql_query: str, headers_list=None) -> dict:
     test_sql_query = "SELECT derived_table.*, @MOBILE_NUMBER as Mobile, @EMAIL_ID as Email FROM (" + sql_query + " LIMIT 1 ) derived_table"
 
     return dict(result=TAG_SUCCESS, query=test_sql_query)
+
 
 def custom_segment_count(request_data) -> json:
     """
@@ -433,6 +512,7 @@ def custom_segment_count(request_data) -> json:
                     details_message="Query response data is empty/null.")
     return dict(status_code=200, result=TAG_SUCCESS, data={"count": total_records})
 
+
 def non_custom_segment_count(request_data) -> json:
     # domain = settings.HYPERION_LOCAL_DOMAIN.get(project_name)
     body = request_data.get("body", {})
@@ -447,9 +527,11 @@ def non_custom_segment_count(request_data) -> json:
     if title is None or project_id is None or include_all is None or filters is None or data_id is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Request body has missing fields.")
-    payload = {"title": title, "projectId": project_id, "includeAll": include_all, "filters": filters, "dataId": data_id}
+    payload = {"title": title, "projectId": project_id, "includeAll": include_all, "filters": filters,
+               "dataId": data_id}
     request_type = TAG_REQUEST_POST
-    api_response = RequestClient.central_api_request(json.dumps(payload), SEGMENT_RECORDS_COUNT_API_PATH, session_id, request_type)
+    api_response = RequestClient.central_api_request(json.dumps(payload), SEGMENT_RECORDS_COUNT_API_PATH, session_id,
+                                                     request_type)
     if api_response is None:
         logger.debug(f"not able to hit hyperionCentral api ")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -463,6 +545,47 @@ def non_custom_segment_count(request_data) -> json:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Query response data is empty/null.")
     return dict(status_code=200, result=TAG_SUCCESS, data={"count": total_records})
+
+
+def generate_queries_for_async_task(sql_query: str):
+    """
+    util to create two queries, one to fetch headers and the other to fetch count for the segment
+    """
+    count_sql_query = f"SELECT COUNT(*) AS row_count FROM ({sql_query}) derived_table"
+    limit_sql_query = f"{sql_query} LIMIT 50"
+    return [dict(query=count_sql_query, response_format="json", query_key=QueryKeys.SEGMENT_COUNT.value),
+            dict(query=limit_sql_query, response_format="json", query_key=QueryKeys.SEGMENT_HEADERS_AND_DATA.value)]
+
+
+def get_drafted_segment_dict(**kwargs) -> dict:
+    """
+    Creates the parameters' dictionary to save data in the CED_Segment table
+    """
+    drafted_segment_dict = {
+        "Title": kwargs.get("Title", None),
+        "UniqueId": kwargs.get("UniqueId"),
+        "ProjectId": kwargs.get("ProjectId"),
+        "DataId": kwargs.get("DataId"),
+        "Type": TAG_KEY_CUSTOM,
+        "IncludeAll": 1,
+        "SqlQuery": kwargs.get("SqlQuery"),
+        "CampaignSqlQuery": kwargs.get("CampaignSqlQuery"),
+        "TestCampaignSqlQuery": kwargs.get("TestCampaignSqlQuery"),
+        "DataImageSqlQuery": kwargs.get("DataImageSqlQuery"),
+        "Records": kwargs.get("Records", 0),
+        "Status": SegmentStatusKeys.DRAFTED.value,
+        "CreatedBy": kwargs.get("User", None),
+        "isActive": 1,
+        'IsDeleted': 0,
+        "EverScheduled": 0,
+        "CreationDate": datetime.now(),
+        "UpdationDate": datetime.now(),
+        "Extra": kwargs.get("Headers", None),
+        "EmailCampaignSqlQuery": kwargs.get("EmailCampaignSqlQuery")
+    }
+
+    return drafted_segment_dict
+
 
 def save_tags_for_segment(segment_id: str, tag_mapping: list):
     segment_tag_list = []

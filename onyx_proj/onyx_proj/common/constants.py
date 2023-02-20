@@ -1,9 +1,14 @@
 from enum import Enum
 
+from onyx_proj.models.CED_EMAILResponse_model import CEDEMAILResponse
+from onyx_proj.models.CED_IVRResponse_model import CEDIVRResponse
+from onyx_proj.models.CED_SMSResponse_model import CEDSMSResponse
+from onyx_proj.models.CED_WHATSAPPResponse_model import CEDWHATSAPPResponse
 from onyx_proj.models.CED_CampaignBuilderEmail_model import CEDCampaignBuilderEmail
 from onyx_proj.models.CED_CampaignBuilderIVR_model import CEDCampaignBuilderIVR
 from onyx_proj.models.CED_CampaignBuilderSMS_model import CEDCampaignBuilderSMS
 from onyx_proj.models.CED_CampaignBuilderWhatsApp_model import CEDCampaignBuilderWhatsApp
+
 
 IBL_DATABASE = "indusindcollection"
 HYPERION_CENTRAL_DATABASE = "creditascampaignengine"
@@ -31,6 +36,7 @@ class TabName(Enum):
 
 
 class DashboardTab(Enum):
+
     ALL = "ALL"
     SCHEDULED = "SCHEDULED"
     EXECUTED = "EXECUTED"
@@ -52,9 +58,13 @@ COMMUNICATION_SOURCE_LIST = ["SMS", "IVR", "EMAIL", "WHATSAPP", "SUBJECT", "URL"
 
 CUSTOM_QUERY_EXECUTION_API_PATH = "hyperioncampaigntooldashboard/segment/customQueryExecution"
 
+CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH = "local/async_task_invocation/async_query_execution/"
+
+SAMPLE_DATA_ASYNC_EXECUTION_API_PATH = "local/async_task_invocation/async_query_execution/"
+
 REFRESH_COUNT_LOCAL_API_PATH = "hyperioncampaigntooldashboard/segment/localdb/triggerlambdaForSegmentRefreshCount"
 
-TEST_CAMPAIGN_VALIDATION_API_PATH = "campaign/check_test_campaign_validation_status_local/"
+TEST_CAMPAIGN_VALIDATION_API_PATH = "campaign/local/check_test_campaign_validation_status/"
 
 SEGMENT_RECORDS_COUNT_API_PATH = "hyperioncampaigntooldashboard/segment/recordcount"
 
@@ -537,7 +547,6 @@ class SegmentRefreshStatus(Enum):
     PENDING = "PENDING"
 
 
-
 class CampaignTablesStatus(Enum):
     SUCCESS = "SUCCESS"
     SCHEDULED = "SCHEDULED"
@@ -587,10 +596,25 @@ CHANNEL_CONTENT_TABLE_DATA = {
     }
 }
 
+TEST_CAMPAIGN_RESPONSE_DATA = {
+    "last_updated_time": None,
+    "validation_flag": None,
+    "flag_text": None
+}
+
+CHANNEL_RESPONSE_TABLE_MAPPING = {
+    'SMS': CEDSMSResponse,
+    'IVR': CEDIVRResponse,
+    'WHATSAPP': CEDWHATSAPPResponse,
+    "EMAIL": CEDEMAILResponse
+}
+
+
 class TestCampStatus(Enum):
     NOT_DONE = "NOT_DONE"
     VALIDATED = "VALIDATED"
     MAKER_VALIDATED = "MAKER_VALIDATED"
+
 
 class Roles(Enum):
     VIEWER = "VIEWER"
@@ -600,6 +624,10 @@ class Roles(Enum):
     DEACTIVATE = "DEACTIVATE"
     TECH = "TECH"
 
+
 class RateLimitationLevels(Enum):
     BUSINESS_UNIT = "BUSINESS_UNIT"
     PROJECT = "PROJECT"
+
+
+ASYNC_QUERY_EXECUTION_ENABLED = ["VST_Ethera", "TEST_VST"]

@@ -5,10 +5,10 @@ from onyx_proj.common.utils.sql_alchemy_engine import SqlAlchemyEngine
 from onyx_proj.models.CreditasCampaignEngine import CEDTeam, CEDProjects, CEDTeamProjectMapping
 
 
-
-def sql_alchemy_connect(database):
-    engine = SqlAlchemyEngine().get_connection(database)
+def sql_alchemy_connect(database, project_id=None):
+    engine = SqlAlchemyEngine(database=database).get_connection()
     return engine
+
 
 def insert(engine, entity):
     """
@@ -197,6 +197,7 @@ def crete_update_dict(object):
             dict.update({c.key: getattr(object, c.key)})
     return dict
 
+
 def create_dict_from_object(object):
     """
         Function to create dictionary from table object.
@@ -205,6 +206,7 @@ def create_dict_from_object(object):
         returns: Dict of result
     """
     return {c.key: getattr(object, c.key) for c in inspect(object).mapper.column_attrs}
+
 
 def save_or_update(engine, table, entity):
     """

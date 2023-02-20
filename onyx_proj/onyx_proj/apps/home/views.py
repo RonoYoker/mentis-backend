@@ -1,7 +1,7 @@
 from django.shortcuts import render, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 import logging
 logger = logging.getLogger("apps")
-
 
 
 def index(request):
@@ -9,6 +9,7 @@ def index(request):
     return render(request, "index.html")
 
 
+@csrf_exempt
 def ping(request):
     logger.info("ping!!!!!!")
     return HttpResponse("Ping Success!")

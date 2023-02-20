@@ -2,9 +2,10 @@ from onyx_proj.common.mysql_helper import *
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignSMSContent
 from onyx_proj.common.sqlalchemy_helper import *
 
+
 class CEDCampaignSMSContent:
-    def __init__(self):
-        self.database = "creditascampaignengine"
+    def __init__(self, **kwargs):
+        self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_CampaignSMSContent"
         self.table = CED_CampaignSMSContent
         self.curr = mysql_connect(self.database)

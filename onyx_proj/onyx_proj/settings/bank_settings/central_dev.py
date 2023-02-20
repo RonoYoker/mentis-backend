@@ -1,9 +1,3 @@
-from .base import *
-
-DEBUG = True
-
-# *********** DATABASES ***********
-#
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
@@ -16,12 +10,18 @@ DATABASES = {
     "creditascampaignengine": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "creditascampaignengine",
-        "USER": "root",
-        "PASSWORD": "root",
+        "USER": {
+            "default": "root",
+        },
+        "PASSWORD": {
+            "default": "root",
+        },
         "HOST": "localhost",
         "PORT": "3306"
-    },
+    }
 }
+
+ACTIVE_DATABASE = "default"
 
 HYPERION_LOCAL_DOMAIN = {
     "TEST_TCL": "https://3.111.61.77/",  # https://tclctpay.tatacapital.com/hyperioncampaigntooldashboard
@@ -37,18 +37,16 @@ HYPERION_LOCAL_DOMAIN = {
 }
 
 ONYX_LOCAL_DOMAIN = {
-    "TEST_VST": "http://m-stage-onyx-elb-1846785611.ap-south-1.elb.amazonaws.com/",
+    "vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyx-elb-1846785611.ap-south-1.elb.amazonaws.com",
 }
 
-ONYX_LOCAL_CAMP_VALIDATION = ["TEST_VST"]
+ONYX_LOCAL_CAMP_VALIDATION = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj"]
 
 CAMPAIGN_THRESHOLDS_PER_MINUTE = {
-
     "SMS": 5000,
     "EMAIL": 5000,
     "IVR": 2000,
     "WHATSAPP": 5000
-
 }
 
 JWT_ENCRYPTION_KEY = "3j2379yxb274g22bc40298294yx2388x223498x2x424"

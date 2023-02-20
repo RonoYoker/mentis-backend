@@ -1,5 +1,5 @@
 import http
-from onyx_proj.models.CED_Projects_model import *
+from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.apps.content.content_procesor import *
 
 

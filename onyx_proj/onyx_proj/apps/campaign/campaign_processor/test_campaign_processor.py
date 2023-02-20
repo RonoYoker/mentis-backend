@@ -1,25 +1,37 @@
-import os
-from datetime import datetime, timedelta
+import copy
 import json
 import http
+import datetime
+import logging
+from django.conf import settings
 
-import requests
-
-from onyx_proj.common.constants import *
-from onyx_proj.apps.segments.custom_segments.custom_segment_processor import *
+from onyx_proj.apps.segments.segments_processor.segment_helpers import check_validity_flag, check_restart_flag
+from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetailsTest_model import CEDCampaignSchedulingSegmentDetailsTest
 from onyx_proj.models.CED_Projects import CED_Projects
-from onyx_proj.models.CED_User_model import *
-from onyx_proj.models.CED_Segment_model import *
-from onyx_proj.models.CED_CampaignBuilder import *
+from onyx_proj.apps.segments.custom_segments.custom_segment_processor import hyperion_local_async_rest_call, \
+    hyperion_local_rest_call
+from onyx_proj.models.CED_User_model import CEDUser
+from onyx_proj.models.CED_UserSession_model import CEDUserSession
+from onyx_proj.models.CED_Segment_model import CEDSegment
+from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
+from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, \
+    CHANNEL_RESPONSE_TABLE_MAPPING, TEST_CAMPAIGN_RESPONSE_DATA, CHANNEL_CAMPAIGN_BUILDER_TABLE_MAPPING, \
+    TEST_CAMPAIGN_VALIDATION_DURATION_MINUTES, TEST_CAMPAIGN_VALIDATION_API_PATH, ASYNC_QUERY_EXECUTION_ENABLED
+from onyx_proj.apps.segments.app_settings import AsyncTaskRequestKeys, AsyncTaskSourceKeys, AsyncTaskCallbackKeys, \
+    QueryKeys, DATA_THRESHOLD_MINUTES
+
+logger = logging.getLogger("apps")
 
 
 def fetch_test_campaign_data(request_data) -> json:
     """
     Function to return test campaign data with user values to initiate test campaign
     """
+
+    logger.debug(f"fetch_test_campaign_data :: request_data: {request_data}")
 
     body = request_data.get("body", {})
     headers = request_data.get("headers", {})
@@ -40,43 +52,183 @@ def fetch_test_campaign_data(request_data) -> json:
 
     user_data = CEDUser().get_user_details(dict(UserName=user[0].get("UserName", None)))[0]
 
-    domain = settings.HYPERION_LOCAL_DOMAIN.get(project_name)
+    if project_name in ASYNC_QUERY_EXECUTION_ENABLED:
+        if segment_id:
+            segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))
+            if len(segment_data) == 0 or segment_data is None:
+                return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                            details_message=f"Segment data not found for {segment_id}.")
+            else:
+                segment_data = segment_data[0]
+        elif campaign_id:
+            segment_id = CED_CampaignBuilder().fetch_segment_id_from_campaign_id(campaign_id)
+            if len(segment_id) == 0 or segment_id is None:
+                return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                            details_message=f"Segment data not found for {campaign_id}.")
+            else:
+                segment_id = segment_id[0][0]
+            segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))
+            if len(segment_data) == 0 or segment_data is None:
+                return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                            details_message=f"Segment data not found for {campaign_id}.")
+            else:
+                segment_data = segment_data[0]
+        else:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message=f"Invalid identifier.")
 
-    if not domain:
+        # check to prevent client from bombarding local async system
+        if segment_data.get("DataRefreshStartDate", None) > segment_data.get("DataRefreshEndDate", None):
+            # check if restart needed or request is stuck
+            reset_flag = check_restart_flag(segment_data.get("DataRefreshStartDate"))
+            if not reset_flag:
+                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                            details_message=f"Segment is already being processed.")
+
+        records_data = segment_data.get("Extra", None)
+
+        sql_query = segment_data.get("SqlQuery", None)
+        count_sql_query = f"SELECT COUNT(*) AS row_count FROM ({sql_query}) derived_table"
+
+        validity_flag = check_validity_flag(records_data, segment_data.get("DataRefreshEndDate", None), expire_time=DATA_THRESHOLD_MINUTES)
+
+        if validity_flag is False:
+            # initiate async flow for data population
+
+            queries_data = [dict(query=sql_query+" LIMIT 50", response_format="json", query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
+                            dict(query=count_sql_query, response_format="json", query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)]
+
+            request_body = dict(
+                source=AsyncTaskSourceKeys.ONYX_CENTRAL.value,
+                request_type=AsyncTaskRequestKeys.ONYX_TEST_CAMPAIGN_DATA_FETCH.value,
+                request_id=segment_id,
+                project_id=segment_data.get("ProjectId"),
+                callback=dict(callback_key=AsyncTaskCallbackKeys.ONYX_GET_TEST_CAMPAIGN_DATA.value),
+                project_name=body.get("project_name", None),
+                queries=queries_data
+            )
+
+            validation_response = hyperion_local_async_rest_call(CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, request_body)
+
+            if not validation_response:
+                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                            details_message="Unable to extract result set.")
+
+            update_dict = dict(DataRefreshStartDate=datetime.datetime.utcnow())
+            db_resp = CEDSegment().update_segment(dict(UniqueId=segment_data.get("UniqueId")), update_dict)
+
+            return dict(status_code=200, result=TAG_SUCCESS,
+                        details_message="Segment data being processed, please return after 5 minutes.")
+
+        else:
+            records_data = json.loads(records_data)
+            record = json.loads(records_data.get("sample_data", []))[0]
+
+            record["Mobile"] = user_data.get("MobileNumber", None)
+            record["Email"] = user_data.get("EmailId", None)
+
+            return dict(status_code=http.HTTPStatus.OK, active=False, campaignId=campaign_id, sampleData=[record])
+    else:
+        domain = settings.HYPERION_LOCAL_DOMAIN.get(project_name)
+
+        if not domain:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message=f"Hyperion local credentials not found for {project_name}.")
+
+        segment_data = None
+
+        if segment_id:
+            segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))[0]
+        elif campaign_id:
+            segment_id = CED_CampaignBuilder().fetch_segment_id_from_campaign_id(campaign_id)[0][0]
+            segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))[0]
+
+        sql_query = segment_data.get("SqlQuery", None)
+
+        if not sql_query:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message=f"Unable to find query for the given {segment_id}.")
+
+        validation_response = hyperion_local_rest_call(project_name, sql_query)
+
+        if validation_response.get("result") == TAG_FAILURE:
+            return validation_response
+
+        if len(validation_response.get("data")) == 0:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message=f"Empty response for segment_id: {segment_id}.")
+
+        query_data = validation_response.get("data")[0]
+        query_data["Mobile"] = user_data.get("MobileNumber", None)
+        # query_data["FirstName"] = user_data.get("FirstName", None)
+        # query_data["LastName"] = user_data.get("LastName", None)
+        # query_data["Name"] = user_data.get("FirstName", None) + " " + user_data.get("LastName", None)
+        query_data["Email"] = user_data.get("EmailId", None)
+
+        return dict(status_code=http.HTTPStatus.OK, active=False, campaignId=campaign_id, sampleData=[query_data])
+
+
+def fetch_test_campaign_validation_status_local(request_data) -> json:
+    """
+        Local Function to validate test campaign based delivery status on URL Click.
+    """
+    method_name = 'fetch_test_campaign_validation_status_local'
+    body = request_data.get("body", {})
+
+    url_exist = body.get('url_exist', None)
+    cbc_id = body.get('campaign_builder_campaign_id', None)
+    campaign_id_list = body.get('campaign_id', [])
+    channel = body.get('content_type', None)
+    contact = body.get('contact_mode', None)
+
+    if url_exist is None or campaign_id_list is None or len(campaign_id_list) <= 0 or channel is None or contact is None:
+        logger.error(method_name, f"body: {body}")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message=f"Hyperion local credentials not found for {project_name}.")
+                    details_message="Invalid request data")
+    response_data = {
+        "system_validated": False,
+        "campaign_id": None,
+        "validation_details": []
+    }
+    table = CHANNEL_RESPONSE_TABLE_MAPPING.get(channel.upper())
 
-    segment_data = None
+    try:
+        delivery_data = copy.deepcopy(TEST_CAMPAIGN_RESPONSE_DATA)
+        click_data = copy.deepcopy(TEST_CAMPAIGN_RESPONSE_DATA)
 
-    if segment_id:
-        segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))[0]
-    elif campaign_id:
-        segment_id = CED_CampaignBuilder().fetch_segment_id_from_campaign_id(campaign_id)[0][0]
-        segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))[0]
+        db_result = table().check_campaign_click_and_delivery_data(campaign_id_list, contact, click=url_exist)
+        if db_result['error'] is True:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Unable to fetch data from db.")
+        if db_result['result'] is None or len(db_result['result']) == 0:
+            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data={},
+                        details_message="No Test Campaign Found in Last 30 Minutes.")
+        camp_data = db_result.get('result', [])[0]
 
-    sql_query = segment_data.get("SqlQuery", None)
+        camp_validated = True
+        delivery_status = camp_data['Status']
+        delivery_validated = True if delivery_status in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel.upper()] else False
+        if settings.CAMP_VALIDATION_CONF['DELIVERY'] is True:
+            delivery_data['last_updated_time'] = camp_data['UpdateDate']
+            delivery_data['validation_flag'] = delivery_validated
+            delivery_data['flag_text'] = channel + (" DELIVERED" if delivery_validated is True else " NOT DELIVERED")
+            response_data['validation_details'].append(delivery_data)
+            camp_validated = delivery_validated
+        if settings.CAMP_VALIDATION_CONF['CLICK'] is True and url_exist is True:
+            click_validated = True if camp_data['UpdationDate'] is not None else False
+            click_data['last_updated_time'] = camp_data['UpdationDate']
+            click_data['validation_flag'] = click_validated
+            click_data['flag_text'] = channel + " CLICKED" if click_validated is True else channel + " NOT CLICKED"
+            response_data['validation_details'].append(click_data)
+            camp_validated = click_validated
+        response_data['system_validated'] = camp_validated
+        response_data['campaign_id'] = camp_data['CampaignId']
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=response_data, details_message="")
 
-    if not sql_query:
+    except Exception as ex:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message=f"Unable to find query for the given {segment_id}.")
+                    details_message=f"Unable to process request, error: {ex}")
 
-    validation_response = hyperion_local_rest_call(project_name, sql_query)
-
-    if validation_response.get("result") == TAG_FAILURE:
-        return validation_response
-
-    if len(validation_response.get("data")) == 0:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message=f"Empty response for segment_id: {segment_id}.")
-
-    query_data = validation_response.get("data")[0]
-    query_data["Mobile"] = user_data.get("MobileNumber", None)
-    # query_data["FirstName"] = user_data.get("FirstName", None)
-    # query_data["LastName"] = user_data.get("LastName", None)
-    # query_data["Name"] = user_data.get("FirstName", None) + " " + user_data.get("LastName", None)
-    query_data["Email"] = user_data.get("EmailId", None)
-
-    return dict(status_code=http.HTTPStatus.OK, active=False, campaignId=campaign_id, sampleData=[query_data])
 
 def fetch_test_campaign_validation_status(request_data) -> json:
     """
@@ -105,23 +257,23 @@ def fetch_test_campaign_validation_status(request_data) -> json:
                     details_message="Invalid campaign builder campaign id.")
 
     project_details = CED_Projects().get_project_id_by_cbc_id(campaign_builder_campaign_id)
-    if not project_details or len(project_details)==0 or project_details[0] is None or project_details[0].get('Name', None) in [None, ""]:
+    if not project_details or len(project_details)==0 or project_details[0] is None or project_details[0].get('UniqueId', None) in [None, ""]:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Project not found for campaign_builder_campaign_id : {campaign_builder_campaign_id}.")
-    project_name = project_details[0]['Name']
+    project_id = project_details[0]['UniqueId']
 
-    if project_name not in settings.ONYX_LOCAL_CAMP_VALIDATION:
+    if project_id not in settings.ONYX_LOCAL_CAMP_VALIDATION:
         result["system_validated"] = True
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result,
                     details_message="")
 
-    domain = settings.ONYX_LOCAL_DOMAIN.get(project_name, None)
+    domain = settings.ONYX_LOCAL_DOMAIN.get(project_id, None)
     if not domain or domain is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Onyx Local domain not found")
 
     # Only fetch test campaigns for the last 30 minutes
-    start_time = (datetime.utcnow() - timedelta(minutes=TEST_CAMPAIGN_VALIDATION_DURATION_MINUTES)).strftime("%Y-%m-%d %H:%M:%S")
+    start_time = (datetime.datetime.utcnow() - datetime.timedelta(minutes=TEST_CAMPAIGN_VALIDATION_DURATION_MINUTES)).strftime("%Y-%m-%d %H:%M:%S")
     # Fetch campaign ids corresponding to cbc_id
     cssd_ids = CEDCampaignSchedulingSegmentDetailsTest().fetch_cssd_list_by_cbc_id(campaign_builder_campaign_id, start_time)
     if cssd_ids is None or len(cssd_ids) <= 0:
@@ -150,13 +302,16 @@ def fetch_test_campaign_validation_status(request_data) -> json:
            "content_type": channel,
            "contact_mode": str(contact_details)
     }
-    response = RequestClient.post_onyx_local_api_request(data, project_name, TEST_CAMPAIGN_VALIDATION_API_PATH)
+
+    # add domain here
+    response = RequestClient.post_onyx_local_api_request(data, domain, TEST_CAMPAIGN_VALIDATION_API_PATH)
     logger.info(f"method: {method_name}, local request response {response}")
 
-    if response is None:
+    if response.get("success") is False:
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result,
                     details_message="Onyx local API not working")
-    elif response.get("result", "FAILURE") != "SUCCESS":
+    response = response['data']
+    if response.get("result", "FAILURE") != "SUCCESS":
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result,
                     details_message=response.get('details_message', "Something Went Wrong"))
     elif response.get('data', None) is None:
@@ -170,8 +325,8 @@ def fetch_test_campaign_validation_status(request_data) -> json:
 
     # Check test campaign in last 5 minutes
     test_campaign_time = cssd_ids_dict[str(response['data']["campaign_id"])]["CreationDate"]
-    current_time = datetime.utcnow()
-    if test_campaign_time > current_time - timedelta(minutes=5):
+    current_time = datetime.datetime.utcnow()
+    if test_campaign_time > current_time - datetime.timedelta(minutes=5):
         result["send_test_campaign"] = False
 
     result["system_validated"] = response['data'].get('system_validated', False)

@@ -2,8 +2,8 @@ from onyx_proj.common.mysql_helper import *
 
 
 class CEDEntityTagMapping:
-    def __init__(self):
-        self.database = "creditascampaignengine"
+    def __init__(self, **kwargs):
+        self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_EntityTagMapping"
         self.curr = mysql_connect(self.database)
 
@@ -16,7 +16,6 @@ class CEDEntityTagMapping:
         values = records or [[]]
         resp = insert_multiple_rows(self.curr, self.table_name, data_dict={'columns': columns, 'values': values})
         return resp
-
 
     def delete_records(self, segment_id, entity_type, entity_sub_type):
         query = f"""DELETE FROM {self.table_name} WHERE EntityId = '{segment_id}' and EntityType = '{entity_type}' and EntitySubType = '{entity_sub_type}' """

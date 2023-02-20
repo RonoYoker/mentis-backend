@@ -1,19 +1,22 @@
 import logging
-
-from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import fetch_test_campaign_data
-from onyx_proj.apps.segments.custom_segments.custom_segment_processor import custom_segment_processor, fetch_headers_list, \
-    update_custom_segment_process
-from onyx_proj.apps.segments.segments_processor.get_sample_data import *
-from onyx_proj.apps.segments.segments_processor.segment_fetcher import *
-from onyx_proj.apps.segments.segments_processor.segment_headers_processor import *
-from django.views.decorators.csrf import csrf_exempt
-from onyx_proj.apps.segments.segments_processor.segment_processor import update_segment_count, trigger_update_segment_count
-from onyx_proj.apps.segments.segments_processor.segments_data_processors import *
-from onyx_proj.apps.segments.segments_processor.temp import update_content_and_segment_tags
+from django.http import HttpResponse
 import json
 import http
-from onyx_proj.common.decorators import UserAuth
-from django.http import HttpResponse
+
+from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import fetch_test_campaign_data
+from onyx_proj.apps.segments.segments_processor.get_sample_data import get_sample_data_by_unique_id
+from onyx_proj.apps.segments.segments_processor.segment_fetcher import fetch_segments, fetch_segment_by_id
+from onyx_proj.apps.segments.segments_processor.segment_headers_processor import \
+    check_headers_compatibility_with_content_template
+from onyx_proj.apps.segments.segments_processor.segment_callback_processor import process_segment_callback, process_segment_data_callback
+from django.views.decorators.csrf import csrf_exempt
+from onyx_proj.apps.segments.segments_processor.segment_processor import update_segment_count, trigger_update_segment_count
+from onyx_proj.apps.segments.segments_processor.segments_data_processors import get_segment_list
+from onyx_proj.apps.segments.custom_segments.custom_segment_processor import custom_segment_processor, \
+    fetch_headers_list, update_custom_segment_process, custom_segment_count, non_custom_segment_count
+from onyx_proj.common.decorators import *
+from onyx_proj.apps.segments.segments_processor.temp import update_content_and_segment_tags
+
 
 @csrf_exempt
 @UserAuth.user_authentication()
@@ -101,6 +104,7 @@ def update_segment_refresh_count(request):
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
 
+
 @csrf_exempt
 def segment_refresh_count(request):
     request_body = json.loads(request.body.decode("utf-8"))
@@ -110,6 +114,7 @@ def segment_refresh_count(request):
     response = trigger_update_segment_count(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
 
 @csrf_exempt
 @UserAuth.user_authentication()
@@ -154,8 +159,34 @@ def fetch_segments_list(request):
 
 @csrf_exempt
 @UserAuth.user_authentication()
+def custom_segment_callback(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    data = process_segment_callback(request_body)
+    status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def update_segment_callback(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    data = process_segment_data_callback(request_body)
+    status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
+
+@UserAuth.user_authentication()
 def update_segment_tags(request):
     request_body = json.loads(request.body.decode("utf-8"))
     data = update_content_and_segment_tags(request_body)
+    status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def update_custom_segment_callback(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    data = process_segment_callback(request_body)
     status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")

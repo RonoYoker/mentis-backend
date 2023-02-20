@@ -4,8 +4,8 @@ from onyx_proj.models.CreditasCampaignEngine import CED_CampaignIvrContent
 
 
 class CEDCampaignIvrContent:
-    def __init__(self):
-        self.database = "creditascampaignengine"
+    def __init__(self, **kwargs):
+        self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_CampaignIvrContent"
         self.table = CED_CampaignIvrContent
         self.curr = mysql_connect(self.database)

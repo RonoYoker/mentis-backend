@@ -2,8 +2,8 @@ from onyx_proj.common.mysql_helper import *
 
 
 class CEDCampaignSchedulingSegmentDetailsTest:
-    def __init__(self):
-        self.database = "creditascampaignengine"
+    def __init__(self, **kwargs):
+        self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_CampaignSchedulingSegmentDetailsTEST"
         self.curr = mysql_connect(self.database)
 

@@ -12,6 +12,7 @@ from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import *
 from onyx_proj.apps.campaign.campaign_processor.campaign_content_processor import *
 from onyx_proj.apps.campaign.campaign_monitoring.campaign_stats_processor import *
 from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import *
+from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from django.views.decorators.csrf import csrf_exempt
 import json
 
@@ -223,6 +224,20 @@ def get_campaign_monitoring_stats_for_admins(request):
     response = get_filtered_campaign_stats_v2(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+def test_campaign_validation_status_local(request):
+    decrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).decrypt(request.body.decode("utf-8"))
+    request_body = json.loads(decrypted_data)
+    data = dict(body=request_body, headers=None)
+    # query processor call
+    response = fetch_test_campaign_validation_status_local(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(
+        json.dumps(response, default=str))
+    return HttpResponse(encrypted_data, status=status_code, content_type="application/json")
+
 
 @csrf_exempt
 @UserAuth.user_authentication()

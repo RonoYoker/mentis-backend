@@ -1,10 +1,14 @@
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row
 from onyx_proj.models.CreditasCampaignEngine import *
+from onyx_proj.common.sqlalchemy_helper import SqlAlchemyEngine
+
+
 class CEDUserSession:
-    def __init__(self):
-        self.database = "creditascampaignengine"
+    def __init__(self, **kwargs):
+        self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_UserSession"
+        self.curr1 = SqlAlchemyEngine(database=self.database).get_connection()
         self.curr = mysql_connect(self.database)
         self.engine = sql_alchemy_connect(self.database)
         self.alch_class = CED_UserSession

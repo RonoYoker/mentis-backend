@@ -1,9 +1,10 @@
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import *
 
+
 class CED_Projects:
-    def __init__(self):
-        self.database = "creditascampaignengine"
+    def __init__(self, **kwargs):
+        self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_Projects"
         self.table = CEDProjects
         self.curr = mysql_connect(self.database)
@@ -21,7 +22,7 @@ class CED_Projects:
         return fetch_one_row(self.engine, self.table, filter_list)
 
     def get_project_id_by_cbc_id(self, cbc_id):
-        query = f'SELECT CED_Projects.Name FROM CED_Projects INNER JOIN CED_Segment ON CED_Projects.UniqueId = CED_Segment.ProjectId' \
+        query = f'SELECT CED_Projects.UniqueId FROM CED_Projects INNER JOIN CED_Segment ON CED_Projects.UniqueId = CED_Segment.ProjectId' \
                 f' INNER JOIN CED_CampaignBuilder ON CED_Segment.UniqueId = CED_CampaignBuilder.SegmentId INNER JOIN CED_CampaignBuilderCampaign ' \
                 f'ON CED_CampaignBuilder.UniqueId = CED_CampaignBuilderCampaign.CampaignBuilderId WHERE CED_CampaignBuilderCampaign.UniqueId = "{cbc_id}"'
         return dict_fetch_query_all(self.curr, query)
@@ -29,4 +30,10 @@ class CED_Projects:
     def get_project_bu_limits_by_project_id(self,unique_id):
         baseQuery = f""" SELECT bu.UniqueId as business_unit_id, bu.CampaignThreshold as bu_limit, p.CampaignThreshold as project_limit FROM CED_BusinessUnit bu JOIN CED_Projects p on p.BusinessUnitId = bu.UniqueId WHERE p.UniqueId = '{unique_id}' GROUP BY bu.UniqueId """
         return fetch_one(self.curr, baseQuery)
+
+    def get_vendor_config_by_project_id(self, project_id: str) -> list:
+        return dict_fetch_all(self.curr, self.table_name, {"UniqueId": project_id})
+
+    def get_project_data_by_project_id(self, project_id: str) -> list:
+        return dict_fetch_all(self.curr, self.table_name, {"UniqueId": project_id})
 

@@ -7,16 +7,16 @@ on:
       - uat-onyx*
 env:
   ECR_REPO_URL: ${{ secrets.onyx_UAT_ECR_REPO }}
-  DOCKER_COMPOSE_FILE: docker-compose-uat.yml
+  DOCKER_COMPOSE_FILE: docker-compose-central-uat.yml
   HEALTHCHECK_URL: http://localhost:8080/ping
   AWS_REGION: ${{ secrets.PROD_AWS_REGION }}
   ECR_REPOSITORY: onyx
   ECS_SERVICE: onyx-svc
   ECS_CLUSTER: ecs-hyp-onyx-fargate
-  ECS_TASK_DEFINITION: .aws/task-definition-onyx.json
+  ECS_TASK_DEFINITION: .aws/uat/task-definition-onyx.json
   CONTAINER_NAME: onyx
-
-
+  BANK_NAME: central
+  CURR_ENV: uat
 
 jobs:
   ecr-repo-creation:
@@ -65,7 +65,7 @@ jobs:
           ECR_REPOSITORY: onyx
           IMAGE_TAG: ${{ steps.get_version.outputs.VERSION }}
         run: |
-          docker build -t $ECR_REPO_URL/$ECR_REPOSITORY:$IMAGE_TAG -f Dockerfile .
+          sudo docker build -t $ECR_REPO_URL/$ECR_REPOSITORY:$IMAGE_TAG --build-arg BANK_NAME=${{ env.BANK_NAME }} --build-arg CURR_ENV=${{ env.CURR_ENV }} -f Dockerfile .
 
       - name: Healthcheck test
         env:
@@ -101,7 +101,8 @@ jobs:
           ECR_REPOSITORY: onyx
           IMAGE_TAG: ${{ steps.get_version.outputs.VERSION }}
         run: |
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          sudo docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
   deploy:
     needs: build-test-push
 

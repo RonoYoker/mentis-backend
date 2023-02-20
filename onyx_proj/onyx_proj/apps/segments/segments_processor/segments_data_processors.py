@@ -2,6 +2,7 @@ import http
 import logging
 
 from onyx_proj.common.constants import SegmentList, TAG_SUCCESS, TAG_FAILURE, SEGMENT_END_DATE_FORMAT
+from onyx_proj.apps.segments.app_settings import SegmentStatusKeys
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from datetime import datetime
@@ -37,7 +38,7 @@ def get_segment_list(request, session_id=None):
             {"column": "creation_date", "value": start_time, "op": ">="},
             {"column": "creation_date", "value": end_date_time, "op": "<="},
             {"column": "project_id", "value": project_id, "op": "=="},
-            {"column": "status", "value": "APPROVAL_PENDING", "op": "=="}
+            {"column": "status", "value": SegmentStatusKeys.APPROVAL_PENDING.value, "op": "=="}
         ]
     elif tab_name.lower() == SegmentList.MY_SEGMENT.value.lower():
         user = CEDUserSession().get_user_details(dict(SessionId=session_id))
@@ -52,8 +53,6 @@ def get_segment_list(request, session_id=None):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="Invalid Tab")
 
     data = CEDSegment().get_segment_query(filter_list)
-
-    logger.debug(f"segment_data:{data}")
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=data)
 

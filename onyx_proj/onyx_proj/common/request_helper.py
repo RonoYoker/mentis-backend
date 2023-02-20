@@ -9,6 +9,7 @@ from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 
 logger = logging.getLogger("apps")
 
+
 class RequestClient:
 
     def __init__(self, **kwargs):
@@ -27,8 +28,11 @@ class RequestClient:
         elif self.request_type == TAG_REQUEST_GET:
             response_obj = session.get(url=self.url, headers=self.headers, verify=False)
 
-        unzipped_response = json.dumps(response_obj.json())
-        return unzipped_response
+        try:
+            unzipped_response = json.dumps(response_obj.json())
+            return unzipped_response
+        except Exception as e:
+            return response_obj
 
     @staticmethod
     def post_local_api_request(body, bank, api_path):
@@ -39,10 +43,10 @@ class RequestClient:
         try:
             response = requests.post(api_url, data=encrypted_data, headers=headers,verify=False)
             if response.status_code == 200:
-                encypted_data = response.text
-                encypted_data_dict = json.loads(encypted_data)
+                encrypted_data = response.text
+                encrypted_data_dict = json.loads(encrypted_data)
                 decrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).decrypt(
-                    encypted_data_dict["data"])
+                    encrypted_data_dict["data"])
                 resp = json.loads(decrypted_data)
             else:
                 logger.debug(f"local api response code :: {response.status_code}")
@@ -76,23 +80,22 @@ class RequestClient:
         return resp
 
     @staticmethod
-    def post_onyx_local_api_request(body, bank, api_path):
+    def post_onyx_local_api_request(body, domain, api_path):
         # request send
-        api_url = f"{settings.ONYX_LOCAL_DOMAIN[f'{bank}']}{api_path}"
-        encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(json.dumps(body))
+        api_url = f"{domain}/{api_path}"
         headers = {"Content-Type": "application/json"}
+        encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(json.dumps(body))
         try:
             response = requests.post(api_url, data=encrypted_data, headers=headers, verify=False)
             if response.status_code == 200:
-                encypted_data = response.text
+                encrypted_response_data = response.text
                 decrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).decrypt(
-                    encypted_data)
+                    encrypted_response_data)
                 resp = json.loads(decrypted_data)
             else:
-                logger.debug(f"local api response code :: {response.status_code}")
-                return None
-            logger.debug(f"local api response :: {response}")
+                return {"success": False}
         except Exception as e:
             logger.debug(f"Unable to process localdb api, Exception message :: {e}")
-            return None
-        return resp
+            return {"success": False}
+        return {"success": True, "data": resp}
+

@@ -34,10 +34,12 @@ RUN \
  yum install -y screen && \
  pip install supervisor && \
 
+
  mkdir -p /var/log/supervisor /etc/supervisord.d /logs /opt/logs && \
  yum clean all
 
 EXPOSE 80
+EXPOSE 8080
 
 # # Install librdkafka with ssl and sasl
 # RUN \
@@ -70,6 +72,12 @@ WORKDIR /usr/local/creditas/Onyx/
 
 # ENV PYTHONPATH /usr/local/goibibo/flock/flock_proj/flock_proj/:/usr/local/goibibo/flock:$PYTHONPATH
 
+ARG BANK_NAME="default"
+ENV BANK_NAME=$BANK_NAME
+
+ARG CURR_ENV="default"
+ENV CURR_ENV=$CURR_ENV
+
 COPY onyx_proj/config/supervisord /etc/rc.d/init.d/supervisord
 ADD  onyx_proj/config/services/* /etc/supervisord.d/
 COPY onyx_proj/config/nginx/nginx.conf /etc/nginx/nginx.conf
@@ -78,9 +86,6 @@ COPY onyx_proj/config/nginx/uwsgi_params /etc/nginx/conf.d/uwsgi_params
 COPY onyx_proj/config/uwsgi/onyx_uwsgi.ini /etc/onyx_uwsgi.ini
 COPY onyx_proj/config/uwsgi/onyx.conf /etc/nginx/conf.d/onyx.conf
 COPY onyx_proj/config/newrelic/* /etc/newrelic/
-
-
-
 
 COPY onyx_proj/config/pip/requirements.txt /etc/pip/requirements.txt
 RUN /usr/local/python3.8/bin/pip3.8 install -r /etc/pip/requirements.txt
@@ -92,8 +97,11 @@ RUN /usr/local/python3.8/bin/pip3.8 install -r /etc/pip/requirements.txt
 # RUN \
 #   /usr/local/python3.8/bin/pip3.8 install -r /etc/pip/requirements_github.txt
 
+RUN sed -i "/app_name/s/onyx/onyx-${BANK_NAME}/g" /etc/newrelic/newrelic_onyx.ini
 
 COPY ./ /usr/local/creditas/Onyx
+
+COPY onyx_proj/onyx_proj/settings/bank_settings/${BANK_NAME}_${CURR_ENV}.py  /usr/local/creditas/Onyx/onyx_proj/onyx_proj/settings/settings.py
 
 RUN \
 #   /usr/local/python3.8/bin/python3.8  /usr/local/creditas/Onyx/onyx_proj/manage.py collectstatic && \

@@ -1,5 +1,4 @@
-from .base import *
-from ..common.secret_manager import fetch_secrets_from_secret_manager
+from onyx_proj.common.secret_manager import fetch_secrets_from_secret_manager
 
 DEBUG = True
 
@@ -12,12 +11,11 @@ INFRA_CONF = fetch_secrets_from_secret_manager(secret_name, region_name)
 
 DATABASES = INFRA_CONF["DATABASE"]
 
-
 HYPERION_LOCAL_DOMAIN = {
     "IBL_Ethera": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
     "TCL_Ethera": "http://m-prod-tatacapital-hyp-1407059969.ap-south-1.elb.amazonaws.com/",
     "KOTAK_Ethera": "https://pay.kotak.com/",
-    "RBL_Ethera":"https://pay.rblbank.com/",
+    "RBL_Ethera": "https://pay.rblbank.com/",
     "CMD_Ethera": "http://m-prod-cmd-hyp-1732303524.ap-south-1.elb.amazonaws.com/",
     "CMD_TATA_AIA": "http://m-prod-cmd-hyp-1732303524.ap-south-1.elb.amazonaws.com/",
     "PRL_Ethera": "http://m-prod-piramal-hyp-357966708.ap-south-1.elb.amazonaws.com/",
@@ -29,11 +27,18 @@ HYPERION_LOCAL_DOMAIN = {
 }
 
 ONYX_LOCAL_DOMAIN = {
-    "VST_Ethera": "http://m-prod-onyxlocal-elb-1286808968.ap-south-1.elb.amazonaws.com/",
+    "vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj": "http://m-prod-onyxlocal-elb-1286808968.ap-south-1.elb.amazonaws.com/",
 }
 
-ONYX_LOCAL_CAMP_VALIDATION = ["VST_Ethera"]
+ONYX_LOCAL_CAMP_VALIDATION = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj"]
 
+CAMPAIGN_THRESHOLDS_PER_MINUTE = {
+
+    "SMS": 5000,
+    "EMAIL": 5000,
+    "IVR": 4000,
+    "WHATSAPP": 5000
+}
 
 JWT_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["JWT_ENCRYPTION_KEY"]
 CENTRAL_TO_LOCAL_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["CENTRAL_TO_LOCAL_ENCRYPTION_KEY"]

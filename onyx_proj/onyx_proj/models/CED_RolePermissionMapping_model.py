@@ -3,8 +3,8 @@ from onyx_proj.common.mysql_helper import mysql_connect, dict_fetch_all
 
 class CEDRolePermissionMapping:
 
-    def __init__(self):
-        self.database = "creditascampaignengine"
+    def __init__(self, **kwargs):
+        self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_RolePermissionMapping"
         self.curr = mysql_connect(self.database)
 

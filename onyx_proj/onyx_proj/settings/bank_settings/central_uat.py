@@ -1,5 +1,4 @@
-from .base import *
-from ..common.secret_manager import fetch_secrets_from_secret_manager
+from onyx_proj.common.secret_manager import fetch_secrets_from_secret_manager
 
 DEBUG = True
 
@@ -11,6 +10,15 @@ INFRA_CONF = fetch_secrets_from_secret_manager(secret_name, region_name)
 # *********** DATABASES ***********
 
 DATABASES = INFRA_CONF["DATABASE"]
+
+BANK_LEVEL_CAMPAIGN_THRESHOLDS_PER_MINUTE = {
+  "SMS": 200,
+  "EMAIL": 200,
+  "IVR": 200,
+  "WHATSAPP": 200
+}
+
+ACTIVE_DATABASE = "creditascampaignengine"
 
 HYPERION_LOCAL_DOMAIN = {
     "TEST_TCL": "https://tclctpay.tatacapital.com/",  # https://tclctpay.tatacapital.com/hyperioncampaigntooldashboard
@@ -30,12 +38,11 @@ HYPERION_LOCAL_DOMAIN = {
 }
 
 ONYX_LOCAL_DOMAIN = {
-    "TEST_VST": "http://m-stage-onyx-elb-1846785611.ap-south-1.elb.amazonaws.com/",
+    "vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyx-elb-1846785611.ap-south-1.elb.amazonaws.com"
 }
 
-ONYX_LOCAL_CAMP_VALIDATION = ["TEST_VST"]
+ONYX_LOCAL_CAMP_VALIDATION = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj"]
 
 JWT_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["JWT_ENCRYPTION_KEY"]
 CENTRAL_TO_LOCAL_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["CENTRAL_TO_LOCAL_ENCRYPTION_KEY"]
-
 HYPERION_CENTRAL_DOMAIN = "http://uatdev.hyperiontool.com/"
