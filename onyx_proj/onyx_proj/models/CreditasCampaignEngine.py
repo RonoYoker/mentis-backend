@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
 
 from sqlalchemy import and_, inspect, TIMESTAMP, text,  Column, Integer, String, ForeignKey, DateTime, \
-    Time , Boolean
+    Time , Boolean, func
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
+
 
 class Orm_helper():
     def __init__(self, data={}):
@@ -25,6 +26,38 @@ class Orm_helper():
             else:
                 data.update({key: getattr(self, key)._asdict()})
         return data
+
+class CED_User(Base, Orm_helper):
+    __tablename__ = 'CED_User'
+
+    id = Column("Id", Integer, primary_key=True, autoincrement=True)
+    user_uuid = Column("UserUID", String, unique=True)
+    first_name = Column("FirstName", String)
+    middle_name = Column("MiddleName", String)
+    last_name = Column("LastName", String)
+    mobile_number = Column("MobileNumber", Integer, unique=True)
+    email_id = Column("EmailId", String, unique=True)
+    user_name = Column("UserName", String, unique=True)
+    user_type = Column("UserType", String, default="SubAdmin")
+    creation_date = Column("CreationDate", DateTime, server_default=func.now())
+    is_active = Column("IsActive", Integer, default=1)
+    is_deleted = Column("IsDeleted", Integer, default=0)
+    branch_or_location_code = Column("BranchOrLocationCode", String)
+    locked_end_time = Column("LockedEndTime", DateTime)
+    created_by = Column("CreatedBy", String)
+    updated_by = Column("UpdatedBy", String)
+    auth_state = Column("AuthState", String)
+    password = Column("Password", String)
+    state = Column("State", String)
+    department_code = Column("DepartmentCode", String)
+    employee_code = Column("EmployeeCode", String)
+    expiry_time = Column("ExpiryTime", DateTime)
+    history_id = Column("HistoryId", String)
+    user_project_mapping_list = relationship("CED_UserProjectRoleMapping")
+
+    def __init__(self, data={}):
+        Orm_helper.__init__(self, data)
+
 
 class CEDTeam(Base, Orm_helper):
     __tablename__ = 'CED_Team'
@@ -59,6 +92,19 @@ class CEDTeamProjectMapping(Base, Orm_helper):
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)
 
+
+class CED_UserProjectRoleMapping(Base, Orm_helper):
+    __tablename__ = 'CED_UserProjectRoleMapping'
+
+    id = Column("Id", Integer, primary_key=True, autoincrement=True)
+    user_id = Column("UserUniqueId", String, ForeignKey(CED_User.user_uuid))
+    project_id = Column("ProjectUniqueId", String, ForeignKey("CED_Projects.UniqueId"))
+    role_id = Column("RoleUniqueId", String, ForeignKey("CED_UserRole.UniqueId"))
+    user_project_list = relationship("CEDProjects")
+    roles = relationship("CED_UserRole")
+
+    def __init__(self, data={}):
+        Orm_helper.__init__(self, data)
 
 class CEDProjects(Base, Orm_helper):
     __tablename__ = 'CED_Projects'
@@ -286,37 +332,18 @@ class CED_RolePermissionMapping(Base, Orm_helper):
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)
 
-class CED_UserProjectRoleMapping(Base, Orm_helper):
-    __tablename__ = 'CED_UserProjectRoleMapping'
-
-    id = Column("Id", Integer, autoincrement=True, primary_key=True)
-    user_id = Column("UserUniqueId", String, ForeignKey("CED_User.UserUID"))
-    project_id = Column("ProjectUniqueId",String,ForeignKey("CED_Projects.UniqueId"))
-    role_id = Column("RoleUniqueId", String,ForeignKey("CED_UserRole.UniqueId"))
-
-    roles = relationship("CED_UserRole")
-
-    def __init__(self, data={}):
-        Orm_helper.__init__(self, data)
-
-class CED_User(Base, Orm_helper):
-    __tablename__ = 'CED_User'
-
-    id = Column("Id", Integer, primary_key=True)
-    user_uuid = Column("UserUID", String,unique=True)
-    first_name = Column("FirstName", String)
-    middle_name = Column("MiddleName", String)
-    last_name = Column("LastName", String)
-    mobile_number = Column("MobileNumber", Integer,unique=True)
-    email_id = Column("EmailId", String,unique=True)
-    user_name = Column("UserName", String,unique=True)
-    user_type = Column("UserType", String)
-
-    user_project_mapping_list = relationship("CED_UserProjectRoleMapping")
-
-    def __init__(self, data={}):
-        Orm_helper.__init__(self, data)
-
+# class CED_UserProjectRoleMapping(Base, Orm_helper):
+#     __tablename__ = 'CED_UserProjectRoleMapping'
+#
+    # id = Column("Id", Integer, autoincrement=True, primary_key=True)
+    # user_id = Column("UserUniqueId", String, ForeignKey("CED_User.UserUID"))
+    # project_id = Column("ProjectUniqueId",String,ForeignKey("CED_Projects.UniqueId"))
+    # role_id = Column("RoleUniqueId", String,ForeignKey("CED_UserRole.UniqueId"))
+    #
+    # roles = relationship("CED_UserRole")
+#
+#     def __init__(self, data={}):
+#         Orm_helper.__init__(self, data)
 
 class CED_UserSession(Base, Orm_helper):
     __tablename__ = 'CED_UserSession'
@@ -326,6 +353,7 @@ class CED_UserSession(Base, Orm_helper):
     session_id = Column("SessionId", String,unique=True)
     expire_time = Column("ExpireTime", DateTime)
     expired = Column("Expired", Boolean)
+    project_id = Column("ProjectId", String)
 
     user = relationship("CED_User",back_populates=False,viewonly=True)
 
@@ -333,6 +361,52 @@ class CED_UserSession(Base, Orm_helper):
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)
 
+class CED_His_User(Base, Orm_helper):
+    __tablename__ = 'CED_HIS_User'
 
+    id = Column("Id", Integer, primary_key=True, autoincrement=True)
+    unique_id = Column("UniqueId", String)
+    user_id = Column("UserId", String)
+    first_name = Column("FirstName", String)
+    middle_name = Column("MiddleName", String)
+    last_name = Column("LastName", String)
+    category = Column("Category", String)
+    mobile_number = Column("MobileNumber", Integer, unique=True)
+    email_id = Column("EmailId", String, unique=True)
+    password = Column("Password", String)
+    user_name = Column("UserName", String, unique=True)
+    user_type = Column("UserType", String)
+    creation_date = Column("CreationDate", DateTime, server_default=func.now())
+    is_active = Column("IsActive", Integer, default=1)
+    is_deleted = Column("IsDeleted", Integer, default=0)
+    branch_or_location_code = Column("BranchOrLocationCode", String)
+    department_code = Column("DepartmentCode", String)
+    employee_code = Column("EmployeeCode", String)
+    expiry_time = Column("ExpiryTime", DateTime)
+    locked_end_time = Column("LockedEndTime", DateTime)
+    created_by = Column("CreatedBy", String)
+    updated_by = Column("UpdatedBy", String)
+    auth_state = Column("AuthState", String)
+    comment = Column("Comment", String)
+    state = Column("State", String)
+
+    def __init__(self, data={}):
+        Orm_helper.__init__(self, data)
+
+class CED_ActivityLog(Base, Orm_helper):
+    __tablename__ = 'CED_ActivityLog'
+
+    id = Column("Id", Integer, autoincrement=True)
+    unique_id = Column("UniqueId", String, primary_key=True)
+    data_source = Column("DataSource", String, unique=True)
+    sub_data_source = Column("SubDataSource", String)
+    data_source_id = Column("DataSourceId", String, unique=True)
+    filter_id = Column("FilterId", String)
+    comment = Column("Comment", String)
+    history_table_id = Column("HistoryTableId", String)
+    created_by = Column("CreatedBy", String)
+    updated_by = Column("UpdateBy", String)
+
+    def __init__(self, data={}):
+        Orm_helper.__init__(self, data)
 # Base.prepare()
-

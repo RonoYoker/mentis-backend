@@ -2,7 +2,7 @@ import logging
 from sqlalchemy import inspect
 from sqlalchemy.orm import Session
 from onyx_proj.common.utils.sql_alchemy_engine import SqlAlchemyEngine
-from onyx_proj.models.CreditasCampaignEngine import CEDTeam, CEDProjects, CEDTeamProjectMapping
+from onyx_proj.models.CreditasCampaignEngine import CEDTeam, CEDProjects, CEDTeamProjectMapping, CED_User
 
 
 
@@ -53,6 +53,7 @@ def update(engine, table, filter_list, update_dict):
         except Exception as ex:
             session.rollback()
             logging.error(f"error while updating in table {str(table)}, Error: ", ex)
+            raise ex
         else:
             session.commit()
 
@@ -75,6 +76,7 @@ def delete(engine, table, filter_list):
         except Exception as ex:
             session.rollback()
             logging.error(f"error while deleting in table {str(table)}, Error: ", ex)
+            raise ex
         else:
             session.commit()
 
@@ -183,6 +185,8 @@ def add_filter(query, value, column, operator):
         return query.filter(column.between(value[0], value[1]))
     elif operator.lower() == "like":
         return query.filter(column.like(value))
+    elif operator.lower() == "orderbydesc":
+        return query.order_by(column.desc())
 
 def crete_update_dict(object):
     """
@@ -232,9 +236,36 @@ def save_or_update(engine, table, entity):
         except Exception as ex:
             session.rollback()
             logging.error("Error while saving or updating, Error: ", ex)
+            raise ex
         else:
             session.commit()
 
+def bulk_insert(engine, entity_list):
+    with Session(engine) as session:
+        session.begin()
+        try:
+            session.bulk_save_objects(entity_list)
+        except Exception as ex:
+            session.rollback()
+            logging.error(f"error while inserting in table, Error: ", ex)
+            raise ex
+        else:
+            session.commit()
 
-
-
+def save(engine, table, entity):
+    """
+        Function to create a new entry .
+        parameters:
+            table: table name
+            entity: table object to be inserted
+    """
+    with Session(engine) as session:
+        session.begin()
+        try:
+            session.add(entity)
+        except Exception as ex:
+            session.rollback()
+            logging.error("Error while saving or updating, Error: ", ex)
+            raise ex
+        else:
+            session.commit()
