@@ -600,21 +600,6 @@ class Roles(Enum):
     DEACTIVATE = "DEACTIVATE"
     TECH = "TECH"
 
-SMTP_HOST = "smtp.elasticemail.com"
-SMTP_FROM = "support@clearmydues.com"
-SMTP_FROM_NAME = "Admin-Clearmydues"
-SMTP_USERNAME = "amanbindal@nsitonline.in"
-SMTP_PASSWORD = "4e32da06-7d76-4de6-b51a-eba4f39a42cb"
-MAIL_SMTP_PORT = 2525
-
-ALPHABATES_SPACE = r'^[a-zA-Z ]+$'
-ALPHA_NUMERIC_SPACE_UNDERSCORE = r'^[a-zA-Z0-9 _]+$'
-ALPHA_NUMERIC_HYPHEN_UNDERSCORE = r'^[a-zA-Z0-9-_]+$'
-MOBILE_NUMBER_REGEX = r'^[6-9]{1}[0-9]{9}$'
-EMAIL_ID_REGEX = r'^[_A-Za-z0-9-\+]+(\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\.[A-Za-z0-9]+)*(\.[A-Za-z]{2,})$'
-USER_NAME_REGEX = r'^[0-9a-zA-Z]+[_][0-9a-zA-Z]+$'
-SESSION_TIMEOUT = 480 * 60
-
 class RateLimitationLevels(Enum):
     BUSINESS_UNIT = "BUSINESS_UNIT"
     PROJECT = "PROJECT"
