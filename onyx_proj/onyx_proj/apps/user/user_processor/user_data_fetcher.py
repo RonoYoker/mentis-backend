@@ -3,7 +3,6 @@ import json
 import logging
 import uuid
 
-from onyx_proj import settings
 from onyx_proj.common.constants import TAG_SUCCESS, TAG_FAILURE, USER_DATA_FROM_CED_USER, ALPHABATES_SPACE, \
     ALPHA_NUMERIC_HYPHEN_UNDERSCORE, ALPHA_NUMERIC_SPACE_UNDERSCORE, MOBILE_NUMBER_REGEX, EMAIL_ID_REGEX, \
     USER_NAME_REGEX, SESSION_TIMEOUT
@@ -23,7 +22,7 @@ import re,datetime,string
 import secrets
 
 from onyx_proj.models.CreditasCampaignEngine import CED_His_User, CED_ActivityLog, CED_User, CED_UserProjectRoleMapping
-from onyx_proj.settings import CC_USER_EMAIL_ID, BCC_USER_EMAIL_ID
+from django.conf import settings
 
 logger = logging.getLogger("apps")
 
@@ -303,8 +302,8 @@ def send_user_password_email(user_name , password, first_name, last_name, email_
     email_body = f"\nUserName: {first_name} {last_name} \nUserId: {user_name} \nUserPassword: {user_password} \n"
 
     tos = [email_id]
-    ccs = CC_USER_EMAIL_ID
-    bccs = BCC_USER_EMAIL_ID
+    ccs = settings.CC_USER_EMAIL_ID
+    bccs = settings.BCC_USER_EMAIL_ID
 
     email_status = email_utility().send_mail(tos, ccs, bccs, email_subject, email_body)
     if not email_status.get("status"):
