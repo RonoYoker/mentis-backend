@@ -19,7 +19,7 @@ class CED_Projects:
             {"column": "deleted", "value": "0", "op": "=="},
             {"column": "active", "value": "1", "op": "=="}
         ]
-        return fetch_one_row(self.engine, self.table, filter_list)
+        return fetch_rows(self.engine, self.table, filter_list)
 
     def get_project_id_by_cbc_id(self, cbc_id):
         query = f'SELECT CED_Projects.UniqueId FROM CED_Projects INNER JOIN CED_Segment ON CED_Projects.UniqueId = CED_Segment.ProjectId' \

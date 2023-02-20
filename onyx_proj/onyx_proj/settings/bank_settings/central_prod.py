@@ -11,6 +11,7 @@ INFRA_CONF = fetch_secrets_from_secret_manager(secret_name, region_name)
 
 DATABASES = INFRA_CONF["DATABASE"]
 
+
 HYPERION_LOCAL_DOMAIN = {
     "IBL_Ethera": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
     "TCL_Ethera": "http://m-prod-tatacapital-hyp-1407059969.ap-south-1.elb.amazonaws.com/",
@@ -33,7 +34,6 @@ ONYX_LOCAL_DOMAIN = {
 ONYX_LOCAL_CAMP_VALIDATION = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj"]
 
 CAMPAIGN_THRESHOLDS_PER_MINUTE = {
-
     "SMS": 5000,
     "EMAIL": 5000,
     "IVR": 4000,
@@ -43,3 +43,9 @@ CAMPAIGN_THRESHOLDS_PER_MINUTE = {
 JWT_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["JWT_ENCRYPTION_KEY"]
 CENTRAL_TO_LOCAL_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["CENTRAL_TO_LOCAL_ENCRYPTION_KEY"]
 HYPERION_CENTRAL_DOMAIN = "https://hyperiontool.com/"
+
+
+DEFAULT_ENCRYPTION_SECRET_KEY = "C23D2$2F38YU@YYPROD"
+
+CC_USER_EMAIL_ID = []
+BCC_USER_EMAIL_ID = []

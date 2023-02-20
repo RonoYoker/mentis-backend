@@ -1,4 +1,5 @@
-from onyx_proj.common.secret_manager import fetch_secrets_from_secret_manager
+from .base import *
+from ..common.secret_manager import fetch_secrets_from_secret_manager
 
 DEBUG = True
 
@@ -45,4 +46,11 @@ ONYX_LOCAL_CAMP_VALIDATION = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyn
 
 JWT_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["JWT_ENCRYPTION_KEY"]
 CENTRAL_TO_LOCAL_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["CENTRAL_TO_LOCAL_ENCRYPTION_KEY"]
+
 HYPERION_CENTRAL_DOMAIN = "http://uatdev.hyperiontool.com/"
+
+DEFAULT_ENCRYPTION_SECRET_KEY = "C23D2$2F38YU@YYUAT"
+
+
+CC_USER_EMAIL_ID = []
+BCC_USER_EMAIL_ID = []
