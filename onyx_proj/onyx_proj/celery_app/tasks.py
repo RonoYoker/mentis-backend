@@ -54,7 +54,7 @@ def query_executor(task_id: str):
             logger.info(f"Updated status to {AsyncJobStatus.ERROR.value} for task_id: {task_data['TaskId']}.")
         else:
             logger.error(f"Unable to update status for task_id: {task_data['TaskId']}.")
-        return
+            return
     else:
         task_data["Status"] = AsyncJobStatus.SUCCESS.value
         logger.info(f"Query response for the task_id: {task_id} is {query_response}.")
@@ -98,6 +98,8 @@ def callback_resolver(parent_id: str):
     resolves whether callback needs to triggered for async_query_execution
     """
     # check if status for all tasks for the parent_id is SUCCESS, if so callback_process needs to be initiated
+    logger.debug(f"callback_resolver :: parent_id: {parent_id}")
+
     db_resp = CEDQueryExecutionJob().get_status_count_for_tasks(parent_id)
     if db_resp.get("error") is True or len(db_resp.get("result", [])) == 0:
         logger.error(f"Unable to fetch count of status for parent_id: {parent_id}.")

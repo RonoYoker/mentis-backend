@@ -53,7 +53,12 @@ def get_sample_data_by_unique_id(request_data: dict):
         validity_flag = check_validity_flag(segment_data.get("Extra", None), segment_data.get("DataRefreshEndDate"),
                                             expire_time=DATA_THRESHOLD_MINUTES)
 
-        extra_data = json.loads(segment_data.get("Extra"))
+        try:
+            extra_data = json.loads(segment_data.get("Extra"))
+        except Exception as ex:
+            logger.error(f"get_sample_data_by_unique_id :: exception while data fetch for segment: {segment_data.get('Title')}. Exception: {str(ex)}")
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        data=dict(details_message=f"Segment {segment_data.get('Title')} does not have any records to show."))
 
         if validity_flag is True:
             sample_data = json.loads(extra_data.get("sample_data", ""))

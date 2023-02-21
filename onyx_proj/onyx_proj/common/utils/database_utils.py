@@ -1,4 +1,5 @@
 from django.db import connections
+from sqlalchemy import text
 import time
 import logging
 
@@ -25,6 +26,20 @@ def fetch_all(engine, query, params=[]):
     try:
         with engine.connect() as cursor:
             resp = cursor.execute(query, params)
+            desc = resp.cursor.description
+            result = [dict(zip([col[0] for col in desc], row)) for row in resp.fetchall()]
+            return {"error": False, "result": result}
+    except Exception as e:
+        logging.error({
+            'error': 'mysql thrown exception while fetching dict one.', 'exception': e.__cause__, 'logkey': 'mysql_helper'
+        })
+        return {"error": True, "exception": e}
+
+
+def fetch_all_without_args(engine, query):
+    try:
+        with engine.connect() as cursor:
+            resp = cursor.execute(text(query))
             desc = resp.cursor.description
             result = [dict(zip([col[0] for col in desc], row)) for row in resp.fetchall()]
             return {"error": False, "result": result}

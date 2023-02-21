@@ -1,6 +1,5 @@
 from onyx_proj.common.utils.database_utils import *
 import logging
-from django.conf import settings
 
 from onyx_proj.common.utils.sql_alchemy_engine import SqlAlchemyEngine
 
@@ -14,5 +13,7 @@ class CustomQueryExecution:
         self.curr = SqlAlchemyEngine(database=self.database).get_connection()
 
     def execute_query(self, query: str):
-        return fetch_all(self.curr, query)
+        logger.debug(f"CustomQueryExecution :: query: {query}")
+        # query = query.replace("%", "%%")
+        return fetch_all_without_args(self.curr, query)
 
