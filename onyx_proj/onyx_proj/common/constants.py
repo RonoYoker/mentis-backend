@@ -646,4 +646,4 @@ class RateLimitationLevels(Enum):
     PROJECT = "PROJECT"
 
 
-ASYNC_QUERY_EXECUTION_ENABLED = ["VST_Ethera", "TEST_VST"]
+ASYNC_QUERY_EXECUTION_ENABLED = ["VST_Ethera", "TEST_VST", "IBL_CRD_Ethera"]
