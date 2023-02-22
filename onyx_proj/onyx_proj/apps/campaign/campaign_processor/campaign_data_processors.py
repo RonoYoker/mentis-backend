@@ -689,7 +689,6 @@ def prepare_and_save_cbc_history_data(campaign_builder_campaign_id, user_name):
 
 def send_status_email(campaign_details):
     email_template = f"Following Campaigns Deactivated Successfully\n "
-    logger.debug(f"campaign_details::{campaign_details}")
 
     for camp in campaign_details:
         campaign_name = camp.get("campaign_name")
@@ -704,7 +703,6 @@ def send_status_email(campaign_details):
     tos = settings.TO_CAMPAIGN_DEACTIVATE_EMAIL_ID
     ccs = settings.CC_CAMPAIGN_DEACTIVATE_EMAIL_ID
     bccs = settings.BCC_CAMPAIGN_DEACTIVATE_EMAIL_ID
-    logger.debug(f"body::{email_template}")
 
     email_status = email_utility().send_mail(tos, ccs, bccs, email_subject, email_template)
     if not email_status.get("status"):
