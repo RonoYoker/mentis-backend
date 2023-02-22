@@ -53,3 +53,7 @@ DEFAULT_ENCRYPTION_SECRET_KEY = "C23D2$2F38YU@YYPROD"
 
 CC_USER_EMAIL_ID = []
 BCC_USER_EMAIL_ID = []
+
+TO_CAMPAIGN_DEACTIVATE_EMAIL_ID = ["devesh.satija@creditas.in","vanshkumar.dua@creditas.in","ritik.saini@creditas.in"]
+CC_CAMPAIGN_DEACTIVATE_EMAIL_ID = []
+BCC_CAMPAIGN_DEACTIVATE_EMAIL_ID = []
