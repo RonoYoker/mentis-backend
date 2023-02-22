@@ -523,7 +523,7 @@ def deactivate_campaign_by_campaign_id(request_body):
     user_session = Session().get_user_session_object()
     user_name = user_session.user.user_name
 
-    campaign_details = ""
+    campaign_details = []
 
     if campaign_ids is None:
         logger.error(f"deactivate_campaign_by_campaign_id :: campaign id is not provided for the request.")
@@ -538,6 +538,7 @@ def deactivate_campaign_by_campaign_id(request_body):
             logger.error(f"response::{response}")
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         message=response.get("message"))
+        campaign_details = response.get("campaign_details")
 
     elif 'campaign_builder_campaign_id' in campaign_ids.keys() and len(campaign_ids) == 1:
 
@@ -688,6 +689,7 @@ def prepare_and_save_cbc_history_data(campaign_builder_campaign_id, user_name):
 
 def send_status_email(campaign_details):
     email_template = f"Following Campaigns Deactivated Successfully\n "
+    logger.debug(f"campaign_details::{campaign_details}")
 
     for camp in campaign_details:
         campaign_name = camp.get("campaign_name")
@@ -702,6 +704,7 @@ def send_status_email(campaign_details):
     tos = settings.TO_CAMPAIGN_DEACTIVATE_EMAIL_ID
     ccs = settings.CC_CAMPAIGN_DEACTIVATE_EMAIL_ID
     bccs = settings.BCC_CAMPAIGN_DEACTIVATE_EMAIL_ID
+    logger.debug(f"body::{email_template}")
 
     email_status = email_utility().send_mail(tos, ccs, bccs, email_subject, email_template)
     if not email_status.get("status"):
