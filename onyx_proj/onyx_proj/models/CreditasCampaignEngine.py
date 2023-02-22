@@ -140,6 +140,10 @@ class CED_CampaignSMSContent(Base, Orm_helper):
     strength = Column("Strength", String)
     project_id = Column("ProjectId", String)
     content_text = Column("ContentText", String)
+    created_by = Column("CreatedBy", String)
+    status = Column("Status", String)
+    creation_date = Column("CreationDate", TIMESTAMP)
+    approved_by = Column("ApprovedBy", String)
     tag_mapping = relationship("CED_EntityTagMapping")
 
     def __init__(self, data={}):
@@ -153,6 +157,10 @@ class CED_CampaignEmailContent(Base, Orm_helper):
     strength = Column("Strength", String)
     project_id = Column("ProjectId", String)
     content_text = Column("ContentText", String)
+    created_by = Column("CreatedBy", String)
+    status = Column("Status", String)
+    creation_date = Column("CreationDate", TIMESTAMP)
+    approved_by = Column("ApprovedBy", String)
     tag_mapping = relationship("CED_EntityTagMapping")
 
     def __init__(self, data={}):
@@ -166,6 +174,10 @@ class CED_CampaignWhatsAppContent(Base, Orm_helper):
     strength = Column("Strength", String)
     project_id = Column("ProjectId", String)
     content_text = Column("ContentText", String)
+    created_by = Column("CreatedBy", String)
+    status = Column("Status", String)
+    creation_date = Column("CreationDate", TIMESTAMP)
+    approved_by = Column("ApprovedBy", String)
     tag_mapping = relationship("CED_EntityTagMapping")
 
     def __init__(self, data={}):
@@ -179,6 +191,10 @@ class CED_CampaignIvrContent(Base, Orm_helper):
     strength = Column("Strength", String)
     project_id = Column("ProjectId", String)
     content_text = Column("ContentText", String)
+    created_by = Column("CreatedBy", String)
+    status = Column("Status", String)
+    creation_date = Column("CreationDate", TIMESTAMP)
+    approved_by = Column("ApprovedBy", String)
     tag_mapping = relationship("CED_EntityTagMapping")
 
     def __init__(self, data={}):
@@ -192,6 +208,10 @@ class CED_CampaignSubjectLineContent(Base, Orm_helper):
     strength = Column("Strength", String)
     project_id = Column("ProjectId", String)
     content_text = Column("ContentText", String)
+    created_by = Column("CreatedBy", String)
+    status = Column("Status", String)
+    creation_date = Column("CreationDate", TIMESTAMP)
+    approved_by = Column("ApprovedBy", String)
     tag_mapping = relationship("CED_EntityTagMapping")
 
     def __init__(self, data={}):
@@ -205,6 +225,10 @@ class CED_CampaignUrlContent(Base, Orm_helper):
     project_id = Column("ProjectId", String)
     url = Column("Url", String)
     strength = Column("Strength", String)
+    created_by = Column("CreatedBy", String)
+    status = Column("Status", String)
+    creation_date = Column("CreationDate", TIMESTAMP)
+    approved_by = Column("ApprovedBy", String)
     tag_mapping = relationship("CED_EntityTagMapping")
 
     def __init__(self, data={}):

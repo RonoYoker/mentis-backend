@@ -6,11 +6,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 
 from onyx_proj.apps.content import app_settings
+from onyx_proj.common.decorators import UserAuth
 from onyx_proj.models.CED_CampaignSubjectLineContent_model import CEDCampaignSubjectLineContent
 from onyx_proj.models.CED_CampaignTagContent_model import CEDCampaignTagContent
 from onyx_proj.models.CED_CampaignURLContent_model import CEDCampaignURLlContent
 from onyx_proj.common.constants import CHANNELS_LIST, TAG_FAILURE, TAG_SUCCESS, FETCH_CAMPAIGN_QUERY, \
-    CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS
+    CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, Roles
 from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
 from onyx_proj.models.CED_CampaignEmailContent_model import CEDCampaignEmailContent
 from onyx_proj.models.CED_CampaignIvrContent_model import CEDCampaignIvrContent
@@ -138,23 +139,38 @@ def get_query_for_campaigns(content_id, content_type):
                                        channel_id=CHANNEL_CONTENT_TABLE_DATA[content_type]["channel_id"])
 
 @csrf_exempt
+@UserAuth.user_validation(permissions=[Roles.VIEWER.value], identifier_conf={
+    "param_type": "arg",
+    "param_key": 0,
+    "param_instance_type": "request_post",
+    "param_path": "project_id",
+    "entity_type": "PROJECT"
+})
 def get_content_list(data) -> dict:
     request_body = data.get("body", {})
-    content_type = request_body.get("content_type", None)
+    entity_type_list = request_body.get("entity_type", None)
     project_id = request_body.get("project_id", None)
-    if project_id is None or content_type is None:
+    entity_status_list = request_body.get("entity_status", None)
+    entity_table_list = []
+    campaign_entity_dict = {}
+    if project_id is None or entity_type_list is None or entity_status_list is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Request body has missing field")
-
-    campaign_content_type = app_settings.CONTENT_TABLE_MAPPING[content_type]
-    if campaign_content_type is None:
+    for entity_type in entity_type_list:
+        entity_table_name = app_settings.CONTENT_TABLE_MAPPING[entity_type.upper()]
+        entity_table_list.append({"entity_type": entity_type.upper(), "entity_table_name": entity_table_name})
+    if len(entity_table_list) == 0:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid Content")
-    campaign_content_list = campaign_content_type().get_content_list(project_id)
-    if campaign_content_list is None:
+    for entity_table in entity_table_list:
+        entity_type = entity_table.get("entity_type")
+        entity_table_name = entity_table.get("entity_table_name")
+        campaign_entity_dict[entity_type] = entity_table_name().get_content_data(project_id, entity_status_list)
+
+    if campaign_entity_dict is None:
         return dict(status_code=http.HTTPStatus.NOT_FOUND, result=TAG_SUCCESS,
                     response=[])
     else:
-        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=campaign_content_list)
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=campaign_entity_dict)
 
 

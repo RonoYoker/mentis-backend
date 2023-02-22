@@ -20,10 +20,16 @@ class CEDCampaignEmailContent:
                     and IsActive = '1' and Status in ({status}) """
         return dict_fetch_query_all(self.curr, query)
 
-    def get_content_list(self, project_id):
-            filter_list = [
-                {"column": "project_id", "value": project_id, "op": "=="}
-            ]
-            res = fetch_rows(self.engine, self.table, filter_list)
-            return res
+    def get_content_data(self, project_id, status):
+        filter_list = [
+            {"column": "project_id", "value": project_id, "op": "=="}
+        ]
+        if len(status) == 0:
+            pass
+        else:
+            filter_list.append(
+                {"column": "status", "value": status, "op": "in"}
+            )
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
 
