@@ -15,7 +15,7 @@ class CED_CampaignBuilderCampaign:
     def insert_new_campaign_in_table(self, data_dict):
         return insert_single_row(self.curr, self.table_name, data_dict)
 
-    def get_campaigns_segment_info_by_dates(self,dates,project_id,segment_id):
+    def get_campaigns_segment_info_by_dates(self,dates,project_id):
         date_string = ",".join([f'"{date}"' for date in dates])
         query = """Select cbc.ContentType as ContentType, cbc.UniqueId as UniqueId, s.Records as Records, 
         cbc.StartDateTime as StartDateTime, cbc.EndDateTime as EndDateTime from CED_CampaignBuilderCampaign cbc join 
@@ -24,7 +24,7 @@ class CED_CampaignBuilderCampaign:
         cb.IsActive = 1 and cb.IsDeleted = 0""" % (project_id, date_string)
         return dict_fetch_query_all(self.curr, query)
 
-    def get_campaigns_segment_info_by_dates_campaignId(self, dates, project_id, segment_id, campaign_id):
+    def get_campaigns_segment_info_by_dates_campaignId(self, dates, project_id, campaign_id):
         date_string = ",".join([f'"{date}"' for date in dates])
         query = """Select cbc.ContentType as ContentType, cbc.UniqueId as UniqueId, s.Records as Records, 
         cbc.StartDateTime as StartDateTime, cbc.EndDateTime as EndDateTime from CED_CampaignBuilderCampaign cbc join 
