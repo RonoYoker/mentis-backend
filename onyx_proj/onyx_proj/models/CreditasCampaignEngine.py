@@ -393,6 +393,7 @@ class CED_CampaignWhatsAppContent(Base, Orm_helper):
     is_active = Column("IsActive", Integer, default=1)
     rejection_reason = Column("RejectionReason", String)
     is_deleted = Column("IsDeleted", Integer, default=0)
+    vendor_mapping_enabled = Column("IsVendorMappingEnabled", Integer, default=0)
     error_message = Column("ErrorMessage", String)
     creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
     updation_date = Column("UpdationDate", TIMESTAMP,
