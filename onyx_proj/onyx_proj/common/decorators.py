@@ -2,12 +2,13 @@ import logging
 import json
 
 from onyx_proj.common.utils.datautils import nested_path_get
+from onyx_proj.apps.content import app_settings
 from onyx_proj.exceptions.permission_validation_exception import MethodPermissionValidationException, \
     UnauthorizedException
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 
-logger = logging.getLogger("apps")
 
+logger = logging.getLogger("apps")
 
 class UserAuth(object):
 
@@ -102,6 +103,9 @@ def fetch_project_id_from_conf(conf, *args, **kwargs):
         project_id = CED_CampaignBuilder().get_project_id_from_campaign_builder_id(identifier_id)
     elif identifier_type == "CAMPAIGNBUILDERCAMPAIGN":
         project_id = CED_CampaignBuilderCampaign().get_project_id_from_campaign_builder_campaign_id(identifier_id)
+    elif identifier_type == "CONTENT":
+        content_type = args[0].get("content_type")
+        project_id = app_settings.CONTENT_TABLE_MAPPING[f"{content_type}"]().get_project_id_by_content_id(identifier_id)
     else:
         raise MethodPermissionValidationException
     return project_id

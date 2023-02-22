@@ -1,6 +1,8 @@
+import json
 import http
+
 from onyx_proj.models.CED_Projects import CED_Projects
-from onyx_proj.apps.content.content_procesor import *
+from onyx_proj.common.constants import TAG_FAILURE
 
 
 def fetch_vendor_config_data(request_data) -> json:

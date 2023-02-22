@@ -1,10 +1,9 @@
 import http
 import logging
-
 from django.views.decorators.csrf import csrf_exempt
 
-from django.conf import settings
-
+from common.decorators import UserAuth
+from models.CED_MasterHeaderMapping_model import CEDMasterHeaderMapping
 from onyx_proj.apps.content import app_settings
 from onyx_proj.common.decorators import UserAuth
 from onyx_proj.models.CED_CampaignSubjectLineContent_model import CEDCampaignSubjectLineContent
@@ -138,6 +137,7 @@ def get_query_for_campaigns(content_id, content_type):
                                        content_table=CHANNEL_CONTENT_TABLE_DATA[content_type]["content_table"],
                                        channel_id=CHANNEL_CONTENT_TABLE_DATA[content_type]["channel_id"])
 
+
 @csrf_exempt
 @UserAuth.user_validation(permissions=[Roles.VIEWER.value], identifier_conf={
     "param_type": "arg",
@@ -172,5 +172,33 @@ def get_content_list(data) -> dict:
                     response=[])
     else:
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=campaign_entity_dict)
+
+
+@UserAuth.user_validation(permissions=[Roles.VIEWER.value], identifier_conf={
+    "param_type": "arg",
+    "param_key": 0,
+    "param_instance_type": "dict",
+    "param_path": "content_id",
+    "entity_type": "CONTENT",
+})
+def get_content_data(content_data):
+    logger.debug(f"get_content_data :: content_data: {content_data}")
+
+    content_type = content_data.get("content_type", None)
+    content_id = content_data.get("content_id", None)
+
+    if content_id is None or content_type is None:
+        logger.error(f"get_content_data :: invalid request, request_data: {content_data}.")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid Request! Missing content_id/content_type")
+
+    content_obj = app_settings.CONTENT_TABLE_MAPPING[f"{content_type}"]()
+    data = content_obj.fetch_content_data(content_id)
+    if data is None or len(data) == 0:
+        logger.error(f"get_content_data :: unable to fetch content data for request_data: {content_data}.")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Content data is invalid")
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=data[0])
+
 
 

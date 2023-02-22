@@ -19,6 +19,13 @@ class CEDCampaignSubjectLineContent:
         query = f"""SELECT * from {self.table_name} where UniqueId = '{content_id}' and Status in ('APPROVAL_PENDING','APPROVED')"""
         return dict_fetch_query_all(self.curr, query)
 
+    def get_content_list(self, project_id):
+        filter_list = [
+            {"column": "project_id", "value": project_id, "op": "=="}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
+
     def get_content_data(self, project_id, status):
         filter_list = [
             {"column": "project_id", "value": project_id, "op": "=="}
@@ -32,3 +39,12 @@ class CEDCampaignSubjectLineContent:
         res = fetch_rows(self.engine, self.table, filter_list)
         return res
 
+    def fetch_content_data(self, content_id):
+        filter_list = [
+            {"column": "unique_id", "value": content_id, "op": "=="}
+        ]
+        return fetch_rows(self.engine, self.table, filter_list)
+
+    def get_project_id_by_content_id(self, content_id: str):
+        query = f"SELECT ProjectId AS project_id FROM {self.table_name} WHERE UniqueId = '{content_id}'"
+        return dict_fetch_query_all(self.curr, query)

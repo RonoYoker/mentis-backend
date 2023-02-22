@@ -1,4 +1,3 @@
-from django.conf import settings
 from onyx_proj.common.mysql_helper import *
 
 
