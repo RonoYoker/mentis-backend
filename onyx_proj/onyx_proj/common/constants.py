@@ -9,7 +9,6 @@ from onyx_proj.models.CED_CampaignBuilderIVR_model import CEDCampaignBuilderIVR
 from onyx_proj.models.CED_CampaignBuilderSMS_model import CEDCampaignBuilderSMS
 from onyx_proj.models.CED_CampaignBuilderWhatsApp_model import CEDCampaignBuilderWhatsApp
 
-
 IBL_DATABASE = "indusindcollection"
 HYPERION_CENTRAL_DATABASE = "creditascampaignengine"
 
@@ -36,7 +35,6 @@ class TabName(Enum):
 
 
 class DashboardTab(Enum):
-
     ALL = "ALL"
     SCHEDULED = "SCHEDULED"
     EXECUTED = "EXECUTED"
@@ -61,6 +59,8 @@ CUSTOM_QUERY_EXECUTION_API_PATH = "hyperioncampaigntooldashboard/segment/customQ
 CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH = "local/async_task_invocation/async_query_execution/"
 
 SAMPLE_DATA_ASYNC_EXECUTION_API_PATH = "local/async_task_invocation/async_query_execution/"
+
+DEACTIVATE_CAMPAIGNS_FROM_CREATION_DETAILS = "hyperioncampaigntooldashboard/deactivate/localdb/campaignFromCreationdetails"
 
 REFRESH_COUNT_LOCAL_API_PATH = "hyperioncampaigntooldashboard/segment/localdb/triggerlambdaForSegmentRefreshCount"
 
@@ -625,6 +625,17 @@ class Roles(Enum):
     TECH = "TECH"
     ADMIN = "ADMIN"
 
+
+SMTP_CREDENTIALS = {
+    "CAMPAIGN_DEACTIVATE_SUCCESS_KEY": "SUCCESS",
+    "MAIL_SMTP_PORT": 2525,
+    "SMTP_HOST": "smtp.elasticemail.com",
+    "SMTP_FROM": "support@clearmydues.com",
+    "SMTP_FROM_NAME": "Admin-Clearmydues",
+    "SMTP_USERNAME": "amanbindal@nsitonline.in",
+    "SMTP_PASSWORD": "4e32da06-7d76-4de6-b51a-eba4f39a42cb"
+}
+
 SMTP_HOST = "smtp.elasticemail.com"
 SMTP_FROM = "support@clearmydues.com"
 SMTP_FROM_NAME = "Admin-Clearmydues"
@@ -644,6 +655,5 @@ SESSION_TIMEOUT = 480 * 60
 class RateLimitationLevels(Enum):
     BUSINESS_UNIT = "BUSINESS_UNIT"
     PROJECT = "PROJECT"
-
 
 ASYNC_QUERY_EXECUTION_ENABLED = ["VST_Ethera", "TEST_VST", "IBL_CRD_Ethera", "IBL_AOC_Ethera", "IBL_Ethera"]

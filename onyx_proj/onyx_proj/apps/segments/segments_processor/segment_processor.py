@@ -1,16 +1,22 @@
 import datetime
 import http
 import logging
+import uuid
 
+from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.apps.segments.segments_processor.segment_helpers import check_validity_flag, check_restart_flag
+from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import deactivate_campaign_by_campaign_id
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, \
     REFRESH_COUNT_LOCAL_API_PATH, SegmentRefreshStatus, SEGMENT_COUNT_QUERY, MIN_REFRESH_COUNT_DELAY, \
     ASYNC_QUERY_EXECUTION_ENABLED
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import hyperion_local_async_rest_call
+from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
+from onyx_proj.models.CED_HIS_Segment_model import CEDHISSegment
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.models.CED_Projects import CED_Projects
-from onyx_proj.apps.segments.app_settings import AsyncTaskCallbackKeys, AsyncTaskSourceKeys, QueryKeys, AsyncTaskRequestKeys
+from onyx_proj.apps.segments.app_settings import AsyncTaskCallbackKeys, AsyncTaskSourceKeys, QueryKeys, \
+    AsyncTaskRequestKeys
 
 logger = logging.getLogger("apps")
 
@@ -27,7 +33,10 @@ def update_segment_count(data):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Missing parameter request body.")
 
-    update_resp = CEDSegment().update_segment_record_count_refresh_date(segment_count=segment_count, segment_unique_id=segment_unique_id,refresh_date=curr_date_time,refresh_status=None)
+    update_resp = CEDSegment().update_segment_record_count_refresh_date(segment_count=segment_count,
+                                                                        segment_unique_id=segment_unique_id,
+                                                                        refresh_date=curr_date_time,
+                                                                        refresh_status=None)
     logger.debug(f"update_resp :: {update_resp}")
     if update_resp is not None and update_resp.get("row_count", 0) > 0:
         resp["update_segment_table"] = True
@@ -61,7 +70,8 @@ def trigger_update_segment_count(data):
                             details_message=f"Segment {segment_data.get('Title')} already being processed.")
 
         # caching implementation
-        validation_flag = check_validity_flag(segment_data.get("Extra", None), segment_data.get("CountRefreshEndDate", None))
+        validation_flag = check_validity_flag(segment_data.get("Extra", None),
+                                              segment_data.get("CountRefreshEndDate", None))
 
         sql_query = segment_data.get("SqlQuery", None)
         count_sql_query = f"SELECT COUNT(*) AS row_count FROM ({sql_query}) derived_table"
@@ -70,7 +80,8 @@ def trigger_update_segment_count(data):
             # initiate async flow for data population
 
             queries_data = [
-                dict(query=sql_query + " LIMIT 50", response_format="json", query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
+                dict(query=sql_query + " LIMIT 50", response_format="json",
+                     query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
                 dict(query=count_sql_query, response_format="json", query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)
             ]
 
@@ -150,3 +161,81 @@ def trigger_update_segment_count(data):
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="Unable to process segment")
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=data)
+
+
+def deactivate_segment_by_segment_id(request_body, request_headers):
+    logger.debug(
+        f"deactivate_segment_by_segment_id :: request_body: {request_body}, request_headers: {request_headers}")
+
+    segment_id = request_body.get("segment_id", None)
+    user_session = Session().get_user_session_object()
+    user_name = user_session.user.user_name
+
+    if segment_id is None:
+        logger.error(f"deactivate_segment_by_segment_id :: Missing segment id in request: {request_body}.")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Missing segment id")
+
+    campaign_data = CED_CampaignBuilder().get_campaigns_by_segment_id(segment_id)
+    if len(campaign_data) != 0 and campaign_data:
+        cb_id_list = []
+        for campaign in campaign_data:
+            cb_id_list.append(campaign.get("UniqueId"))
+        deactivation_request_body = {"campaign_details": {"campaign_builder_id": cb_id_list}}
+        response = deactivate_campaign_by_campaign_id(deactivation_request_body)
+        if response.get("result", TAG_SUCCESS) == TAG_FAILURE:
+            logger.error(f"deactivate_segment_by_segment_id :: unable to deactivate campaigns aligned with segment_id: {segment_id},"
+                         f"message: {response.get('message', '')}")
+            return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                        details_message="Unable to deactivate campaigns aligned for the given segment.")
+
+    status = "DEACTIVATE"
+    flag = 0
+    history_id = uuid.uuid4().hex
+
+    try:
+        params_dict = dict(UniqueId=segment_id)
+        update_dict = dict(Status=status, IsActive=flag, HistoryId=history_id)
+        response = CEDSegment().update_segment(params_dict, update_dict)
+    except Exception as ex:
+        logger.error(f"deactivate_segment_by_segment_id :: error while deactivating segment, error: {str(ex)}.")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Exception while deactivating segment",
+                    ex=str(ex))
+
+    if not response:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Error while deactivating segment")
+
+    history_result = save_deactivation_segment_history(user_name, segment_id)
+    if history_result.get("status") != TAG_SUCCESS:
+        logger.error(f"deactivate_segment_by_segment_id :: Error while saving history log for deactivation process.")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    data="Error while saving history log for deactivation process")
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data="Segment Deactivated Successfully!")
+
+
+def save_deactivation_segment_history(user_name, segment_id):
+    logger.debug(f"save_deactivation_segment_history :: user_name: {user_name}, segment_id: {segment_id}")
+
+    history_object = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))[0]
+    id = history_object.get("Id")
+    comment = f"<strong>Segment {id} </strong> is DeActivated by {user_name}"
+    history_object["Comment"] = comment
+    history_object["SegmentId"] = history_object.pop("UniqueId")
+    history_object["UniqueId"] = history_object.pop("HistoryId")
+    del history_object['Id']
+    del history_object['MappingId']
+    del history_object['Extra']
+    logger.error(f"history object:: {history_object}")
+
+    try:
+        response = CEDHISSegment().save_history_object(history_object)
+    except Exception as ex:
+        logger.error(f"save_deactivation_segment_history :: Exception while saving history object: {str(ex)}.")
+        return dict(status=TAG_FAILURE)
+    if not response:
+        return dict(status=TAG_FAILURE)
+
+    return dict(status=TAG_SUCCESS)

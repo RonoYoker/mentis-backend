@@ -1,3 +1,4 @@
+from django.conf import settings
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows
 from onyx_proj.models.CreditasCampaignEngine import CEDCampaignBuilder
@@ -50,6 +51,25 @@ class CED_CampaignBuilder:
                 f"s.UniqueId where cb.UniqueId = '{campaign_id}'"
         result = dict_fetch_query_all(self.curr, query)
         return result[0].get("project_id") if result is not None else None
+
+    def deactivate_campaigns_from_campaign_builder(self, campaign_builder_id):
+        query = f"UPDATE CED_CampaignBuilder cb join CED_CampaignBuilderCampaign cbc on cb.UniqueId = " \
+                f"cbc.CampaignBuilderId SET cb.IsActive = 0, cb.Status = 'DEACTIVATE', cb.HistoryId = UUID(), " \
+                f"cbc.Status = 'DEACTIVATE', cbc.IsActive = 0, cbc.CampaignDeactivationDateTime = CURRENT_TIMESTAMP " \
+                f"where cb.UniqueId in ({campaign_builder_id}) and cbc.EndDateTime > now() and cbc.EndDateTime is not " \
+                f"null"
+        try:
+            result = update_table_row(self.curr, query)
+        except Exception as ex:
+            return dict(status=False, message=str(ex))
+        return dict(status=True, result=result)
+
+    def get_cb_details_by_cb_id(self, campaign_builder_id):
+        query = f"SELECT * FROM {self.table_name} where UniqueId in ({campaign_builder_id})"
+        return dict_fetch_query_all(self.curr, query)
+
+    def get_campaigns_by_segment_id(self, segment_id):
+        return dict_fetch_all(self.curr, self.table_name, {"SegmentId": segment_id})
 
     def get_campaign_details(self, campaign_id):
         filter_list = [

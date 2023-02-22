@@ -1,4 +1,3 @@
-from django.conf import settings
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows
 from onyx_proj.models.CreditasCampaignEngine import CED_Segment
@@ -10,7 +9,7 @@ class CEDSegment:
         self.table_name = "CED_Segment"
         self.curr = mysql_connect(self.database)
         self.table = CED_Segment
-        self.engine = sql_alchemy_connect("creditascampaignengine")
+        self.engine = sql_alchemy_connect(self.database)
 
     def save_custom_segment(self, params_dict: dict):
         if not params_dict:
@@ -19,7 +18,14 @@ class CEDSegment:
         return insert_single_row(self.curr, self.table_name, params_dict)
 
     def get_all_custom_segments(self, filter, limit=0) -> list:
-        base_query = """SELECT seg.ApprovedBy as approved_by, seg.CreatedBy as created_by, seg.CreationDate as creation_date, seg.DataId as data_id, seg.everScheduled as ever_scheduled, seg.Id as id, seg.IncludeAll as include_all, seg.MappingId as mapping_id, seg.Records as records, seg.ProjectId as project_id, seg.Records as records, seg.RefreshDate as refresh_date, seg.Status as status, seg.Title as title, seg.UniqueId as unique_id, seg.Type as type, seg.UpdationDate as updation_date, cct.UniqueId as tag_id, cct.Name as tag_name, cct.ShortName as short_name from CED_Segment seg LEFT JOIN CED_EntityTagMapping ctm on seg.UniqueId = ctm.EntityId LEFT JOIN CED_CampaignContentTag cct on ctm.TagId = cct.UniqueId where %s order by seg.CreationDate""" % filter
+        base_query = """SELECT seg.ApprovedBy as approved_by, seg.CreatedBy as created_by, seg.CreationDate as 
+        creation_date, seg.DataId as data_id, seg.everScheduled as ever_scheduled, seg.Id as id, seg.IncludeAll as 
+        include_all, seg.MappingId as mapping_id, seg.Records as records, seg.ProjectId as project_id, seg.Records as 
+        records, seg.RefreshDate as refresh_date, seg.Status as status, seg.Title as title, seg.UniqueId as 
+        unique_id, seg.Type as type, seg.UpdationDate as updation_date, cct.UniqueId as tag_id, cct.Name as tag_name, 
+        cct.ShortName as short_name from CED_Segment seg LEFT JOIN CED_EntityTagMapping ctm on seg.UniqueId = 
+        ctm.EntityId LEFT JOIN CED_CampaignContentTag cct on ctm.TagId = cct.UniqueId where %s order by 
+        seg.CreationDate""" % filter
         return dict_fetch_query_all(self.curr, base_query)
 
     def get_headers_for_custom_segment(self, params_dict: dict, headers_list=["Extra", "Type"]) -> list:
@@ -52,27 +58,31 @@ class CEDSegment:
             return []
         return update_row(cursor=self.curr, table=self.table_name, q_data=params_dict, u_data=update_dict)
 
-    def get_segment_count_by_unique_id(self,unique_id):
-        result = dict_fetch_one(self.curr,self.table_name,{"UniqueId":unique_id},["Records"])
-        return int(result.get("Records",0)) if result is not None else 0
+    def get_segment_count_by_unique_id(self, unique_id):
+        result = dict_fetch_one(self.curr, self.table_name, {"UniqueId": unique_id}, ["Records"])
+        return int(result.get("Records", 0)) if result is not None else 0
 
-    def get_project_id_by_segment_id(self,unique_id):
+    def get_project_id_by_segment_id(self, unique_id):
         result = dict_fetch_one(self.curr, self.table_name, {"UniqueId": unique_id}, ["ProjectId"])
         return result.get("ProjectId") if result is not None else None
 
-    def get_data_id_expiry_by_segment_id(self,unique_id):
-        query = """ Select did.ExpireDate from CED_Segment s join CED_DataID_Details did on did.UniqueId = s.DataId  where s.UniqueId = '%s' """ % (unique_id)
-        result = dict_fetch_query_all(self.curr,query=query)
+    def get_data_id_expiry_by_segment_id(self, unique_id):
+        query = """Select did.ExpireDate from CED_Segment s join CED_DataID_Details did on did.UniqueId = s.DataId  
+        where s.UniqueId = '%s' """ % (unique_id)
+        result = dict_fetch_query_all(self.curr, query=query)
         return result
 
-    def update_segment_record_count(self, segment_count: int,segment_unique_id: str):
-        return update_row(self.curr,self.table_name,{"UniqueId":segment_unique_id},{"Records":segment_count})
+    def update_segment_record_count(self, segment_count: int, segment_unique_id: str):
+        return update_row(self.curr, self.table_name, {"UniqueId": segment_unique_id}, {"Records": segment_count})
 
-    def update_segment_record_count_refresh_date(self, segment_count: int,segment_unique_id: str, refresh_date, refresh_status):
-        return update_row(self.curr,self.table_name,{"UniqueId":segment_unique_id},{"Records":segment_count, "RefreshDate":refresh_date, "RefreshStatus":refresh_status})
+    def update_segment_record_count_refresh_date(self, segment_count: int, segment_unique_id: str, refresh_date,
+                                                 refresh_status):
+        return update_row(self.curr, self.table_name, {"UniqueId": segment_unique_id},
+                          {"Records": segment_count, "RefreshDate": refresh_date, "RefreshStatus": refresh_status})
 
     def update_segment_refresh_status(self, segment_unique_id: str, refresh_status: str):
-        return update_row(self.curr,self.table_name,{"UniqueId":segment_unique_id},{"RefreshStatus":refresh_status})
+        return update_row(self.curr, self.table_name, {"UniqueId": segment_unique_id},
+                          {"RefreshStatus": refresh_status})
 
     def execute_customised_query(self, query):
         return dict_fetch_query_all(self.curr, query)
@@ -93,3 +103,7 @@ class CEDSegment:
     def check_segment_type_by_unique_id(self, unique_id):
         query = f"""SELECT Type FROM CED_Segment WHERE UniqueId = '{unique_id}'"""
         return dict_fetch_query_all(self.curr, query)
+
+    def update_segment_status(self, segment_id, status, flag, history_id):
+        return update_row(self.curr, self.table_name, {"UniqueId": segment_id},
+                          {"Status": status, "IsActive": flag, "HistoryId": history_id})

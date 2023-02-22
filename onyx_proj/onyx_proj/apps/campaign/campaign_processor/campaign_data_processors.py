@@ -1,27 +1,31 @@
 import datetime
 import http
 import json
+import os
+
 import jwt
 import logging
+from django.conf import settings
+import requests
 
-from common.decorators import UserAuth
+from onyx_proj.common.decorators import UserAuth
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.apps.campaign.campaign_processor.campaign_processor_helper import add_filter_to_query_using_params, \
     add_status_to_query_using_params
 from onyx_proj.apps.campaign.campaign_processor import app_settings
 from onyx_proj.apps.campaign.campaign_processor.app_settings import SCHEDULED_CAMPAIGN_TIME_RANGE_UTC
 from onyx_proj.common.constants import *
+from onyx_proj.common.utils.email_utility import email_utility
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
 from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetails_model import CED_CampaignSchedulingSegmentDetails
 from onyx_proj.models.CED_CampaignExecutionProgress_model import CED_CampaignExecutionProgress
 from onyx_proj.models.CED_DataID_Details_model import CEDDataIDDetails
+from onyx_proj.models.CED_HIS_CampaignBuilder import CED_HISCampaignBuilder
+from onyx_proj.models.CED_HIS_CampaignBuilderCampaign import CED_HISCampaignBuilderCampaign
 from onyx_proj.models.CED_Projects import CED_Projects
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.apps.slot_management.app_settings import SLOT_INTERVAL_MINUTES
-
-from django.conf import settings
-
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
 
 logger = logging.getLogger("apps")
@@ -510,3 +514,196 @@ def view_campaign_data(request_body):
     campaign_data = CED_CampaignBuilder().get_campaign_details(campaign_id)
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=campaign_data)
+
+
+def deactivate_campaign_by_campaign_id(request_body):
+    logger.debug(f"deactivate_campaign_by_campaign_id :: request_body: {request_body}")
+
+    campaign_ids = request_body.get("campaign_details", None)
+    user_session = Session().get_user_session_object()
+    user_name = user_session.user.user_name
+
+    campaign_details = ""
+
+    if campaign_ids is None:
+        logger.error(f"deactivate_campaign_by_campaign_id :: campaign id is not provided for the request.")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    message="Request body is not valid")
+
+    if "campaign_builder_id" in campaign_ids.keys() and len(campaign_ids) == 1:
+        campaign_builder_id = campaign_ids.get("campaign_builder_id", [])
+        logger.debug(f"deactivate_campaign_by_campaign_id :: campaign_builder_id: {campaign_builder_id}")
+        response = deactivate_campaign_by_campaign_builder_id(campaign_builder_id, user_name)
+        if not response.get("status"):
+            logger.error(f"response::{response}")
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        message=response.get("message"))
+
+    elif 'campaign_builder_campaign_id' in campaign_ids.keys() and len(campaign_ids) == 1:
+
+        campaign_builder_campaign_id = campaign_ids.get("campaign_builder_campaign_id", [])
+        logger.debug(f"campaign_builder_campaign_id:: {campaign_builder_campaign_id}")
+        response = deactivate_campaign_by_campaign_builder_campaign_id(campaign_builder_campaign_id, user_name)
+        if not response.get("status"):
+            logger.error(f"response::{response}")
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        message=response.get("message"))
+        campaign_details = response.get("campaign_details")
+
+    else:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    message="Malformed request")
+
+    email_response = send_status_email(campaign_details)
+    if not email_response.get("status"):
+        logger.error(f"deactivate_campaign_by_campaign_id :: Unable to trigger mail for deactivation, campaign_details: {campaign_details}")
+        return dict(status=False, message=email_response.get("message"))
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, message="Campaign deactivated successfully")
+
+
+@UserAuth.user_validation(permissions=[Roles.DEACTIVATE.value], identifier_conf={
+    "param_type": "arg",
+    "param_key": 0,
+    "param_instance_type": "str",
+    "param_path": "campaign_builder_id",
+    "entity_type": "CAMPAIGNBUILDER"
+})
+def deactivate_campaign_by_campaign_builder_id(campaign_builder_id, user_name):
+    logger.debug(f"deactivate_campaign_by_campaign_builder_id :: campaign_builder_id: {campaign_builder_id}, user_name: {user_name}")
+
+    if len(campaign_builder_id) == 0:
+        return dict(status=False, message="Campaign builder ids are missing")
+
+    cb_ids = ",".join([f"'{cb_id}'" for cb_id in campaign_builder_id])
+    campaign_details = CED_CampaignBuilderCampaign().get_campaign_data_by_cb_id(cb_ids)
+    if len(campaign_details) == 0:
+        return dict(status=False, message="No campaign data found or campaign has been executed")
+
+    cbc_id_list = []
+    for cbc_data in campaign_details:
+        cbc_id_list.append(cbc_data.get("cbc_id"))
+
+    project_name = campaign_details[0].get("project_name")
+    local_api_result = deactivate_campaign_from_local(project_name, cbc_id_list)
+    if not local_api_result.get("status"):
+        return dict(status=False, message=local_api_result.get("message"))
+
+    deactivate_response = CED_CampaignBuilder().deactivate_campaigns_from_campaign_builder(cb_ids)
+    if not deactivate_response.get("status"):
+        return dict(status=False, message=deactivate_response.get("message"))
+
+    response = prepare_and_save_cb_history_data(cb_ids, user_name)
+    if not response.get("status"):
+        return dict(status=False, message=response.get("message"))
+
+    return dict(status=True, campaign_details=campaign_details)
+
+
+def deactivate_campaign_by_campaign_builder_campaign_id(campaign_builder_campaign_ids, user_name):
+    logger.debug(f"deactivate_campaign_by_campaign_builder_campaign_id :: campaign_builder_campaign_id: {campaign_builder_campaign_ids}")
+
+    if len(campaign_builder_campaign_ids) == 0:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    message="Campaign builder campaign ids are missing")
+
+    cbc_ids = ",".join([f"'{cbc_id}'" for cbc_id in campaign_builder_campaign_ids])
+    campaign_details = CED_CampaignBuilderCampaign().get_campaign_data_by_cbc_id(cbc_ids)
+    if len(campaign_details) == 0:
+        return dict(status=False, message="No Campaign Data Found or campaign executed")
+
+    project_name = campaign_details[0].get("project_name")
+
+    local_api_result = deactivate_campaign_from_local(project_name, campaign_builder_campaign_ids)
+    if not local_api_result.get("status"):
+        return dict(status=False, message=local_api_result.get("message"))
+
+    deactivate_response = CED_CampaignBuilderCampaign().deactivate_campaigns_from_campaign_builder_campaign(cbc_ids)
+    if not deactivate_response.get("status"):
+        return dict(status=False, message=deactivate_response.get("message"))
+    response = prepare_and_save_cbc_history_data(cbc_ids, user_name)
+    if not response.get("status"):
+        return dict(status=False, message=response.get("message"))
+
+    return dict(status=True, campaign_details=campaign_details)
+
+
+def deactivate_campaign_from_local(project_name, cbc_id_list):
+    domain = settings.HYPERION_LOCAL_DOMAIN.get(project_name)
+    if not domain:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message=f"Hyperion local credentials not found for {project_name}.")
+
+    url = domain + DEACTIVATE_CAMPAIGNS_FROM_CREATION_DETAILS
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(url, data=json.dumps(cbc_id_list), headers=headers, verify=False)
+
+    if response.status_code != 200:
+        dict(status=False, message="Unable to deactivate campaign from local tables")
+    return dict(status=True)
+
+
+def prepare_and_save_cb_history_data(campaign_builder_ids, user_name):
+    history_object = CED_CampaignBuilder().get_cb_details_by_cb_id(campaign_builder_ids)
+    if len(history_object) == 0:
+        return dict(status=False, message="cb data is empty")
+    for his_obj in history_object:
+        his_obj["CampaignBuilderId"] = his_obj.pop("UniqueId")
+        his_obj["UniqueId"] = his_obj.pop("HistoryId")
+        comment = f"<strong>CampaignBuilder {his_obj.get('Id')} </strong> is Deactivated by {user_name}"
+        his_obj["Comment"] = comment
+        del his_obj['Id']
+
+    try:
+        response = CED_HISCampaignBuilder().save_history_data(history_object)
+    except Exception as ex:
+        return dict(status=False, message=str(ex))
+
+    if not response:
+        return dict(status=False, message="Error while saving the history data")
+    else:
+        return dict(status=True)
+
+
+def prepare_and_save_cbc_history_data(campaign_builder_campaign_id, user_name):
+    history_object = CED_CampaignBuilderCampaign().get_cbc_details_by_cbc_id(campaign_builder_campaign_id)
+    if len(history_object) == 0:
+        return dict(status_code=False, message="cbc data is empty")
+    for his_obj in history_object:
+        his_obj["CampaignBuilderCampaignId"] = his_obj.pop("UniqueId")
+        his_obj["UniqueId"] = his_obj.pop("HistoryId")
+        comment = f"<strong>CampaignBuilderCampaign {his_obj.get('Id')} </strong> is Deactivated by {user_name}"
+        his_obj["Comment"] = comment
+        del his_obj['Id']
+    try:
+        response = CED_HISCampaignBuilderCampaign().save_history_data(history_object)
+    except Exception as ex:
+        return dict(status=False, message=str(ex))
+
+    if not response:
+        return dict(status=False, message="Error while saving the history data")
+    else:
+        return dict(status=True)
+
+
+def send_status_email(campaign_details):
+    email_template = f"Following Campaigns Deactivated Successfully\n "
+
+    for camp in campaign_details:
+        campaign_name = camp.get("campaign_name")
+        end_date = camp.get("end_date_time").strftime('%Y-%m-%d')
+        end_time = camp.get("end_date_time").strftime('%H:%M:%S')
+        email_template += f"\nCampaignTitle: {campaign_name} \nCampaignDate: {end_date} \nCampaignTime: {end_time}\n"
+
+    project_identifier = os.environ.get("CURR_ENV", "dev")
+
+    email_subject = f"{project_identifier.upper()} ~ Campaign Deactivation ~ SUCCESS: {project_identifier.upper()}"
+
+    tos = settings.TO_CAMPAIGN_DEACTIVATE_EMAIL_ID
+    ccs = settings.CC_CAMPAIGN_DEACTIVATE_EMAIL_ID
+    bccs = settings.BCC_CAMPAIGN_DEACTIVATE_EMAIL_ID
+
+    email_status = email_utility().send_mail(tos, ccs, bccs, email_subject, email_template)
+    if not email_status.get("status"):
+        return dict(status=False, message=email_status.get("message"))
+    return dict(status=True)

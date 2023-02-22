@@ -381,3 +381,44 @@ def update_data_by_id(cursor, table, q_data, u_data):
             {'error': f'Error thrown while updating data for query : {json.dumps(q_data)}.', 'message': str(e),
              'log_key': 'mysql_helper'})
         return None
+
+
+def update_table_row(cursor, query, params=None, database='default'):
+    try:
+        cursor.execute(query, params)
+    except OperationalError as op_ex:
+        logging.error(
+            {"error": op_ex, "message": "Operational Error thrown while `update_table` query",
+             'logkey': 'mysql_helper'})
+        connections.close_all()
+        cursor = mysql_connect(database)
+        cursor.execute(query, params)
+    try:
+        desc = cursor.description
+        return [dict(zip([col[0] for col in desc], row)) for row in cursor.fetchall()]
+    except Exception as e:
+        logging.error({
+            'error': 'mysql thrown exception while updating `update_table` query', 'exception': e,
+            'logkey': 'mysql_helper'
+        })
+
+
+def insert_multiple_rows_by_data_list(cursor, table_name, data_list):
+    columns = ', '.join(data_list[0].keys())
+    placeholders = ', '.join(['%s'] * len(data_list[0]))
+    query = "INSERT into %s ( %s ) VALUES ( %s )" % (table_name, columns, placeholders)
+
+    values_list = []
+    for x in data_list:
+        values_list.append(tuple(x.values()))
+
+    try:
+        cursor.executemany(query, values_list)
+        return {'last_row_id': cursor.lastrowid, 'row_count': cursor.rowcount}
+    except Exception as e:
+        logging.error({
+            "error": e,
+            "message": "error occurred while inserting data into mysql table",
+            "logkey": "mysql_helper"
+        })
+        return None
