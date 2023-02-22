@@ -501,7 +501,6 @@ class CED_CampaignContentUrlMapping(Base, Orm_helper):
     creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
-    extra = Column("Extra", String)
 
     url = relationship("CED_CampaignUrlContent")
 
