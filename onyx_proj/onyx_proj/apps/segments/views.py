@@ -177,6 +177,7 @@ def update_segment_callback(request):
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
 
 
+@csrf_exempt
 @UserAuth.user_authentication()
 def update_segment_tags(request):
     request_body = json.loads(request.body.decode("utf-8"))

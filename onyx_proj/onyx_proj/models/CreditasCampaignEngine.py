@@ -354,7 +354,7 @@ class CED_CampaignSMSContent(Base, Orm_helper):
     created_by = Column("CreatedBy", String)
     approved_by = Column("ApprovedBy", String)
     status = Column("Status", String)
-    contain_url = Column("IsContainUrl", Integer, default=1)
+    is_contain_url = Column("IsContainUrl", Integer, default=1)
     language_name = Column("LanguageName", String)
     is_active = Column("IsActive", Integer, default=1)
     rejection_reason = Column("RejectionReason", String)
@@ -364,7 +364,7 @@ class CED_CampaignSMSContent(Base, Orm_helper):
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     history_id = Column("HistoryId", String)
     extra = Column("Extra", String)
-    is_vendor_mapping_enabled = Column("IsVendorMappingEnabled", Integer, default=1)
+    vendor_mapping_enabled = Column("IsVendorMappingEnabled", Integer, default=1)
     vendor_template_id = Column("VendorTemplateId", String)
 
     variables = relationship("CED_CampaignContentVariableMapping")
@@ -421,7 +421,7 @@ class CED_CampaignEmailContent(Base, Orm_helper):
     created_by = Column("CreatedBy", String)
     approved_by = Column("ApprovedBy", String)
     status = Column("Status", String)
-    contain_url = Column("IsContainUrl", Integer, default=1)
+    is_contain_url = Column("IsContainUrl", Integer, default=1)
     language_name = Column("LanguageName", String)
     is_active = Column("IsActive", Integer, default=1)
     rejection_reason = Column("RejectionReason", String)
@@ -446,10 +446,10 @@ class CED_CampaignEmailContent(Base, Orm_helper):
 class CED_CampaignContentSenderIdMapping(Base, Orm_helper):
     __tablename__ = 'CED_CampaignContentSenderIdMapping'
 
-    id = Column("Id", Integer, primary_key=True)
+    id = Column("Id", Integer, unique=True)
     unique_id = Column("UniqueId", String, primary_key=True)
     content_type = Column("ContentType", String)
-    content_id = Column("ContentId", String, ForeignKey(CED_CampaignSMSContent.unique_id))
+    content_id = Column("ContentId", String, ForeignKey("CED_CampaignSMSContent.UniqueId"))
     sender_unique_id = Column("SenderUniqueId", String)
     is_active = Column("IsActive", Integer)
     is_deleted = Column("IsDeleted", Integer)
@@ -489,7 +489,7 @@ class CED_CampaignSenderIdContent(Base, Orm_helper):
 class CED_CampaignContentUrlMapping(Base, Orm_helper):
     __tablename__ = 'CED_CampaignContentUrlMapping'
 
-    id = Column("Id", Integer, primary_key=True)
+    id = Column("Id", Integer, unique=True)
     unique_id = Column("UniqueId", String, primary_key=True)
     content_type = Column("ContentType", String)
     content_id = Column("ContentId", String, ForeignKey(CED_CampaignSMSContent.unique_id),
@@ -511,7 +511,7 @@ class CED_CampaignContentUrlMapping(Base, Orm_helper):
 class CED_CampaignContentEmailSubjectMapping(Base, Orm_helper):
     __tablename__ = 'CED_CampaignContentEmailSubjectMapping'
 
-    id = Column("Id", Integer, primary_key=True)
+    id = Column("Id", Integer, unique=True)
     unique_id = Column("UniqueId", String, primary_key=True)
     content_id = Column("ContentId", String, ForeignKey(CED_CampaignEmailContent.unique_id))
     content_type = Column("ContentType", String)
@@ -600,7 +600,6 @@ class CED_CampaignContentVariableMapping(Base, Orm_helper):
     content_id = Column("ContentId", String, ForeignKey(CED_CampaignSMSContent.unique_id),
                         ForeignKey(CED_CampaignEmailContent.unique_id), ForeignKey(CED_CampaignUrlContent.unique_id),
                         ForeignKey(CED_CampaignIvrContent.unique_id), ForeignKey(CED_CampaignWhatsAppContent.unique_id),
-                        ForeignKey(CED_CampaignEmailContent.unique_id),
                         ForeignKey(CED_CampaignSubjectLineContent.unique_id))
     content_type = Column("ContentType", String)
     name = Column("Name", String)
@@ -694,7 +693,7 @@ class CED_CampaignContentTag(Base,Orm_helper):
     creation_date = Column("CreationDate", TIMESTAMP)
     approved_by = Column("ApprovedBy", String)
     is_active = Column("IsActive", Integer, default=1)
-    rejected_reason = Column("RejectionReason", String)
+    rejection_reason = Column("RejectionReason", String)
     is_deleted = Column("IsDeleted", Integer, default=0)
     updation_date = Column("UpdationDate", TIMESTAMP)
     history_id = Column("HistoryId", String)
