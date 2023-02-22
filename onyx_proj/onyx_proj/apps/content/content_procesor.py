@@ -2,8 +2,8 @@ import http
 import logging
 from django.views.decorators.csrf import csrf_exempt
 
-from common.decorators import UserAuth
-from models.CED_MasterHeaderMapping_model import CEDMasterHeaderMapping
+from onyx_proj.common.decorators import UserAuth
+from onyx_proj.models.CED_MasterHeaderMapping_model import CEDMasterHeaderMapping
 from onyx_proj.apps.content import app_settings
 from onyx_proj.common.decorators import UserAuth
 from onyx_proj.models.CED_CampaignSubjectLineContent_model import CEDCampaignSubjectLineContent

@@ -4,7 +4,7 @@ import json
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from common.constants import Roles
+from onyx_proj.common.constants import Roles
 from onyx_proj.apps.content.content_procesor import fetch_campaign_processor, get_content_list, get_content_data
 from onyx_proj.common.decorators import UserAuth
 
