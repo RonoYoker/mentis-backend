@@ -250,3 +250,12 @@ def test_campaign_validator(request):
     response = fetch_test_campaign_validation_status(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def get_campaign_data_by_unique_id(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    response = view_campaign_data(request_body)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")

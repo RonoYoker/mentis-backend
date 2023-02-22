@@ -4,6 +4,7 @@ import json
 import jwt
 import logging
 
+from common.decorators import UserAuth
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.apps.campaign.campaign_processor.campaign_processor_helper import add_filter_to_query_using_params, \
     add_status_to_query_using_params
@@ -487,3 +488,25 @@ def filter_list(request, session_id):
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                 data=data)
+
+
+@UserAuth.user_validation(permissions=[Roles.VIEWER.value], identifier_conf={
+    "param_type": "arg",
+    "param_key": 0,
+    "param_instance_type": "dict",
+    "param_path": "campaign_id",
+    "entity_type": "CAMPAIGNBUILDER",
+})
+def view_campaign_data(request_body):
+    logger.debug(f"view_campaign_data :: request_body: {request_body}")
+
+    campaign_id = request_body.get("campaign_id", None)
+
+    if campaign_id is None:
+        logger.error(f"view_campaign_data :: Campaign id is not valid for request: {request_body}.")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid Input")
+
+    campaign_data = CED_CampaignBuilder().get_campaign_details(campaign_id)
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=campaign_data)
