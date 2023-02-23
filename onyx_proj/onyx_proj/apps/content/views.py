@@ -23,6 +23,13 @@ def fetch_campaigns_by_content_id(request):
 
 @csrf_exempt
 @UserAuth.user_authentication()
+@UserAuth.user_validation(permissions=[Roles.VIEWER.value], identifier_conf={
+    "param_type": "arg",
+    "param_key": 0,
+    "param_instance_type": "request_post",
+    "param_path": "project_id",
+    "entity_type": "PROJECT"
+})
 def fetch_campaigns_content_list(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers

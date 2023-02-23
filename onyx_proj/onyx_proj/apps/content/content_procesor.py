@@ -138,14 +138,6 @@ def get_query_for_campaigns(content_id, content_type):
                                        channel_id=CHANNEL_CONTENT_TABLE_DATA[content_type]["channel_id"])
 
 
-@csrf_exempt
-@UserAuth.user_validation(permissions=[Roles.VIEWER.value], identifier_conf={
-    "param_type": "arg",
-    "param_key": 0,
-    "param_instance_type": "request_post",
-    "param_path": "project_id",
-    "entity_type": "PROJECT"
-})
 def get_content_list(data) -> dict:
     request_body = data.get("body", {})
     entity_type_list = request_body.get("entity_type", None)
