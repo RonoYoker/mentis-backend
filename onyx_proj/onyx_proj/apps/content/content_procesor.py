@@ -166,13 +166,13 @@ def get_content_list(data) -> dict:
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=campaign_entity_dict)
 
 
-@UserAuth.user_validation(permissions=[Roles.VIEWER.value], identifier_conf={
-    "param_type": "arg",
-    "param_key": 0,
-    "param_instance_type": "dict",
-    "param_path": "content_id",
-    "entity_type": "CONTENT",
-})
+# @UserAuth.user_validation(permissions=[Roles.VIEWER.value], identifier_conf={
+#     "param_type": "arg",
+#     "param_key": 0,
+#     "param_instance_type": "dict",
+#     "param_path": "content_id",
+#     "entity_type": "CONTENT",
+# })
 def get_content_data(content_data):
     logger.debug(f"get_content_data :: content_data: {content_data}")
 
