@@ -31,3 +31,4 @@ from onyx_proj.orm_models.CED_UserSession_model import CED_UserSession
 from onyx_proj.orm_models.CED_HIS_User_model import CED_His_User
 from onyx_proj.orm_models.CED_ActivityLog_model import CED_ActivityLog
 from onyx_proj.orm_models.CED_RolePermissionMapping_model import CED_RolePermissionMapping
+from onyx_proj.orm_models.CED_RolePermission_model import CED_RolePermission
