@@ -12,7 +12,7 @@ class CEDTeam(Base, Orm_helper):
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     creation_date = Column("CreationDate", TIMESTAMP, default=datetime.now() + timedelta(minutes=330))
     history_id = Column("HistoryId", String)
-    team_project_mapping_list = relationship("CEDTeamProjectMapping", viewonly=True)
+    # team_project_mapping_list = relationship("CEDTeamProjectMapping", viewonly=True)
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)
