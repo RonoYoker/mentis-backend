@@ -101,7 +101,7 @@ def fetch_one_row(engine, table, filter_list):
         return None
 
 
-def fetch_rows(engine, table, filter_list):
+def fetch_rows(engine, table, filter_list,projections=[],return_type = 'dict'):
     """
         Function to fetch multiple rows from table.
         parameters:
@@ -116,7 +116,10 @@ def fetch_rows(engine, table, filter_list):
             for filters in filter_list:
                 q = add_filter(q, filters["value"], getattr(table, filters["column"]), filters["op"])
             entity = q.all()
-            result = [x._asdict() for x in entity]
+            if return_type == "dict":
+                result = [x._asdict() for x in entity]
+            else:
+                result = entity
             return result
         except Exception as ex:
             logging.error(f"error while fetching from table {str(table)}, Error: ", ex)

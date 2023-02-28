@@ -7,6 +7,7 @@ class CEDDataIDDetails:
     def __init__(self, **kwargs):
         self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_DataID_Details"
+        self.table = CED_DataID_Details
         self.curr = mysql_connect(self.database)
         self.table = CED_DataID_Details
         self.engine = sql_alchemy_connect(self.database)
@@ -16,6 +17,13 @@ class CEDDataIDDetails:
 
     def get_active_data_id_entity(self, unique_id: str):
         return dict_fetch_one(self.curr, self.table_name, {"UniqueId": unique_id, "IsDeleted": 0, "IsActive": 1})
+
+    def get_data_id_details_using_project_id(self, project_id):
+        filter_list = [
+            {"column": "project_id", "value": project_id, "op": "=="},
+            {"column": "have_success_file", "value": 1, "op": "=="}
+        ]
+        return fetch_rows(self.engine, self.table, filter_list, return_type="entity")
 
     def fetch_data_id_details(self, data_id):
         filter_list = [
