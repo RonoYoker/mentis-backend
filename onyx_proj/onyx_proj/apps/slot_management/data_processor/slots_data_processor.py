@@ -4,8 +4,8 @@ from copy import deepcopy
 import logging
 from onyx_proj.apps.slot_management.app_settings import SLOT_INTERVAL_MINUTES
 from onyx_proj.common.constants import TAG_SUCCESS, TAG_FAILURE, RateLimitationLevels
-from onyx_proj.models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
-from onyx_proj.models.CED_Projects import CED_Projects
+from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
+from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from django.conf import settings
 
@@ -32,7 +32,7 @@ def vaildate_campaign_for_scheduling(request_data):
     if segment_count == 0:
         return dict(status_code=200, result=TAG_FAILURE, response={"error": "No data found for this Segment"})
 
-    project_data = CED_Projects().get_project_bu_limits_by_project_id(project_id)
+    project_data = CEDProjects().get_project_bu_limits_by_project_id(project_id)
     if project_data is None:
         return dict(status_code=200, result=TAG_FAILURE, response={"error": "No project data found for given project id"})
     business_unit_id = project_data.get("business_unit_id",None)
@@ -176,10 +176,10 @@ def validate_campaign_schedule(new_schedule, slot_limit_per_min,old_schedule):
 def fetch_valid_bu_campaigns(content_date_keys_to_validate,dates_to_validate,business_unit_id,campaign_id):
     bu_level_campaigns = None
     if campaign_id is not None:
-        bu_level_campaigns = CED_CampaignBuilderCampaign().get_campaigns_segment_info_by_dates_business_unit_id_campaignId(
+        bu_level_campaigns = CEDCampaignBuilderCampaign().get_campaigns_segment_info_by_dates_business_unit_id_campaignId(
             [seg_date.strftime("%Y-%m-%d") for seg_date in dates_to_validate], business_unit_id, campaign_id)
     else:
-        bu_level_campaigns = CED_CampaignBuilderCampaign().get_campaigns_segment_info_by_dates_business_unit_id(
+        bu_level_campaigns = CEDCampaignBuilderCampaign().get_campaigns_segment_info_by_dates_business_unit_id(
             [seg_date.strftime("%Y-%m-%d") for seg_date in dates_to_validate], business_unit_id)
     if bu_level_campaigns is None:
         return None
@@ -209,10 +209,10 @@ def fetch_valid_bu_campaigns(content_date_keys_to_validate,dates_to_validate,bus
 def fetch_valid_project_campaigns(content_date_keys_to_validate, dates_to_validate, project_id, campaign_id):
     project_level_campaigns = None
     if campaign_id is not None:
-        project_level_campaigns = CED_CampaignBuilderCampaign().get_campaigns_segment_info_by_dates_campaignId(
+        project_level_campaigns = CEDCampaignBuilderCampaign().get_campaigns_segment_info_by_dates_campaignId(
             [seg_date.strftime("%Y-%m-%d") for seg_date in dates_to_validate], project_id, campaign_id)
     else:
-        project_level_campaigns = CED_CampaignBuilderCampaign().get_campaigns_segment_info_by_dates(
+        project_level_campaigns = CEDCampaignBuilderCampaign().get_campaigns_segment_info_by_dates(
             [seg_date.strftime("%Y-%m-%d") for seg_date in dates_to_validate], project_id)
     if project_level_campaigns is None:
         return None

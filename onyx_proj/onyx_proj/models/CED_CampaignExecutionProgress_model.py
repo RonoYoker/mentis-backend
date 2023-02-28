@@ -1,7 +1,7 @@
 from onyx_proj.common.mysql_helper import *
 
 
-class CED_CampaignExecutionProgress:
+class CEDCampaignExecutionProgress:
     def __init__(self, **kwargs):
         self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_CampaignExecutionProgress"

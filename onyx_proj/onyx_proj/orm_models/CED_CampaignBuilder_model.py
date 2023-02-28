@@ -1,6 +1,6 @@
 from onyx_proj.orm_models.base_model import *
 
-class CEDCampaignBuilder(Base, Orm_helper):
+class CED_CampaignBuilder(Base, Orm_helper):
     __tablename__ = 'CED_CampaignBuilder'
 
     id = Column("Id", Integer, autoincrement=True, primary_key=True)

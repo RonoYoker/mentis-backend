@@ -8,15 +8,15 @@ from django.conf import settings
 from onyx_proj.apps.segments.segments_processor.segment_helpers import check_validity_flag, check_restart_flag
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
-from onyx_proj.models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
+from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetailsTest_model import CEDCampaignSchedulingSegmentDetailsTest
-from onyx_proj.models.CED_Projects import CED_Projects
+from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import hyperion_local_async_rest_call, \
     hyperion_local_rest_call
 from onyx_proj.models.CED_User_model import CEDUser
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from onyx_proj.models.CED_Segment_model import CEDSegment
-from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
+from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, \
     CHANNEL_RESPONSE_TABLE_MAPPING, TEST_CAMPAIGN_RESPONSE_DATA, CHANNEL_CAMPAIGN_BUILDER_TABLE_MAPPING, \
     TEST_CAMPAIGN_VALIDATION_DURATION_MINUTES, TEST_CAMPAIGN_VALIDATION_API_PATH, ASYNC_QUERY_EXECUTION_ENABLED
@@ -61,7 +61,7 @@ def fetch_test_campaign_data(request_data) -> json:
             else:
                 segment_data = segment_data[0]
         elif campaign_id:
-            segment_id = CED_CampaignBuilder().fetch_segment_id_from_campaign_id(campaign_id)
+            segment_id = CEDCampaignBuilder().fetch_segment_id_from_campaign_id(campaign_id)
             if len(segment_id) == 0 or segment_id is None:
                 return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
                             details_message=f"Segment data not found for {campaign_id}.")
@@ -140,7 +140,7 @@ def fetch_test_campaign_data(request_data) -> json:
         if segment_id:
             segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))[0]
         elif campaign_id:
-            segment_id = CED_CampaignBuilder().fetch_segment_id_from_campaign_id(campaign_id)[0][0]
+            segment_id = CEDCampaignBuilder().fetch_segment_id_from_campaign_id(campaign_id)[0][0]
             segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))[0]
 
         sql_query = segment_data.get("SqlQuery", None)
@@ -251,12 +251,12 @@ def fetch_test_campaign_validation_status(request_data) -> json:
     }
 
     # Fetch campaign details
-    campaign_details = CED_CampaignBuilderCampaign().get_details_by_unique_id(campaign_builder_campaign_id)
+    campaign_details = CEDCampaignBuilderCampaign().get_details_by_unique_id(campaign_builder_campaign_id)
     if campaign_details is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid campaign builder campaign id.")
 
-    project_details = CED_Projects().get_project_id_by_cbc_id(campaign_builder_campaign_id)
+    project_details = CEDProjects().get_project_id_by_cbc_id(campaign_builder_campaign_id)
     if not project_details or len(project_details)==0 or project_details[0] is None or project_details[0].get('UniqueId', None) in [None, ""]:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Project not found for campaign_builder_campaign_id : {campaign_builder_campaign_id}.")

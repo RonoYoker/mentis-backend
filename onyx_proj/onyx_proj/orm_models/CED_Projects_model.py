@@ -1,6 +1,6 @@
 from onyx_proj.orm_models.base_model import *
 
-class CEDProjects(Base, Orm_helper):
+class CED_Projects(Base, Orm_helper):
     __tablename__ = 'CED_Projects'
 
     id = Column("Id", Integer, primary_key=True)

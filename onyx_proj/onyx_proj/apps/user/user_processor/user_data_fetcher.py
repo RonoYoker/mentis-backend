@@ -12,7 +12,7 @@ from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.models.CEDUserProjectRoleMapping_model import CEDUserProjectRoleMapping
 from onyx_proj.models.CED_ActivityLog_model import CEDActivityLog
 from onyx_proj.models.CED_His_User_model import CEDHisUser
-from onyx_proj.models.CED_Projects import CED_Projects
+from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.models.CED_RolePermissionMapping_model import CEDRolePermissionMapping
 from onyx_proj.models.CED_RolePermission_model import CEDRolePermission
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
@@ -409,7 +409,7 @@ def update_project_on_session(request_data):
     if is_session_expired == False:
         return dict(status_code=http.HTTPStatus.UNAUTHORIZED, result=TAG_FAILURE,
                     details="session is expired now")
-    project_data = CED_Projects().get_active_project_id_entity_alchemy(project_id)
+    project_data = CEDProjects().get_active_project_id_entity_alchemy(project_id)
     if project_data is None or len(project_data) == 0:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details="Project data does not exist")

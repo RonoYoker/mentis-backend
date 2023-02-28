@@ -11,7 +11,7 @@ from onyx_proj.models.CED_CampaignTagContent_model import CEDCampaignTagContent
 from onyx_proj.models.CED_CampaignURLContent_model import CEDCampaignURLlContent
 from onyx_proj.common.constants import CHANNELS_LIST, TAG_FAILURE, TAG_SUCCESS, FETCH_CAMPAIGN_QUERY, \
     CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, Roles
-from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
+from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.models.CED_CampaignEmailContent_model import CEDCampaignEmailContent
 from onyx_proj.models.CED_CampaignIvrContent_model import CEDCampaignIvrContent
 from onyx_proj.models.CED_CampaignSMSContent_model import CEDCampaignSMSContent
@@ -121,7 +121,7 @@ def fetch_campaign_processor(data) -> dict:
 
 
 def get_campaigns(query):
-    campaign_builder = CED_CampaignBuilder().execute_fetch_campaigns_list_query(query)
+    campaign_builder = CEDCampaignBuilder().execute_fetch_campaigns_list_query(query)
     if not campaign_builder or len(campaign_builder) < 1:
         return dict(status_code=http.HTTPStatus.OK, result=TAG_FAILURE,
                     response="No campaign found")

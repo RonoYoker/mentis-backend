@@ -4,8 +4,8 @@ from onyx_proj.orm_models.CED_User_model import CED_User
 from onyx_proj.orm_models.CED_Team_model import CEDTeam
 from onyx_proj.orm_models.CED_TeamProjectMapping_model import CEDTeamProjectMapping
 from onyx_proj.orm_models.CED_UserProjectRoleMapping_model import CED_UserProjectRoleMapping
-from onyx_proj.orm_models.CED_Projects_model import CEDProjects
-from onyx_proj.orm_models.CED_CampaignBuilder_model import CEDCampaignBuilder
+from onyx_proj.orm_models.CED_Projects_model import CED_Projects
+from onyx_proj.orm_models.CED_CampaignBuilder_model import CED_CampaignBuilder
 from onyx_proj.orm_models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
 from onyx_proj.orm_models.CED_CampaignBuilderSMS_model import CED_CampaignBuilderSMS
 from onyx_proj.orm_models.CED_CampaignBuilderEmail_model import CED_CampaignBuilderEmail

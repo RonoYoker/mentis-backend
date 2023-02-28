@@ -93,7 +93,7 @@ def fetch_segment_by_id(data) -> json:
         segment_res = get_segment_result(segment_data)
     elif campaign_id:
 
-        segment_response = CED_CampaignBuilder().fetch_segment_id_from_campaign_id(campaign_id)
+        segment_response = CEDCampaignBuilder().fetch_segment_id_from_campaign_id(campaign_id)
         if not segment_response:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="No segment found for this campaign_id.")

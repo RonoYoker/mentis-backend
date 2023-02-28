@@ -90,8 +90,8 @@ def parse_args(conf, *args, **kwargs):
 
 
 def fetch_project_id_from_conf(conf, *args, **kwargs):
-    from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
-    from onyx_proj.models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
+    from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
+    from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
     from onyx_proj.models.CED_Segment_model import CEDSegment
     identifier_type = conf["entity_type"]
     identifier_id = parse_args(conf, *args, **kwargs)
@@ -100,9 +100,9 @@ def fetch_project_id_from_conf(conf, *args, **kwargs):
     elif identifier_type == "SEGMENT":
         project_id = CEDSegment().get_project_id_by_segment_id(identifier_id)
     elif identifier_type == "CAMPAIGNBUILDER":
-        project_id = CED_CampaignBuilder().get_project_id_from_campaign_builder_id(identifier_id)
+        project_id = CEDCampaignBuilder().get_project_id_from_campaign_builder_id(identifier_id)
     elif identifier_type == "CAMPAIGNBUILDERCAMPAIGN":
-        project_id = CED_CampaignBuilderCampaign().get_project_id_from_campaign_builder_campaign_id(identifier_id)
+        project_id = CEDCampaignBuilderCampaign().get_project_id_from_campaign_builder_campaign_id(identifier_id)
     elif identifier_type == "CONTENT":
         content_type = args[0].get("content_type")
         project_id = app_settings.CONTENT_TABLE_MAPPING[f"{content_type}"]().get_project_id_by_content_id(identifier_id)

@@ -7,7 +7,7 @@ class CED_UserProjectRoleMapping(Base, Orm_helper):
     user_id = Column("UserUniqueId", String, ForeignKey("CED_User.UserUID"))
     project_id = Column("ProjectUniqueId", String, ForeignKey("CED_Projects.UniqueId"))
     role_id = Column("RoleUniqueId", String, ForeignKey("CED_UserRole.UniqueId"))
-    user_project_list = relationship("CEDProjects")
+    user_project_list = relationship("CED_Projects")
     roles = relationship("CED_UserRole")
 
     def __init__(self, data={}):

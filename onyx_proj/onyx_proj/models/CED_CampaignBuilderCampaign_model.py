@@ -3,7 +3,7 @@ from onyx_proj.common.decorators import UserAuth
 from onyx_proj.common.mysql_helper import *
 
 
-class CED_CampaignBuilderCampaign:
+class CEDCampaignBuilderCampaign:
     def __init__(self, **kwargs):
         self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_CampaignBuilderCampaign"

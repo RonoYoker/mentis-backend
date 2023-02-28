@@ -90,7 +90,7 @@ def check_headers_compatibility_with_content_template(request_data) -> json:
         if segment_data[0]["Extra"] is None:
             sql_query = (segment_data[0]["SqlQuery"])
             project_id = segment_data[0]["ProjectId"]
-            project_data = CED_Projects().get_active_project_id_entity(project_id)
+            project_data = CEDProjects().get_active_project_id_entity(project_id)
             logger.debug(f"sql_query :: {sql_query}, project_id :: {project_id}, project_data :: {project_data}")
             if not project_data:
                 return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,

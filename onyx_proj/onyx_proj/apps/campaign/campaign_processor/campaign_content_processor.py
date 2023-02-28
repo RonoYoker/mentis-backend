@@ -1,7 +1,7 @@
 import json
 import http
 
-from onyx_proj.models.CED_Projects import CED_Projects
+from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.common.constants import TAG_FAILURE
 
 
@@ -18,7 +18,7 @@ def fetch_vendor_config_data(request_data) -> json:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Missing parameter project_id in request body.")
 
-    project_details = CED_Projects().get_vendor_config_by_project_id(body.get("project_id"))
+    project_details = CEDProjects().get_vendor_config_by_project_id(body.get("project_id"))
 
     if not project_details:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,

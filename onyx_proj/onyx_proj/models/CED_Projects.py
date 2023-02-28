@@ -2,11 +2,11 @@ from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import *
 
 
-class CED_Projects:
+class CEDProjects:
     def __init__(self, **kwargs):
         self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_Projects"
-        self.table = CEDProjects
+        self.table = CED_Projects
         self.curr = mysql_connect(self.database)
         self.engine = sql_alchemy_connect(self.database)
 

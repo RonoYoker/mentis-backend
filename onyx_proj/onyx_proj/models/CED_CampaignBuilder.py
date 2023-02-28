@@ -1,15 +1,15 @@
 from django.conf import settings
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows
-from onyx_proj.models.CreditasCampaignEngine import CEDCampaignBuilder
+from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilder
 
 
-class CED_CampaignBuilder:
+class CEDCampaignBuilder:
     def __init__(self, **kwargs):
         self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_CampaignBuilder"
         self.curr = mysql_connect(self.database)
-        self.table = CEDCampaignBuilder
+        self.table = CED_CampaignBuilder
         self.engine = sql_alchemy_connect(self.database)
 
     def fetch_campaign_builder_by_unique_id(self, unique_id):

@@ -11,10 +11,10 @@ from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CUSTOM_QUERY_AS
     REFRESH_COUNT_LOCAL_API_PATH, SegmentRefreshStatus, SEGMENT_COUNT_QUERY, MIN_REFRESH_COUNT_DELAY, \
     ASYNC_QUERY_EXECUTION_ENABLED
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import hyperion_local_async_rest_call
-from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
+from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.models.CED_HIS_Segment_model import CEDHISSegment
 from onyx_proj.models.CED_Segment_model import CEDSegment
-from onyx_proj.models.CED_Projects import CED_Projects
+from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.apps.segments.app_settings import AsyncTaskCallbackKeys, AsyncTaskSourceKeys, QueryKeys, \
     AsyncTaskRequestKeys
 
@@ -59,7 +59,7 @@ def trigger_update_segment_count(data):
     else:
         segment_data = segment_data[0]
 
-    project_data = CED_Projects().get_project_data_by_project_id(segment_data["ProjectId"])[0]
+    project_data = CEDProjects().get_project_data_by_project_id(segment_data["ProjectId"])[0]
 
     if project_data.get("Name") in ASYNC_QUERY_EXECUTION_ENABLED:
         if segment_data.get("CountRefreshStartDate", None) > segment_data.get("CountRefreshEndDate", None):
@@ -176,7 +176,7 @@ def deactivate_segment_by_segment_id(request_body, request_headers):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Missing segment id")
 
-    campaign_data = CED_CampaignBuilder().get_campaigns_by_segment_id(segment_id)
+    campaign_data = CEDCampaignBuilder().get_campaigns_by_segment_id(segment_id)
     if len(campaign_data) != 0 and campaign_data:
         cb_id_list = []
         for campaign in campaign_data:

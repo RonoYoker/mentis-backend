@@ -16,14 +16,14 @@ from onyx_proj.apps.campaign.campaign_processor import app_settings
 from onyx_proj.apps.campaign.campaign_processor.app_settings import SCHEDULED_CAMPAIGN_TIME_RANGE_UTC
 from onyx_proj.common.constants import *
 from onyx_proj.common.utils.email_utility import email_utility
-from onyx_proj.models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
-from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
+from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
+from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetails_model import CED_CampaignSchedulingSegmentDetails
-from onyx_proj.models.CED_CampaignExecutionProgress_model import CED_CampaignExecutionProgress
+from onyx_proj.models.CED_CampaignExecutionProgress_model import CEDCampaignExecutionProgress
 from onyx_proj.models.CED_DataID_Details_model import CEDDataIDDetails
 from onyx_proj.models.CED_HIS_CampaignBuilder import CED_HISCampaignBuilder
 from onyx_proj.models.CED_HIS_CampaignBuilderCampaign import CED_HISCampaignBuilderCampaign
-from onyx_proj.models.CED_Projects import CED_Projects
+from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.apps.slot_management.app_settings import SLOT_INTERVAL_MINUTES
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
@@ -42,7 +42,7 @@ def save_or_update_campaign_data(request_data):
     unique_id = body.get("uniqueId", "")
     campaignsList = body.get("campaignList", [])
 
-    campaign_builder_entity = CED_CampaignBuilder().fetch_campaign_builder_by_unique_id(unique_id)
+    campaign_builder_entity = CEDCampaignBuilder().fetch_campaign_builder_by_unique_id(unique_id)
 
     if unique_id == "" or campaign_builder_entity is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -68,7 +68,7 @@ def save_or_update_campaign_data(request_data):
     project_id = segment_entities[0].get("ProjectId", "")
 
     data_entity = CEDDataIDDetails().get_active_data_id_entity(data_id)
-    project_entity = CED_Projects().get_active_project_id_entity(project_id)
+    project_entity = CEDProjects().get_active_project_id_entity(project_id)
 
     if data_id == "" or project_id == "" or data_entity is None or project_entity is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -150,7 +150,7 @@ def get_time_range_from_date(request_data):
 
 
 def get_campaign_data_in_period(project_id, content_type, start_date_time, end_date_time):
-    data = CED_CampaignBuilder().get_campaign_data_for_period(project_id, content_type, start_date_time,end_date_time)
+    data = CEDCampaignBuilder().get_campaign_data_for_period(project_id, content_type, start_date_time, end_date_time)
     return data
 
 def get_filtered_dashboard_tab_data(data) -> json:
@@ -174,7 +174,7 @@ def get_filtered_dashboard_tab_data(data) -> json:
 
     query = add_filter_to_query_using_params(filter_type).format(project_id = project_id,start_date = start_date, end_date = end_date)
     logger.debug(f"request data query :: {query}")
-    camps_data = CED_CampaignExecutionProgress().execute_customised_query(query)
+    camps_data = CEDCampaignExecutionProgress().execute_customised_query(query)
     now = datetime.datetime.utcnow()
     final_camp_data = []
     for camp_data in camps_data:
@@ -217,7 +217,7 @@ def update_campaign_status(data) -> json:
     if query == "":
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="did not get filtered query.")
-    CED_CampaignExecutionProgress().execute_customised_query(query)
+    CEDCampaignExecutionProgress().execute_customised_query(query)
     return dict(status_code=http.HTTPStatus.OK)
 
 def get_filtered_recurring_date_time(data):
@@ -310,7 +310,7 @@ def update_segment_count_and_status_for_campaign(request_data):
 
     if segment_count == 0:
         message = "segment count is empty"
-        CED_CampaignExecutionProgress().update_campaign_status(status, campaign_id, message)
+        CEDCampaignExecutionProgress().update_campaign_status(status, campaign_id, message)
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="segment count is empty")
 
@@ -339,7 +339,7 @@ def update_segment_count_and_status_for_campaign(request_data):
             resp["upd_sched_table"] = True
 
     if status is not None:
-        upd_resp = CED_CampaignExecutionProgress().update_campaign_status(campaign_id=campaign_id,status=status)
+        upd_resp = CEDCampaignExecutionProgress().update_campaign_status(campaign_id=campaign_id, status=status)
         if upd_resp is not None and upd_resp.get("row_count", 0) > 0:
             resp["upd_campaign_status"] = True
 
@@ -388,7 +388,7 @@ def validate_campaign(request_data):
 
     data.pop("system_validated")
 
-    resp = CED_CampaignBuilderCampaign().get_cb_id_is_rec_by_cbc_id(cbc_id)
+    resp = CEDCampaignBuilderCampaign().get_cb_id_is_rec_by_cbc_id(cbc_id)
     logger.info(f"method name: {method_name}, resp: {resp}")
     if resp is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -397,11 +397,11 @@ def validate_campaign(request_data):
     created_by = resp[0].get("CreatedBy")
     maker_validator = resp[0].get("MakerValidator", None)
     if resp[0].get("IsRecurring") == True:
-        camp_status = CED_CampaignBuilderCampaign().get_camp_status_by_cb_id(cb_id)
+        camp_status = CEDCampaignBuilderCampaign().get_camp_status_by_cb_id(cb_id)
         logger.info(f"method name: {method_name}, camp_status: {camp_status}")
         if camp_status[0].get("camp_status") == TestCampStatus.NOT_DONE.value:
-            update_resp = CED_CampaignBuilderCampaign().maker_validate_campaign_builder_campaign(cb_id,
-                                                                     TestCampStatus.MAKER_VALIDATED.value, user_name)
+            update_resp = CEDCampaignBuilderCampaign().maker_validate_campaign_builder_campaign(cb_id,
+                                                                                                TestCampStatus.MAKER_VALIDATED.value, user_name)
             if update_resp is True:
                 data['validated'] = True
                 return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
@@ -411,8 +411,8 @@ def validate_campaign(request_data):
                 return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                             details_message="Maker validator is not found or the same as approver validator")
             else:
-                update_resp = CED_CampaignBuilderCampaign().approver_validate_campaign_builder_campaign(cb_id,
-                                                                           TestCampStatus.VALIDATED.value, user_name)
+                update_resp = CEDCampaignBuilderCampaign().approver_validate_campaign_builder_campaign(cb_id,
+                                                                                                       TestCampStatus.VALIDATED.value, user_name)
                 if update_resp is True:
                     data['validated'] = True
                     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
@@ -422,11 +422,11 @@ def validate_campaign(request_data):
                         details_message="Campaign is already validated.")
 
     elif resp[0].get("IsRecurring") == False:
-        camp_status = CED_CampaignBuilderCampaign().get_camp_status_by_cbc_id(cbc_id)
+        camp_status = CEDCampaignBuilderCampaign().get_camp_status_by_cbc_id(cbc_id)
         logger.info(f"method name: {method_name}, camp_status: {camp_status}")
         if camp_status[0].get("camp_status") == TestCampStatus.NOT_DONE.value:
-            update_resp = CED_CampaignBuilderCampaign().maker_validate_campaign_builder_campaign_by_unique_id(cbc_id,
-                                                                        TestCampStatus.MAKER_VALIDATED.value, user_name)
+            update_resp = CEDCampaignBuilderCampaign().maker_validate_campaign_builder_campaign_by_unique_id(cbc_id,
+                                                                                                             TestCampStatus.MAKER_VALIDATED.value, user_name)
             if update_resp is True:
                 data['validated'] = True
                 return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
@@ -436,8 +436,8 @@ def validate_campaign(request_data):
                 return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                             details_message="Maker validator is not found or the same as approver validator")
             else:
-                update_resp = CED_CampaignBuilderCampaign().approver_validate_campaign_builder_campaign_by_unique_id(cbc_id,
-                                                                                TestCampStatus.VALIDATED.value, user_name)
+                update_resp = CEDCampaignBuilderCampaign().approver_validate_campaign_builder_campaign_by_unique_id(cbc_id,
+                                                                                                                    TestCampStatus.VALIDATED.value, user_name)
                 if update_resp is True:
                     data['validated'] = True
                     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
@@ -487,7 +487,7 @@ def filter_list(request, session_id):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid Tab")
 
-    data = CED_CampaignBuilder().get_campaign_list(filters)
+    data = CEDCampaignBuilder().get_campaign_list(filters)
     logger.debug(f"data :: {data}")
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
@@ -511,7 +511,7 @@ def view_campaign_data(request_body):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid Input")
 
-    campaign_data = CED_CampaignBuilder().get_campaign_details(campaign_id)
+    campaign_data = CEDCampaignBuilder().get_campaign_details(campaign_id)
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=campaign_data)
 
@@ -577,7 +577,7 @@ def deactivate_campaign_by_campaign_builder_id(campaign_builder_id, user_name):
         return dict(status=False, message="Campaign builder ids are missing")
 
     cb_ids = ",".join([f"'{cb_id}'" for cb_id in campaign_builder_id])
-    campaign_details = CED_CampaignBuilderCampaign().get_campaign_data_by_cb_id(cb_ids)
+    campaign_details = CEDCampaignBuilderCampaign().get_campaign_data_by_cb_id(cb_ids)
     if len(campaign_details) == 0:
         return dict(status=False, message="No campaign data found or campaign has been executed")
 
@@ -590,7 +590,7 @@ def deactivate_campaign_by_campaign_builder_id(campaign_builder_id, user_name):
     if not local_api_result.get("status"):
         return dict(status=False, message=local_api_result.get("message"))
 
-    deactivate_response = CED_CampaignBuilder().deactivate_campaigns_from_campaign_builder(cb_ids)
+    deactivate_response = CEDCampaignBuilder().deactivate_campaigns_from_campaign_builder(cb_ids)
     if not deactivate_response.get("status"):
         return dict(status=False, message=deactivate_response.get("message"))
 
@@ -609,7 +609,7 @@ def deactivate_campaign_by_campaign_builder_campaign_id(campaign_builder_campaig
                     message="Campaign builder campaign ids are missing")
 
     cbc_ids = ",".join([f"'{cbc_id}'" for cbc_id in campaign_builder_campaign_ids])
-    campaign_details = CED_CampaignBuilderCampaign().get_campaign_data_by_cbc_id(cbc_ids)
+    campaign_details = CEDCampaignBuilderCampaign().get_campaign_data_by_cbc_id(cbc_ids)
     if len(campaign_details) == 0:
         return dict(status=False, message="No Campaign Data Found or campaign executed")
 
@@ -619,7 +619,7 @@ def deactivate_campaign_by_campaign_builder_campaign_id(campaign_builder_campaig
     if not local_api_result.get("status"):
         return dict(status=False, message=local_api_result.get("message"))
 
-    deactivate_response = CED_CampaignBuilderCampaign().deactivate_campaigns_from_campaign_builder_campaign(cbc_ids)
+    deactivate_response = CEDCampaignBuilderCampaign().deactivate_campaigns_from_campaign_builder_campaign(cbc_ids)
     if not deactivate_response.get("status"):
         return dict(status=False, message=deactivate_response.get("message"))
     response = prepare_and_save_cbc_history_data(cbc_ids, user_name)
@@ -645,7 +645,7 @@ def deactivate_campaign_from_local(project_name, cbc_id_list):
 
 
 def prepare_and_save_cb_history_data(campaign_builder_ids, user_name):
-    history_object = CED_CampaignBuilder().get_cb_details_by_cb_id(campaign_builder_ids)
+    history_object = CEDCampaignBuilder().get_cb_details_by_cb_id(campaign_builder_ids)
     if len(history_object) == 0:
         return dict(status=False, message="cb data is empty")
     for his_obj in history_object:
@@ -667,7 +667,7 @@ def prepare_and_save_cb_history_data(campaign_builder_ids, user_name):
 
 
 def prepare_and_save_cbc_history_data(campaign_builder_campaign_id, user_name):
-    history_object = CED_CampaignBuilderCampaign().get_cbc_details_by_cbc_id(campaign_builder_campaign_id)
+    history_object = CEDCampaignBuilderCampaign().get_cbc_details_by_cbc_id(campaign_builder_campaign_id)
     if len(history_object) == 0:
         return dict(status_code=False, message="cbc data is empty")
     for his_obj in history_object:

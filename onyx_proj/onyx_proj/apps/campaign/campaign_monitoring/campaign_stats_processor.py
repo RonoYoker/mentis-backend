@@ -28,7 +28,7 @@ def get_filtered_campaign_stats(data) -> json:
     query = add_filter_to_query_using_params(filter_dict, mapping_dict, project_id)
     sql_query = query + STATS_VIEW_QUERY_CONDITIONS
     logger.info(f"sql_query: {sql_query}")
-    data = CED_CampaignExecutionProgress().execute_customised_query(sql_query)
+    data = CEDCampaignExecutionProgress().execute_customised_query(sql_query)
     last_refresh_time = get_last_refresh_time(data)
     return dict(status_code=http.HTTPStatus.OK, data=data, last_refresh_time=last_refresh_time)
 
@@ -47,7 +47,7 @@ def update_campaign_stats_to_central_db(data):
     campaign_id = campaign_stats_data.pop("CampaignId")
     where_dict = {"CampaignId": campaign_id}
     try:
-        db_res = CED_CampaignExecutionProgress().update_table_data_by_campaign_id(where_dict, campaign_stats_data)
+        db_res = CEDCampaignExecutionProgress().update_table_data_by_campaign_id(where_dict, campaign_stats_data)
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                     details_message=f"db_res: {db_res}.")
     except Exception as e:
@@ -109,7 +109,7 @@ def get_filtered_campaign_stats_v2(data) -> json:
     sql_query = query + project_filter_placeholder + date_filter_placeholder + STATS_VIEW_QUERY_CONDITIONS_FOR_ADMINS
     logger.info(f"sql_query: {sql_query}")
 
-    data = CED_CampaignExecutionProgress().execute_customised_query(sql_query)
+    data = CEDCampaignExecutionProgress().execute_customised_query(sql_query)
     last_refresh_time = get_last_refresh_time_v2(data)
 
     return dict(status_code=http.HTTPStatus.OK, data=data, last_refresh_time=last_refresh_time)
