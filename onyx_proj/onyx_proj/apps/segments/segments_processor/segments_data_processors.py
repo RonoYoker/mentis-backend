@@ -1,12 +1,18 @@
+import copy
 import http
 import logging
+import re
+from datetime import datetime
+from datetime import timedelta
 
+from onyx_proj.common.constants import FIXED_HEADER_MAPPING_COLUMN_DETAILS
+from onyx_proj.models.CED_DataID_Details_model import CEDDataIDDetails
+from onyx_proj.models.CED_FP_HeaderMap_model import CEDFPHeaderMapping
+from onyx_proj.models.CED_MasterHeaderMapping_model import CEDMasterHeaderMapping
 from onyx_proj.common.constants import SegmentList, TAG_SUCCESS, TAG_FAILURE, SEGMENT_END_DATE_FORMAT
 from onyx_proj.apps.segments.app_settings import SegmentStatusKeys
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
-from datetime import datetime
-from datetime import timedelta
 
 logger = logging.getLogger("apps")
 
@@ -61,3 +67,42 @@ def validate_inputs(start_time, end_time, tab_name, project_id):
     if start_time is None or end_time is None or tab_name is None or project_id is None:
         return False
     return True
+
+
+def get_master_headers_by_data_id(request_body):
+    logger.debug(f"get_master_headers_by_data_id :: request_body: {request_body}")
+
+    data_id = request_body.get("data_id", None)
+    if data_id is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="Missing data_id")
+
+    fixed_headers_mapping = copy.deepcopy(FIXED_HEADER_MAPPING_COLUMN_DETAILS)
+
+    fp_headers_mapping = CEDFPHeaderMapping().get_fp_file_headers(data_id)
+    data_id_details = CEDDataIDDetails().get_active_data_id_entity(data_id)
+    if fp_headers_mapping is None or data_id_details == "" or data_id_details is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="Invalid data_id")
+
+    project_id = data_id_details.get("ProjectId")
+    final_headers_list = []
+    params_dict = {"ProjectId": project_id}
+    master_headers_mapping = CEDMasterHeaderMapping().get_header_mappings_by_project_id(params_dict)
+    if master_headers_mapping == "" or master_headers_mapping is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="Invalid projectid")
+
+    for fp in fp_headers_mapping:
+        for mh in master_headers_mapping:
+            if mh.get('UniqueId') == fp.get('MasterHeaderMapId'):
+                final_headers_list.append(mh)
+
+    for fh in fixed_headers_mapping:
+        final_headers_list.append(fh)
+
+    for header_dict in final_headers_list:
+        for mapping in list(header_dict):
+            old_key = mapping
+            pattern = re.compile(r'(?<!^)(?=[A-Z])')
+            new_key = pattern.sub('_', mapping).lower()
+            header_dict[new_key] = header_dict.pop(old_key)
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=final_headers_list)

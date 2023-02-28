@@ -17,7 +17,6 @@ urlpatterns = [
     path("fetch_segment_list/", views.fetch_segments_list),
     path("old_segment_tagging/", views.update_segment_tags),
     path("update_custom_segment_callback/", views.update_custom_segment_callback),
-    path("segment_records_count/", views.segment_records_count),
-    path("fetch_segment_list/", views.fetch_segments_list),
-    path("deactivate_segment/", views.deactivate_segment)
+    path("deactivate_segment/", views.deactivate_segment),
+    path("get_master_mapping_for_segment/", views.get_master_mapping_by_data_id)
 ]

@@ -1,23 +1,22 @@
-import json
 import http
 from django.shortcuts import HttpResponse
-import logging
 
 from onyx_proj.common.constants import Roles
-from onyx_proj.apps.segments.segments_processor.segment_callback_processor import process_segment_callback, process_segment_data_callback
-from onyx_proj.common.decorators import UserAuth
-from onyx_proj.apps.segments.segments_processor.temp import update_content_and_segment_tags
-from onyx_proj.apps.segments.custom_segments.custom_segment_processor import custom_segment_count, non_custom_segment_count, \
-    update_custom_segment_process, fetch_headers_list, custom_segment_processor
 from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import fetch_test_campaign_data
 from onyx_proj.apps.segments.segments_processor.get_sample_data import get_sample_data_by_unique_id
 from onyx_proj.apps.segments.segments_processor.segment_fetcher import fetch_segment_by_id, fetch_segments
 from onyx_proj.apps.segments.segments_processor.segment_headers_processor import \
     check_headers_compatibility_with_content_template
+from onyx_proj.apps.segments.segments_processor.segment_callback_processor import process_segment_callback, process_segment_data_callback
 from django.views.decorators.csrf import csrf_exempt
-from onyx_proj.apps.segments.segments_processor.segment_processor import update_segment_count, \
-    trigger_update_segment_count, deactivate_segment_by_segment_id
-from onyx_proj.apps.segments.segments_processor.segments_data_processors import get_segment_list
+from onyx_proj.apps.segments.segments_processor.segment_processor import deactivate_segment_by_segment_id
+from onyx_proj.apps.segments.segments_processor.segment_processor import update_segment_count, trigger_update_segment_count
+from onyx_proj.apps.segments.segments_processor.segments_data_processors import get_segment_list, \
+    get_master_headers_by_data_id
+from onyx_proj.apps.segments.custom_segments.custom_segment_processor import custom_segment_processor, \
+    fetch_headers_list, update_custom_segment_process, custom_segment_count, non_custom_segment_count
+from onyx_proj.common.decorators import *
+from onyx_proj.apps.segments.segments_processor.temp import update_content_and_segment_tags
 
 
 @csrf_exempt
@@ -207,5 +206,14 @@ def deactivate_segment(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
     data = deactivate_segment_by_segment_id(request_body, request_headers)
+    status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def get_master_mapping_by_data_id(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    data = get_master_headers_by_data_id(request_body)
     status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
