@@ -51,3 +51,9 @@ class CEDCampaignSMSContent:
     def get_project_id_by_content_id(self, content_id: str):
         query = f"SELECT ProjectId AS project_id FROM {self.table_name} WHERE UniqueId = '{content_id}'"
         return dict_fetch_query_all(self.curr, query)
+
+    def update_content_status(self, params_dict, where_dict):
+        return update_row(self.curr, self.table_name, params_dict, where_dict)
+
+    def get_content_data_by_content_id(self, content_id):
+        return dict_fetch_all(self.curr, self.table_name, {"UniqueId": content_id})

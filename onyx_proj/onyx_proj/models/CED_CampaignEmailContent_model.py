@@ -22,6 +22,12 @@ class CEDCampaignEmailContent:
                     and IsActive = '1' and Status in ({status}) """
         return dict_fetch_query_all(self.curr, query)
 
+    def update_content_status(self, params_dict, where_dict):
+        return update_row(self.curr, self.table_name, params_dict, where_dict)
+
+    def get_content_data(self, content_id):
+        return dict_fetch_all(self.curr, self.table_name, {"UniqueId": content_id})
+
     def get_content_list(self, project_id):
         filter_list = [
             {"column": "project_id", "value": project_id, "op": "=="}

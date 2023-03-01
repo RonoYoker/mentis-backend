@@ -1,22 +1,20 @@
 import http
 import logging
+import uuid
+
 from django.views.decorators.csrf import csrf_exempt
 
-from onyx_proj.common.decorators import UserAuth
-from onyx_proj.models.CED_MasterHeaderMapping_model import CEDMasterHeaderMapping
+from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import deactivate_campaign_by_campaign_id
 from onyx_proj.apps.content import app_settings
-from onyx_proj.common.decorators import UserAuth
-from onyx_proj.models.CED_CampaignSubjectLineContent_model import CEDCampaignSubjectLineContent
-from onyx_proj.models.CED_CampaignTagContent_model import CEDCampaignTagContent
-from onyx_proj.models.CED_CampaignURLContent_model import CEDCampaignURLlContent
 from onyx_proj.common.constants import CHANNELS_LIST, TAG_FAILURE, TAG_SUCCESS, FETCH_CAMPAIGN_QUERY, \
-    CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, Roles
+    CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, CONTENT_TYPE_LIST
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.models.CED_CampaignEmailContent_model import CEDCampaignEmailContent
 from onyx_proj.models.CED_CampaignIvrContent_model import CEDCampaignIvrContent
 from onyx_proj.models.CED_CampaignSMSContent_model import CEDCampaignSMSContent
 from onyx_proj.models.CED_CampaignWhatsAppContent_model import CEDCampaignWhatsAppContent
-from onyx_proj.models.CED_MasterHeaderMapping_model import *
+from onyx_proj.models.CED_MasterHeaderMapping_model import CEDMasterHeaderMapping
+from onyx_proj.models.CED_UserSession_model import CEDUserSession
 
 logger = logging.getLogger("apps")
 
@@ -193,4 +191,110 @@ def get_content_data(content_data):
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=data[0])
 
 
+def deactivate_content_and_campaign(request_body, request_headers):
+    logger.debug(f"deactivate_content_and_campaign :: request_body: {request_body}")
 
+    content_type = request_body.get("content_type", None)
+    content_id = request_body.get("content_id", None)
+
+    session_id = request_headers.get("X-AuthToken", "")
+    user = CEDUserSession().get_user_details(dict(SessionId=session_id))
+    user_name = user[0].get("UserName", None)
+
+    if content_type is None or content_id is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Missing request body parameters")
+
+    status = "DEACTIVATE"
+    active_flag = 0
+
+    if content_type in CONTENT_TYPE_LIST:
+        query = get_query_for_campaigns(content_id, content_type)
+        campaign_details = get_campaigns(query)
+        if campaign_details.get("result") == TAG_SUCCESS:
+            cbc_id_list = []
+            campaign_data = campaign_details.get("response")
+            for camp in campaign_data:
+                cbc_id_list.append(camp.get("cbc_id"))
+            body = {"required_campaign_details": {
+                "campaign_builder_campaign_id": cbc_id_list
+            }}
+            deactivate_campaign_by_campaign_id(body)
+    else:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid content type.")
+
+    history_id = uuid.uuid4().hex
+    try:
+        result = app_settings.CONTENT_TABLE_MAPPING[content_type]().update_content_status(dict(UniqueId=content_id),
+                                                                                          dict(IsActive=active_flag, Status=status, HistoryId=history_id))
+    except Exception as ex:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Exception while updating content status",
+                    ex=str(ex))
+
+    if not result:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Error while updating content status")
+    response = save_content_history_data(content_type, content_id, user_name)
+
+    if response.get("status_code") != 200:
+        return response
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, message="Content deactivated successfully")
+
+
+def save_content_history_data(content_type, content_id, user_name):
+    history_object = app_settings.CONTENT_TABLE_MAPPING[content_type]().get_content_data_by_content_id(content_id)[0]
+
+    comment = f"<strong>{content_type} {history_object.get('Id')} </strong> is Deactivate by {user_name}"
+    history_object["Comment"] = comment
+    del history_object['Id']
+    del history_object['RejectionReason']
+
+    if content_type == "SMS":
+        del history_object['VendorTemplateId']
+        del history_object['Extra']
+        history_object["smsContentId"] = history_object.pop("UniqueId")
+        history_object["UniqueId"] = history_object.pop("HistoryId")
+
+    elif content_type == "EMAIL":
+        del history_object['Extra']
+        history_object["EmailId"] = history_object.pop("UniqueId")
+        history_object["UniqueId"] = history_object.pop("HistoryId")
+
+    elif content_type == "WHATSAPP":
+        del history_object['Extra']
+        history_object["WhatsAppContentId"] = history_object.pop("UniqueId")
+        history_object["UniqueId"] = history_object.pop("HistoryId")
+
+    elif content_type == "IVR":
+        del history_object['Extra']
+        history_object["IvrId"] = history_object.pop("UniqueId")
+        history_object["UniqueId"] = history_object.pop("HistoryId")
+
+    elif content_type == "SUBJECTLINE":
+        history_object["SubjectLineContentId"] = history_object.pop("UniqueId")
+        history_object["UniqueId"] = history_object.pop("HistoryId")
+
+    elif content_type == "URL":
+        del history_object["DomainType"]
+        history_object["UrlId"] = history_object.pop("UniqueId")
+        history_object["UniqueId"] = history_object.pop("HistoryId")
+
+    else:
+        history_object["TagId"] = history_object.pop("UniqueId")
+        history_object["UniqueId"] = history_object.pop("HistoryId")
+
+    try:
+        result = app_settings.HIS_CONTENT_TABLE_MAPPING[content_type]().save_content_history(history_object)
+    except Exception as ex:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Exception while saving content history",
+                    ex=str(ex))
+
+    if not result:
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message="Error while saving content history")
+    else:
+        return {"isSaved": True, "status_code": 200}

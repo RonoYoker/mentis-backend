@@ -27,6 +27,8 @@ from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.apps.slot_management.app_settings import SLOT_INTERVAL_MINUTES
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
+from onyx_proj.apps.slot_management.app_settings import SLOT_INTERVAL_MINUTES
+
 
 logger = logging.getLogger("apps")
 
@@ -82,29 +84,29 @@ def get_min_max_date_for_scheduler(request_data):
     segment_id = body.get("segmentId", "")
 
     data_id_details = CEDSegment().get_data_id_expiry_by_segment_id(segment_id)
-    if data_id_details is None or len(data_id_details)==0:
+    if data_id_details is None or len(data_id_details) == 0:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="DataSet/Project is Invalid")
     expire_date = data_id_details[0].get("ExpireDate")
-    if expire_date is None or not isinstance(expire_date,datetime.date):
+    if expire_date is None or not isinstance(expire_date, datetime.date):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Expire Time missing or Invalid")
-    expire_date = datetime.datetime.combine(expire_date,datetime.datetime.min.time())
-
+    expire_date = datetime.datetime.combine(expire_date, datetime.datetime.min.time())
 
     min_date = datetime.datetime.utcnow()
-    min_today = datetime.datetime.utcnow().replace(minute=0,second=0) + datetime.timedelta(hours=1)
-    max_today = datetime.datetime.utcnow().replace(hour=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["max"]["hour"],minute=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["max"]["min"])
+    min_today = datetime.datetime.utcnow().replace(minute=0, second=0) + datetime.timedelta(hours=1)
+    max_today = datetime.datetime.utcnow().replace(hour=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["max"]["hour"],
+                                                   minute=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["max"]["min"])
 
     if min_today > max_today:
         min_date = min_date + datetime.timedelta(days=1)
     min_date = min_date.replace(hour=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["min"]["hour"],
-                      minute=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["min"]["min"],
-                      second=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["min"]["sec"])
+                                minute=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["min"]["min"],
+                                second=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["min"]["sec"])
 
     expire_date = expire_date.replace(hour=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["max"]["hour"],
-                      minute=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["max"]["min"],
-                      second=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["max"]["sec"])
+                                      minute=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["max"]["min"],
+                                      second=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["max"]["sec"])
 
     resp = {
         "min_date": min_date.strftime("%Y-%m-%d %H:%M:%S"),
@@ -121,7 +123,7 @@ def get_time_range_from_date(request_data):
     session_id = headers.get("X-AuthToken", None)
     date = body.get("date", "")
 
-    date_object = datetime.datetime.strptime(date,"%Y-%m-%d").date()
+    date_object = datetime.datetime.strptime(date, "%Y-%m-%d").date()
 
     min_time = datetime.datetime.utcnow().time().replace(hour=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["min"]["hour"],
                                                          minute=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["min"]["min"],
@@ -133,7 +135,7 @@ def get_time_range_from_date(request_data):
 
 
     if date_object == datetime.datetime.utcnow().date():
-        min_time = datetime.datetime.utcnow().replace(minute=0,second=0) + datetime.timedelta(hours=1)
+        min_time = datetime.datetime.utcnow().replace(minute=0, second=0) + datetime.timedelta(hours=1)
         min_time = min_time + datetime.timedelta(minutes=30) if (min_time - datetime.timedelta(
             minutes=40) < datetime.datetime.utcnow()) else min_time + datetime.timedelta(minutes=0)
         min_time = min_time.time()
@@ -148,10 +150,10 @@ def get_time_range_from_date(request_data):
                 data=resp)
 
 
-
 def get_campaign_data_in_period(project_id, content_type, start_date_time, end_date_time):
     data = CEDCampaignBuilder().get_campaign_data_for_period(project_id, content_type, start_date_time, end_date_time)
     return data
+
 
 def get_filtered_dashboard_tab_data(data) -> json:
     """
@@ -168,19 +170,23 @@ def get_filtered_dashboard_tab_data(data) -> json:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="mandatory params missing.")
 
-    if filter_type is None or (filter_type not in [DashboardTab.ALL.value, DashboardTab.SCHEDULED.value, DashboardTab.EXECUTED.value]):
+    if filter_type is None or (
+            filter_type not in [DashboardTab.ALL.value, DashboardTab.SCHEDULED.value, DashboardTab.EXECUTED.value]):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="filter type is not correct.")
 
-    query = add_filter_to_query_using_params(filter_type).format(project_id = project_id,start_date = start_date, end_date = end_date)
+    query = add_filter_to_query_using_params(filter_type).format(project_id=project_id, start_date=start_date,
+                                                                 end_date=end_date)
     logger.debug(f"request data query :: {query}")
     camps_data = CEDCampaignExecutionProgress().execute_customised_query(query)
     now = datetime.datetime.utcnow()
     final_camp_data = []
     for camp_data in camps_data:
-        if camp_data.get('start_date_time') <= now and camp_data.get('scheduling_status') != TAG_SUCCESS and camp_data.get('is_active') == 1:
+        if camp_data.get('start_date_time') <= now and camp_data.get(
+                'scheduling_status') != TAG_SUCCESS and camp_data.get('is_active') == 1:
             camp_data["status"] = DashboardTab.ERROR.value
-        elif camp_data.get('status') == DashboardTab.SCHEDULED.value and camp_data.get('scheduling_status') == TAG_SUCCESS and camp_data.get('is_active') == 1:
+        elif camp_data.get('status') == DashboardTab.SCHEDULED.value and camp_data.get(
+                'scheduling_status') == TAG_SUCCESS and camp_data.get('is_active') == 1:
             camp_data["status"] = DashboardTab.DISPATCHED.value
         elif camp_data.get('is_active') == 0 and filter_type != DashboardTab.EXECUTED.value:
             camp_data["status"] = DashboardTab.DEACTIVATED.value
@@ -193,6 +199,7 @@ def get_filtered_dashboard_tab_data(data) -> json:
 
     logger.debug(f"response data :: {final_camp_data}")
     return dict(status_code=http.HTTPStatus.OK, data=final_camp_data)
+
 
 def update_campaign_status(data) -> json:
     """
@@ -219,6 +226,7 @@ def update_campaign_status(data) -> json:
                     details_message="did not get filtered query.")
     CEDCampaignExecutionProgress().execute_customised_query(query)
     return dict(status_code=http.HTTPStatus.OK)
+
 
 def get_filtered_recurring_date_time(data):
     start_date = data.get("body").get('start_date')
@@ -275,9 +283,11 @@ def get_filtered_recurring_date_time(data):
                 data=recurring_date_time)
 
 
-def get_all_dates_between_dates(start_date,end_date):
-    delta = datetime.datetime.strptime(end_date,'%Y-%m-%d') - datetime.datetime.strptime(start_date,'%Y-%m-%d')  # as timedelta
-    days = [datetime.datetime.strptime(start_date,'%Y-%m-%d') + datetime.timedelta(days=i) for i in range(delta.days + 1)]
+def get_all_dates_between_dates(start_date, end_date):
+    delta = datetime.datetime.strptime(end_date, '%Y-%m-%d') - datetime.datetime.strptime(start_date,
+                                                                                          '%Y-%m-%d')  # as timedelta
+    days = [datetime.datetime.strptime(start_date, '%Y-%m-%d') + datetime.timedelta(days=i) for i in
+            range(delta.days + 1)]
     dates = []
     for day in days:
         dates.append(day.strftime('%Y-%m-%d'))
@@ -303,9 +313,9 @@ def update_segment_count_and_status_for_campaign(request_data):
     status = data.get("status")
     curr_date_time = datetime.datetime.utcnow()
     resp = {
-        "upd_segment_table":False,
-        "upd_sched_table":False,
-        "upd_campaign_status":False
+        "upd_segment_table": False,
+        "upd_sched_table": False,
+        "upd_campaign_status": False
     }
 
     if segment_count == 0:
@@ -328,9 +338,10 @@ def update_segment_count_and_status_for_campaign(request_data):
 
     if segment_count is not None:
         upd_resp = CEDSegment().update_segment_record_count_refresh_date(segment_count=segment_count,
-                                                                            segment_unique_id=segment_unique_id,
-                                                                            refresh_date=curr_date_time, refresh_status=None)
-        if upd_resp is not None and upd_resp.get("row_count",0) > 0:
+                                                                         segment_unique_id=segment_unique_id,
+                                                                         refresh_date=curr_date_time,
+                                                                         refresh_status=None)
+        if upd_resp is not None and upd_resp.get("row_count", 0) > 0:
             resp["upd_segment_table"] = True
 
         upd_resp = CED_CampaignSchedulingSegmentDetails().update_segment_record_count(campaign_id=campaign_id,
@@ -445,7 +456,6 @@ def validate_campaign(request_data):
         elif camp_status[0].get("camp_status") == TestCampStatus.VALIDATED.value:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="Campaign is already validated.")
-
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                 data=data)

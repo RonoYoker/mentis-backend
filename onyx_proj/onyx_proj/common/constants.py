@@ -120,14 +120,16 @@ SELECT s.*,NAME FROM CED_Projects p JOIN CED_Segment s on p.UniqueId = s.Project
 """
 
 FETCH_CAMPAIGN_QUERY = """select cb.Id as id, cb.Name as campaign_name, cbc.StartDateTime as start_date_time, 
-                        cbc.ContentType as content_type, cb.Type as campaign_type from 
+                        cbc.ContentType as content_type, cb.Type as campaign_type, cbc.UniqueId as cbc_id from 
                         CED_CampaignBuilder cb join CED_CampaignBuilderCampaign cbc on cb.uniqueId = cbc.campaignBuilderId 
                         join {campaign_table} cam_t on cbc.campaignId = cam_t.uniqueId 
                         join {content_table} con_t on cam_t.{channel_id} = con_t.uniqueId 
-                        where con_t.uniqueId = '{content_id}' and cb.IsDeleted = '0' and cb.IsActive = '1' 
-                        and cbc.EndDateTime > now()
-                        and cb.status = 'APPROVED' and cbc.IsDeleted = '0' and cbc.IsActive = '1' 
-                        and cam_t.IsDeleted = '0' and cam_t.IsActive = '1' and con_t.IsDeleted = '0' and con_t.IsActive = '1'"""
+                        where con_t.uniqueId = '{content_id}'  """
+
+# and cb.IsDeleted = '0' and cb.IsActive = '1'
+#                         and cbc.EndDateTime > now()
+#                         and cb.status = 'APPROVED' and cbc.IsDeleted = '0' and cbc.IsActive = '1'
+#                         and cam_t.IsDeleted = '0' and cam_t.IsActive = '1' and con_t.IsDeleted = '0' and con_t.IsActive = '1'
 
 FIXED_HEADER_MAPPING_COLUMN_DETAILS = [
     {
@@ -563,6 +565,8 @@ USER_DATA_FROM_CED_USER = ["Id as id", "CreationDate as creation_date", "UserUID
                            "UserType as user_type"]
 
 CHANNELS_LIST = ["SMS", "IVR", "WHATSAPP", "EMAIL"]
+
+CONTENT_TYPE_LIST = ["SMS", "IVR", "WHATSAPP", "EMAIL", "URL", "TAG", "SUBJECTLINE"]
 
 CHANNEL_CAMPAIGN_BUILDER_TABLE_MAPPING = {
     'SMS': (CEDCampaignBuilderSMS, 'MobileNumber'),
