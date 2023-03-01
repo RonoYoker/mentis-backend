@@ -155,7 +155,7 @@ def get_content_list(data) -> dict:
     for entity_table in entity_table_list:
         entity_type = entity_table.get("entity_type")
         entity_table_name = entity_table.get("entity_table_name")
-        campaign_entity_dict[entity_type] = entity_table_name().get_content_data(project_id, entity_status_list)
+        campaign_entity_dict[entity_type] = entity_table_name().get_content_data_by_content_id(project_id, entity_status_list)
 
     if campaign_entity_dict is None:
         return dict(status_code=http.HTTPStatus.NOT_FOUND, result=TAG_SUCCESS,
@@ -245,7 +245,7 @@ def deactivate_content_and_campaign(request_body, request_headers):
 
 
 def save_content_history_data(content_type, content_id, user_name):
-    history_object = app_settings.CONTENT_TABLE_MAPPING[content_type]().get_content_data_by_content_id(content_id)[0]
+    history_object = app_settings.CONTENT_TABLE_MAPPING[content_type]().get_content_data(content_id)[0]
 
     comment = f"<strong>{content_type} {history_object.get('Id')} </strong> is Deactivate by {user_name}"
     history_object["Comment"] = comment

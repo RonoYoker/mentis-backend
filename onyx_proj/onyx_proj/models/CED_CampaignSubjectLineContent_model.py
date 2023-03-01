@@ -52,5 +52,5 @@ class CEDCampaignSubjectLineContent:
     def update_content_status(self, params_dict, where_dict):
         return update_row(self.curr, self.table_name, params_dict, where_dict)
 
-    def get_content_data(self, content_id):
+    def get_content_data_by_content_id(self, content_id):
         return dict_fetch_all(self.curr, self.table_name, {"UniqueId": content_id})
