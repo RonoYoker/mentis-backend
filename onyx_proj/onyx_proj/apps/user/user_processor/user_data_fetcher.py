@@ -35,17 +35,14 @@ def get_user_data(request_data):
 
     if not session_id:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    data="Request headers do not contain authentication token.")
+                    details_message="Request headers do not contain authentication token.")
 
     user_session_data = CEDUserSession().get_user_data_by_session_id(dict(SessionId=session_id, Expired=0))
 
     if not user_session_data or len(user_session_data) == 0:
-        result = {
-            "cause": "user is not logged in"
-        }
         logger.error(f"User session data not found for X-AuthToken: {session_id}.")
         return dict(status_code=http.HTTPStatus.UNAUTHORIZED, result=TAG_FAILURE,
-                    data=result)
+                    details_message="User is not logged in")
 
     user_data = CEDUser().get_user_details(dict(UserUID=user_session_data[0].get("user_id")),
                                            select_args=USER_DATA_FROM_CED_USER)
@@ -54,7 +51,7 @@ def get_user_data(request_data):
         logger.error(f"No user data found for user_uid: {user_session_data[0].get('user_id')} "
                      f"and Auth Token: {session_id}.")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    data="User data is not available for the given authentication token.")
+                    details_message="User data is not available for the given authentication token.")
 
     user_project_role_data = CEDUserProjectRoleMapping().get_user_project_role_data(
         data_dict=dict(UserUniqueId=user_session_data[0].get("user_id")),
@@ -399,24 +396,24 @@ def update_project_on_session(request_data):
     project_id = body.get("project_id", None)
     if session_id is None or project_id is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details="SessionId or ProjectId is not provided in request body")
+                    details_message="SessionId or ProjectId is not provided in request body")
     user_session_data = CEDUserSession().get_session_data_from_session_id(session_id=session_id)
     if user_session_data is None or len(user_session_data) == 0:
         logger.error(f"User session data not found for X-AuthToken: {session_id}.")
         return dict(status_code=http.HTTPStatus.UNAUTHORIZED, result=TAG_FAILURE,
-                    details="user is not logged in")
+                    details_message="user is not logged in")
     is_session_expired = validate_session(user_session_data)
     if is_session_expired == False:
         return dict(status_code=http.HTTPStatus.UNAUTHORIZED, result=TAG_FAILURE,
-                    details="session is expired now")
+                    details_message="session is expired now")
     project_data = CEDProjects().get_active_project_id_entity_alchemy(project_id)
     if project_data is None or len(project_data) == 0:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details="Project data does not exist")
+                    details_message="Project data does not exist")
     db_res = CEDUserSession().update_user_session_data(dict(project_id=project_id), session_id)
     if not db_res.get("status"):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details="Unable to update projectId in session table")
+                    details_message="Unable to update projectId in session table")
     logger.debug(f"LOG_EXIT function name : {method_name}")
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=dict(update_project_on_session=True))
 

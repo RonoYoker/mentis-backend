@@ -528,7 +528,7 @@ def deactivate_campaign_by_campaign_id(request_body):
     if campaign_ids is None:
         logger.error(f"deactivate_campaign_by_campaign_id :: campaign id is not provided for the request.")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    message="Request body is not valid")
+                    details_message="Request body is not valid")
 
     if "campaign_builder_id" in campaign_ids.keys() and len(campaign_ids) == 1:
         campaign_builder_id = campaign_ids.get("campaign_builder_id", [])
@@ -537,7 +537,7 @@ def deactivate_campaign_by_campaign_id(request_body):
         if not response.get("status"):
             logger.error(f"response::{response}")
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        message=response.get("message"))
+                        details_message=response.get("message"))
         campaign_details = response.get("campaign_details")
 
     elif 'campaign_builder_campaign_id' in campaign_ids.keys() and len(campaign_ids) == 1:
@@ -548,19 +548,19 @@ def deactivate_campaign_by_campaign_id(request_body):
         if not response.get("status"):
             logger.error(f"response::{response}")
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        message=response.get("message"))
+                        details_message=response.get("message"))
         campaign_details = response.get("campaign_details")
 
     else:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    message="Malformed request")
+                    details_message="Malformed request")
 
     email_response = send_status_email(campaign_details)
     if not email_response.get("status"):
         logger.error(f"deactivate_campaign_by_campaign_id :: Unable to trigger mail for deactivation, campaign_details: {campaign_details}")
-        return dict(status=False, message=email_response.get("message"))
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE, details_message=email_response.get("message"))
 
-    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, message="Campaign deactivated successfully")
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, details_message="Campaign deactivated successfully")
 
 
 @UserAuth.user_validation(permissions=[Roles.DEACTIVATE.value], identifier_conf={

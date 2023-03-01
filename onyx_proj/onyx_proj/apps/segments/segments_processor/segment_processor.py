@@ -211,9 +211,9 @@ def deactivate_segment_by_segment_id(request_body, request_headers):
     if history_result.get("status") != TAG_SUCCESS:
         logger.error(f"deactivate_segment_by_segment_id :: Error while saving history log for deactivation process.")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    data="Error while saving history log for deactivation process")
+                    details_message="Error while saving history log for deactivation process")
 
-    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data="Segment Deactivated Successfully!")
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, details_message="Segment Deactivated Successfully!")
 
 
 def save_deactivation_segment_history(user_name, segment_id):

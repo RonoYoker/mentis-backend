@@ -73,11 +73,11 @@ def fetch_campaign_processor(data) -> dict:
 
     if content_type not in CHANNELS_LIST:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    response="Invalid content_type.")
+                    details_message="Invalid content_type.")
 
     if not content_type or not content_id:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    response="Either content_type not found or content_id not found.")
+                    details_message="Either content_type not found or content_id not found.")
 
     if content_type == "SMS":
         sms_campaign_content = CEDCampaignSMSContent().get_sms_data(content_id, status)
@@ -86,7 +86,7 @@ def fetch_campaign_processor(data) -> dict:
             return get_campaigns(query)
         else:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        response="SMS content is not in valid state.")
+                        details_message="SMS content is not in valid state.")
 
     elif content_type == "EMAIL":
         email_campaign_content = CEDCampaignEmailContent().get_email_data(content_id, status)
@@ -95,7 +95,7 @@ def fetch_campaign_processor(data) -> dict:
             return get_campaigns(query)
         else:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        response="EMAIL content is not in valid state.")
+                        details_message="EMAIL content is not in valid state.")
 
     elif content_type == "IVR":
         ivr_campaign_content = CEDCampaignIvrContent().get_ivr_data(content_id, status)
@@ -104,7 +104,7 @@ def fetch_campaign_processor(data) -> dict:
             return get_campaigns(query)
         else:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        response="IVR content is not in valid state.")
+                        details_message="IVR content is not in valid state.")
 
     elif content_type == "WHATSAPP":
         whatsapp_campaign_content = CEDCampaignWhatsAppContent().get_whatsapp_data(content_id, status)
@@ -113,18 +113,18 @@ def fetch_campaign_processor(data) -> dict:
             return get_campaigns(query)
         else:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        response="WhatsApp content is not in valid state.")
+                        details_message="WhatsApp content is not in valid state.")
 
     else:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    response="Invalid Content.")
+                    details_message="Invalid Content.")
 
 
 def get_campaigns(query):
     campaign_builder = CEDCampaignBuilder().execute_fetch_campaigns_list_query(query)
     if not campaign_builder or len(campaign_builder) < 1:
         return dict(status_code=http.HTTPStatus.OK, result=TAG_FAILURE,
-                    response="No campaign found")
+                    details_message="No campaign found")
 
     for campaign in campaign_builder:
         campaign["start_date_time"] = campaign.get('start_date_time').strftime("%Y-%m-%d %H:%M:%S")
