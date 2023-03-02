@@ -10,7 +10,7 @@ class CED_CampaignBuilder(Base, Orm_helper):
     priority = Column("Priority", Integer)
     status = Column("Status", String)
     start_date_time = Column("StartDateTime", DateTime)
-    end_time_time = Column("EndDateTime", DateTime)
+    end_date_time = Column("EndDateTime", DateTime)
     segment_name = Column("SegmentName", String)
     records_in_segment = Column("RecordsInSegment", Integer, default=0)
     created_by = Column("CreatedBy", String)

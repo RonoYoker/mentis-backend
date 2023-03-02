@@ -523,7 +523,12 @@ def view_campaign_data(request_body):
 
     campaign_data = CEDCampaignBuilder().get_campaign_details(campaign_id)
 
-    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=campaign_data)
+    if len(campaign_data) == 0 or campaign_data is None:
+        logger.error(f"view_campaign_data :: Campaign data nor present for request: {request_body}.")
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message="Campaign data not found for the given parameters.")
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=campaign_data[0])
 
 
 def deactivate_campaign_by_campaign_id(request_body):
