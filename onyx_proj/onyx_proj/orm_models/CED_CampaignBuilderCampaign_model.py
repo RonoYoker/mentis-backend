@@ -19,7 +19,7 @@ class CED_CampaignBuilderCampaign(Base, Orm_helper):
     is_active = Column("IsActive", Integer, default=1)
     is_deleted = Column("IsDeleted", Integer, default=0)
     start_date_time = Column("StartDateTime", DateTime)
-    end_time_time = Column("EndDateTime", DateTime)
+    end_date_time = Column("EndDateTime", DateTime)
     creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
