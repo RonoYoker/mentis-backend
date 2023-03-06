@@ -26,7 +26,7 @@ class SqlAlchemyEngine(object, metaclass=Singleton):
         if self.database not in self.engines:
             engine = create_engine(
                 f"mysql://{self.user}:%s@"
-                f"{settings.DATABASES[self.database]['HOST']}:{settings.DATABASES[self.database]['PORT']}/{settings.DATABASES[self.database]['NAME']}" % quote(
+                f"{settings.DATABASES[self.database]['HOST']}:{settings.DATABASES[self.database]['PORT']}/{settings.DATABASES[self.database]['NAME']}?charset=utf8mb4" % quote(
                     f"{self.password}"),
                 echo=True, pool_size=10, max_overflow=20, pool_pre_ping=True, pool_recycle=3600)
             self.engines[self.database] = engine
