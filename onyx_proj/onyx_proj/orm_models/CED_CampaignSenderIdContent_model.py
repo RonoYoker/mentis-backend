@@ -4,8 +4,7 @@ class CED_CampaignSenderIdContent(Base, Orm_helper):
     __tablename__ = 'CED_CampaignSenderIdContent'
 
     id = Column("Id", Integer, unique=True, autoincrement=True)
-    unique_id = Column("UniqueId", String, ForeignKey("CED_CampaignContentSenderIdMapping.SenderUniqueId"),
-                       primary_key=True)
+    unique_id = Column("UniqueId", String,primary_key=True)
     title = Column("Title", String)
     project_id = Column("ProjectId", String)
     content_text = Column("ContentText", String)

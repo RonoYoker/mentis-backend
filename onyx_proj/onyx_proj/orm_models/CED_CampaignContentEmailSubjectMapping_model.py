@@ -7,7 +7,7 @@ class CED_CampaignContentEmailSubjectMapping(Base, Orm_helper):
     unique_id = Column("UniqueId", String, primary_key=True)
     content_id = Column("ContentId", String, ForeignKey("CED_CampaignEmailContent.UniqueId"))
     content_type = Column("ContentType", String)
-    subject_line_id = Column("SubjectLineId", String)
+    subject_line_id = Column("SubjectLineId", String,ForeignKey("CED_CampaignSubjectLineContent.UniqueId"))
     is_active = Column("IsActive", Integer)
     is_deleted = Column("IsDeleted", Integer)
     creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")

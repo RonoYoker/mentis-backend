@@ -4,7 +4,7 @@ class CED_CampaignBuilderSMS(Base, Orm_helper):
     __tablename__ = 'CED_CampaignBuilderSMS'
 
     id = Column("Id", Integer, autoincrement=True)
-    unique_id = Column("UniqueId", String, ForeignKey("CED_CampaignBuilderCampaign.CampaignId"), primary_key=True)
+    unique_id = Column("UniqueId", String, primary_key=True)
     sms_id = Column("SmsId", String)
     sender_id = Column("SenderId", String)
     url_id = Column("UrlId", String)

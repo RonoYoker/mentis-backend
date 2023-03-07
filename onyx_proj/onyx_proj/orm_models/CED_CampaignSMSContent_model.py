@@ -4,7 +4,7 @@ class CED_CampaignSMSContent(Base, Orm_helper):
     __tablename__ = 'CED_CampaignSMSContent'
 
     id = Column("Id", Integer, unique=True, autoincrement=True)
-    unique_id = Column("UniqueId", String, ForeignKey("CED_CampaignContentFollowUPSmsMapping.SmsId"), primary_key=True)
+    unique_id = Column("UniqueId", String, primary_key=True)
     strength = Column("Strength", String)
     project_id = Column("ProjectId", String)
     content_text = Column("ContentText", String)

@@ -4,7 +4,7 @@ class CED_CampaignBuilderWhatsApp(Base, Orm_helper):
     __tablename__ = "CED_CampaignBuilderWhatsApp"
 
     id = Column("Id", Integer, autoincrement=True)
-    unique_id = Column("UniqueId", String, ForeignKey("CED_CampaignBuilderCampaign.CampaignId"), primary_key=True)
+    unique_id = Column("UniqueId", String,  primary_key=True)
     whats_app_content_id = Column("WhatsAppContentId", String)
     url_id = Column("UrlId", String)
     mapping_id = Column("MappingId", String)

@@ -5,8 +5,7 @@ class CED_CampaignUrlContent(Base, Orm_helper):
     __tablename__ = 'CED_CampaignUrlContent'
 
     id = Column("Id", Integer, unique=True, autoincrement=True)
-    unique_id = Column("UniqueId", String, ForeignKey("CED_CampaignContentUrlMapping.UrlId"),
-                       ForeignKey("CED_CampaignContentFollowUPSmsMapping.UrlId"), primary_key=True)
+    unique_id = Column("UniqueId", String, primary_key=True)
     project_id = Column("ProjectId", String)
     url = Column("Url", String)
     strength = Column("Strength", String)

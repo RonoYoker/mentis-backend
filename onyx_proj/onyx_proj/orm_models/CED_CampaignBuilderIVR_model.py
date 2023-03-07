@@ -4,7 +4,7 @@ class CED_CampaignBuilderIVR(Base, Orm_helper):
     __tablename__ = "CED_CampaignBuilderIVR"
 
     id = Column("Id", Integer, autoincrement=True)
-    unique_id = Column("UniqueId", String, ForeignKey("CED_CampaignBuilderCampaign.CampaignId"), primary_key=True)
+    unique_id = Column("UniqueId", String, primary_key=True)
     ivr_id = Column("IvrId", String)
     mapping_id = Column("MappingId", String)
     created_by = Column("CreatedBy", String)

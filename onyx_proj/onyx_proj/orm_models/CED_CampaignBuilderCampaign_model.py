@@ -6,7 +6,10 @@ class CED_CampaignBuilderCampaign(Base, Orm_helper):
     id = Column("Id", Integer, primary_key=True, autoincrement=True)
     unique_id = Column("UniqueId", String)
     campaign_builder_id = Column("CampaignBuilderId", String, ForeignKey("CED_CampaignBuilder.UniqueId"))
-    campaign_id = Column("CampaignId", String)
+    campaign_id = Column("CampaignId", String,ForeignKey("CED_CampaignBuilderEmail.UniqueId"),
+                         ForeignKey("CED_CampaignBuilderIVR.UniqueId"),ForeignKey("CED_CampaignBuilderSMS.UniqueId"),
+                         ForeignKey("CED_CampaignBuilderWhatsApp.UniqueId")
+                         )
     vendor_config_id = Column("VendorConfigId", String)
     content_type = Column("ContentType", Integer)
     delay_type = Column("DelayType", String)

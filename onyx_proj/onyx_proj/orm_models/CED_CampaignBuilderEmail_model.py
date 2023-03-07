@@ -4,7 +4,7 @@ class CED_CampaignBuilderEmail(Base, Orm_helper):
     __tablename__ = "CED_CampaignBuilderEmail"
 
     id = Column("Id", Integer, autoincrement=True)
-    unique_id = Column("UniqueId", String, ForeignKey("CED_CampaignBuilderCampaign.CampaignId"), primary_key=True)
+    unique_id = Column("UniqueId", String, primary_key=True)
     email_id = Column("EmailId", String)
     subject_line_id = Column("SubjectLineId", String)
     url_id = Column("UrlId", String)

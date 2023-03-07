@@ -9,7 +9,7 @@ class CED_CampaignContentUrlMapping(Base, Orm_helper):
     content_id = Column("ContentId", String, ForeignKey("CED_CampaignSMSContent.UniqueId"),
                         ForeignKey("CED_CampaignWhatsAppContent.UniqueId"),
                         ForeignKey("CED_CampaignEmailContent.UniqueId"))
-    url_id = Column("UrlId", String)
+    url_id = Column("UrlId", String,ForeignKey("CED_CampaignUrlContent.UniqueId"))
     is_active = Column("IsActive", Integer)
     is_deleted = Column("IsDeleted", Integer)
     creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
