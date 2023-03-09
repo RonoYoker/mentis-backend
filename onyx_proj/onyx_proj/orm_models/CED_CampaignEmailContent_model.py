@@ -26,11 +26,11 @@ class CED_CampaignEmailContent(Base, Orm_helper):
     extra = Column("Extra", String)
     vendor_template_id = Column("VendorTemplateId", String)
 
-    variables = relationship("CED_CampaignContentVariableMapping", lazy='joined')
+    variables = relationship("CED_CampaignContentVariableMapping")
 
-    tag_mapping = relationship("CED_EntityTagMapping", lazy='joined')
-    url_mapping = relationship("CED_CampaignContentUrlMapping", lazy='joined')
-    subject_mapping = relationship("CED_CampaignContentEmailSubjectMapping", lazy='joined')
+    tag_mapping = relationship("CED_EntityTagMapping")
+    url_mapping = relationship("CED_CampaignContentUrlMapping")
+    subject_mapping = relationship("CED_CampaignContentEmailSubjectMapping")
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)
