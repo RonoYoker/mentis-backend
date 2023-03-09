@@ -147,7 +147,7 @@ jobs:
 
       - name: Get Latest Task Definition 2
         run: |
-          OLD_TASK_DEF=$(aws ecs describe-task-definition --task-definition $ECR_REPOSITORY)
+          OLD_TASK_DEF=$(aws ecs describe-task-definition --task-definition $CONTAINER_NAME_2)
           FINAL_TASK=$(echo $OLD_TASK_DEF | jq '.taskDefinition|{family: .family, networkMode: .networkMode, volumes: .volumes, containerDefinitions: .containerDefinitions, taskRoleArn: .taskRoleArn, executionRoleArn: .executionRoleArn, requiresCompatibilities: .requiresCompatibilities, cpu: .cpu, memory: .memory}')
           echo $FINAL_TASK > ${{ env.ECS_TASK_DEFINITION_2 }}            
 
