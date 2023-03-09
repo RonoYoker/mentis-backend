@@ -197,7 +197,7 @@ def check_template_in_content_table(content_id, template_type):
     elif template_type == "SUBJECT":
         result = CEDCampaignSubjectLineContent().get_subject_line_data(content_id)
     else:
-        result = CEDCampaignURLlContent().get_url_data(content_id)
+        result = CEDCampaignURLContent().get_url_data(content_id)
 
     logger.debug(f"result :: {result} ")
     if not result:
@@ -218,7 +218,7 @@ def get_template_status(content_id, template_type):
     elif template_type == "SUBJECT":
         result = CEDCampaignSubjectLineContent().get_subject_line_template(content_id)
     else:
-        result = CEDCampaignURLlContent().get_url_template(content_id)
+        result = CEDCampaignURLContent().get_url_template(content_id)
 
     logger.debug(f"result :: {result} ")
 

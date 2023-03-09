@@ -3,7 +3,7 @@ from onyx_proj.models.CED_CampaignIvrContent_model import CEDCampaignIvrContent
 from onyx_proj.models.CED_CampaignSMSContent_model import CEDCampaignSMSContent
 from onyx_proj.models.CED_CampaignSubjectLineContent_model import CEDCampaignSubjectLineContent
 from onyx_proj.models.CED_CampaignTagContent_model import CEDCampaignTagContent
-from onyx_proj.models.CED_CampaignURLContent_model import CEDCampaignURLlContent
+from onyx_proj.models.CED_CampaignURLContent_model import CEDCampaignURLContent
 from onyx_proj.models.CED_CampaignWhatsAppContent_model import CEDCampaignWhatsAppContent
 from onyx_proj.models.CED_HIS_CampaignContentTag_model import CED_HISCampaignContentTag
 from onyx_proj.models.CED_HIS_CampaignEmailContent_model import CED_HISCampaignEmailContent
@@ -18,7 +18,7 @@ CONTENT_TABLE_MAPPING = {
     "EMAIL": CEDCampaignEmailContent,
     "IVR": CEDCampaignIvrContent,
     "WHATSAPP": CEDCampaignWhatsAppContent,
-    "URL": CEDCampaignURLlContent,
+    "URL": CEDCampaignURLContent,
     "TAG": CEDCampaignTagContent,
     "SUBJECTLINE": CEDCampaignSubjectLineContent
 }

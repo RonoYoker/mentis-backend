@@ -3,7 +3,7 @@ from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignSMSContent, CED_CampaignUrlContent
 
 
-class CEDCampaignURLlContent:
+class CEDCampaignURLContent:
     def __init__(self, **kwargs):
         self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_CampaignUrlContent"
