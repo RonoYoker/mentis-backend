@@ -17,7 +17,7 @@ env:
   ECS_TASK_DEFINITION: .aws/task-definition-onyx.json                                           
   ECS_TASK_DEFINITION_2: .aws/task-definition-onyx2.json
   CONTAINER_NAME: onyx
-  CONTAINER_NAME_2: onyx-celery
+  CONTAINER_NAME_2: onyx-celery-prod
   BANK_NAME: central
   CURR_ENV: prod
 
