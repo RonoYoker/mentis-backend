@@ -13,10 +13,10 @@ class CED_CampaignUrlContent(Base, Orm_helper):
     approved_by = Column("ApprovedBy", String)
     status = Column("Status", String)
     domain_type = Column("DomainType", String)
-    is_static = Column("IsStatic", String)
-    is_active = Column("IsActive", Integer, default=1)
+    is_static = Column("IsStatic", Boolean)
+    is_active = Column("IsActive", Boolean, default=True)
     rejection_reason = Column("RejectionReason", String)
-    is_deleted = Column("IsDeleted", Integer, default=0)
+    is_deleted = Column("IsDeleted", Boolean, default=False)
     creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))

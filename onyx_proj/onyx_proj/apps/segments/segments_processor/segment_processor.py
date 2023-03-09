@@ -3,9 +3,14 @@ import http
 import logging
 import uuid
 
+
+from onyx_proj.common.constants import SEGMENT_REFRESH_VALIDATION_DURATION_MINUTES, \
+    ASYNC_SEGMENT_QUERY_EXECUTION_WAITING_MINUTES, CampaignStatus
+from onyx_proj.common.utils.logging_helpers import log_entry
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.apps.segments.segments_processor.segment_helpers import check_validity_flag, check_restart_flag
-from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import deactivate_campaign_by_campaign_id
+from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import deactivate_campaign_by_campaign_id, \
+    schedule_campaign_using_campaign_builder_id
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, \
     REFRESH_COUNT_LOCAL_API_PATH, SegmentRefreshStatus, SEGMENT_COUNT_QUERY, MIN_REFRESH_COUNT_DELAY, \
@@ -13,10 +18,14 @@ from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CUSTOM_QUERY_AS
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import hyperion_local_async_rest_call
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.models.CED_HIS_Segment_model import CEDHISSegment
+from onyx_proj.exceptions.permission_validation_exception import BadRequestException, NotFoundException, \
+    ValidationFailedException
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.apps.segments.app_settings import AsyncTaskCallbackKeys, AsyncTaskSourceKeys, QueryKeys, \
     AsyncTaskRequestKeys
+from onyx_proj.celery_app.tasks import segment_refresh_for_campaign_approval
+from celery import task
 
 logger = logging.getLogger("apps")
 
@@ -239,3 +248,93 @@ def save_deactivation_segment_history(user_name, segment_id):
         return dict(status=TAG_FAILURE)
 
     return dict(status=TAG_SUCCESS)
+
+def validate_segment_status(segment_id, status):
+    """
+    Method to validate the approved segment
+    """
+    method_name = "validate_segment_status"
+    segment_data = CEDSegment().get_segment_data_entity(segment_id)
+    # check above for list
+    if not segment_data:
+        raise ValidationFailedException(method_name=method_name, reason="Segment details are not valid")
+    if not segment_data.status or segment_data.status != status:
+        raise ValidationFailedException(method_name=method_name, reason="Segment is not approved")
+    return segment_data
+
+def check_segment_refresh_status(segment_entity):
+    """
+    Method to validate segment refresh status
+    """
+    method_name = "check_segment_refresh_status"
+
+    if not segment_entity:
+        raise NotFoundException(method_name=method_name, reason="Segment not found")
+    refresh_time = segment_entity.refresh_date
+    current_time = datetime.datetime.utcnow()
+    if not refresh_time:
+        raise BadRequestException(method_name=method_name, reason="Segment refresh time not found")
+    if refresh_time + datetime.timedelta(minutes=SEGMENT_REFRESH_VALIDATION_DURATION_MINUTES) >= current_time:
+        return True
+    else:
+        return False
+
+def trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_count):
+    """
+    Method to refresh count of segment associated with campaign and trigger the following campaign approval flow
+    """
+    method_name = "trigger_update_segment_count_for_campaign_approval"
+    log_entry()
+
+    CEDCampaignBuilder().increment_approval_flow_retry_count(cb_id)
+
+    campaign_builder_entity = CEDCampaignBuilder().get_campaign_builder_entity_by_unique_id(cb_id)
+    if campaign_builder_entity.approval_retry != retry_count + 1:
+        logger.error(f"method_name :: {method_name}, error :: retry count unmatched")
+        CEDCampaignBuilder().update_error_message(cb_id, "retry count unmatched")
+        raise ValidationFailedException(method_name=method_name, reason="retry count unmatched")
+
+    if campaign_builder_entity is None:
+        logger.error(f"method_name :: {method_name}, error :: Campaign builder entity not found")
+        CEDCampaignBuilder().update_error_message(cb_id, "Campaign builder entity not found")
+        raise NotFoundException(method_name=method_name, reason="Campaign builder entity not found")
+
+    if campaign_builder_entity.status != CampaignStatus.APPROVAL_IN_PROGRESS.value:
+        logger.error(f"method_name :: {method_name}, Campaign Builder in invalid state")
+        CEDCampaignBuilder().update_error_message(cb_id, "Campaign Builder in invalid state during segment validation")
+        raise BadRequestException(method_name=method_name, reason="Campaign Builder in invalid state")
+
+    if cb_id is None or segment_id is None:
+        logger.error(f"method_name :: {method_name}, input data validation failed")
+        CEDCampaignBuilder().update_error_message(cb_id, "Segment id or cb id not found")
+        raise NotFoundException(method_name=method_name, reason="segment entity not found")
+
+    segment_entity = CEDSegment().get_segment_data_entity(segment_id)
+    if segment_entity is None:
+        logger.error(f"method_name :: {method_name}, segment entity not found")
+        CEDCampaignBuilder().update_error_message(cb_id, "Segment entity not found")
+        raise NotFoundException(method_name=method_name, reason="segment entity not found")
+
+    refresh_time = segment_entity.refresh_date
+    current_time = datetime.datetime.utcnow()
+
+    # if refresh time data is not stale
+    if refresh_time and refresh_time + datetime.timedelta(minutes=SEGMENT_REFRESH_VALIDATION_DURATION_MINUTES) >= current_time:
+        # Proceed for approval flow.
+        # schedule_campaign_using_campaign_builder_id.apply_async(args=(cb_id), queue="")
+        schedule_campaign_using_campaign_builder_id(cb_id)
+    elif segment_entity.count_refresh_start_date and retry_count != 0:
+        if segment_entity.count_refresh_start_date <= current_time - datetime.timedelta(minutes=ASYNC_SEGMENT_QUERY_EXECUTION_WAITING_MINUTES):
+            logger.error(f"method_name :: {method_name}, Async query count refresh timeout")
+            CEDCampaignBuilder().update_error_message(cb_id, "Async query count refresh timeout")
+            raise ValidationFailedException(method_name=method_name, reason="Async query count refresh timeout")
+        elif segment_entity.count_refresh_end_date is None or segment_entity.count_refresh_start_date > segment_entity.count_refresh_end_date:
+            logger.debug(f"method_name :: {method_name}, Segment is already being processed")
+            # call async self
+            segment_refresh_for_campaign_approval.apply_async(args=(cb_id, segment_id, retry_count+1), queue="celery_campaign_approval", countdown=4*60)
+            # trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_count+1)
+    elif not refresh_time or refresh_time + datetime.timedelta(minutes=SEGMENT_REFRESH_VALIDATION_DURATION_MINUTES) < current_time:
+        # process segment count and call async self
+        trigger_update_segment_count(dict(body=dict(unique_id=segment_id)))
+        segment_refresh_for_campaign_approval.apply_async(args=(cb_id, segment_id, retry_count+1), queue="celery_campaign_approval", countdown=4*60)
+        # trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_count+1)

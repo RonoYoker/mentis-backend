@@ -8,8 +8,8 @@ class CED_CampaignBuilderIVR(Base, Orm_helper):
     ivr_id = Column("IvrId", String)
     mapping_id = Column("MappingId", String)
     created_by = Column("CreatedBy", String)
-    is_active = Column("IsActive", Integer, default=1)
-    is_deleted = Column("IsDeleted", Integer, default=0)
+    is_active = Column("IsActive", Boolean, default=True)
+    is_deleted = Column("IsDeleted", Boolean, default=False)
     creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))

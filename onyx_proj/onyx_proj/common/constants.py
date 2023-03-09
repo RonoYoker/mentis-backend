@@ -18,6 +18,7 @@ TAG_SUCCESS = "SUCCESS"
 TAG_FAILURE = "FAILURE"
 TAG_REQUEST_POST = "POST"
 TAG_REQUEST_GET = "GET"
+TAG_REQUEST_PUT = "PUT"
 
 SEGMENT_END_DATE_FORMAT = "%Y-%m-%d"
 
@@ -62,13 +63,19 @@ SAMPLE_DATA_ASYNC_EXECUTION_API_PATH = "local/async_task_invocation/async_query_
 
 DEACTIVATE_CAMPAIGNS_FROM_CREATION_DETAILS = "hyperioncampaigntooldashboard/deactivate/localdb/campaignFromCreationdetails"
 
+MAILER_UTILITY_URL = "https://2poqg6bgm5.execute-api.ap-south-1.amazonaws.com/prod/sendemail"
+
 REFRESH_COUNT_LOCAL_API_PATH = "hyperioncampaigntooldashboard/segment/localdb/triggerlambdaForSegmentRefreshCount"
 
 TEST_CAMPAIGN_VALIDATION_API_PATH = "campaign/local/check_test_campaign_validation_status/"
 
+LOCAL_CAMPAIGN_SCHEDULING_DATA_PACKET_HANDLER = "hyperioncampaigntooldashboard/campaignbuilder/localbd/campaignrequest"
+
 SEGMENT_RECORDS_COUNT_API_PATH = "hyperioncampaigntooldashboard/segment/recordcount"
 
 CUSTOM_TEST_QUERY_PARAMETERS = ["FirstName", "Mobile"]
+
+HYPERION_CAMPAIGN_APPROVAL_FLOW = "hyperioncampaigntooldashboard/campaignbuilder/approvalaction/"
 
 ALLOWED_SEGMENT_STATUS = ["APPROVED", "APPROVAL_PENDING"]
 
@@ -462,6 +469,10 @@ STATS_VIEW_QUERY_CONDITIONS = " AND cep.TestCampaign = 0 AND cep.Status NOT IN (
 
 STATS_VIEW_QUERY_CONDITIONS_FOR_ADMINS = " AND cep.TestCampaign = 0 ORDER BY cep.UpdationDate DESC"
 
+ACTIVITY_LOG_COMMENT_CREATED = "<strong>{} {}</strong> is Created by {}"
+
+ACTIVITY_LOG_COMMENT_FORMAT_MAIN = "<strong>{} {}</strong> is {} by {}"
+
 STATS_VIEW_BASE_QUERY_FOR_ADMINS = """SELECT 
     cb.Name AS campaign_title,
     s.Title AS segment_title,
@@ -576,6 +587,9 @@ CHANNEL_CAMPAIGN_BUILDER_TABLE_MAPPING = {
 }
 
 TEST_CAMPAIGN_VALIDATION_DURATION_MINUTES = 30
+SCHEDULED_CAMPAIGN_TIME_DELAY_MINUTES = 30
+SEGMENT_REFRESH_VALIDATION_DURATION_MINUTES = 30
+ASYNC_SEGMENT_QUERY_EXECUTION_WAITING_MINUTES = 15
 
 CHANNEL_CONTENT_TABLE_DATA = {
     "SMS": {
@@ -663,3 +677,201 @@ class RateLimitationLevels(Enum):
 
 ASYNC_QUERY_EXECUTION_ENABLED = ["VST_Ethera", "TEST_VST", "IBL_CRD_Ethera", "IBL_AOC_Ethera", "IBL_Ethera",
                                  "HDB_Ethera", "CMD_Ethera", "CMD_TATA_AIA", "CMD_HSBC", "PRL_Ethera", "RBL_Ethera"]
+
+class CampaignStatus(Enum):
+    APPROVAL_PENDING = "APPROVAL_PENDING"
+    APPROVED = "APPROVED"
+    DEACTIVATE = "DEACTIVATE"
+    DIS_APPROVED = "DIS_APPROVED"
+    APPROVAL_IN_PROGRESS = "APPROVAL_IN_PROGRESS"
+    ERROR = "ERROR"
+    SAVED = "SAVED"
+
+class SegmentStatus(Enum):
+    APPROVAL_PENDING = "APPROVAL_PENDING"
+    APPROVED = "APPROVED"
+    DEACTIVATE = "DEACTIVATE"
+    DIS_APPROVED = "DIS_APPROVED"
+    SAVED = "SAVED"
+    SQL_QUERY_GENERATED = "SQL_QUERY_GENERATED"
+
+class CampaignContentStatus(Enum):
+    APPROVAL_PENDING = "APPROVAL_PENDING"
+    APPROVED = "APPROVED"
+    DEACTIVATE = "DEACTIVATE"
+    DIS_APPROVED = "DIS_APPROVED"
+    SAVED = "SAVED"
+
+class ContentType(Enum):
+    SMS = "SMS"
+    IVR = "IVR"
+    EMAIL = "EMAIL"
+    WHATSAPP = "WHATSAPP"
+
+class CampaignSchedulingSegmentStatus(Enum):
+    STARTED = "STARTED"
+    BEFORE_LAMBDA_TRIGGERED = "BEFORE_LAMBAD_TRIGGERED"
+    LAMBDA_TRIGGERED = "LAMBDA_TRIGGERED"
+    ERROR = "ERROR"
+
+class CampaignChannel(Enum):
+    IVR = "IVR"
+    SMS = "SMS"
+    WHATSAPP = "WHATSAPP"
+    EMAIL = "EMAIL"
+
+class CampaignExecutionProgressStatus(Enum):
+    INITIATED = "INITIATED"
+
+class DataSource(Enum):
+    CAMPAIGN_BUILDER = "CAMPAIGN_BUILDER"
+    CONTENT = "CONTENT"
+    DATAID = "DATAID"
+    PROJECT = "PROJECT"
+    SEGMENT = "SEGMENT"
+    TEAM = "TEAM"
+    USER = "USER"
+    USER_ROLE = "USER_ROLE"
+
+class SubDataSource(Enum):
+    EMAIL_CONTENT = "EMAIL_CONTENT"
+    FILE_LOADER = "FILE_LOADER"
+    IVR_CONTENT = "IVR_CONTENT"
+    SMS_CONTENT = "SMS_CONTENT"
+    SUBJECTLINE_CONTENT = "SUBJECTLINE_CONTENT"
+    TAG = "TAG"
+    URL = "URL"
+    SENDERID = "SENDERID"
+    ROLE = "ROLE"
+    PROJECT = "PROJECT"
+    TEAM = "TEAM"
+    CAMPAIGN_BUILDER = "CAMPAIGN_BUILDER"
+    CB_CAMPAIGN = "CB_CAMPAIGN"
+    CB_CAMPAIGN_IVR = "CB_CAMPAIGN_IVR"
+    CB_CAMPAIGN_SMS = "CB_CAMPAIGN_SMS"
+    CB_CAMPAIGN_EMAIL = "CB_CAMPAIGN_EMAIL"
+    CB_CAMPAIGN_WHATSAPP = "CB_CAMPAIGN_WHATSAPP"
+    SEGMENT = "SEGMENT"
+    USER_ROLE = "USER_ROLE"
+    USER = "USER"
+    WHATSAPP_CONTENT = "WHATSAPP_CONTENT"
+
+
+SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL= {
+    'campaign_id': 'campaignId',
+    'segment_id': 'segmentId',
+    'error_message': 'errorMessage',
+    'is_active': 'active',
+    'schedule_date': 'scheduleDate',
+    'id': 'id',
+    'records': 'records',
+    'file_name': 'fileName',
+    'needed_slots': 'neededSlots',
+    'status': 'status',
+    'creation_date': 'creationDate',
+    'job_id': 'jobId',
+    'campaign_service_vendor': 'campaignServiceVendor',
+    'scheduling_status': 'schedulingStatus',
+    'is_deleted': 'deleted',
+    'scheduling_time': 'scheduleTime',
+    'channel': 'channel',
+    'per_slot_record_count': 'perSlotRecordCount',
+    'unique_id': 'uniqueId',
+    'updation_date': 'updationDate',
+    'campaign_sms_content_entity': 'campaignSMSContentEntity',
+    'campaign_email_content_entity': 'campaignEmailContentEntity',
+    'campaign_subjectline_content_entity': 'campaignSubjectLineContentEntity',
+    'campaign_ivr_content_entity': 'campaignIVRContentEntity',
+    'campaign_whatsapp_content_entity': 'campaignWhatsAppContentEntity',
+    'extra': 'extra',
+    'vendor_mapping_enabled': 'isVendorMappingEnabled',
+    'is_contain_url': 'containsURL',
+    'contain_url': 'containsURL',
+    'rejection_reason': 'rejectionReason',
+    'vendor_template_id': 'vendorTemplateId',
+    'history_id': 'historyEntityUniqueId',
+    'language_name': 'languageName',
+    'approved_by': 'approvedBy',
+    'created_by': 'createdBy',
+    'content_text': 'contentText',
+    'project_id': 'projectId',
+    'strength': 'strength',
+    'tag_mapping': 'tagMapping',
+    'entity_sub_type': 'entitySubType',
+    'entity_type': 'entityType',
+    'active': 'active',
+    'entity_id': 'entityId',
+    'tag_id': 'tagId',
+    'tag': 'tag',
+    'name': 'name',
+    'short_name': 'shortName',
+    'url_mapping': 'urlMapping',
+    'content_id': 'contentId',
+    'content_type': 'contentType',
+    'url_id': 'urlId',
+    'url': 'url',
+    'is_static': 'staticURL',
+    'url_types': 'urlType',
+    'domain_type': 'domainType',
+    'number_of_days': 'numberOfDays',
+    'url_expiry_type': 'urlExpiryType',
+    'variables': 'variables',
+    'vendor_variable': 'vendorVariable',
+    'column_name': 'columnName',
+    'master_id': 'masterId',
+    'sender_id_mapping': 'senderIdMapping',
+    'sender_unique_id': 'senderUniqueId',
+    'sender_id': 'senderId',
+    'title': 'title',
+    'description': 'description',
+    'campaign_title': 'campaignTitle',
+    'cbc_entity': 'campaignBuilderCampaignEntity',
+    'is_processed': 'processed',
+    'vendor_config_id': 'vendorConfigId',
+    'campaign_deactivation_date_time': 'campaignDeactivationDateTime',
+    'start_date_time': 'startDateTime',
+    'delay_value': 'delayValue',
+    'campaign_builder_id': 'campaignBuilderId',
+    'order_number': 'orderNumber',
+    'have_next': 'haveNext',
+    'end_date_time': 'endDateTime',
+    'delay_type': 'delayType',
+    'test_campign_state': 'testCampaignState',
+    'ivr_campaign': 'ivrCampaign',
+    'whatsapp_campaign': 'whatsAppCampaign',
+    'email_campaign': 'emailCampaign',
+    'sms_campaign': 'smsCampaign',
+    'sms_id': 'smsId',
+    'mapping_id': 'mappingId',
+    'schedule_end_date_time': 'scheduleEndDateTime',
+    'schedule_start_date_time': 'scheduleDateTime',
+    'segment_type': 'segmentType',
+    'test_campaign': 'testCampaign',
+    'data_id': 'dataId',
+    'campaign_type': 'campaignType',
+    'test_campaign_state': 'testCampaignState',
+    'subject_line_id': 'subjectLineId',
+    'subject_line': 'subjectLine',
+    'subject_mapping': 'subjectMapping',
+    'email_id': 'emailId',
+    'whats_app_content_id': 'whatsAppContentId',
+    'have_follow_up_sms': 'haveFollowUpSms',
+    'security_id': 'securityId',
+    'vendor_ivr_id': 'vendorIvrId',
+    'is_static_flow': 'staticFlow',
+    'follow_up_sms_list': 'followUpSMSList',
+    'follow_up_sms_type': 'type',
+    'follow_up_sms_variables': 'followUpSMSVariables',
+    'inbound_ivr_id': 'inboundIvrId',
+    'sms': 'sms',
+    'ivr_id': 'ivrId'
+}
+
+CAMPAIGN_APPROVAL_STATUS_SUBJECT_MAPPING = {
+    "APPROVAL_PENDING": "sent for approval",
+    "APPROVED": "approved",
+    "DEACTIVATE": "deactivated",
+    "DEACTIVATE_CBC": "deactivated",
+    "DIS_APPROVED": "disapproved",
+    "ERROR": "error"
+}

@@ -1,6 +1,6 @@
 from django.conf import settings
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, update, execute_query, fetch_rows
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilder
 
 
@@ -76,3 +76,48 @@ class CEDCampaignBuilder:
             {"column": "unique_id", "value": campaign_id, "op": "=="}
         ]
         return fetch_rows(self.engine, self.table, filter_list)
+
+    def get_campaign_builder_entity_by_unique_id(self, unique_id):
+        filter_list = [
+                {"column": "unique_id", "value": unique_id, "op": "=="}
+            ]
+        return fetch_one_row(self.engine, self.table, filter_list)
+
+    def update_campaign_builder_status(self, unique_id, status, approved_by=None):
+        filter = [
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        ]
+        if approved_by is not None:
+            update_dict = {"approved_by": approved_by, "status": status}
+        else: update_dict = {"status": status}
+        return update(self.engine, self.table, filter, update_dict)
+
+    def get_campaign_builder_id_by_unique_id(self, unique_id):
+        query = f"SELECT Id from {self.table_name} where UniqueId = '{unique_id}'"
+        res = execute_query(self.engine, query)
+        return None if not res or len(res) <= 0 or not res[0].get('Id') else res[0].get('Id')
+
+    def update_campaign_builder_history_id(self, unique_id, history_id):
+        filter = [
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        ]
+        update_dict = {"history_id": history_id}
+        return update(self.engine, self.table, filter, update_dict)
+
+    def update_error_message(self, unique_id, error_message):
+        filter = [
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        ]
+        update_dict = {"error_msg": error_message}
+        return update(self.engine, self.table, filter, update_dict)
+
+    def increment_approval_flow_retry_count(self, unique_id):
+        filter = [
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        ]
+        update_dict = {"approval_retry": CED_CampaignBuilder.approval_retry + 1}
+        return update(self.engine, self.table, filter, update_dict)
+
+    def fetch_campaign_approval_status_details(self, unique_id):
+        query = f"SELECT cb.Id, cb.Name, cb.CreatedBy, cb.ApprovedBy, cb.Id, cb.Status, seg.Title as SegmentName FROM CED_CampaignBuilder cb JOIN CED_Segment seg ON seg.UniqueId = cb.SegmentId WHERE cb.UniqueId = '{unique_id}'"
+        return execute_query(self.engine, query)

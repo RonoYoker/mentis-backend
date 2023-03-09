@@ -65,3 +65,43 @@ BCC_USER_EMAIL_ID = []
 TO_CAMPAIGN_DEACTIVATE_EMAIL_ID = ["siddharth@creditas.in"]
 CC_CAMPAIGN_DEACTIVATE_EMAIL_ID = []
 BCC_CAMPAIGN_DEACTIVATE_EMAIL_ID = []
+
+CC_LIST = []
+BCC_LIST = []
+
+
+# *********** CELERY CONFIGURATION ********************************
+BROKER_URL = f"redis://{INFRA_CONF['BROKER_URL']}:6379/12"
+BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 3600}
+CELERY_BROKER_URL = f"redis://{INFRA_CONF['BROKER_URL']}:6379/12"
+CELERY_RESULT_BACKEND = f"redis://{INFRA_CONF['BROKER_URL']}:6379/12"
+# *********** CELERY CONFIGURATION FIN ********************************
+
+
+#######------------------- CELERY CONFIG ---------------------########
+
+CELERY_IMPORTS = [
+    'onyx_proj.apps.campaign.campaign_processor.campaign_data_processors',
+    'onyx_proj.apps.segments.segments_processor.segment_processor',
+    'onyx_proj.celery_app.tasks'
+]
+
+# CELERY_BEAT_SCHEDULE = CELERY_BEAT_SCHEDULE
+CELERY_IMPORTS = CELERY_IMPORTS
+# Celery application definition
+CELERY_APP_NAME = 'celery'
+CELERY_CREATE_MISSING_QUEUES = True
+# Do not store any async task return result, as we do not use them
+CELERY_IGNORE_RESULT = True
+
+# But store errors if any
+CELERY_STORE_ERRORS_EVEN_IF_IGNORED = True
+
+CELERYD_PREFETCH_MULTIPLIER = 1
+
+CELERY_ACCEPT_CONTENT = ['pickle', 'json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'json'
+
+CELERY_TIMEZONE = 'UTC'
+CELERY_ENABLE_UTC = False

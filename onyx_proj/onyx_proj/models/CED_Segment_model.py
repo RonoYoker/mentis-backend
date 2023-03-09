@@ -1,5 +1,5 @@
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, fetch_one_row, execute_query
 from onyx_proj.models.CreditasCampaignEngine import CED_Segment
 
 
@@ -107,3 +107,17 @@ class CEDSegment:
     def update_segment_status(self, segment_id, status, flag, history_id):
         return update_row(self.curr, self.table_name, {"UniqueId": segment_id},
                           {"Status": status, "IsActive": flag, "HistoryId": history_id})
+
+    def get_segment_data_entity(self, segment_id):
+        filter_list = [
+            {"column": "unique_id", "value": segment_id, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "active", "value": 1, "op": "=="}
+        ]
+        res = fetch_one_row(self.engine, self.table, filter_list)
+        return res
+
+    def get_segment_name_by_id(self, segment_id):
+        query = f"SELECT Title from {self.table_name} WHERE Uniqueid = '{segment_id}' and IsActive = 1 and IsDeleted = 0"
+        res = execute_query(self.engine, query)
+        return None if not res or len(res) <= 0 or not res[0].get('Title') else res[0].get('Title')

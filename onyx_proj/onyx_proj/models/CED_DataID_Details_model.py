@@ -1,5 +1,5 @@
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, fetch_rows
 from onyx_proj.models.CreditasCampaignEngine import CED_DataID_Details
 
 
@@ -9,7 +9,6 @@ class CEDDataIDDetails:
         self.table_name = "CED_DataID_Details"
         self.table = CED_DataID_Details
         self.curr = mysql_connect(self.database)
-        self.table = CED_DataID_Details
         self.engine = sql_alchemy_connect(self.database)
 
     def get_data_id_mapping(self, project_id: str):
@@ -32,3 +31,12 @@ class CEDDataIDDetails:
             {"column": "is_deleted", "value": 0, "op": "=="}
         ]
         return fetch_rows(self.engine, self.table, filter_list)
+
+    def fetch_data_id_entity_by_unique_id(self, unique_id: str):
+        filter_list = [
+            {"column": "unique_id", "value": unique_id, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "is_active", "value": 1, "op": "=="}
+        ]
+        res = fetch_one_row(self.engine, self.table, filter_list)
+        return res

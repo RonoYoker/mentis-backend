@@ -10,8 +10,8 @@ class CED_CampaignContentUrlMapping(Base, Orm_helper):
                         ForeignKey("CED_CampaignWhatsAppContent.UniqueId"),
                         ForeignKey("CED_CampaignEmailContent.UniqueId"))
     url_id = Column("UrlId", String,ForeignKey("CED_CampaignUrlContent.UniqueId"))
-    is_active = Column("IsActive", Integer)
-    is_deleted = Column("IsDeleted", Integer)
+    is_active = Column("IsActive", Boolean)
+    is_deleted = Column("IsDeleted", Boolean)
     creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))

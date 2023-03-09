@@ -20,5 +20,6 @@ urlpatterns = [
     path("local/check_test_campaign_validation_status/", views.test_campaign_validation_status_local),
     path("test_campaign_validation_status/", views.test_campaign_validator),
     path("view_campaign/", views.get_campaign_data_by_unique_id),
-    path("deactivate_campaign/", views.deactivate_campaign)
+    path("deactivate_campaign/", views.deactivate_campaign),
+    path("approval_action/", views.approval_action_on_campaign_builder)
 ]

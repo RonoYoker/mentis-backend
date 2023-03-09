@@ -1,6 +1,5 @@
 from onyx_proj.orm_models.base_model import *
 
-
 class CED_DataID_Details(Base, Orm_helper):
     __tablename__ = 'CED_DataID_Details'
 

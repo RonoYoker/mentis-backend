@@ -14,10 +14,10 @@ class CED_CampaignSubjectLineContent(Base, Orm_helper):
     status = Column("Status", String)
     contain_url = Column("IsContainUrl", Integer, default=1)
     language_name = Column("LanguageName", String)
-    is_active = Column("IsActive", Integer, default=1)
+    is_active = Column("IsActive", Boolean, default=True)
     rejection_reason = Column("RejectionReason", String)
     error_message = Column("ErrorMessage", String)
-    is_deleted = Column("IsDeleted", Integer, default=0)
+    is_deleted = Column("IsDeleted", Boolean, default=False)
     creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))

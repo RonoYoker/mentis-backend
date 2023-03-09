@@ -128,3 +128,9 @@ def callback_resolver(parent_id: str):
         logger.info(f"Callback triggered successfully for parent_id: {parent_id}.")
     else:
         logger.error(f"Callback trigger failed for parent_id: {parent_id}.")
+
+@task
+def segment_refresh_for_campaign_approval(cb_id, segment_id, retry_count=0):
+    from onyx_proj.apps.segments.segments_processor.segment_processor import \
+        trigger_update_segment_count_for_campaign_approval
+    trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_count)

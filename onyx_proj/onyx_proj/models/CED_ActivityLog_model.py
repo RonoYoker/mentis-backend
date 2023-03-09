@@ -1,6 +1,6 @@
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, save
-from onyx_proj.models.CreditasCampaignEngine import CED_ActivityLog
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, fetch_one_row, execute_query, insert, save
+from onyx_proj.models.CreditasCampaignEngine import CED_Segment, CED_ActivityLog
 
 
 class CEDActivityLog:
@@ -17,3 +17,6 @@ class CEDActivityLog:
         except Exception as ex:
             return dict(status=False, message=str(ex))
         return dict(status=True, response=response)
+
+    def save_activit_log(self, activity_log_entity):
+        insert(self.engine, activity_log_entity)

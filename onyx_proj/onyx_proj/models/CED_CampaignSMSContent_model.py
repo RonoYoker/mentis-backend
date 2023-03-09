@@ -57,3 +57,13 @@ class CEDCampaignSMSContent:
 
     def get_content_data_by_content_id(self, content_id):
         return dict_fetch_all(self.curr, self.table_name, {"UniqueId": content_id})
+
+    def get_sms_content_data_by_unique_id_and_status(self, unique_id, status_list):
+        filter_list = [
+            {"column": "unique_id", "value": unique_id, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "is_active", "value": 1, "op": "=="},
+            {"column": "status", "value": status_list, "op": "IN"}
+        ]
+        res = fetch_one_row(self.engine, self.table, filter_list)
+        return res

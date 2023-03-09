@@ -50,3 +50,6 @@ HYPERION_CENTRAL_DOMAIN = "http://uatdev.hyperiontool.com/"
 TO_CAMPAIGN_DEACTIVATE_EMAIL_ID = ["siddharth@creditas.in"]
 CC_CAMPAIGN_DEACTIVATE_EMAIL_ID = []
 BCC_CAMPAIGN_DEACTIVATE_EMAIL_ID = []
+
+CC_LIST = []
+BCC_LIST = []

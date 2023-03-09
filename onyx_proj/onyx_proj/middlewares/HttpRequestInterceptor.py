@@ -2,7 +2,7 @@ import logging
 
 from onyx_proj.common.constants import TAG_FAILURE
 from onyx_proj.exceptions.permission_validation_exception import MethodPermissionValidationException, \
-    UnauthorizedException
+    UnauthorizedException, ValidationFailedException, BadRequestException, NotFoundException
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from django.http import HttpResponse
 import http
@@ -60,6 +60,21 @@ class HttpRequestInterceptor:
             return HttpResponse(json.dumps(response),
                                 content_type="application/json",
                                 status=http.HTTPStatus.FORBIDDEN)
+        elif isinstance(exception,ValidationFailedException):
+            response = dict(result=TAG_FAILURE, details_message=exception.reason)
+            return HttpResponse(json.dumps(response),
+                                content_type="application/json",
+                                status=http.HTTPStatus.BAD_REQUEST)
+        elif isinstance(exception,BadRequestException):
+            response = dict(result=TAG_FAILURE, details_message=exception.reason)
+            return HttpResponse(json.dumps(response),
+                                content_type="application/json",
+                                status=http.HTTPStatus.BAD_REQUEST)
+        elif isinstance(exception,NotFoundException):
+            response = dict(result=TAG_FAILURE, details_message=exception.reason)
+            return HttpResponse(json.dumps(response),
+                                content_type="application/json",
+                                status=http.HTTPStatus.BAD_REQUEST)
 
 
 

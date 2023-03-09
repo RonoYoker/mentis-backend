@@ -35,13 +35,16 @@ class RequestClient:
             return response_obj
 
     @staticmethod
-    def post_local_api_request(body, bank, api_path):
+    def post_local_api_request(body, bank, api_path, send_dict=False):
         # request send
         api_url = f"{settings.HYPERION_LOCAL_DOMAIN[f'{bank}']}{api_path}"
         encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(json.dumps(body))
         headers = {"Content-Type": "application/json"}
         try:
-            response = requests.post(api_url, data=encrypted_data, headers=headers,verify=False)
+            if send_dict == True:
+                response = requests.post(api_url, json={"data": encrypted_data}, headers=headers,verify=False)
+            else:
+                response = requests.post(api_url, data=encrypted_data, headers=headers,verify=False)
             if response.status_code == 200:
                 encrypted_data = response.text
                 encrypted_data_dict = json.loads(encrypted_data)

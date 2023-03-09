@@ -14,11 +14,11 @@ class CED_CampaignEmailContent(Base, Orm_helper):
     created_by = Column("CreatedBy", String)
     approved_by = Column("ApprovedBy", String)
     status = Column("Status", String)
-    is_contain_url = Column("IsContainUrl", Integer, default=1)
+    is_contain_url = Column("IsContainUrl", Boolean, default=True)
     language_name = Column("LanguageName", String)
-    is_active = Column("IsActive", Integer, default=1)
+    is_active = Column("IsActive", Boolean, default=True)
     rejection_reason = Column("RejectionReason", String)
-    is_deleted = Column("IsDeleted", Integer, default=0)
+    is_deleted = Column("IsDeleted", Boolean, default=False)
     creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
@@ -26,11 +26,11 @@ class CED_CampaignEmailContent(Base, Orm_helper):
     extra = Column("Extra", String)
     vendor_template_id = Column("VendorTemplateId", String)
 
-    variables = relationship("CED_CampaignContentVariableMapping")
+    variables = relationship("CED_CampaignContentVariableMapping", lazy='joined')
 
-    tag_mapping = relationship("CED_EntityTagMapping")
-    url_mapping = relationship("CED_CampaignContentUrlMapping")
-    subject_mapping = relationship("CED_CampaignContentEmailSubjectMapping")
+    tag_mapping = relationship("CED_EntityTagMapping", lazy='joined')
+    url_mapping = relationship("CED_CampaignContentUrlMapping", lazy='joined')
+    subject_mapping = relationship("CED_CampaignContentEmailSubjectMapping", lazy='joined')
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)

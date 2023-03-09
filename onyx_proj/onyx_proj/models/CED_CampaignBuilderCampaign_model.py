@@ -1,13 +1,17 @@
 from onyx_proj.common.constants import Roles
 from onyx_proj.common.decorators import UserAuth
 from onyx_proj.common.mysql_helper import *
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, save_or_update, update, execute_query
+from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilderCampaign
 
 
 class CEDCampaignBuilderCampaign:
     def __init__(self, **kwargs):
         self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_CampaignBuilderCampaign"
+        self.table = CED_CampaignBuilderCampaign
         self.curr = mysql_connect(self.database)
+        self.engine = sql_alchemy_connect(self.database)
 
     def delete_campaigns_by_campaign_builder_id(self, campaign_builder_id):
         return delete_rows_from_table(self.curr, self.table_name, {"CampaignBuilderId": campaign_builder_id})
@@ -159,3 +163,32 @@ class CEDCampaignBuilderCampaign:
     def get_cbc_details_by_cbc_id(self, campaign_builder_campaign_id):
         query = f"SELECT * FROM {self.table_name} where UniqueId in ({campaign_builder_campaign_id})"
         return dict_fetch_query_all(self.curr, query)
+
+    def fetch_entity_by_unique_id(self, unique_id, status=None):
+        filter_list = [{"column": "unique_id", "value": unique_id, "op": "=="}]
+        if status is not None:
+            filter_list.append({"column": "status", "value": status, "op": "=="})
+        return fetch_one_row(self.engine, self.table, filter_list)
+
+    def save_or_update_cbc(self, cbc_entity):
+        save_or_update(self.engine,self.table, cbc_entity)
+        return cbc_entity
+
+    def update_cbc_status(self, unique_id, status):
+        filter = [
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        ]
+        update_dict = {"status": status}
+        return update(self.engine, self.table, filter, update_dict)
+
+    def update_processed_status(self, unique_id, is_processed):
+        filter = [
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        ]
+        update_dict = {"is_processed": is_processed}
+        return update(self.engine, self.table, filter, update_dict)
+
+    def fetch_min_start_time_by_cb_id(self, cb_id):
+        query = f"SELECT MIN(StartDateTime) as start_time from {self.table_name} where CampaignBuilderId = '{cb_id}'"
+        res = execute_query(self.engine, query)
+        return None if res is None or len(res)<=0 or res[0].get('start_time') is None or res[0]['start_time'] is None else res[0]['start_time']

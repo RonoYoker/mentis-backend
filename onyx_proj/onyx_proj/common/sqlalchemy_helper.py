@@ -214,7 +214,6 @@ def create_dict_from_object(object):
     """
     return {c.key: getattr(object, c.key) for c in inspect(object).mapper.column_attrs}
 
-
 def save_or_update(engine, table, entity):
     """
         Function to create a new entry or update old one, on basis of table's unique id.
@@ -222,21 +221,22 @@ def save_or_update(engine, table, entity):
             table: table name
             entity: table object to be inserted
     """
+    class_object = table(entity._asdict())
     with Session(engine) as session:
         session.begin()
         try:
             q = session.query(table)
-            q = add_filter(q, inspect(entity).class_.unique_id, entity.unique_id, "==")
+            q = add_filter(q, inspect(class_object).class_.unique_id, class_object.unique_id, "==")
             db_entity = q.first()
             if db_entity is None:
-                session.add(entity)
+                session.add(class_object)
             else:
-                dict = crete_update_dict(entity)
+                dict = crete_update_dict(class_object)
                 dict.pop("unique_id")
                 if not dict:
                     return
                 q = session.query(table)
-                q = add_filter(q, inspect(entity).class_.id, db_entity.id, "==")
+                q = add_filter(q, inspect(class_object).class_.id, db_entity.id, "==")
                 res = q.update(dict)
         except Exception as ex:
             session.rollback()

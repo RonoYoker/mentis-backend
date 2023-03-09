@@ -37,3 +37,11 @@ class CEDProjects:
     def get_project_data_by_project_id(self, project_id: str) -> list:
         return dict_fetch_all(self.curr, self.table_name, {"UniqueId": project_id})
 
+    def get_project_entity_by_unique_id(self, unique_id: str):
+        filter_list = [
+            {"column": "unique_id", "value": unique_id, "op": "=="},
+            {"column": "deleted", "value": "0", "op": "=="},
+            {"column": "active", "value": "1", "op": "=="}
+        ]
+        return fetch_one_row(self.engine, self.table, filter_list)
+

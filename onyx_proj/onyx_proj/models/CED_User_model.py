@@ -1,5 +1,5 @@
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, save, update
+from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, save, update, execute_query
 from onyx_proj.models.CreditasCampaignEngine import CED_User
 
 
@@ -59,3 +59,8 @@ class CEDUser:
         except Exception as ex:
             return dict(status=False, message=str(ex))
         return dict(status=True, response=response)
+
+    def get_user_email_id(self, user_name):
+        query = f"SELECT EmailId from {self.table_name} where UserName = '{user_name}' and IsActive = 1 and IsDeleted = 0"
+        res = execute_query(self.engine, query)
+        return None if not res or len(res) <= 0 or not res[0].get('EmailId') else res[0].get('EmailId')

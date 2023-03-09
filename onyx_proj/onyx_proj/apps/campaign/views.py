@@ -3,6 +3,7 @@ import http
 from django.shortcuts import HttpResponse
 from django.conf import settings
 
+from onyx_proj.common.constants import Roles
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.common.decorators import UserAuth
 from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import fetch_test_campaign_data, \
@@ -14,7 +15,7 @@ from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import 
     get_filtered_dashboard_tab_data, get_min_max_date_for_scheduler, get_time_range_from_date, \
     get_campaign_data_in_period, validate_campaign, \
     get_filtered_recurring_date_time, update_segment_count_and_status_for_campaign, update_campaign_status, filter_list, \
-    deactivate_campaign_by_campaign_id, view_campaign_data
+    deactivate_campaign_by_campaign_id, view_campaign_data, approval_action_on_campaign_builder_by_unique_id
 from django.views.decorators.csrf import csrf_exempt
 
 
@@ -265,5 +266,24 @@ def deactivate_campaign(request):
 def get_campaign_data_by_unique_id(request):
     request_body = json.loads(request.body.decode("utf-8"))
     response = view_campaign_data(request_body)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+@UserAuth.user_authentication()
+@UserAuth.user_validation(permissions=[Roles.APPROVER.value], identifier_conf={
+    "param_type": "arg",
+    "param_key": 0,
+    "param_instance_type": "request_post",
+    "param_path": "unique_id",
+    "entity_type": "CAMPAIGNBUILDER"
+})
+def approval_action_on_campaign_builder(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    session_id = request_headers.get('X-Authtoken', '')
+    data = dict(body=request_body, headers=session_id)
+    response = approval_action_on_campaign_builder_by_unique_id(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")

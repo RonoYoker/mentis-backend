@@ -14,8 +14,8 @@ class CED_CampaignContentVariableMapping(Base, Orm_helper):
     master_id = Column("MasterId", String)
     column_name = Column("ColumnName", String)
     vendor_variable = Column("VendorVariable", String)
-    is_active = Column("IsActive", Integer, default=1)
-    is_deleted = Column("IsDeleted", Integer, default=0)
+    is_active = Column("IsActive", Boolean, default=True)
+    is_deleted = Column("IsDeleted", Boolean, default=False)
     updation_date = Column("UpdationDate", DateTime,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")

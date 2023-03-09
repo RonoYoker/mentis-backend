@@ -21,6 +21,7 @@ class CED_Projects(Base, Orm_helper):
     ivr_service_vendor = Column("IvrServiceVendor", String)
     whatsapp_service_vendor = Column("WhatsAppServiceVendor", String)
     vendor_config = Column("VendorConfig", String)
+    validation_config = Column("ValidationConfig", String)
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)

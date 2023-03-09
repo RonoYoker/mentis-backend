@@ -13,9 +13,9 @@ class CED_CampaignContentTag(Base,Orm_helper):
     status = Column("Status", String)
     creation_date = Column("CreationDate", TIMESTAMP)
     approved_by = Column("ApprovedBy", String)
-    is_active = Column("IsActive", Integer, default=1)
+    is_active = Column("IsActive", Boolean, default=True)
     rejection_reason = Column("RejectionReason", String)
-    is_deleted = Column("IsDeleted", Integer, default=0)
+    is_deleted = Column("IsDeleted", Boolean, default=False)
     updation_date = Column("UpdationDate", TIMESTAMP)
     history_id = Column("HistoryId", String)
 

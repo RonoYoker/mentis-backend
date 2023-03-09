@@ -12,11 +12,15 @@ class Orm_helper():
         for c in inspect(self).mapper.column_attrs:
             setattr(self, c.key, data.get(c.key))
 
-    def _asdict(self):
+    def _asdict(self, extra_attrs=[]):
         ins = inspect(self)
         columns = set(ins.mapper.column_attrs.keys()).difference(ins.expired_attributes)
         relationships = set(ins.mapper.relationships.keys()).difference(ins.expired_attributes)
         data = {c: getattr(self, c) for c in columns}
+        if extra_attrs and len(extra_attrs) > 0:
+            for attr in extra_attrs:
+                if getattr(self, attr, None) is not None:
+                    data[attr] = getattr(self, attr)
         for key in relationships:
             if getattr(self, key) is None:
                 data.update({key: None})
