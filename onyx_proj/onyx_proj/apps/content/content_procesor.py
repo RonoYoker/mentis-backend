@@ -14,7 +14,7 @@ from onyx_proj.models.CED_CampaignContentUrlMapping_model import CEDCampaignCont
 from onyx_proj.common.decorators import UserAuth
 from onyx_proj.models.CED_CampaignSubjectLineContent_model import CEDCampaignSubjectLineContent
 from onyx_proj.models.CED_CampaignTagContent_model import CEDCampaignTagContent
-from onyx_proj.models.CED_CampaignURLContent_model import CEDCampaignURLlContent
+from onyx_proj.models.CED_CampaignURLContent_model import CEDCampaignURLContent
 from onyx_proj.common.constants import CHANNELS_LIST, TAG_FAILURE, TAG_SUCCESS, FETCH_CAMPAIGN_QUERY, \
     CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, Roles
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
