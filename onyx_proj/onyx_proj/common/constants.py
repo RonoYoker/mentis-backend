@@ -676,7 +676,8 @@ class RateLimitationLevels(Enum):
 
 
 ASYNC_QUERY_EXECUTION_ENABLED = ["VST_Ethera", "TEST_VST", "IBL_CRD_Ethera", "IBL_AOC_Ethera", "IBL_Ethera",
-                                 "HDB_Ethera", "CMD_Ethera", "CMD_TATA_AIA", "CMD_HSBC", "PRL_Ethera", "RBL_Ethera"]
+                                 "HDB_Ethera", "CMD_Ethera", "CMD_TATA_AIA", "CMD_HSBC", "PRL_Ethera", "RBL_Ethera"
+                                 "TEST_IBL_CC_UPGRADE","TEST_IBL_DC_UPGRADE","TEST_IBL_OCL"]
 
 class CampaignStatus(Enum):
     APPROVAL_PENDING = "APPROVAL_PENDING"
