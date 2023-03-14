@@ -852,9 +852,9 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
             if not project_entity or len(project_entity) <= 0:
                 raise NotFoundException(method_name=method_name, reason="Project Entity not found")
 
-            if json.loads(project_entity[0]['validation_config']).get('CAMPAIGN_APPROVAL_VIA_HYPERION', False) == True:
-                # call hyperion central for campaign approval flow
-                return call_hyperion_for_campaign_approval(campaign_builder_id, input_status)
+            # if json.loads(project_entity[0]['validation_config']).get('CAMPAIGN_APPROVAL_VIA_HYPERION', False) == True:
+            #     # call hyperion central for campaign approval flow
+            #     return call_hyperion_for_campaign_approval(campaign_builder_id, input_status)
 
             CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity_db.unique_id, CampaignStatus.APPROVAL_IN_PROGRESS.value, approved_by)
 

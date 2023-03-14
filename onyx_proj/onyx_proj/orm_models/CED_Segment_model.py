@@ -32,10 +32,10 @@ class CED_Segment(Base, Orm_helper):
     type = Column("Type", String)
     refresh_date = Column("RefreshDate", DateTime)
     refresh_status = Column("RefreshStatus", String)
-    count_refresh_start_date = Column("DataRefreshStartDate", DateTime)
-    count_refresh_end_date = Column("DataRefreshEndDate", DateTime)
-    data_refresh_start_date = Column("CountRefreshStartDate", DateTime)
-    data_refresh_end_date = Column("CountRefreshEndDate", DateTime)
+    count_refresh_start_date = Column("CountRefreshStartDate", DateTime)
+    count_refresh_end_date = Column("CountRefreshEndDate", DateTime)
+    data_refresh_start_date = Column("DataRefreshStartDate", DateTime)
+    data_refresh_end_date = Column("DataRefreshEndDate", DateTime)
     tag_mapping = relationship("CED_EntityTagMapping")
 
     def __init__(self, data={}):
