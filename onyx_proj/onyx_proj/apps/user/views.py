@@ -10,7 +10,7 @@ from onyx_proj.common.decorators import UserAuth
 
 
 @csrf_exempt
-# @user_authentication
+@UserAuth.user_authentication()
 def get_user(request):
     request_headers = request.headers
     data = dict(headers=request_headers)
