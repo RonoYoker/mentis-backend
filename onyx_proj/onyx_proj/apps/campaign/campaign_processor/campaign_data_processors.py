@@ -605,8 +605,8 @@ def deactivate_campaign_by_campaign_id(request_body):
 @UserAuth.user_validation(permissions=[Roles.DEACTIVATE.value], identifier_conf={
     "param_type": "arg",
     "param_key": 0,
-    "param_instance_type": "str",
-    "param_path": "campaign_builder_id",
+    "param_instance_type": "list",
+    "param_path": 0,
     "entity_type": "CAMPAIGNBUILDER"
 })
 def deactivate_campaign_by_campaign_builder_id(campaign_builder_id, user_name):
@@ -640,6 +640,13 @@ def deactivate_campaign_by_campaign_builder_id(campaign_builder_id, user_name):
     return dict(status=True, campaign_details=campaign_details)
 
 
+@UserAuth.user_validation(permissions=[Roles.DEACTIVATE.value], identifier_conf={
+    "param_type": "arg",
+    "param_key": 0,
+    "param_instance_type": "list",
+    "param_path": 0,
+    "entity_type": "CAMPAIGNBUILDERCAMPAIGN"
+})
 def deactivate_campaign_by_campaign_builder_campaign_id(campaign_builder_campaign_ids, user_name):
     logger.debug(f"deactivate_campaign_by_campaign_builder_campaign_id :: campaign_builder_campaign_id: {campaign_builder_campaign_ids}")
 

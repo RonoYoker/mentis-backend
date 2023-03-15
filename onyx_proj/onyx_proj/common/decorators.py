@@ -85,6 +85,8 @@ def parse_args(conf, *args, **kwargs):
         attr = nested_path_get(json.loads(param.body.decode("utf-8")), conf["param_path"])
     elif conf["param_instance_type"] == "request_get":
         attr = param.GET[conf["param_path"]]
+    elif conf["param_instance_type"] == "list":
+        attr = param[conf["param_path"]]
 
     return attr
 
