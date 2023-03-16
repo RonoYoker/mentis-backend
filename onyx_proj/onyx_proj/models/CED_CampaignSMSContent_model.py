@@ -39,7 +39,9 @@ class CEDCampaignSMSContent:
             filter_list.append(
                 {"column": "status", "value": status, "op": "in"}
             )
-        res = fetch_rows(self.engine, self.table, filter_list)
+        res = fetch_rows_limited(self.engine, self.table, filter_list, columns=[], relationships=["tag_mapping.tag"],
+                                 limit=100)
+        res = [entity._asdict() for entity in res]
         return res
 
     def fetch_content_data(self, content_id):

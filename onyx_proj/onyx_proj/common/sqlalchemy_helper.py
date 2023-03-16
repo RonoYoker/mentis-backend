@@ -1,6 +1,6 @@
 import logging
-from sqlalchemy import inspect
-from sqlalchemy.orm import Session
+from sqlalchemy import inspect,column
+from sqlalchemy.orm import Session, joinedload ,load_only
 from onyx_proj.common.utils.sql_alchemy_engine import SqlAlchemyEngine
 from onyx_proj.models.CreditasCampaignEngine import CEDTeam, CED_Projects, CEDTeamProjectMapping, CED_User
 
@@ -123,7 +123,6 @@ def fetch_rows(engine, table, filter_list,projections=[],return_type = 'dict'):
             return result
         except Exception as ex:
             logging.error(f"error while fetching from table {str(table)}, Error: ", ex)
-
 
 def fetch_columns(engine, table, column_list, filter_list={}):
     """
@@ -274,3 +273,46 @@ def save(engine, table, entity):
             raise ex
         else:
             session.commit()
+
+
+def fetch_rows_limited(engine,table,filter_list,columns=[],relationships=[],limit=None):
+    """
+        Function to fetch multiple rows from table.
+        parameters:
+            table: table class name
+            filter_list: list of dict of filters, format - [{"column": "col", "value": "val", "op": "=="}]
+            columns: list of columns to be fetched , ["id","unique_id"]
+            relationships: list of relationships to be fetched , ["tag_mapping.tag","url_mapping.url"]
+            limit: no of rows to be fetched
+        returns: List of class object of table
+    """
+    with Session(engine) as session:
+        session.begin()
+        try:
+            q = session.query(table)
+            for filters in filter_list:
+                q = add_filter(q, filters["value"], getattr(table, filters["column"]), filters["op"])
+            q = add_columns_projections(q,columns)
+            q = add_relationshsip_projections(q,relationships)
+            entity = q.limit(limit).all() if limit is not None else q.all()
+            return entity
+        except Exception as ex:
+            logging.error(f"error while fetching from table {str(table)}, Error: ", ex)
+
+def add_columns_projections(q,columns=[]):
+    if len(columns) == 0:
+        return q
+    q = q.options(load_only(*columns))
+    return q
+
+def add_relationshsip_projections(q,relationships=[]):
+    if len(relationships) == 0:
+        return q
+    for relationship in relationships:
+        split_relation = relationship.split(".")
+        joined = joinedload(split_relation[0])
+        for split in split_relation[1:]:
+            joined = joined.joinedload(split)
+        q = q.options(joined)
+    return q
+

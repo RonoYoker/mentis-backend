@@ -1,5 +1,5 @@
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, fetch_one_row
+from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, fetch_one_row, fetch_rows_limited
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignEmailContent
 
 
@@ -45,7 +45,8 @@ class CEDCampaignEmailContent:
             filter_list.append(
                 {"column": "status", "value": status, "op": "in"}
             )
-        res = fetch_rows(self.engine, self.table, filter_list)
+        res = fetch_rows_limited(self.engine, self.table, filter_list,columns=[],relationships=["tag_mapping.tag"],limit=100)
+        res = [entity._asdict() for entity in res]
         return res
 
     def fetch_content_data(self, content_id):

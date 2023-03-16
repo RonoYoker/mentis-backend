@@ -14,8 +14,8 @@ class Orm_helper():
 
     def _asdict(self, extra_attrs=[]):
         ins = inspect(self)
-        columns = set(ins.mapper.column_attrs.keys()).difference(ins.expired_attributes)
-        relationships = set(ins.mapper.relationships.keys()).difference(ins.expired_attributes)
+        columns = set(ins.mapper.column_attrs.keys()).difference(ins.expired_attributes).difference(ins.unloaded)
+        relationships = set(ins.mapper.relationships.keys()).difference(ins.expired_attributes).difference(ins.unloaded)
         data = {c: getattr(self, c) for c in columns}
         if extra_attrs and len(extra_attrs) > 0:
             for attr in extra_attrs:
