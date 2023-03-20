@@ -53,8 +53,8 @@ def uuid_info_local(request):
         push_custom_parameters_to_newrelic({"error": "UNABLE_TO_DECODE_UUID"})
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Uuid is not correct")
-    # uuid_processor.apply_async(kwargs={"uuid_data": base64_encode_uuid_info.decode("utf-8")}, queue="celery_click_data")
-    save_click_data(base64_encode_uuid_info)
+    uuid_processor.apply_async(kwargs={"uuid_data": base64_encode_uuid_info.decode("utf-8")}, queue="celery_click_data")
+    # save_click_data(base64_encode_uuid_info)
     if decoded_uuid.get('primaryKeyType') is not None and decoded_uuid.get('primaryKeyType') == "EmailData":
         type = "EMAIL"
     else:
