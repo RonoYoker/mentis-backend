@@ -45,3 +45,5 @@ TEST_CAMPAIGN_DELIVERY_VALIDATION = {
 # ONYX_DOMAIN = "https://onyx.hyperiontool.com" # prod
 # ONYX_DOMAIN = "http://onyxuat.hyperiontool.com" # uat
 ONYX_DOMAIN = "http://127.0.0.1:8084" # dev
+
+UUID_ENCRYPTION_KEY = "c2M0d@2#0f"

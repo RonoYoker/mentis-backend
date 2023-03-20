@@ -876,3 +876,28 @@ CAMPAIGN_APPROVAL_STATUS_SUBJECT_MAPPING = {
     "DIS_APPROVED": "disapproved",
     "ERROR": "error"
 }
+MIN_ASCII = 33
+MAX_ASCII = 125
+
+CAMP_TYPE_CHANNEL_DICT = {
+        "SMS_MKT":"SMS",
+        "TEST_SMS_MKT":"SMS",
+        "EMAIL_MKT":"EMAIL",
+        "TEST_EMAIL_MKT":"EMAIL",
+        "IVR_MKT":"IVR",
+        "TEST_IVR_MKT":"IVR",
+        "WHATSAPP_MKT":"WHATSAPP",
+        "TEST_WHATSAPP_MKT":"WHATSAPP",
+    }
+
+CAMP_TYPE_DICT = {
+        "M": "SMS_MKT",
+        "E": "EMAIL_MKT",
+        "I": "IVR_MKT",
+        "W": "WHATSAPP_MKT",
+        "X": "TEST_SMS_MKT",
+        "Y": "TEST_EMAIL_MKT",
+        "Z": "TEST_IVR_MKT",
+        "A": "TEST_WHATSAPP_MKT",
+        "S": "SMS_HYP"
+    }

@@ -32,6 +32,8 @@ from onyx_proj.orm_models.CED_HIS_User_model import CED_His_User
 from onyx_proj.orm_models.CED_ActivityLog_model import CED_ActivityLog
 from onyx_proj.orm_models.CED_RolePermissionMapping_model import CED_RolePermissionMapping
 from onyx_proj.orm_models.CED_RolePermission_model import CED_RolePermission
+from onyx_proj.orm_models.CED_SMSClickData_model import CED_SMSClickData
+from onyx_proj.orm_models.CED_EmailClickData_model import CED_EmailClickData
 from onyx_proj.orm_models.CED_FP_HeaderMap_model import CED_FP_HeaderMap
 from onyx_proj.orm_models.CED_DataID_Details_model import CED_DataID_Details
 from onyx_proj.orm_models.CED_CampaignExecutionProgress_model import CED_CampaignExecutionProgress

@@ -1,3 +1,5 @@
+import base64
+import binascii
 import sys
 import time
 
@@ -129,8 +131,25 @@ def callback_resolver(parent_id: str):
     else:
         logger.error(f"Callback trigger failed for parent_id: {parent_id}.")
 
+
 @task
 def segment_refresh_for_campaign_approval(cb_id, segment_id, retry_count=0):
     from onyx_proj.apps.segments.segments_processor.segment_processor import \
         trigger_update_segment_count_for_campaign_approval
     trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_count)
+
+
+@task
+def uuid_processor(uuid_data):
+    from onyx_proj.apps.uuid.uuid_processor import save_click_data
+    method_name = "click_data"
+    push_custom_parameters_to_newrelic({"stage": "UUID_ASYNC_STARTED"})
+    uuid_data = uuid_data.encode("utf-8")
+    logger.info(f"Trace entry, method name: {method_name}, uuid_data: {uuid_data}")
+
+    if uuid_data is None:
+        logger.error(f"method name: {method_name} , uuid_data is None")
+        return
+    save_click_data(uuid_data)
+    push_custom_parameters_to_newrelic({"stage": "UUID_ASYNC_COMPLETED"})
+    return
