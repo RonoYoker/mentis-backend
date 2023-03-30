@@ -15,7 +15,7 @@ class RsaEncrypt:
         """
         Method to encrypt string using RSA
         """
-        public_key = RSA.import_key(self.encryption_key)
+        public_key = RSA.import_key(base64.b64decode(self.encryption_key))
         cipher = PKCS1_v1_5.new(public_key)
         encrypted_message = cipher.encrypt(plain_text.encode("UTF-8"))
         encrypted_message_b64 = base64.b64encode(encrypted_message).decode("utf-8")
@@ -26,7 +26,7 @@ class RsaEncrypt:
         Method to decrypt string using RSA
         """
         encrypted_message = base64.b64decode(encrypted_data)
-        private_key = RSA.import_key(self.decryption_key)
+        private_key = RSA.import_key(base64.b64decode(self.decryption_key))
         cipher = PKCS1_v1_5.new(private_key)
         decrypted_message = cipher.decrypt(encrypted_message, get_random_bytes(16), expected_pt_len=0)
         return decrypted_message.decode('utf-8')
