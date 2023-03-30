@@ -4,10 +4,11 @@ import base64
 
 
 class AesEncryptDecrypt:
-    def __init__(self, key: str, mode: AES.MODE_ECB = AES.MODE_ECB, block_size: int = 16):
+    def __init__(self, key: str, mode: AES.MODE_ECB = AES.MODE_ECB, block_size: int = 16, iv=None):
         self.key = self.setKey(key)
         self.mode = mode
         self.block_size = block_size
+        self.iv = iv
 
     def pad(self, byte_array: bytearray):
         """
@@ -67,6 +68,21 @@ class AesEncryptDecrypt:
         decrypted = cipher.decrypt(message).decode('utf-8')
         # unpad - with pkcs5 style and return
         return self.unpad(decrypted)
+
+    def encrypt_aes_cbc(self, plain_text):
+        from Crypto.Util.Padding import pad, unpad
+        cipher = AES.new(self.key, AES.MODE_CBC, self.iv.encode("utf-8"))
+        padded_plaintext = pad(plain_text.encode("utf-8"),block_size=self.block_size)
+        ciphertext = cipher.encrypt(padded_plaintext)
+        return base64.b64encode(ciphertext)
+
+    def decrypt_aes_cbc(self,encrypted_text):
+        from Crypto.Util.Padding import pad, unpad
+        encrypted_text = base64.b64decode(encrypted_text)
+        cipher = AES.new(self.key, AES.MODE_CBC, self.iv.encode("utf-8"))
+        # padded_encrypted_text = self._pad(encrypted_text)
+        decrypted_text = unpad(cipher.decrypt(encrypted_text),block_size=self.block_size)
+        return decrypted_text
 
 
 # if __name__ == '__main__':

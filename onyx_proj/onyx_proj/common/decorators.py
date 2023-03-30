@@ -1,10 +1,16 @@
+import http
 import logging
 import json
+import string
+import random
 
+from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
+from onyx_proj.common.utils.RSA_encryption import RsaEncrypt
+from django.http import HttpResponse
 from onyx_proj.common.utils.datautils import nested_path_get
 from onyx_proj.apps.content import app_settings
 from onyx_proj.exceptions.permission_validation_exception import MethodPermissionValidationException, \
-    UnauthorizedException
+    UnauthorizedException, ValidationFailedException
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 
 
@@ -65,6 +71,43 @@ class UserAuth(object):
             return dec_f
 
         return decorator
+
+def ReqEncryptDecrypt(input_app=None, output_app=None):
+    """
+        Decorator to encrypt and decrypt request and response
+        input_app: Enum of Requesting app
+        output_app: Enum for response app
+    """
+    def decorator(view_func):
+        def dec_f(*args, **kwargs):
+            if input_app is not None:
+                request_body = args[0].get("body", None)
+                if request_body is not None:
+                    key = request_body.get('key', None)
+                    iv = request_body.get('iv', None)
+                    data = request_body.get('data', None)
+                    if not key or not iv or not data:
+                        raise ValidationFailedException(method_name="", reason="Invalid request")
+                    decrypted_key = RsaEncrypt(input_app).rsa_decrypt_data(key)
+                    decrypted_iv = RsaEncrypt(input_app).rsa_decrypt_data(iv)
+                    decrypted_data = AesEncryptDecrypt(key=decrypted_key, iv=decrypted_iv).decrypt_aes_cbc(data)
+                    args[0]['body'] = decrypted_data
+            result = view_func(*args, *kwargs)
+            status_code = result.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+            if output_app is not None:
+                key = ''.join(random.choices(string.ascii_lowercase + string.digits, k=32))
+                iv = ''.join(random.choices(string.ascii_lowercase + string.digits, k=16))
+                encrypted_data = AesEncryptDecrypt(key=key, iv=iv).encrypt_aes_cbc(json.dumps(result))
+                encrypted_key = RsaEncrypt(output_app).rsa_encrypt_data(key)
+                encrypted_iv = RsaEncrypt(output_app).rsa_encrypt_data(iv)
+                result = {
+                    'key': encrypted_key,
+                    'iv': encrypted_iv,
+                    'data': encrypted_data
+                }
+            return dict(status_code=status_code, result=result)
+        return dec_f
+    return decorator
 
 
 def parse_args(conf, *args, **kwargs):

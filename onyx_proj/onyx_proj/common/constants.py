@@ -901,3 +901,9 @@ CAMP_TYPE_DICT = {
         "A": "TEST_WHATSAPP_MKT",
         "S": "SMS_HYP"
     }
+
+class ApplicationName(Enum):
+    ONYX = "ONYX"
+    SANDESH = "SANDESH"
+    HYPERION = "HYPERION"
+    HYPERION_LAMBDA = "HYPERION_LAMBDA"
