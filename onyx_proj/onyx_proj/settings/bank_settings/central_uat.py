@@ -3,7 +3,7 @@ from ..common.secret_manager import fetch_secrets_from_secret_manager
 
 DEBUG = True
 
-secret_name = "uat/onyx/infra"
+secret_name = "uat/onyx-central/infra"
 region_name = "ap-south-1"
 
 INFRA_CONF = fetch_secrets_from_secret_manager(secret_name, region_name)

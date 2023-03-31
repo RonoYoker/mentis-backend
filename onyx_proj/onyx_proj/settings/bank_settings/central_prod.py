@@ -2,7 +2,7 @@ from onyx_proj.common.secret_manager import fetch_secrets_from_secret_manager
 
 DEBUG = True
 
-secret_name = "prod/onyx/infra"
+secret_name = "prod/onyx-central/infra"
 region_name = "ap-south-1"
 
 INFRA_CONF = fetch_secrets_from_secret_manager(secret_name, region_name)
