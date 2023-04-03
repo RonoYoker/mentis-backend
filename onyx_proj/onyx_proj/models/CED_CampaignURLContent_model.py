@@ -45,7 +45,7 @@ class CEDCampaignURLContent:
                 {"column": "status", "value": status, "op": "in"}
             )
         res = fetch_rows_limited(self.engine, self.table, filter_list, columns=[], relationships=["tag_mapping.tag"])
-        res = [entity._asdict() for entity in res]
+        res = [entity._asdict(fetch_loaded_only=True) for entity in res]
         return res
 
     def fetch_content_data(self, content_id):
