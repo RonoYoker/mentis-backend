@@ -10,7 +10,7 @@ from onyx_proj.common.utils.logging_helpers import log_entry
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.apps.segments.segments_processor.segment_helpers import check_validity_flag, check_restart_flag
 from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import deactivate_campaign_by_campaign_id, \
-    schedule_campaign_using_campaign_builder_id
+    schedule_campaign_using_campaign_builder_id, generate_campaign_approval_status_mail
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, \
     REFRESH_COUNT_LOCAL_API_PATH, SegmentRefreshStatus, SEGMENT_COUNT_QUERY, MIN_REFRESH_COUNT_DELAY, \
@@ -284,7 +284,7 @@ def trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_
     Method to refresh count of segment associated with campaign and trigger the following campaign approval flow
     """
     method_name = "trigger_update_segment_count_for_campaign_approval"
-    log_entry()
+    log_entry(cb_id, segment_id, retry_count)
 
     CEDCampaignBuilder().increment_approval_flow_retry_count(cb_id)
 
@@ -317,6 +317,8 @@ def trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_
 
     refresh_time = segment_entity.refresh_date
     current_time = datetime.datetime.utcnow()
+    logger.debug(f"method_name :: {method_name}, refresh_time: {refresh_time}, count_refresh_start_date: {segment_entity.count_refresh_start_date}, "
+                 f"count_refresh_end_date: {segment_entity.count_refresh_end_date}")
 
     # if refresh time data is not stale
     if refresh_time and refresh_time + datetime.timedelta(minutes=SEGMENT_REFRESH_VALIDATION_DURATION_MINUTES) >= current_time:
@@ -325,16 +327,22 @@ def trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_
         schedule_campaign_using_campaign_builder_id(cb_id)
     elif segment_entity.count_refresh_start_date and retry_count != 0:
         if segment_entity.count_refresh_start_date <= current_time - datetime.timedelta(minutes=ASYNC_SEGMENT_QUERY_EXECUTION_WAITING_MINUTES):
-            logger.error(f"method_name :: {method_name}, Async query count refresh timeout")
-            CEDCampaignBuilder().update_error_message(cb_id, "Async query count refresh timeout")
+            logger.error(f"method_name :: {method_name}, Async query count refresh timeout, count_refresh_start_date {segment_entity.count_refresh_start_date} , current_time: {current_time}")
+            CEDCampaignBuilder().mark_campaign_as_error(cb_id, f"Async query count refresh timeout, count_refresh_start_date {segment_entity.count_refresh_start_date} , current_time: {current_time}")
+            generate_campaign_approval_status_mail(
+                {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
             raise ValidationFailedException(method_name=method_name, reason="Async query count refresh timeout")
         elif segment_entity.count_refresh_end_date is None or segment_entity.count_refresh_start_date > segment_entity.count_refresh_end_date:
             logger.debug(f"method_name :: {method_name}, Segment is already being processed")
             # call async self
+            logger.debug(f"method_name: {method_name}, pushing for retry, cb_id: {cb_id}, retry_count: {retry_count+1}")
             segment_refresh_for_campaign_approval.apply_async(args=(cb_id, segment_id, retry_count+1), queue="celery_campaign_approval", countdown=4*60)
             # trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_count+1)
     elif not refresh_time or refresh_time + datetime.timedelta(minutes=SEGMENT_REFRESH_VALIDATION_DURATION_MINUTES) < current_time:
         # process segment count and call async self
-        trigger_update_segment_count(dict(body=dict(unique_id=segment_id)))
+        refresh_status = trigger_update_segment_count(dict(body=dict(unique_id=segment_id)))
+        if refresh_status is not None and refresh_status.get("result", None) is not None:
+            logger.debug(f"Segment refresh result: {refresh_status['result']}, details_message: {refresh_status.get('details_message','')}")
+        logger.debug(f"method_name: {method_name}, pushing for retry, cb_id {cb_id}, retry_count: {retry_count+1}")
         segment_refresh_for_campaign_approval.apply_async(args=(cb_id, segment_id, retry_count+1), queue="celery_campaign_approval", countdown=4*60)
         # trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_count+1)

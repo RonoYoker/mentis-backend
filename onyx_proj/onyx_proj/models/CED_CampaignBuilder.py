@@ -1,4 +1,6 @@
 from django.conf import settings
+
+from onyx_proj.common.constants import CampaignStatus
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, update, execute_query, fetch_rows
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilder
@@ -83,12 +85,15 @@ class CEDCampaignBuilder:
             ]
         return fetch_one_row(self.engine, self.table, filter_list)
 
-    def update_campaign_builder_status(self, unique_id, status, approved_by=None):
+    def update_campaign_builder_status(self, unique_id, status, approved_by=None, **kwargs):
         filter = [
             {"column": "unique_id", "value": unique_id, "op": "=="}
         ]
         if approved_by is not None:
             update_dict = {"approved_by": approved_by, "status": status}
+        elif kwargs.get("rejection_reason", None) is not None:
+            rejection_reason = kwargs.get("rejection_reason", None)
+            update_dict = {"rejection_reason": rejection_reason, "status": status}
         else: update_dict = {"status": status}
         return update(self.engine, self.table, filter, update_dict)
 
@@ -121,3 +126,12 @@ class CEDCampaignBuilder:
     def fetch_campaign_approval_status_details(self, unique_id):
         query = f"SELECT cb.Id, cb.Name, cb.CreatedBy, cb.ApprovedBy, cb.Id, cb.Status, seg.Title as SegmentName FROM CED_CampaignBuilder cb JOIN CED_Segment seg ON seg.UniqueId = cb.SegmentId WHERE cb.UniqueId = '{unique_id}'"
         return execute_query(self.engine, query)
+
+    def mark_campaign_as_error(self, unique_id, reason):
+        filter = [
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        ]
+        update_dict = {"status": CampaignStatus.ERROR.value, "is_active": 0, "is_deleted": 1}
+        if reason:
+            update_dict["error_msg"] = reason
+        return update(self.engine, self.table, filter, update_dict)

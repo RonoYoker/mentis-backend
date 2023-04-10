@@ -816,7 +816,7 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
     from onyx_proj.apps.content.content_procesor import validate_content_details
     from onyx_proj.celery_app.tasks import segment_refresh_for_campaign_approval
     method_name = "update_campaign_builder_status_by_unique_id"
-    log_entry()
+    log_entry(campaign_builder_id, input_status, reason)
 
     user_session = Session().get_user_session_object()
 
@@ -870,7 +870,16 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
             # trigger_update_segment_count_for_campaign_approval(campaign_builder_id, segment_entity.unique_id)
 
         elif input_status == CampaignStatus.DIS_APPROVED.value:
-            pass  #abhi pass hogaya
+            # validate campaign builder campaign for campaign builder id
+            validate_campaign_builder_for_campaign_id(campaign_builder_entity_db)
+            # check current status should be in APPROVAL PENDING
+            if campaign_builder_entity_db.status != CampaignStatus.APPROVAL_PENDING.value:
+                raise BadRequestException(method_name=method_name, reason="Campaign Builder cannot be dis approved")
+            # update campaign builder status as DIS_APPROVED
+            CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity_db.unique_id,
+                                                                CampaignStatus.DIS_APPROVED.value, approved_by=None, rejection_reason=reason)
+            generate_campaign_approval_status_mail(
+                {'unique_id': campaign_builder_entity_db.unique_id, 'status': CampaignStatus.DIS_APPROVED.value})
         else:
             raise BadRequestException(method_name=method_name, reason="Invalid status request")
 
@@ -930,7 +939,7 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
     from onyx_proj.apps.segments.segments_processor.segment_processor import check_segment_refresh_status, \
         validate_segment_status
     method_name = "schedule_campaign_using_campaign_builder_id"
-    log_entry()
+    log_entry(campaign_builder_id)
 
     if not campaign_builder_id:
         raise ValidationFailedException(method_name=method_name, reason="Campaign builder id not found")
@@ -953,19 +962,23 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
                                                          SegmentStatus.APPROVED.value)
     except ValidationFailedException as ex:
         logger.error(f"method_name :: {method_name}, Error while fetching segment entity, {ex.reason}")
-        CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity.unique_id, CampaignStatus.ERROR.value)
+        CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id, "Error while fetching segment entity")
         raise ValidationFailedException(method_name=method_name, reason="Segment entity not found")
     except BadRequestException as ex:
         logger.error(f"method_name :: {method_name}, Error while fetching segment entity, {ex.reason}")
-        CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity.unique_id, CampaignStatus.ERROR.value)
+        CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id, "Error while fetching segment entity")
         raise BadRequestException(method_name=method_name, reason="Segment entity not found")
     except Exception as ex:
         logger.error(f"method_name :: {method_name}, Error while fetching segment entity, {ex}")
-        CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity.unique_id,
-                                                            CampaignStatus.ERROR.value)
+        CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id,"Error while fetching segment entity")
         raise BadRequestException(method_name=method_name, reason="Segment entity not found")
 
     if segment_entity.records is None or segment_entity.records <= 0:
+        logger.error(f"method_name :: {method_name}, Segment has 0 records")
+        CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id,
+                                                    "Segment has 0 records")
+        generate_campaign_approval_status_mail(
+            {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
         raise ValidationFailedException(method_name=method_name, reason="Segment records not found")
 
     if not segment_entity.data_id:
