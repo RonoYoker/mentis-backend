@@ -1361,6 +1361,8 @@ def prepare_email_related_data(cbc_entity, campaign_segment_entity):
 
     # removing excess content data
     campaign_email_content_entity_dict['content_text'] = ""
+    if campaign_email_content_entity_dict.get('subject_mapping', None) is not None:
+        campaign_email_content_entity_dict['subject_mapping'] = []
     for url_mapping in campaign_email_content_entity_dict['url_mapping']:
         if url_mapping is not None and url_mapping.get('url', None) is not None and len(url_mapping.get('url')) > 0:
             if url_mapping['url'].get('url', None) is not None:
