@@ -1,16 +1,14 @@
 import hashlib
 from Crypto.Cipher import AES
 import base64
-from django.conf import settings
 
 
 class AesEncryptDecrypt:
-    def __init__(self, key: str = None, iv: str = None, mode=AES.MODE_ECB, block_size: int = 16):
-        self.iv = None
-        self.key = None
+    def __init__(self, key: str, mode: AES.MODE_ECB = AES.MODE_ECB, block_size: int = 16, iv=None):
+        self.key = self.setKey(key)
         self.mode = mode
-        self.set_key(key, iv)
         self.block_size = block_size
+        self.iv = iv
 
     def pad(self, byte_array: bytearray):
         """
@@ -23,20 +21,16 @@ class AesEncryptDecrypt:
     def unpad(self, byte_array: bytearray):
         return byte_array[:-ord(byte_array[-1:])]
 
-    def set_key(self, key: str, iv: str):
-        if self.mode == AES.MODE_CBC:
-            self.key = key.encode("utf-8")
-            self.iv = iv.encode("utf-8")
-        elif self.mode == AES.MODE_ECB:
-            # convert to bytes
-            key = key.encode('utf-8')
-            # get the sha1 method - for hashings
-            sha1 = hashlib.sha1
-            # and use digest and take the last 16 bytes
-            key = sha1(key).digest()[:16]
-            # now zero pad - just incase
-            key = key.zfill(16)
-            self.key = key
+    def setKey(self, key: str):
+        # convert to bytes
+        key = key.encode('utf-8')
+        # get the sha1 method - for hashings
+        sha1 = hashlib.sha1
+        # and use digest and take the last 16 bytes
+        key = sha1(key).digest()[:16]
+        # now zero pad - just incase
+        key = key.zfill(16)
+        return key
 
     def encrypt(self, message: str) -> str:
         # convert to bytes
@@ -75,21 +69,30 @@ class AesEncryptDecrypt:
         # unpad - with pkcs5 style and return
         return self.unpad(decrypted)
 
-    def encrypt_aes_cbc(self, plain_text: str) -> str:
-        cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
-        padded_plaintext = self.pad_cbc(plain_text)
+    def encrypt_aes_cbc(self, plain_text):
+        from Crypto.Util.Padding import pad, unpad
+        cipher = AES.new(self.key, AES.MODE_CBC, self.iv.encode("utf-8"))
+        padded_plaintext = pad(plain_text.encode("utf-8"),block_size=self.block_size)
         ciphertext = cipher.encrypt(padded_plaintext)
-        return base64.b64encode(ciphertext).decode("utf-8")
+        return base64.b64encode(ciphertext)
 
-    def pad_cbc(self, plain_text: str) -> bytes:
-        padding_len = self.block_size - len(plain_text) % self.block_size
-        padding = bytes([padding_len]) * padding_len
-        return bytes(plain_text, "utf-8") + padding
-
-    def decrypt_aes_cbc(self, encrypted_text: str) -> str:
-        from Crypto.Util.Padding import unpad
-        encrypted_text = encrypted_text.encode("utf-8")
+    def decrypt_aes_cbc(self,encrypted_text):
+        from Crypto.Util.Padding import pad, unpad
         encrypted_text = base64.b64decode(encrypted_text)
-        cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
-        decrypted_text = unpad(cipher.decrypt(encrypted_text), block_size=self.block_size)
-        return decrypted_text.decode("utf-8")
+        cipher = AES.new(self.key, AES.MODE_CBC, self.iv.encode("utf-8"))
+        # padded_encrypted_text = self._pad(encrypted_text)
+        decrypted_text = unpad(cipher.decrypt(encrypted_text),block_size=self.block_size)
+        return decrypted_text
+
+
+# if __name__ == '__main__':
+#     # message to encrypt
+#     message = 'hello world'
+#     secret_key = "prodcenter$123@123 - Prod"
+#     AES_pkcs5_obj = encrypt_decrypt(secret_key)
+#
+#     encrypted_message = AES_pkcs5_obj.encrypt(message)
+#
+#     print(encrypted_message)
+#     decrypted_message = AES_pkcs5_obj.decrypt(encrypted_message)
+#     print(decrypted_message)

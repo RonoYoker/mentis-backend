@@ -58,7 +58,7 @@ ONYX_LOCAL_CAMP_VALIDATION = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyn
                                 "prlhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausbrd", "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd", "vstaocnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nauspr"]
 
 JWT_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["JWT_ENCRYPTION_KEY"]
-# RSA_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["RSA_KEYS"]
+RSA_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["RSA_KEYS"]
 CENTRAL_TO_LOCAL_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["CENTRAL_TO_LOCAL_ENCRYPTION_KEY"]
 
 HYPERION_CENTRAL_DOMAIN = "http://uatdev.hyperiontool.com/"
@@ -90,8 +90,7 @@ CELERY_RESULT_BACKEND = f"redis://{INFRA_CONF['BROKER_URL']}:6379/12"
 CELERY_IMPORTS = [
     'onyx_proj.apps.campaign.campaign_processor.campaign_data_processors',
     'onyx_proj.apps.segments.segments_processor.segment_processor',
-    'onyx_proj.celery_app.tasks',
-    'onyx_proj.apps.segments.segments_processor.segment_helpers'
+    'onyx_proj.celery_app.tasks'
 ]
 
 # CELERY_BEAT_SCHEDULE = CELERY_BEAT_SCHEDULE

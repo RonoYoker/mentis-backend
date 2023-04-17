@@ -1,6 +1,7 @@
 import http
-from django.conf import settings
-from Crypto.Cipher import AES
+import json
+import datetime
+import logging
 
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import hyperion_local_rest_call
 from onyx_proj.common.constants import *
@@ -15,7 +16,6 @@ from onyx_proj.models.CED_MasterHeaderMapping_model import *
 from onyx_proj.models.CED_Segment_model import *
 from onyx_proj.models.CED_Projects import *
 from onyx_proj.models.CED_CampaignContentVariableMapping_model import *
-from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 
 logger = logging.getLogger("apps")
 
@@ -173,9 +173,7 @@ def get_headers_list_for_non_custom(segment_data):
 
 def get_headers_list_from_extra(segment_data):
     headers_list_extracted = []
-    headers_list = json.loads(AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
-                                                iv=settings.SEGMENT_AES_KEYS["AES_IV"],
-                                                mode=AES.MODE_CBC).decrypt_aes_cbc(segment_data[0]["Extra"]))
+    headers_list = json.loads(segment_data[0].get("Extra"))
     headers_list = headers_list.get("headers_list", [])
     if not headers_list:
         return []

@@ -2,40 +2,35 @@ import json
 import logging
 import datetime
 import http
-from Crypto.Cipher import AES
-from django.conf import settings
 
-from django.conf import settings
 from onyx_proj.apps.content.content_procesor import content_headers_processor
 from onyx_proj.apps.segments.app_settings import QueryKeys, AsyncTaskRequestKeys, SegmentStatusKeys
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS
 from onyx_proj.apps.async_task_invocation.app_settings import AsyncJobStatus
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import generate_test_query
-from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 
 logger = logging.getLogger("apps")
 
 
-def process_segment_callback(body):
+def process_segment_callback(body: dict):
     """
     callback from local system (async query execution system) is stored for the segment for which the flow was invoked
     """
 
     # from onyx_proj.apps.segments.segments_processor.segment_callback_processor import process_segment_callback
     logger.debug(f"process_segment_callback :: request_body: {body}")
-    body = json.loads(AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY, mode=AES.MODE_ECB).decrypt(body))
     try:
         error_update_dict = {}
 
         if body is None:
-            logger.error(f"process_segment_callback :: Body cannot be empty for the request.")
+            logger.error(f"Body cannot be empty for the request.")
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="Invalid Payload.")
 
         segment_id = body.get("unique_id", None)
         if segment_id is None:
-            logger.error(f"process_segment_callback :: Segment_id empty for the given request.")
+            logger.error(f"Segment_id empty for the given request.")
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="Segment_id missing in request payload.")
 
@@ -56,7 +51,7 @@ def process_segment_callback(body):
                             details_message="Exception during update query execution.",
                             ex=str(ex))
         else:
-            segment_count = task_data[QueryKeys.SEGMENT_COUNT.value].get("response")[0].get("row_count", None)
+            segment_count = json.loads(task_data[QueryKeys.SEGMENT_COUNT.value].get("response"))[0].get("row_count", None)
 
             if segment_count == 0:
                 # log error and update error
@@ -80,17 +75,15 @@ def process_segment_callback(body):
             try:
                 sql_query = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))[0]["SqlQuery"]
             except Exception as ex:
-                logger.error(
-                    f"process_segment_callback :: error thrown while fetching sql_query for given segment_id: {segment_id},"
-                    f"error_message: {str(ex)}")
+                logger.error(f"process_segment_callback :: error thrown while fetching sql_query for given segment_id: {segment_id},"
+                             f"error_message: {str(ex)}")
                 return
 
             test_sql_query_response = generate_test_query(sql_query, headers)
 
             if test_sql_query_response.get("result") == TAG_FAILURE:
                 update_dict = dict(UpdationDate=datetime.datetime.utcnow(), Status=SegmentStatusKeys.ERROR.value,
-                                   RejectionReason=test_sql_query_response["details_message"],
-                                   RefreshDate=datetime.datetime.utcnow())
+                                   RejectionReason=test_sql_query_response["details_message"], RefreshDate=datetime.datetime.utcnow())
                 try:
                     db_resp = CEDSegment().update_segment(dict(UniqueId=segment_id), update_dict)
                 except Exception as ex:
@@ -99,15 +92,10 @@ def process_segment_callback(body):
                                 ex=str(ex))
             else:
                 update_dict = dict(TestCampaignSqlQuery=test_sql_query_response["query"], Records=segment_count,
-                                   Extra=AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
-                                                           iv=settings.SEGMENT_AES_KEYS["AES_IV"],
-                                                           mode=AES.MODE_CBC).encrypt_aes_cbc(json.dumps(extra_data)),
-                                   UpdationDate=datetime.datetime.utcnow(), RefreshDate=datetime.datetime.utcnow(),
-                                   Status=SegmentStatusKeys.SAVED.value,
-                                   DataRefreshStartDate=datetime.datetime.utcnow(),
-                                   DataRefreshEndDate=datetime.datetime.utcnow(),
-                                   CountRefreshStartDate=datetime.datetime.utcnow(),
-                                   CountRefreshEndDate=datetime.datetime.utcnow())
+                                   Extra=json.dumps(extra_data), UpdationDate=datetime.datetime.utcnow(),
+                                   RefreshDate=datetime.datetime.utcnow(), Status=SegmentStatusKeys.SAVED.value,
+                                   DataRefreshStartDate=datetime.datetime.utcnow(), DataRefreshEndDate=datetime.datetime.utcnow(),
+                                   CountRefreshStartDate=datetime.datetime.utcnow(), CountRefreshEndDate=datetime.datetime.utcnow())
 
                 try:
                     db_resp = CEDSegment().update_segment(dict(UniqueId=segment_id), update_dict)
@@ -124,19 +112,18 @@ def process_segment_callback(body):
                     details_message=f"Count and headers updated for segment_id: {segment_id}.")
 
     except Exception as e:
-        logger.error(f"process_segment_callback :: Error in save custom segment callback flow: {e}.")
+        logger.error(f"Error in save custom segment callback flow: {e}.")
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
                     details_message=str(e))
 
 
-def process_segment_data_callback(body):
+def process_segment_data_callback(body: dict):
     """
     callback from local system (async query execution system) updates segment data (sample data records and count)
     """
 
     # from onyx_proj.apps.segments.segments_processor.segment_callback_processor import process_segment_data_callback
     logger.debug(f"process_segment_data_callback :: request_body: {body}")
-    body = json.loads(AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY, mode=AES.MODE_ECB).decrypt(body))
     segment_id = body.get("unique_id", None)
 
     request_type = body.get("request_type", None)
@@ -148,12 +135,12 @@ def process_segment_data_callback(body):
 
     try:
         if body is None:
-            logger.error(f"process_segment_data_callback :: Body cannot be empty for the request.")
+            logger.error(f"Body cannot be empty for the request.")
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="Invalid Payload.")
 
         if segment_id is None:
-            logger.error(f"process_segment_data_callback :: Segment_id empty for the given request.")
+            logger.error(f"Segment_id empty for the given request.")
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="Segment_id missing in request payload.")
 
@@ -161,13 +148,13 @@ def process_segment_data_callback(body):
         task_data = body["tasks"]
 
         if request_type == AsyncTaskRequestKeys.ONYX_SAMPLE_SEGMENT_DATA_FETCH.value:
-            segment_count = task_data[QueryKeys.UPDATE_SEGMENT_COUNT.value].get("response")[0].get("row_count", None)
+            segment_count = json.loads(task_data[QueryKeys.UPDATE_SEGMENT_COUNT.value].get("response"))[0].get("row_count", None)
             extra_data = extra_data_parser(task_data[QueryKeys.SAMPLE_SEGMENT_DATA.value], project_id)
         elif request_type == AsyncTaskRequestKeys.ONYX_TEST_CAMPAIGN_DATA_FETCH.value:
-            segment_count = task_data[QueryKeys.UPDATE_SEGMENT_COUNT.value].get("response")[0].get("row_count", None)
+            segment_count = json.loads(task_data[QueryKeys.UPDATE_SEGMENT_COUNT.value].get("response"))[0].get("row_count", None)
             extra_data = extra_data_parser(task_data[QueryKeys.SAMPLE_SEGMENT_DATA.value], project_id)
         elif request_type == AsyncTaskRequestKeys.ONYX_REFRESH_SEGMENT_COUNT.value:
-            segment_count = task_data[QueryKeys.UPDATE_SEGMENT_COUNT.value].get("response")[0].get("row_count", None)
+            segment_count = json.loads(task_data[QueryKeys.UPDATE_SEGMENT_COUNT.value].get("response"))[0].get("row_count", None)
             extra_data = extra_data_parser(task_data[QueryKeys.SAMPLE_SEGMENT_DATA.value], project_id)
         else:
             update_dict = {column_name: datetime.datetime.utcnow()}
@@ -180,12 +167,9 @@ def process_segment_data_callback(body):
         else:
             extra_data_json = extra_data
 
-        update_dict = dict(Records=segment_count,
-                           Extra=AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
-                                                   iv=settings.SEGMENT_AES_KEYS["AES_IV"],
-                                                   mode=AES.MODE_CBC).encrypt_aes_cbc(json.dumps(extra_data_json)),
+        update_dict = dict(Records=segment_count, Extra=json.dumps(extra_data_json), UpdationDate=datetime.datetime.utcnow(),
                            RefreshDate=datetime.datetime.utcnow(), CountRefreshEndDate=datetime.datetime.utcnow(),
-                           DataRefreshEndDate=datetime.datetime.utcnow(), UpdationDate=datetime.datetime.utcnow())
+                           DataRefreshEndDate=datetime.datetime.utcnow())
 
         try:
             db_resp = CEDSegment().update_segment(dict(UniqueId=segment_id), update_dict)
@@ -202,7 +186,6 @@ def process_segment_data_callback(body):
                     details_message=f"Count and headers updated for segment_id: {segment_id}.")
 
     except Exception as e:
-        raise
         update_dict = {column_name: datetime.datetime.utcnow()}
         db_resp = CEDSegment().update_segment(dict(UniqueId=segment_id), update_dict)
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
@@ -213,7 +196,7 @@ def extra_data_parser(data: dict, project_id):
     """
     parses query response to suitable data for insertion into Extra column of CED_Segment table
     """
-    data_object = data.get("response")
+    data_object = json.loads(data.get("response"))
     if len(data_object) == 0:
         return dict(error=True, reason="no data in segment")
     headers_list = [*data_object[0]]

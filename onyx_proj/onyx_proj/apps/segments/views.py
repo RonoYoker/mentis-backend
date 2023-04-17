@@ -15,9 +15,8 @@ from onyx_proj.apps.segments.segments_processor.segments_data_processors import 
     get_master_headers_by_data_id
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import custom_segment_processor, \
     fetch_headers_list, update_custom_segment_process, custom_segment_count, non_custom_segment_count
-from onyx_proj.apps.segments.segments_processor.temp import update_content_and_segment_tags
-from onyx_proj.apps.segments.segments_processor.segment_helpers import back_fill_encrypt_segment_data
 from onyx_proj.common.decorators import *
+from onyx_proj.apps.segments.segments_processor.temp import update_content_and_segment_tags
 
 
 @csrf_exempt
@@ -162,7 +161,7 @@ def fetch_segments_list(request):
 @csrf_exempt
 @UserAuth.user_authentication()
 def custom_segment_callback(request):
-    request_body = request.body.decode("utf-8")
+    request_body = json.loads(request.body.decode("utf-8"))
     data = process_segment_callback(request_body)
     status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
@@ -171,7 +170,7 @@ def custom_segment_callback(request):
 @csrf_exempt
 @UserAuth.user_authentication()
 def update_segment_callback(request):
-    request_body = request.body.decode("utf-8")
+    request_body = json.loads(request.body.decode("utf-8"))
     data = process_segment_data_callback(request_body)
     status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
@@ -189,7 +188,7 @@ def update_segment_tags(request):
 @csrf_exempt
 @UserAuth.user_authentication()
 def update_custom_segment_callback(request):
-    request_body = request.body.decode("utf-8")
+    request_body = json.loads(request.body.decode("utf-8"))
     data = process_segment_callback(request_body)
     status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
@@ -216,14 +215,5 @@ def deactivate_segment(request):
 def get_master_mapping_by_data_id(request):
     request_body = json.loads(request.body.decode("utf-8"))
     data = get_master_headers_by_data_id(request_body)
-    status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
-    return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
-
-
-@csrf_exempt
-# @UserAuth.user_authentication()
-def back_fill_segment_data(request):
-    request_body = json.loads(request.body.decode("utf-8"))
-    data = back_fill_encrypt_segment_data(request_body)
     status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")

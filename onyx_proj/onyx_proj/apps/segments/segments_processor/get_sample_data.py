@@ -2,18 +2,14 @@ import json
 import http
 import datetime
 import logging
-from Crypto.Cipher import AES
-from django.conf import settings
 
 from onyx_proj.apps.segments.segments_processor.segment_helpers import check_validity_flag, check_restart_flag
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import hyperion_local_async_rest_call, \
     hyperion_local_rest_call
-from onyx_proj.apps.segments.app_settings import QueryKeys, AsyncTaskCallbackKeys, AsyncTaskSourceKeys, \
-    AsyncTaskRequestKeys, DATA_THRESHOLD_MINUTES
+from onyx_proj.apps.segments.app_settings import QueryKeys, AsyncTaskCallbackKeys, AsyncTaskSourceKeys, AsyncTaskRequestKeys, DATA_THRESHOLD_MINUTES
 from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, \
     ASYNC_QUERY_EXECUTION_ENABLED
 from onyx_proj.models.CED_Segment_model import CEDSegment
-from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 
 logger = logging.getLogger("apps")
 
@@ -54,34 +50,21 @@ def get_sample_data_by_unique_id(request_data: dict):
                 return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                             data=dict(details_message=f"Segment {segment_data.get('Title')} already being processed."))
 
-        validity_flag = check_validity_flag(segment_data.get("Extra", ""), segment_data.get("DataRefreshEndDate"),
+        validity_flag = check_validity_flag(segment_data.get("Extra", None), segment_data.get("DataRefreshEndDate"),
                                             expire_time=DATA_THRESHOLD_MINUTES)
 
         try:
-            extra_data = json.loads(
-                AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
-                                  iv=settings.SEGMENT_AES_KEYS["AES_IV"],
-                                  mode=AES.MODE_CBC).decrypt_aes_cbc(segment_data.get("Extra")))
+            extra_data = json.loads(segment_data.get("Extra"))
         except Exception as ex:
-            logger.error(
-                f"get_sample_data_by_unique_id :: exception while data fetch for segment: {segment_data.get('Title')}. "
-                f"Exception: {str(ex)}")
+            logger.error(f"get_sample_data_by_unique_id :: exception while data fetch for segment: {segment_data.get('Title')}. Exception: {str(ex)}")
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        data=dict(
-                            details_message=f"Segment {segment_data.get('Title')} does not have any records to show."))
+                        data=dict(details_message=f"Segment {segment_data.get('Title')} does not have any records to show."))
 
         if validity_flag is True:
-            if segment_data["Records"] == 0:
-                sample_data_dict = dict(
-                    sampleData=[],
-                    records=segment_data["Records"],
-                    segmentId=body["segment_id"]
-                )
-                return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=sample_data_dict)
-            sample_data = extra_data.get("sample_data", [])
+            sample_data = json.loads(extra_data.get("sample_data", ""))
             sample_data_dict = dict(
                 sampleData=sample_data,
-                records=segment_data["Records"],
+                records=segment_data.get("Records"),
                 segmentId=body["segment_id"]
             )
             return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=sample_data_dict)
@@ -93,10 +76,8 @@ def get_sample_data_by_unique_id(request_data: dict):
                 return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                             details_message="Please check SQL Query for the given segment.")
 
-            queries_data = [dict(query=sql_query + " LIMIT 50", response_format="json",
-                                 query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
-                            dict(query=count_sql_query, response_format="json",
-                                 query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)]
+            queries_data = [dict(query=sql_query+" LIMIT 50", response_format="json", query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
+                            dict(query=count_sql_query, response_format="json", query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)]
 
             request_body = dict(
                 source=AsyncTaskSourceKeys.ONYX_CENTRAL.value,
@@ -137,3 +118,4 @@ def get_sample_data_by_unique_id(request_data: dict):
         validation_response["segmentId"] = body.get("segment_id")
 
         return dict(status_code=200, result=TAG_SUCCESS, data=validation_response)
+

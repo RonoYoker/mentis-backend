@@ -4,7 +4,6 @@ import http
 import datetime
 import logging
 from django.conf import settings
-from Crypto.Cipher import AES
 
 from onyx_proj.apps.segments.segments_processor.segment_helpers import check_validity_flag, check_restart_flag
 from onyx_proj.common.request_helper import RequestClient
@@ -23,7 +22,6 @@ from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CUSTOM_QUERY_AS
     TEST_CAMPAIGN_VALIDATION_DURATION_MINUTES, TEST_CAMPAIGN_VALIDATION_API_PATH, ASYNC_QUERY_EXECUTION_ENABLED
 from onyx_proj.apps.segments.app_settings import AsyncTaskRequestKeys, AsyncTaskSourceKeys, AsyncTaskCallbackKeys, \
     QueryKeys, DATA_THRESHOLD_MINUTES
-from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 
 logger = logging.getLogger("apps")
 
@@ -87,21 +85,18 @@ def fetch_test_campaign_data(request_data) -> json:
                 return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                             details_message=f"Segment is already being processed.")
 
-        records_data = segment_data.get("Extra", "")
+        records_data = segment_data.get("Extra", None)
 
         sql_query = segment_data.get("SqlQuery", None)
         count_sql_query = f"SELECT COUNT(*) AS row_count FROM ({sql_query}) derived_table"
 
-        validity_flag = check_validity_flag(records_data, segment_data.get("DataRefreshEndDate", None),
-                                            expire_time=DATA_THRESHOLD_MINUTES)
+        validity_flag = check_validity_flag(records_data, segment_data.get("DataRefreshEndDate", None), expire_time=DATA_THRESHOLD_MINUTES)
 
         if validity_flag is False:
             # initiate async flow for data population
 
-            queries_data = [dict(query=sql_query + " LIMIT 50", response_format="json",
-                                 query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
-                            dict(query=count_sql_query, response_format="json",
-                                 query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)]
+            queries_data = [dict(query=sql_query+" LIMIT 50", response_format="json", query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
+                            dict(query=count_sql_query, response_format="json", query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)]
 
             request_body = dict(
                 source=AsyncTaskSourceKeys.ONYX_CENTRAL.value,
@@ -126,14 +121,8 @@ def fetch_test_campaign_data(request_data) -> json:
                         details_message="Segment data being processed, please return after 5 minutes.")
 
         else:
-            records_data = json.loads(AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
-                                                        iv=settings.SEGMENT_AES_KEYS["AES_IV"],
-                                                        mode=AES.MODE_CBC).decrypt_aes_cbc(records_data))
-            if len(records_data.get("sample_data", [])) == 0:
-                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                            details_message="Segment has no data")
-
-            record = records_data["sample_data"][0]
+            records_data = json.loads(records_data)
+            record = json.loads(records_data.get("sample_data", []))[0]
 
             record["Mobile"] = user_data.get("MobileNumber", None)
             record["Email"] = user_data.get("EmailId", None)
@@ -192,8 +181,7 @@ def fetch_test_campaign_validation_status_local(request_data) -> json:
     channel = body.get('content_type', None)
     contact = body.get('contact_mode', None)
 
-    if url_exist is None or campaign_id_list is None or len(
-            campaign_id_list) <= 0 or channel is None or contact is None:
+    if url_exist is None or campaign_id_list is None or len(campaign_id_list) <= 0 or channel is None or contact is None:
         logger.error(method_name, f"body: {body}")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid request data")
@@ -219,8 +207,7 @@ def fetch_test_campaign_validation_status_local(request_data) -> json:
 
         camp_validated = True
         delivery_status = camp_data['Status']
-        delivery_validated = True if delivery_status in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[
-            channel.upper()] else False
+        delivery_validated = True if delivery_status in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel.upper()] else False
         if settings.CAMP_VALIDATION_CONF['DELIVERY'] is True:
             delivery_data['last_updated_time'] = camp_data['UpdateDate']
             delivery_data['validation_flag'] = delivery_validated
@@ -270,8 +257,7 @@ def fetch_test_campaign_validation_status(request_data) -> json:
                     details_message="Invalid campaign builder campaign id.")
 
     project_details = CEDProjects().get_project_id_by_cbc_id(campaign_builder_campaign_id)
-    if not project_details or len(project_details) == 0 or project_details[0] is None or project_details[0].get(
-            'UniqueId', None) in [None, ""]:
+    if not project_details or len(project_details)==0 or project_details[0] is None or project_details[0].get('UniqueId', None) in [None, ""]:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Project not found for campaign_builder_campaign_id : {campaign_builder_campaign_id}.")
     project_id = project_details[0]['UniqueId']
@@ -287,14 +273,11 @@ def fetch_test_campaign_validation_status(request_data) -> json:
                     details_message="Onyx Local domain not found")
 
     # Only fetch test campaigns for the last 30 minutes
-    start_time = (datetime.datetime.utcnow() - datetime.timedelta(
-        minutes=TEST_CAMPAIGN_VALIDATION_DURATION_MINUTES)).strftime("%Y-%m-%d %H:%M:%S")
+    start_time = (datetime.datetime.utcnow() - datetime.timedelta(minutes=TEST_CAMPAIGN_VALIDATION_DURATION_MINUTES)).strftime("%Y-%m-%d %H:%M:%S")
     # Fetch campaign ids corresponding to cbc_id
-    cssd_ids = CEDCampaignSchedulingSegmentDetailsTest().fetch_cssd_list_by_cbc_id(campaign_builder_campaign_id,
-                                                                                   start_time)
+    cssd_ids = CEDCampaignSchedulingSegmentDetailsTest().fetch_cssd_list_by_cbc_id(campaign_builder_campaign_id, start_time)
     if cssd_ids is None or len(cssd_ids) <= 0:
-        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result,
-                    details_message="No test campaign in last 30 minutes")
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result, details_message="No test campaign in last 30 minutes")
 
     # create dict of cssd ids:
     cssd_ids_dict = {str(cssd["Id"]): cssd for cssd in cssd_ids}
@@ -313,11 +296,11 @@ def fetch_test_campaign_validation_status(request_data) -> json:
         urlid = campaign_builder_channel_table().fetch_url_id_from_cbc_id(campaign_builder_campaign_id)[0][0]
 
     data = {
-        "url_exist": True if urlid is not None else False,
-        "campaign_builder_campaign_id": campaign_builder_campaign_id,
-        "campaign_id": list(cssd_ids_dict.keys()),
-        "content_type": channel,
-        "contact_mode": str(contact_details)
+           "url_exist": True if urlid is not None else False,
+           "campaign_builder_campaign_id": campaign_builder_campaign_id,
+           "campaign_id": list(cssd_ids_dict.keys()),
+           "content_type": channel,
+           "contact_mode": str(contact_details)
     }
 
     # add domain here
@@ -335,12 +318,10 @@ def fetch_test_campaign_validation_status(request_data) -> json:
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result,
                     details_message=response.get('details_message', None))
     # case when no data found for campaign
-    if response['data'].get('campaign_id', None) is None or cssd_ids_dict.get(str(response['data']["campaign_id"]),
-                                                                              None) is None:
+    if response['data'].get('campaign_id', None) is None or cssd_ids_dict.get(str(response['data']["campaign_id"]), None) is None:
         result["send_test_campaign"] = True
         result["system_validated"] = False
-        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result,
-                    details_message=response['details_message'])
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result, details_message=response['details_message'])
 
     # Check test campaign in last 5 minutes
     test_campaign_time = cssd_ids_dict[str(response['data']["campaign_id"])]["CreationDate"]
