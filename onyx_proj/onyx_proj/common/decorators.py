@@ -4,6 +4,8 @@ import json
 import string
 import random
 
+from Crypto.Cipher import AES
+
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.common.utils.RSA_encryption import RsaEncrypt
 from django.http import HttpResponse
@@ -90,14 +92,14 @@ def ReqEncryptDecrypt(input_app=None, output_app=None):
                         raise ValidationFailedException(method_name="", reason="Invalid request")
                     decrypted_key = RsaEncrypt(input_app).rsa_decrypt_data(key)
                     decrypted_iv = RsaEncrypt(input_app).rsa_decrypt_data(iv)
-                    decrypted_data = AesEncryptDecrypt(key=decrypted_key, iv=decrypted_iv).decrypt_aes_cbc(data)
+                    decrypted_data = AesEncryptDecrypt(key=decrypted_key, iv=decrypted_iv, mode=AES.MODE_CBC).decrypt_aes_cbc(data)
                     args[0]['body'] = decrypted_data
             result = view_func(*args, *kwargs)
             status_code = result.pop("status_code", http.HTTPStatus.BAD_REQUEST)
             if output_app is not None:
                 key = ''.join(random.choices(string.ascii_lowercase + string.digits, k=32))
                 iv = ''.join(random.choices(string.ascii_lowercase + string.digits, k=16))
-                encrypted_data = AesEncryptDecrypt(key=key, iv=iv).encrypt_aes_cbc(json.dumps(result))
+                encrypted_data = AesEncryptDecrypt(key=key, iv=iv, mode=AES.MODE_CBC).encrypt_aes_cbc(json.dumps(result))
                 encrypted_key = RsaEncrypt(output_app).rsa_encrypt_data(key)
                 encrypted_iv = RsaEncrypt(output_app).rsa_encrypt_data(iv)
                 result = {
