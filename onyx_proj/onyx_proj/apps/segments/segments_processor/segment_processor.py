@@ -2,6 +2,7 @@ import datetime
 import http
 import logging
 import uuid
+from Crypto.Cipher import AES
 
 
 from onyx_proj.common.constants import SEGMENT_REFRESH_VALIDATION_DURATION_MINUTES, \
@@ -22,6 +23,7 @@ from onyx_proj.exceptions.permission_validation_exception import BadRequestExcep
     ValidationFailedException
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.models.CED_Projects import CEDProjects
+from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.apps.segments.app_settings import AsyncTaskCallbackKeys, AsyncTaskSourceKeys, QueryKeys, \
     AsyncTaskRequestKeys
 from onyx_proj.celery_app.tasks import segment_refresh_for_campaign_approval
@@ -79,7 +81,7 @@ def trigger_update_segment_count(data):
                             details_message=f"Segment {segment_data.get('Title')} already being processed.")
 
         # caching implementation
-        validation_flag = check_validity_flag(segment_data.get("Extra", None),
+        validation_flag = check_validity_flag(segment_data.get("Extra", ""),
                                               segment_data.get("CountRefreshEndDate", None))
 
         sql_query = segment_data.get("SqlQuery", None)

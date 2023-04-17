@@ -121,3 +121,8 @@ class CEDSegment:
         query = f"SELECT Title from {self.table_name} WHERE Uniqueid = '{segment_id}' and IsActive = 1 and IsDeleted = 0"
         res = execute_query(self.engine, query)
         return None if not res or len(res) <= 0 or not res[0].get('Title') else res[0].get('Title')
+
+    ##### temp function ######
+    def get_all_segment_data(self):
+        sql_query = "select UniqueId, Extra from CED_Segment where isActive = 1 and Status != 'ERROR' and Extra is not NULL"
+        return execute_query(self.engine, sql_query)
