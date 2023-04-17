@@ -874,7 +874,11 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     'follow_up_sms_variables': 'followUpSMSVariables',
     'inbound_ivr_id': 'inboundIvrId',
     'sms': 'sms',
-    'ivr_id': 'ivrId'
+    'ivr_id': 'ivrId',
+    'master_header':'masterHeader',
+    'header_name':'headerName',
+    'file_data_field_type':'fileDataFieldType',
+    'encrypted':'Encrypted'
 }
 
 CAMPAIGN_APPROVAL_STATUS_SUBJECT_MAPPING = {
