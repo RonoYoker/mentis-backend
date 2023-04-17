@@ -6,7 +6,8 @@ import logging
 
 from onyx_proj.apps.uuid.uuid_helper import base_92_decode, email_validator, phone_number_validator
 from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CAMP_TYPE_CHANNEL_DICT, \
-    CAMP_TYPE_DICT
+    CAMP_TYPE_DICT, ApplicationName
+from onyx_proj.common.decorators import ReqEncryptDecrypt
 from onyx_proj.common.logging_helper import log_entry, log_exit
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj import settings
@@ -19,6 +20,7 @@ from onyx_proj.models.CreditasCampaignEngine import CED_SMSClickData, CED_EmailC
 logger = logging.getLogger("apps")
 
 
+@ReqEncryptDecrypt(None, ApplicationName.HYPERION.value)
 def uuid_info_local(request):
     method_name = "uuid_info_local"
     log_entry(method_name, request)
@@ -167,8 +169,6 @@ def validate_decoded_uuid(decoded_uuid):
     return is_decoded
 
 
-
-
 def save_click_data(uuid_data):
     method_name = "save_click_data"
     log_entry(method_name, uuid_data)
@@ -189,8 +189,12 @@ def save_click_data(uuid_data):
         logger.error(f"method name: {method_name} , Unable to decode UUID")
         push_custom_parameters_to_newrelic({"error": "UNABLE_TO_DECODE_UUID"})
     is_decoded = validate_decoded_uuid(decoded_uuid)
+    primary_key = decoded_uuid.get('primaryKey')
+    en_primary_key = AesEncryptDecrypt(key=settings.AES_ENCRYPTION_KEY.get("KEY"),
+                                       iv=settings.AES_ENCRYPTION_KEY.get("IV")).encrypt_aes_cbc(primary_key)
     click_data = {
-        "primary_key": decoded_uuid.get('primaryKey'),
+        "primary_key": primary_key,
+        "en_primary_key": en_primary_key,
         "campaign_id": decoded_uuid.get('campaignId'),
         "type": decoded_uuid.get('type'),
         "uuid": uuid,

@@ -8,8 +8,8 @@ from django.conf import settings
 
 class RsaEncrypt:
     def __init__(self, application):
-        self.encryption_key = settings.RSA_ENCRYPTION_KEY[application]['PUBLIC']
-        self.decryption_key = settings.RSA_ENCRYPTION_KEY[application]['PRIVATE']
+        self.encryption_key = settings.RSA_ENCRYPTION_KEY[application].get('PUBLIC')
+        self.decryption_key = settings.RSA_ENCRYPTION_KEY[application].get('PRIVATE')
 
     def rsa_encrypt_data(self, plain_text):
         """
