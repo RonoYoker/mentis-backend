@@ -869,7 +869,7 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL= {
     'master_header':'masterHeader',
     'header_name':'headerName',
     'file_data_field_type':'fileDataFieldType',
-    'encrypted':'Encrypted'
+    'encrypted':'encrypted'
 }
 
 CAMPAIGN_APPROVAL_STATUS_SUBJECT_MAPPING = {
