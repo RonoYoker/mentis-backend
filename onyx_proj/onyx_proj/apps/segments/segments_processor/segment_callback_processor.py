@@ -217,3 +217,4 @@ def extra_data_parser(data: dict, project_id):
         return dict(error=True, reason="no data in segment")
     headers_list = [*data_object[0]]
     return dict(headers_list=content_headers_processor(headers_list, project_id), sample_data=data.get("response", []))
+
