@@ -49,6 +49,6 @@ def back_fill_encrypt_segment_data(request_body):
                                            iv=settings.SEGMENT_AES_KEYS["AES_IV"],
                                            mode=AES.MODE_CBC).encrypt_aes_cbc(ele["Extra"])
         segment_data = dict(UniqueId=ele["UniqueId"], Extra=encrypted_data)
-        update_segment_data_encrypted.apply_async(args=segment_data, queue="celery_campaign_approval")
+        update_segment_data_encrypted.apply_async(kwargs={"segment_data": segment_data}, queue="celery_campaign_approval")
         # update_segment_data_encrypted(segment_data)
     return dict(status_code=http.HTTPStatus.OK, result="SUCCESS", data="Process initiated!")
