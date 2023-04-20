@@ -29,7 +29,7 @@ def fetch_secrets_from_secret_manager(secret_name, region_name):
 
         # Decrypts secret using the associated KMS key.
         bank_config = json.loads(get_secret_value_response['SecretString'])
-        print(f"fetch_secrets_from_secret_manager :: bank_config: {bank_config}")
+        print(f"fetch_secrets_from_secret_manager :: secrets fetched!")
         return bank_config
     except Exception as e:
         print(f"fetch_secrets_from_secret_manager :: Exception: {e}")
