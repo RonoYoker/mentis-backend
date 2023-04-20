@@ -24,7 +24,7 @@ def process_segment_callback(body):
 
     # from onyx_proj.apps.segments.segments_processor.segment_callback_processor import process_segment_callback
     logger.debug(f"process_segment_callback :: request_body: {body}")
-    body = json.loads(AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY, mode=AES.MODE_ECB).decrypt(body))
+    # body = json.loads(AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY, mode=AES.MODE_ECB).decrypt(body))
     try:
         error_update_dict = {}
 
@@ -136,7 +136,7 @@ def process_segment_data_callback(body):
 
     # from onyx_proj.apps.segments.segments_processor.segment_callback_processor import process_segment_data_callback
     logger.debug(f"process_segment_data_callback :: request_body: {body}")
-    body = json.loads(AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY, mode=AES.MODE_ECB).decrypt(body))
+    # body = json.loads(AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY, mode=AES.MODE_ECB).decrypt(body))
     segment_id = body.get("unique_id", None)
 
     request_type = body.get("request_type", None)
