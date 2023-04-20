@@ -162,7 +162,7 @@ def fetch_segments_list(request):
 @csrf_exempt
 @UserAuth.user_authentication()
 def custom_segment_callback(request):
-    request_body = request.body.decode("utf-8")
+    request_body = json.loads(request.body.decode("utf-8"))
     data = process_segment_callback(request_body)
     status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
@@ -171,7 +171,7 @@ def custom_segment_callback(request):
 @csrf_exempt
 @UserAuth.user_authentication()
 def update_segment_callback(request):
-    request_body = request.body.decode("utf-8")
+    request_body = json.loads(request.body.decode("utf-8"))
     data = process_segment_data_callback(request_body)
     status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
@@ -189,7 +189,7 @@ def update_segment_tags(request):
 @csrf_exempt
 @UserAuth.user_authentication()
 def update_custom_segment_callback(request):
-    request_body = request.body.decode("utf-8")
+    request_body = json.loads(request.body.decode("utf-8"))
     data = process_segment_callback(request_body)
     status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
