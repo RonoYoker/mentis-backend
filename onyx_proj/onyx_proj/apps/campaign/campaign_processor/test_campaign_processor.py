@@ -129,11 +129,12 @@ def fetch_test_campaign_data(request_data) -> json:
             records_data = json.loads(AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
                                                         iv=settings.SEGMENT_AES_KEYS["AES_IV"],
                                                         mode=AES.MODE_CBC).decrypt_aes_cbc(records_data))
-            if len(records_data.get("sample_data", [])) == 0:
-                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                            details_message="Segment has no data")
+            # if len(records_data.get("sample_data", [])) == 0:
+            #     return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+            #                 details_message="Segment has no data")
 
-            record = records_data["sample_data"][0]
+            # record = records_data["sample_data"][0]
+            record = json.loads(records_data.get("sample_data", []))[0]
 
             record["Mobile"] = user_data.get("MobileNumber", None)
             record["Email"] = user_data.get("EmailId", None)

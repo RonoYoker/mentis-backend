@@ -71,14 +71,14 @@ def get_sample_data_by_unique_id(request_data: dict):
                             details_message=f"Segment {segment_data.get('Title')} does not have any records to show."))
 
         if validity_flag is True:
-            if segment_data["Records"] == 0:
-                sample_data_dict = dict(
-                    sampleData=[],
-                    records=segment_data["Records"],
-                    segmentId=body["segment_id"]
-                )
-                return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=sample_data_dict)
-            sample_data = extra_data.get("sample_data", [])
+            # if segment_data["Records"] == 0:
+            #     sample_data_dict = dict(
+            #         sampleData=[],
+            #         records=segment_data["Records"],
+            #         segmentId=body["segment_id"]
+            #     )
+            #     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=sample_data_dict)
+            sample_data = json.loads(extra_data.get("sample_data", ""))
             sample_data_dict = dict(
                 sampleData=sample_data,
                 records=segment_data["Records"],
