@@ -676,8 +676,9 @@ class RateLimitationLevels(Enum):
 
 
 ASYNC_QUERY_EXECUTION_ENABLED = ["VST_Ethera", "TEST_VST", "IBL_CRD_Ethera", "IBL_AOC_Ethera", "IBL_Ethera",
-                                 "HDB_Ethera", "CMD_Ethera", "CMD_TATA_AIA", "CMD_HSBC", "PRL_Ethera", "RBL_Ethera"
-                                 "TEST_IBL_CC_UPGRADE","TEST_IBL_DC_UPGRADE","TEST_IBL_OCL","IBL_OCL_Ethera"]
+                                 "HDB_Ethera", "CMD_Ethera", "CMD_TATA_AIA", "CMD_HSBC", "PRL_Ethera", "RBL_Ethera",
+                                 "TEST_IBL_CC_UPGRADE", "TEST_IBL_DC_UPGRADE", "TEST_IBL_OCL", "IBL_OCL_Ethera"]
+
 
 class CampaignStatus(Enum):
     APPROVAL_PENDING = "APPROVAL_PENDING"
@@ -688,6 +689,7 @@ class CampaignStatus(Enum):
     ERROR = "ERROR"
     SAVED = "SAVED"
 
+
 class SegmentStatus(Enum):
     APPROVAL_PENDING = "APPROVAL_PENDING"
     APPROVED = "APPROVED"
@@ -696,6 +698,7 @@ class SegmentStatus(Enum):
     SAVED = "SAVED"
     SQL_QUERY_GENERATED = "SQL_QUERY_GENERATED"
 
+
 class CampaignContentStatus(Enum):
     APPROVAL_PENDING = "APPROVAL_PENDING"
     APPROVED = "APPROVED"
@@ -703,11 +706,13 @@ class CampaignContentStatus(Enum):
     DIS_APPROVED = "DIS_APPROVED"
     SAVED = "SAVED"
 
+
 class ContentType(Enum):
     SMS = "SMS"
     IVR = "IVR"
     EMAIL = "EMAIL"
     WHATSAPP = "WHATSAPP"
+
 
 class CampaignSchedulingSegmentStatus(Enum):
     STARTED = "STARTED"
@@ -715,14 +720,17 @@ class CampaignSchedulingSegmentStatus(Enum):
     LAMBDA_TRIGGERED = "LAMBDA_TRIGGERED"
     ERROR = "ERROR"
 
+
 class CampaignChannel(Enum):
     IVR = "IVR"
     SMS = "SMS"
     WHATSAPP = "WHATSAPP"
     EMAIL = "EMAIL"
 
+
 class CampaignExecutionProgressStatus(Enum):
     INITIATED = "INITIATED"
+
 
 class DataSource(Enum):
     CAMPAIGN_BUILDER = "CAMPAIGN_BUILDER"
@@ -733,6 +741,7 @@ class DataSource(Enum):
     TEAM = "TEAM"
     USER = "USER"
     USER_ROLE = "USER_ROLE"
+
 
 class SubDataSource(Enum):
     EMAIL_CONTENT = "EMAIL_CONTENT"
@@ -758,7 +767,7 @@ class SubDataSource(Enum):
     WHATSAPP_CONTENT = "WHATSAPP_CONTENT"
 
 
-SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL= {
+SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     'campaign_id': 'campaignId',
     'segment_id': 'segmentId',
     'error_message': 'errorMessage',
@@ -884,27 +893,28 @@ MIN_ASCII = 33
 MAX_ASCII = 125
 
 CAMP_TYPE_CHANNEL_DICT = {
-        "SMS_MKT":"SMS",
-        "TEST_SMS_MKT":"SMS",
-        "EMAIL_MKT":"EMAIL",
-        "TEST_EMAIL_MKT":"EMAIL",
-        "IVR_MKT":"IVR",
-        "TEST_IVR_MKT":"IVR",
-        "WHATSAPP_MKT":"WHATSAPP",
-        "TEST_WHATSAPP_MKT":"WHATSAPP",
-    }
+    "SMS_MKT": "SMS",
+    "TEST_SMS_MKT": "SMS",
+    "EMAIL_MKT": "EMAIL",
+    "TEST_EMAIL_MKT": "EMAIL",
+    "IVR_MKT": "IVR",
+    "TEST_IVR_MKT": "IVR",
+    "WHATSAPP_MKT": "WHATSAPP",
+    "TEST_WHATSAPP_MKT": "WHATSAPP",
+}
 
 CAMP_TYPE_DICT = {
-        "M": "SMS_MKT",
-        "E": "EMAIL_MKT",
-        "I": "IVR_MKT",
-        "W": "WHATSAPP_MKT",
-        "X": "TEST_SMS_MKT",
-        "Y": "TEST_EMAIL_MKT",
-        "Z": "TEST_IVR_MKT",
-        "A": "TEST_WHATSAPP_MKT",
-        "S": "SMS_HYP"
-    }
+    "M": "SMS_MKT",
+    "E": "EMAIL_MKT",
+    "I": "IVR_MKT",
+    "W": "WHATSAPP_MKT",
+    "X": "TEST_SMS_MKT",
+    "Y": "TEST_EMAIL_MKT",
+    "Z": "TEST_IVR_MKT",
+    "A": "TEST_WHATSAPP_MKT",
+    "S": "SMS_HYP"
+}
+
 
 class ApplicationName(Enum):
     ONYX = "ONYX"

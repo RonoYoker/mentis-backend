@@ -20,7 +20,7 @@ env:
 
 jobs:
   ecr-repo-creation:
-    runs-on: uat-vst-deploy-server
+    runs-on: vst-deploy-server
 
     steps:
       - name: create ECR repository
@@ -49,7 +49,7 @@ jobs:
   build-test-push:
     needs: ecr-repo-creation
 
-    runs-on: uat-vst-deploy-server
+    runs-on: vst-deploy-server
 
     steps:
       - uses: actions/checkout@v2
@@ -109,7 +109,7 @@ jobs:
   deploy:
     needs: build-test-push
 
-    runs-on: uat-vst-deploy-server
+    runs-on: vst-deploy-server
 
     steps:
 

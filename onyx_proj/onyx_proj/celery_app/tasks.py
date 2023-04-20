@@ -1,7 +1,7 @@
-import base64
-import binascii
 import sys
 import time
+from celery import task
+from Crypto.Cipher import AES
 
 from onyx_proj.models.CED_Projects_local import CED_Projects_local
 from onyx_proj.common.utils.newrelic_helpers import push_custom_parameters_to_newrelic
@@ -9,7 +9,7 @@ from onyx_proj.models.custom_query_execution_model import CustomQueryExecution
 from onyx_proj.apps.async_task_invocation.app_settings import ASYNC_QUERY_EXECUTOR_CALLBACK_KEY_PROCESSOR_MAPPING, \
     FETCH_TASK_DATA_QUERY, ASYNC_TASK_CALLBACK_PATH
 from onyx_proj.apps.async_task_invocation.async_tasks_callback_processor import *
-from celery import task
+from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 
 logger = logging.getLogger("celery_master")
 
@@ -70,7 +70,9 @@ def query_executor(task_id: str):
     # check response format and store data if need be in the database
     if task_data["ResponseFormat"] == "json":
         db_resp = CEDQueryExecutionJob().update_query_response(
-            json.dumps(query_response.get("result", None), default=str), task_id)
+            AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
+                              iv=settings.SEGMENT_AES_KEYS["AES_IV"],
+                              mode=AES.MODE_CBC).encrypt_aes_cbc(json.dumps(query_response.get("result", ""), default=str)), task_id)
         if db_resp.get("exception", None) is None and db_resp.get("row_count", 0) > 0:
             logger.info(f"Saved query response for task_id: {task_data['TaskId']}.")
         else:
@@ -124,7 +126,8 @@ def callback_resolver(parent_id: str):
     url = ASYNC_TASK_CALLBACK_PATH[callback_dict["callback_key"]]
 
     # call function by callback_key
-    callback_trigger_response = getattr(sys.modules[__name__], get_callback_function_name(callback_dict))(parent_id, url)
+    callback_trigger_response = getattr(sys.modules[__name__], get_callback_function_name(callback_dict))(parent_id,
+                                                                                                          url)
 
     if callback_trigger_response.get("status", AsyncJobStatus.CALLBACK_FAILED.value) == AsyncJobStatus.SUCCESS.value:
         logger.info(f"Callback triggered successfully for parent_id: {parent_id}.")
@@ -153,3 +156,10 @@ def uuid_processor(uuid_data):
     save_click_data(uuid_data)
     push_custom_parameters_to_newrelic({"stage": "UUID_ASYNC_COMPLETED"})
     return
+
+
+####### temp functionm #########
+@task
+def update_segment_data_encrypted(segment_data):
+    from onyx_proj.models.CED_Segment_model import CEDSegment
+    CEDSegment().update_segment(dict(UniqueId=segment_data["UniqueId"]), dict(Extra=segment_data["Extra"]))
