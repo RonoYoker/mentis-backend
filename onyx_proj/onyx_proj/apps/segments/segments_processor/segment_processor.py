@@ -293,7 +293,11 @@ def trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_
     campaign_builder_entity = CEDCampaignBuilder().get_campaign_builder_entity_by_unique_id(cb_id)
     if campaign_builder_entity.approval_retry != retry_count + 1:
         logger.error(f"method_name :: {method_name}, error :: retry count unmatched")
-        CEDCampaignBuilder().update_error_message(cb_id, "retry count unmatched")
+        CEDCampaignBuilder().mark_campaign_as_error(cb_id, "retry count unmatched")
+        # Set approval retry count as 0
+        CEDCampaignBuilder().reset_approval_retries(cb_id)
+        generate_campaign_approval_status_mail(
+            {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
         raise ValidationFailedException(method_name=method_name, reason="retry count unmatched")
 
     if campaign_builder_entity is None:

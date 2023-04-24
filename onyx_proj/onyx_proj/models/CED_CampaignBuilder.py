@@ -135,3 +135,10 @@ class CEDCampaignBuilder:
         if reason:
             update_dict["error_msg"] = reason
         return update(self.engine, self.table, filter, update_dict)
+
+    def reset_approval_retries(self, unique_id):
+        filter = [
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        ]
+        update_dict = {"approval_retry": 0}
+        return update(self.engine, self.table, filter, update_dict)
