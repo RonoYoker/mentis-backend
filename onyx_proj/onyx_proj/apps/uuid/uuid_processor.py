@@ -9,8 +9,8 @@ from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CAMP_TYPE_CHANN
     CAMP_TYPE_DICT, ApplicationName
 from onyx_proj.common.decorators import ReqEncryptDecrypt
 from onyx_proj.common.logging_helper import log_entry, log_exit
-from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
-from onyx_proj import settings
+from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt,AES
+from django.conf import settings
 from onyx_proj.celery_app.tasks import uuid_processor
 from onyx_proj.common.utils.newrelic_helpers import push_custom_parameters_to_newrelic
 from onyx_proj.models.CED_EmailClickData import CEDEmailClickData
@@ -216,3 +216,18 @@ def save_click_data(uuid_data):
             push_custom_parameters_to_newrelic({"error": "INSERTING_IN_CED_SMSClickData"})
     push_custom_parameters_to_newrelic({"stage": "SAVE_CLICK_DATA_COMPLETED", "is_decoded_keys": is_decoded})
     log_exit(method_name, resp)
+
+
+@ReqEncryptDecrypt(ApplicationName.HYPERION.value, ApplicationName.HYPERION.value)
+def encrypt_pi_data(request):
+    log_entry()
+    data = json.loads(request["body"])
+    if data is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Data is not correct")
+    encrypt_obj = AesEncryptDecrypt(mode=AES.MODE_CBC,key=settings.AES_ENCRYPTION_KEY["KEY"],iv=settings.AES_ENCRYPTION_KEY["IV"])
+    result = []
+    for string in data:
+        result.append(encrypt_obj.encrypt_aes_cbc(string))
+    log_exit()
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result)
