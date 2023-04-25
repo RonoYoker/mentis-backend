@@ -133,8 +133,12 @@ def fetch_test_campaign_data(request_data) -> json:
             #     return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
             #                 details_message="Segment has no data")
 
-            # record = records_data["sample_data"][0]
-            record = json.loads(records_data.get("sample_data", []))[0]
+            try:
+                record = json.loads(records_data.get("sample_data", []))[0]
+            except TypeError:
+                record = records_data["sample_data"][0]
+
+            # record = json.loads(records_data.get("sample_data", []))[0]
 
             record["Mobile"] = user_data.get("MobileNumber", None)
             record["Email"] = user_data.get("EmailId", None)

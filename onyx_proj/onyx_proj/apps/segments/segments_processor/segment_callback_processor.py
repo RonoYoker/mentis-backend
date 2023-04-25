@@ -56,7 +56,10 @@ def process_segment_callback(body):
                             details_message="Exception during update query execution.",
                             ex=str(ex))
         else:
-            segment_count = json.loads(task_data[QueryKeys.SEGMENT_COUNT.value].get("response"))[0].get("row_count", None)
+            try:
+                segment_count = json.loads(task_data[QueryKeys.SEGMENT_COUNT.value].get("response"))[0].get("row_count", None)
+            except TypeError:
+                segment_count = task_data[QueryKeys.SEGMENT_COUNT.value].get("response")[0].get("row_count", None)
 
             if segment_count == 0:
                 # log error and update error
@@ -160,14 +163,15 @@ def process_segment_data_callback(body):
         project_id = body.get("project_id", None)
         task_data = body["tasks"]
 
-        if request_type == AsyncTaskRequestKeys.ONYX_SAMPLE_SEGMENT_DATA_FETCH.value:
-            segment_count = json.loads(task_data[QueryKeys.UPDATE_SEGMENT_COUNT.value].get("response"))[0].get("row_count", None)
-            extra_data = extra_data_parser(task_data[QueryKeys.SAMPLE_SEGMENT_DATA.value], project_id)
-        elif request_type == AsyncTaskRequestKeys.ONYX_TEST_CAMPAIGN_DATA_FETCH.value:
-            segment_count = json.loads(task_data[QueryKeys.UPDATE_SEGMENT_COUNT.value].get("response"))[0].get("row_count", None)
-            extra_data = extra_data_parser(task_data[QueryKeys.SAMPLE_SEGMENT_DATA.value], project_id)
-        elif request_type == AsyncTaskRequestKeys.ONYX_REFRESH_SEGMENT_COUNT.value:
-            segment_count = json.loads(task_data[QueryKeys.UPDATE_SEGMENT_COUNT.value].get("response"))[0].get("row_count", None)
+        if request_type in [AsyncTaskRequestKeys.ONYX_SAMPLE_SEGMENT_DATA_FETCH.value,
+                            AsyncTaskRequestKeys.ONYX_TEST_CAMPAIGN_DATA_FETCH.value,
+                            AsyncTaskRequestKeys.ONYX_REFRESH_SEGMENT_COUNT.value]:
+            try:
+                segment_count = json.loads(task_data[QueryKeys.UPDATE_SEGMENT_COUNT.value].get("response"))[0].get(
+                    "row_count", None)
+            except TypeError:
+                segment_count = task_data[QueryKeys.UPDATE_SEGMENT_COUNT.value].get("response")[0].get("row_count",
+                                                                                                       None)
             extra_data = extra_data_parser(task_data[QueryKeys.SAMPLE_SEGMENT_DATA.value], project_id)
         else:
             update_dict = {column_name: datetime.datetime.utcnow()}
@@ -212,7 +216,11 @@ def extra_data_parser(data: dict, project_id):
     """
     parses query response to suitable data for insertion into Extra column of CED_Segment table
     """
-    data_object = json.loads(data.get("response"))
+    try:
+        data_object = json.loads(data.get("response"))
+    except TypeError:
+        data_object = data.get("response")
+
     if len(data_object) == 0:
         return dict(error=True, reason="no data in segment")
     headers_list = [*data_object[0]]

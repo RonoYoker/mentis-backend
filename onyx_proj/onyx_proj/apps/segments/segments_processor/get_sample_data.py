@@ -78,7 +78,11 @@ def get_sample_data_by_unique_id(request_data: dict):
             #         segmentId=body["segment_id"]
             #     )
             #     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=sample_data_dict)
-            sample_data = json.loads(extra_data.get("sample_data", ""))
+            # sample_data = json.loads(extra_data.get("sample_data", ""))
+            try:
+                sample_data = json.loads(extra_data.get("sample_data", ""))
+            except TypeError:
+                sample_data = extra_data.get("sample_data", [])
             sample_data_dict = dict(
                 sampleData=sample_data,
                 records=segment_data["Records"],
@@ -137,3 +141,4 @@ def get_sample_data_by_unique_id(request_data: dict):
         validation_response["segmentId"] = body.get("segment_id")
 
         return dict(status_code=200, result=TAG_SUCCESS, data=validation_response)
+

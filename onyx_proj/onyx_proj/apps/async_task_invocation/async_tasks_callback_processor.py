@@ -68,13 +68,18 @@ def onyx_common_callback_processor(parent_id: str, url: str):
     request_payload["project_id"] = request_data[0].get("ProjectId", None)
     request_payload["request_type"] = request_data[0].get("RequestType", None)
 
+    # not encrypting the request payload as of now
     # AES ECB encryption of request payload
-    encrypted_request_payload = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY, mode=AES.MODE_ECB). \
-        encrypt(json.dumps(request_payload))
+    # encrypted_request_payload = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY, mode=AES.MODE_ECB). \
+    #     encrypt(json.dumps(request_payload))
 
     # make onyx rest call
+    # api_response = json.loads(
+    #     RequestClient(request_type="POST", url=settings.ONYX_DOMAIN + url, request_body=encrypted_request_payload,
+    #                   headers={"X-AuthToken": settings.ONYX_CENTRAL_AUTH_TOKEN}).get_api_response())
+
     api_response = json.loads(
-        RequestClient(request_type="POST", url=settings.ONYX_DOMAIN + url, request_body=encrypted_request_payload,
+        RequestClient(request_type="POST", url=settings.ONYX_DOMAIN + url, request_body=json.dumps(request_payload),
                       headers={"X-AuthToken": settings.ONYX_CENTRAL_AUTH_TOKEN}).get_api_response())
 
     logger.debug(f"onyx_common_callback_processor :: callback api_response is: {api_response}")

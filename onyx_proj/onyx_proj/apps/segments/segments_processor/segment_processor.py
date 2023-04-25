@@ -61,7 +61,7 @@ def trigger_update_segment_count(data):
     If RefreshDate for the given segment is less than 30 minutes ago, returned cached data else invoke async flow.
     """
     segment_id = data.get("body").get("unique_id")
-    logger.debug(f"segment_unique_id :: {segment_id}")
+    logger.debug(f"trigger_update_segment_count :: segment_unique_id : {segment_id}")
 
     segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))
     if len(segment_data) == 0 or segment_data is None:
