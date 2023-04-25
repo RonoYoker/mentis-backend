@@ -71,8 +71,8 @@ def query_executor(task_id: str):
     # check response format and store data if need be in the database
     if task_data["ResponseFormat"] == "json":
         db_resp = CEDQueryExecutionJob().update_query_response(
-            AesEncryptDecrypt(key=settings.AES_ENCRYPTION_KEY["AES_KEY"],
-                              iv=settings.AES_ENCRYPTION_KEY["AES_IV"],
+            AesEncryptDecrypt(key=settings.AES_ENCRYPTION_KEY["KEY"],
+                              iv=settings.AES_ENCRYPTION_KEY["IV"],
                               mode=AES.MODE_CBC).encrypt_aes_cbc(json.dumps(query_response.get("result", ""), default=str)), task_id)
         if db_resp.get("exception", None) is None and db_resp.get("row_count", 0) > 0:
             logger.info(f"Saved query response for task_id: {task_data['TaskId']}.")
