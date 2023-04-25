@@ -921,3 +921,4 @@ class ApplicationName(Enum):
     SANDESH = "SANDESH"
     HYPERION = "HYPERION"
     HYPERION_LAMBDA = "HYPERION_LAMBDA"
+    PEGASUS = "PEGASUS"

@@ -20,7 +20,7 @@ from onyx_proj.models.CreditasCampaignEngine import CED_SMSClickData, CED_EmailC
 logger = logging.getLogger("apps")
 
 
-@ReqEncryptDecrypt(None, ApplicationName.HYPERION.value)
+@ReqEncryptDecrypt(None, ApplicationName.PEGASUS.value)
 def uuid_info_local(request):
     method_name = "uuid_info_local"
     log_entry(method_name, request)
