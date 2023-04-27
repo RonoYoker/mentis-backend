@@ -461,7 +461,7 @@ def generate_test_query(sql_query: str, headers_list=None) -> dict:
     sql_query = re.sub("(?i)group by mobile ", "GROUP BY SampOrgMobile ", sql_query)
     sql_query = re.sub("(?i)group by email ", "GROUP BY SampOrgEmail ", sql_query)
 
-    test_sql_query = "SELECT derived_table.*, @MOBILE_NUMBER as Mobile, @EMAIL_ID as Email FROM (" + sql_query + " LIMIT 1 ) derived_table"
+    test_sql_query = "SELECT derived_table.*, @MOBILE_NUMBER as Mobile, @EMAIL_ID as Email FROM (" + sql_query + " ORDER BY AccountNumber DESC LIMIT 1 ) derived_table"
 
     return dict(result=TAG_SUCCESS, query=test_sql_query)
 
@@ -552,7 +552,7 @@ def generate_queries_for_async_task(sql_query: str):
     util to create two queries, one to fetch headers and the other to fetch count for the segment
     """
     count_sql_query = f"SELECT COUNT(*) AS row_count FROM ({sql_query}) derived_table"
-    limit_sql_query = f"{sql_query} LIMIT 50"
+    limit_sql_query = f"{sql_query} ORDER BY AccountNumber DESC LIMIT 50"
     return [dict(query=count_sql_query, response_format="json", query_key=QueryKeys.SEGMENT_COUNT.value),
             dict(query=limit_sql_query, response_format="json", query_key=QueryKeys.SEGMENT_HEADERS_AND_DATA.value)]
 
