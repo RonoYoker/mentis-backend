@@ -13,7 +13,8 @@ def add_filter_to_query_using_params(filter_type: str):
 
     return query
 
-def add_status_to_query_using_params(cssd_id, status: str,error_msg: str):
+
+def add_status_to_query_using_params(cssd_id, status: str, error_msg: str):
     query = ""
     if status == CampaignTablesStatus.ERROR.value:
         query = JOIN_QUERIES.get("base_campaign_statuses_query").format(id=cssd_id,
@@ -23,8 +24,8 @@ def add_status_to_query_using_params(cssd_id, status: str,error_msg: str):
                                                                         error_msg=error_msg)
     elif status == CampaignTablesStatus.SUCCESS.value:
         query = JOIN_QUERIES.get("base_campaign_statuses_query").format(id=cssd_id,
-                                                                             value_to_set=f"",
-                                                                             cbc_status=CampaignTablesStatus.APPROVED.value,
-                                                                             cep_status=CampaignTablesStatus.SCHEDULED.value,
-                                                                             error_msg=None)
+                                                                        value_to_set=f"",
+                                                                        cbc_status=CampaignTablesStatus.APPROVED.value,
+                                                                        cep_status=CampaignTablesStatus.SCHEDULED.value,
+                                                                        error_msg=None)
     return query

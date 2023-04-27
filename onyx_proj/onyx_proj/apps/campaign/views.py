@@ -16,6 +16,7 @@ from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import 
     get_campaign_data_in_period, validate_campaign, \
     get_filtered_recurring_date_time, update_segment_count_and_status_for_campaign, update_campaign_status, filter_list, \
     deactivate_campaign_by_campaign_id, view_campaign_data, approval_action_on_campaign_builder_by_unique_id
+from apps.campaign.test_campaign.test_campaign_processor import test_campaign_process
 from django.views.decorators.csrf import csrf_exempt
 
 
@@ -285,5 +286,13 @@ def approval_action_on_campaign_builder(request):
     session_id = request_headers.get('X-Authtoken', '')
     data = dict(body=request_body, headers=session_id)
     response = approval_action_on_campaign_builder_by_unique_id(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+def initiate_test_campaign(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    response = test_campaign_process(request_body)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
