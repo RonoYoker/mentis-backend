@@ -38,7 +38,10 @@ HYPERION_LOCAL_DOMAIN = {
     "TEST_IBL_DC_UPGRADE": "http://uatpay.indusind.com/",
     "TEST_IBL_CC_UPGRADE": "http://uatpay.indusind.com/",
     "TEST_IBL_CRD": "http://uatpay.indusind.com/",
-    "TEST_IBL_AOC": "http://uatpay.indusind.com/"
+    "TEST_IBL_CASA": "http://uatpay.indusind.com/",
+    "TEST_IBL_AOC": "http://uatpay.indusind.com/",
+    "TEST_IBL_DC_ENBL": "http://uatpay.indusind.com/",
+    "TEST_YBL_CLE": "http://m-stage-uat-web-1463991111.ap-south-1.elb.amazonaws.com/"
 }
 
 ONYX_LOCAL_DOMAIN = {
@@ -47,6 +50,7 @@ ONYX_LOCAL_DOMAIN = {
     "iblaocjlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
     "iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
     "ibldcuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
+    "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
     "iblccuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
     "iblocljlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
     "prlhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausbrd": "http://m-stage-onyxlocal-elb-1682498119.ap-south-1.elb.amazonaws.com",
@@ -54,8 +58,13 @@ ONYX_LOCAL_DOMAIN = {
     "vstaocnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nauspr": "http://m-stage-onyx-elb-1846785611.ap-south-1.elb.amazonaws.com"
 }
 
-ONYX_LOCAL_CAMP_VALIDATION = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj","ibldcuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj","iblccuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj","iblocljlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj", "iblcrdjlsdsmablpx55clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj", "iblaocjlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj", "iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                                "prlhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausbrd", "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd", "vstaocnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nauspr"]
+ONYX_LOCAL_CAMP_VALIDATION = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj","ibldcuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                              "iblccuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj","iblocljlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                              "iblcrdjlsdsmablpx55clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj","iblaocjlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                              "iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj","prlhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausbrd",
+                              "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd", "vstaocnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nauspr",
+                              "hdbhwnjlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj", "yblclejlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                              "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd"]
 
 JWT_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["JWT_ENCRYPTION_KEY"]
 # RSA_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["RSA_KEYS"]
