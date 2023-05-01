@@ -231,3 +231,18 @@ def encrypt_pi_data(request):
         result.append(encrypt_obj.encrypt_aes_cbc(string))
     log_exit()
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result)
+
+
+@ReqEncryptDecrypt(ApplicationName.HYPERION.value, ApplicationName.HYPERION.value)
+def decrypt_pi_data(request):
+    log_entry()
+    data = json.loads(request["body"])
+    if data is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Data is not correct")
+    encrypt_obj = AesEncryptDecrypt(mode=AES.MODE_CBC,key=settings.AES_ENCRYPTION_KEY["KEY"],iv=settings.AES_ENCRYPTION_KEY["IV"])
+    result = []
+    for string in data:
+        result.append(encrypt_obj.decrypt_aes_cbc(string))
+    log_exit()
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result)

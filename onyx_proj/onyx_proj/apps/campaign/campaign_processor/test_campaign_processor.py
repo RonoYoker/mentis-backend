@@ -8,6 +8,7 @@ from Crypto.Cipher import AES
 
 from onyx_proj.apps.segments.segments_processor.segment_helpers import check_validity_flag, check_restart_flag
 from onyx_proj.common.request_helper import RequestClient
+from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetailsTest_model import CEDCampaignSchedulingSegmentDetailsTest
@@ -20,11 +21,13 @@ from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, \
     CHANNEL_RESPONSE_TABLE_MAPPING, TEST_CAMPAIGN_RESPONSE_DATA, CHANNEL_CAMPAIGN_BUILDER_TABLE_MAPPING, \
-    TEST_CAMPAIGN_VALIDATION_DURATION_MINUTES, TEST_CAMPAIGN_VALIDATION_API_PATH, ASYNC_QUERY_EXECUTION_ENABLED
+    TEST_CAMPAIGN_VALIDATION_DURATION_MINUTES, TEST_CAMPAIGN_VALIDATION_API_PATH, ASYNC_QUERY_EXECUTION_ENABLED, \
+    GET_DECRYPTED_DATA
 from onyx_proj.apps.segments.app_settings import AsyncTaskRequestKeys, AsyncTaskSourceKeys, AsyncTaskCallbackKeys, \
     QueryKeys, DATA_THRESHOLD_MINUTES
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
-# from onyx_proj.apps.segments.app_settings import TEST_CAMPAIGN_DATA_ENCRYPTED_HEADERS
+from onyx_proj.common.logging_helper import log_entry,log_exit
+
 
 logger = logging.getLogger("apps")
 
@@ -139,10 +142,19 @@ def fetch_test_campaign_data(request_data) -> json:
             except TypeError:
                 record = records_data["sample_data"][0]
 
+            headers_list = records_data.get("headers_list", [])
+            record_list = decrypt_test_segment_data([record],headers_list,segment_data.get("ProjectId"))
+            record = record_list[0]
+            header_name_list = [header["headerName"].lower() for header in headers_list]
+
             # record = json.loads(records_data.get("sample_data", []))[0]
 
-            record["Mobile"] = user_data["MobileNumber"]
-            record["Email"] = user_data["EmailId"]
+            record["Mobile"] = user_data.get("MobileNumber", None)
+            record["Email"] = user_data.get("EmailId", None)
+            if "enmobile" in header_name_list:
+                record["EnMobile"] = user_data.get("MobileNumber", None)
+            if "enemail" in header_name_list:
+                record["EnEmail"] = user_data.get("EmailId", None)
 
             return dict(status_code=http.HTTPStatus.OK, active=False, campaignId=campaign_id, sampleData=[record])
     else:
@@ -357,3 +369,39 @@ def fetch_test_campaign_validation_status(request_data) -> json:
     result["system_validated"] = response['data'].get('system_validated', False)
     result["validation_details"] = response['data'].get('validation_details', [])
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result, details_message="")
+
+
+def decrypt_test_segment_data(data,headers,project_id):
+    log_entry()
+    domain = settings.ONYX_LOCAL_DOMAIN.get(project_id)
+    if domain is None:
+        raise ValidationFailedException(method_name="", reason="Local Project not configured for this Project")
+
+    project_data = CEDProjects().get_project_data_by_project_id(project_id=project_id)
+    project_data = project_data[0]
+    final_data = []
+    encrypted_values = []
+
+    for record in data:
+        for header in headers:
+            if header.get("encrypted",False) == True:
+                encrypted_values.append(record[header["headerName"]])
+
+    if len(encrypted_values) == 0:
+        return data
+
+    decrypted_data_resp = RequestClient.post_onyx_local_api_request_rsa(project_data["BankName"],encrypted_values,domain,GET_DECRYPTED_DATA)
+    if decrypted_data_resp["success"] != True:
+        raise ValidationFailedException(method_name="", reason="Unable to Decrypt Data")
+    decrypted_data = decrypted_data_resp["data"]["data"]
+
+    index= 0
+    for record in data:
+        for header in headers:
+            if header.get("encrypted",False) == True:
+                record[header["headerName"]] = decrypted_data[index]
+                index+=1
+        final_data.append(record)
+    log_exit()
+    return final_data
+

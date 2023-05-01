@@ -7,9 +7,10 @@ from django.conf import settings
 
 
 class RsaEncrypt:
-    def __init__(self, application):
-        self.encryption_key = settings.RSA_ENCRYPTION_KEY[application].get('PUBLIC')
-        self.decryption_key = settings.RSA_ENCRYPTION_KEY[application].get('PRIVATE')
+    def __init__(self, application=None):
+        if application is not None:
+            self.encryption_key = settings.RSA_ENCRYPTION_KEY[application].get('PUBLIC')
+            self.decryption_key = settings.RSA_ENCRYPTION_KEY[application].get('PRIVATE')
 
     def rsa_encrypt_data(self, plain_text):
         """
@@ -30,3 +31,4 @@ class RsaEncrypt:
         cipher = PKCS1_v1_5.new(private_key)
         decrypted_message = cipher.decrypt(encrypted_message, get_random_bytes(16), expected_pt_len=0)
         return decrypted_message.decode('utf-8')
+

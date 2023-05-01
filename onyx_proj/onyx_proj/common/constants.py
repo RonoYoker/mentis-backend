@@ -59,6 +59,8 @@ CUSTOM_QUERY_EXECUTION_API_PATH = "hyperioncampaigntooldashboard/segment/customQ
 
 CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH = "local/async_task_invocation/async_query_execution/"
 
+GET_DECRYPTED_DATA = "/local/uuid/get_decrypted_data/"
+
 SAMPLE_DATA_ASYNC_EXECUTION_API_PATH = "local/async_task_invocation/async_query_execution/"
 
 DEACTIVATE_CAMPAIGNS_FROM_CREATION_DETAILS = "hyperioncampaigntooldashboard/deactivate/localdb/campaignFromCreationdetails"
@@ -677,7 +679,7 @@ class RateLimitationLevels(Enum):
 
 ASYNC_QUERY_EXECUTION_ENABLED = ["VST_Ethera", "TEST_VST", "IBL_CRD_Ethera", "IBL_AOC_Ethera", "IBL_Ethera",
                                  "HDB_Ethera", "CMD_Ethera", "CMD_TATA_AIA", "CMD_HSBC", "PRL_Ethera", "RBL_Ethera",
-                                 "TEST_IBL_CC_UPGRADE", "TEST_IBL_DC_UPGRADE", "TEST_IBL_OCL", "IBL_OCL_Ethera"]
+                                 "TEST_IBL_CC_UPGRADE", "TEST_IBL_DC_UPGRADE", "TEST_IBL_OCL", "IBL_OCL_Ethera","TEST_IBL_CASA","TEST_IBL"]
 
 
 class CampaignStatus(Enum):
@@ -922,3 +924,4 @@ class ApplicationName(Enum):
     HYPERION = "HYPERION"
     HYPERION_LAMBDA = "HYPERION_LAMBDA"
     PEGASUS = "PEGASUS"
+    ONYX_LOCAL = "PEGASUS"

@@ -51,6 +51,7 @@ def content_headers_processor(headers_list: list, project_id: str):
                                           "comment": mapping_ele.get("Comment"),
                                           "mappingType": mapping_ele.get("MappingType"),
                                           "status": mapping_ele.get("Status"),
+                                          "encrypted": mapping_ele.get("Encrypted"),
                                           "contentType": mapping_ele.get("ContentType"),
                                           "active": mapping_ele.get("isActive")}
                 processed_headers_list.append(processed_headers_dict)
@@ -66,6 +67,7 @@ def content_headers_processor(headers_list: list, project_id: str):
                                           "fileDataFieldType": mapping_ele.get("fileDataFieldType"),
                                           "comment": mapping_ele.get("comment"),
                                           "mappingType": mapping_ele.get("mappingType"),
+                                          "encrypted": False,
                                           "status": mapping_ele.get("status"),
                                           "contentType": mapping_ele.get("contentType"),
                                           "active": mapping_ele.get("active")}

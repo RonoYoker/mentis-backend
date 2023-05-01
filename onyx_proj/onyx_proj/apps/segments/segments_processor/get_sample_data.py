@@ -5,6 +5,7 @@ import logging
 from Crypto.Cipher import AES
 from django.conf import settings
 
+from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import decrypt_test_segment_data
 from onyx_proj.apps.segments.segments_processor.segment_helpers import check_validity_flag, check_restart_flag
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import hyperion_local_async_rest_call, \
     hyperion_local_rest_call
@@ -83,6 +84,11 @@ def get_sample_data_by_unique_id(request_data: dict):
                 sample_data = json.loads(extra_data.get("sample_data", ""))
             except TypeError:
                 sample_data = extra_data.get("sample_data", [])
+
+            headers_list = extra_data.get("headers_list", [])
+
+            record_list = decrypt_test_segment_data(sample_data[:10],headers_list,segment_data.get("ProjectId"))
+            sample_data = sample_data[10:] + record_list
             sample_data_dict = dict(
                 sampleData=sample_data,
                 records=segment_data["Records"],
