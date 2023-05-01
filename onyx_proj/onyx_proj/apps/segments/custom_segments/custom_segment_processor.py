@@ -8,7 +8,7 @@ import http
 from django.conf import settings
 from Crypto.Cipher import AES
 
-from common.utils.AES_encryption import AesEncryptDecrypt
+from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.apps.content.content_procesor import content_headers_processor
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.common.constants import TAG_FAILURE, CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, TAG_SUCCESS, TAG_KEY_CUSTOM, \
