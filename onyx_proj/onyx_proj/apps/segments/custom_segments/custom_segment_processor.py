@@ -484,7 +484,7 @@ def generate_test_query(sql_query: str, headers_list=None) -> dict:
     if regex_email_en.search(sql_query):
         test_query_encrypted_projections += ", @ENCRYPTED_EMAIL_ID as EnEmail "
     if regex_mobile_en.search(sql_query):
-        test_query_encrypted_projections += ", @ENCRYPTED_MOBILE_NUMBER as EnMobile "
+        test_query_encrypted_projections += ", @ENCRYPTED_MOBILE_NUMBER as EnMobile"
 
     sql_query = re.sub("(?i)as email", "AS SampOrgEmail ", sql_query)
     sql_query = re.sub("(?i)as enemail", "AS SampOrgEnEmail ", sql_query)
@@ -495,7 +495,7 @@ def generate_test_query(sql_query: str, headers_list=None) -> dict:
     sql_query = re.sub("(?i)group by email ", "GROUP BY SampOrgEmail ", sql_query)
     sql_query = re.sub("(?i)group by enemail ", "GROUP BY SampOrgEnEmail ", sql_query)
 
-    test_sql_query = "SELECT derived_table.*, @MOBILE_NUMBER as Mobile, @EMAIL_ID as Email" + test_query_encrypted_projections + "FROM (" + sql_query + " ORDER BY AccountNumber DESC LIMIT 1 ) derived_table"
+    test_sql_query = "SELECT derived_table.*, @MOBILE_NUMBER as Mobile, @EMAIL_ID as Email" + test_query_encrypted_projections + " FROM (" + sql_query + " ORDER BY AccountNumber DESC LIMIT 1 ) derived_table"
 
     return dict(result=TAG_SUCCESS, query=test_sql_query)
 
