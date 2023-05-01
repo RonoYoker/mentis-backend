@@ -26,6 +26,7 @@ HYPERION_LOCAL_DOMAIN = {
     "VST_Ethera": "http://m-prod-hyp-1912236199.ap-south-1.elb.amazonaws.com/",
     "IBL_CRD_Ethera": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
     "IBL_CC_UPGRADE_Ethera": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
+    "IBL_CASA": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
     "CMD_HSBC": "http://m-prod-cmd-hyp-1732303524.ap-south-1.elb.amazonaws.com/"
 }
 
@@ -36,6 +37,7 @@ ONYX_LOCAL_DOMAIN = {
     "iblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "http://m-prod-onyxlocal-elb-288397383.ap-south-1.elb.amazonaws.com",
     "iblccupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj": "http://m-prod-onyxlocal-elb-288397383.ap-south-1.elb.amazonaws.com",
     "iblocljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "http://m-prod-onyxlocal-elb-288397383.ap-south-1.elb.amazonaws.com",
+    "iblcsupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj": "http://m-prod-onyxlocal-elb-288397383.ap-south-1.elb.amazonaws.com",
     "hdbethjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapradmenfn11nausprj": "http://m-prod-onyxlocal-elb-1781453.ap-south-1.elb.amazonaws.com",
     "cmdhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-1013783555.ap-south-1.elb.amazonaws.com",
     "aiahwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-1013783555.ap-south-1.elb.amazonaws.com",
@@ -49,7 +51,8 @@ ONYX_LOCAL_CAMP_VALIDATION = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapra
                               "hdbethjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapradmenfn11nausprj", "cmdhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                               "hsbcwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj", "prlethjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapradmenfn11nausprj",
                               "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd","iblocljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
-                              "iblccupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj","aiahwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj"]
+                              "iblccupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj","aiahwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                              "iblcsupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj"]
 
 CAMPAIGN_THRESHOLDS_PER_MINUTE = {
     "SMS": 5000,
