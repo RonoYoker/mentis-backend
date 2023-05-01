@@ -4,6 +4,9 @@ import http
 import logging
 import json
 import re
+import http
+from django.conf import settings
+from Crypto.Cipher import AES
 
 from onyx_proj.apps.content.content_procesor import content_headers_processor
 from onyx_proj.common.request_helper import RequestClient
@@ -11,8 +14,9 @@ from onyx_proj.common.constants import *
 from onyx_proj.models.CED_EntityTagMapping import CEDEntityTagMapping
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
-from onyx_proj.apps.segments.app_settings import QueryKeys, AsyncTaskCallbackKeys, AsyncTaskSourceKeys, AsyncTaskRequestKeys, SegmentStatusKeys
-from django.conf import settings
+from onyx_proj.apps.segments.app_settings import QueryKeys, AsyncTaskCallbackKeys, AsyncTaskSourceKeys, \
+    AsyncTaskRequestKeys, SegmentStatusKeys
+from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 
 logger = logging.getLogger("apps")
 
@@ -206,30 +210,36 @@ def fetch_headers_list(data) -> dict:
     """
     Fetch headers for the given segment from CED_Segments table (column name Extra)
     """
-    segment_id = data.get("segment_id", None)
+    logger.debug(f"fetch_headers_list :: data: {data}")
 
-    params_dict = {"UniqueId": segment_id}
+    segment_id = data["segment_id"]
+    params_dict = dict(UniqueId=segment_id)
 
     try:
         db_res = CEDSegment().get_headers_for_custom_segment(params_dict=params_dict)
     except Exception as ex:
+        logger.error(f"fetch_headers_list :: Error while executing headers fetch for {segment_id}")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Error while executing headers fetch for {segment_id}.",
                     ex=str(ex))
 
     if not db_res:
+        logger.error(f"fetch_headers_list :: Response null from CED_Segments table for {segment_id}")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Response null from CED_Segments table.")
 
-    headers_list = db_res[0].get("Extra", {})
+    extra_data = db_res[0].get("Extra", {})
 
-    if not headers_list:
+    if not extra_data:
+        logger.error(f"fetch_headers_list :: Headers list empty for {segment_id}")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Headers list empty.")
 
-    data_dict = {"segment_id": segment_id, "headers_list": json.loads(headers_list)}
-    return dict(status_code=200, result=TAG_SUCCESS,
-                data=data_dict)
+    response_dict = dict(segment_id=segment_id,
+                         headers_list=json.loads(AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
+                                                                   iv=settings.SEGMENT_AES_KEYS["AES_IV"],
+                                                                   mode=AES.MODE_CBC).decrypt_aes_cbc(extra_data)))
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=response_dict)
 
 
 def update_custom_segment_process(data) -> dict:

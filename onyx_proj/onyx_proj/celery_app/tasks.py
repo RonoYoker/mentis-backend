@@ -22,20 +22,22 @@ def query_executor(task_id: str):
     """
     # fetch task data from CED_QueryExecutionJob And CED_QueryExecution
 
+    logger.debug(f"query_executor :: task_id: {task_id}")
+
     task_data = CustomQueryExecution().execute_query(FETCH_TASK_DATA_QUERY.replace("{#task_id#}", task_id))["result"][0]
 
     # update status in CED_QueryExecutionJob table for as PROCESSING and execute query
     db_resp = CEDQueryExecutionJob().update_task_status(AsyncJobStatus.PROCESSING.value, task_id)
     if db_resp.get("exception", None) is None and db_resp.get("row_count", 0) > 0:
-        logger.info(f"Updated status to {AsyncJobStatus.PROCESSING.value} for task_id: {task_data['TaskId']}.")
+        logger.info(f"query_executor :: Updated status to {AsyncJobStatus.PROCESSING.value} for task_id: {task_data['TaskId']}.")
     else:
-        logger.error(f"Unable to update status for task_id: {task_data['TaskId']}.")
+        logger.error(f"query_executor :: Unable to update status for task_id: {task_data['TaskId']}.")
         return
 
     project_level_data = CED_Projects_local().get_project_data(task_data["ProjectId"])
     if project_level_data["error"] is True or len(project_level_data.get("result", [])) == 0 or bool(
             project_level_data.get("result", False)) is False:
-        logger.info(f"Database config not defined for project: {task_data['ProjectId']}.")
+        logger.info(f"query_executor :: Database config not defined for project: {task_data['ProjectId']}.")
         return
 
     db_config = json.loads(project_level_data["result"][0]["ProjectConfig"])
@@ -44,23 +46,23 @@ def query_executor(task_id: str):
     init_time = time.time()
     query_response = CustomQueryExecution(db_conf_key=db_reader_config_key).execute_query(task_data["Query"])
     query_execution_time = time.time() - init_time
-    logger.info(f"Time taken to execute query for task_id: {task_id} is {query_execution_time}.")
+    logger.info(f"query_executor :: Time taken to execute query for task_id: {task_id} is {query_execution_time}.")
     task_data["QueryExecutionTime"] = query_execution_time
 
     if query_response.get("error") is True:
-        logger.info(f"Query response is error for the task_id: {task_id}.")
+        logger.info(f"query_executor :: Query response is error for the task_id: {task_id}.")
+        task_data["Status"] = AsyncJobStatus.ERROR.value
         db_resp = CEDQueryExecutionJob().update_task_status(AsyncJobStatus.ERROR.value, task_id,
                                                             query_response.get("exception"))
-        task_data["Status"] = AsyncJobStatus.ERROR.value
 
         if db_resp.get("exception", None) is None and db_resp.get("row_count", 0) > 0:
-            logger.info(f"Updated status to {AsyncJobStatus.ERROR.value} for task_id: {task_data['TaskId']}.")
+            logger.info(f"query_executor :: Updated status to {AsyncJobStatus.ERROR.value} for task_id: {task_data['TaskId']}.")
         else:
-            logger.error(f"Unable to update status for task_id: {task_data['TaskId']}.")
+            logger.error(f"query_executor :: Unable to update status for task_id: {task_data['TaskId']}.")
             return
     else:
         task_data["Status"] = AsyncJobStatus.SUCCESS.value
-        logger.info(f"Query response for the task_id: {task_id} is {query_response}.")
+        logger.info(f"query_executor :: Query response for the task_id: {task_id} is {query_response}.")
 
     push_custom_parameters_to_newrelic(
         dict(project_id=task_data["ProjectId"], source=task_data["Client"], request_id=task_data["RequestId"],
@@ -75,9 +77,9 @@ def query_executor(task_id: str):
                               iv=settings.AES_ENCRYPTION_KEY["IV"],
                               mode=AES.MODE_CBC).encrypt_aes_cbc(json.dumps(query_response.get("result", ""), default=str)), task_id)
         if db_resp.get("exception", None) is None and db_resp.get("row_count", 0) > 0:
-            logger.info(f"Saved query response for task_id: {task_data['TaskId']}.")
+            logger.info(f"query_executor :: Saved query response for task_id: {task_data['TaskId']}.")
         else:
-            logger.error(f"Unable to save query response for task_id: {task_data['TaskId']}.")
+            logger.error(f"query_executor:: Unable to save query response for task_id: {task_data['TaskId']}.")
     elif task_data["ResponseFormat"] == "s3":
         # to be added
         pass
@@ -85,9 +87,9 @@ def query_executor(task_id: str):
     # update status to SUCCESS for the task
     db_resp = CEDQueryExecutionJob().update_task_status(AsyncJobStatus.SUCCESS.value, task_id)
     if db_resp.get("exception", None) is None and db_resp.get("row_count", 0) > 0:
-        logger.info(f"Updated status to {AsyncJobStatus.SUCCESS.value} for task_id: {task_data['TaskId']}.")
+        logger.info(f"query_executor :: Updated status to {AsyncJobStatus.SUCCESS.value} for task_id: {task_data['TaskId']}.")
     else:
-        logger.error(f"Unable to update status for task_id: {task_data['TaskId']}.")
+        logger.error(f"query_executor:: Unable to update status for task_id: {task_data['TaskId']}.")
 
     # invoke async task
     callback_resolver.apply_async(kwargs={"parent_id": task_data["ParentId"]}, queue="celery_callback_resolver")
@@ -107,7 +109,7 @@ def callback_resolver(parent_id: str):
 
     db_resp = CEDQueryExecutionJob().get_status_count_for_tasks(parent_id)
     if db_resp.get("error") is True or len(db_resp.get("result", [])) == 0:
-        logger.error(f"Unable to fetch count of status for parent_id: {parent_id}.")
+        logger.error(f"callback_resolver :: Unable to fetch count of status for parent_id: {parent_id}.")
         return
 
     for status_count in db_resp["result"]:
@@ -118,7 +120,7 @@ def callback_resolver(parent_id: str):
     callback_data = CEDQueryExecution().get_callback_details_by_parent_id(parent_id)
     if callback_data["error"] is True or len(callback_data.get("result", [])) == 0 or bool(
             callback_data.get("result", False)) is False:
-        logger.info(f"Callback not defined for task {parent_id}.")
+        logger.info(f"callback_resolver :: Callback not defined for task {parent_id}.")
         return
 
     callback_dict = json.loads(callback_data["result"][0]["CallbackDetails"])
@@ -131,9 +133,9 @@ def callback_resolver(parent_id: str):
                                                                                                           url)
 
     if callback_trigger_response.get("status", AsyncJobStatus.CALLBACK_FAILED.value) == AsyncJobStatus.SUCCESS.value:
-        logger.info(f"Callback triggered successfully for parent_id: {parent_id}.")
+        logger.info(f"callback_resolver:: Callback triggered successfully for parent_id: {parent_id}.")
     else:
-        logger.error(f"Callback trigger failed for parent_id: {parent_id}.")
+        logger.error(f"callback_resolver :: Callback trigger failed for parent_id: {parent_id}.")
 
 
 @task
