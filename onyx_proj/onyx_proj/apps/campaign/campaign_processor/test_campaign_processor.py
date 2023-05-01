@@ -149,12 +149,12 @@ def fetch_test_campaign_data(request_data) -> json:
 
             # record = json.loads(records_data.get("sample_data", []))[0]
 
-            record["Mobile"] = user_data.get("MobileNumber", None)
-            record["Email"] = user_data.get("EmailId", None)
+            record["mobile"] = user_data.get("MobileNumber", None)
+            record["email"] = user_data.get("EmailId", None)
             if "enmobile" in header_name_list:
-                record["EnMobile"] = user_data.get("MobileNumber", None)
+                record["enmobile"] = user_data.get("MobileNumber", None)
             if "enemail" in header_name_list:
-                record["EnEmail"] = user_data.get("EmailId", None)
+                record["enemail"] = user_data.get("EmailId", None)
 
             return dict(status_code=http.HTTPStatus.OK, active=False, campaignId=campaign_id, sampleData=[record])
     else:
@@ -383,9 +383,10 @@ def decrypt_test_segment_data(data,headers,project_id):
     encrypted_values = []
 
     for record in data:
+        record = {k.lower():v for k,v in record.items()}
         for header in headers:
             if header.get("encrypted",False) == True:
-                encrypted_values.append(record[header["headerName"]])
+                encrypted_values.append(record[header["headerName"].lower()])
 
     if len(encrypted_values) == 0:
         return data
@@ -397,9 +398,10 @@ def decrypt_test_segment_data(data,headers,project_id):
 
     index= 0
     for record in data:
+        record = {k.lower():v for k,v in record.items()}
         for header in headers:
             if header.get("encrypted",False) == True:
-                record[header["headerName"]] = decrypted_data[index]
+                record[header["headerName"].lower()] = decrypted_data[index]
                 index+=1
         final_data.append(record)
     log_exit()
