@@ -8,15 +8,18 @@ import http
 from django.conf import settings
 from Crypto.Cipher import AES
 
+from common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.apps.content.content_procesor import content_headers_processor
 from onyx_proj.common.request_helper import RequestClient
-from onyx_proj.common.constants import *
+from onyx_proj.common.constants import TAG_FAILURE, CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, TAG_SUCCESS, TAG_KEY_CUSTOM, \
+    CUSTOM_QUERY_FORBIDDEN_KEYWORDS, CUSTOM_QUERY_EXECUTION_API_PATH, TAG_TEST_CAMPAIGN_QUERY_ALIAS_PATTERNS, \
+    SEGMENT_RECORDS_COUNT_API_PATH, TAG_REQUEST_POST, ASYNC_QUERY_EXECUTION_ENABLED
 from onyx_proj.models.CED_EntityTagMapping import CEDEntityTagMapping
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from onyx_proj.apps.segments.app_settings import QueryKeys, AsyncTaskCallbackKeys, AsyncTaskSourceKeys, \
     AsyncTaskRequestKeys, SegmentStatusKeys
-from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
+
 
 logger = logging.getLogger("apps")
 
@@ -427,26 +430,43 @@ def hyperion_local_async_rest_call(url: str, request_body):
 
 
 def generate_test_query(sql_query: str, headers_list=None) -> dict:
-    if not all(x in [y.lower() for y in headers_list] for x in [y.lower() for y in CUSTOM_TEST_QUERY_PARAMETERS]):
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message=f"Query must contain {CUSTOM_TEST_QUERY_PARAMETERS} as headers.")
+    """
+    method invoked after custom query async callback flow when queries are executed.
+    We perform mandatory field checks on the query and then create the SqlTestQuery for testing the campaign flow.
+    Mandatory fields: ["Id", "Mobile" or "EnMobile", "AccountNumber", "EnAccountNumber", "AccountId", "Email" or "EnEmail"]
+    when generating test campaign query the data is ordered on AccountNumber
+    """
+    logger.debug(f"generate_test_query :: sql_query: {sql_query}, headers_list: {headers_list}")
 
-    regexp = re.compile(r'as accountid', re.IGNORECASE)
-    if not regexp.search(sql_query):
+    regex_account_id = re.compile(r'as accountid', re.IGNORECASE)
+    if not regex_account_id.search(sql_query):
+        logger.error(f"generate_test_query :: Query must contain Account Id as header")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message=f"Account Id missing.")
+                    details_message=f"Account Id missing")
 
-    regexp = re.compile(r'as id', re.IGNORECASE)
-    if not regexp.search(sql_query):
+    regex_account_number = re.compile(r'as accountnumber', re.IGNORECASE)
+    regex_account_number_en = re.compile(r'as enaccountnumber', re.IGNORECASE)
+    if not regex_account_number.search(sql_query) and not regex_account_number_en.search(sql_query):
+        logger.error(f"generate_test_query :: Query must contain AccountNumber of EnAccountNumber as headers")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message=f"Id missing.")
+                    details_message=f"AccountNumber or EnAccountNumber missing")
 
-    regexp = re.compile(r'as accountnumber', re.IGNORECASE)
-    if not regexp.search(sql_query):
+    regex_id = re.compile(r'as id', re.IGNORECASE)
+    if not regex_id.search(sql_query):
+        logger.error(f"generate_test_query :: Query must contain Id as header")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message=f"AccountNumber missing.")
+                    details_message=f"Id missing")
 
-    contact_found = False
+    regex_mobile = re.compile(r'as mobile', re.IGNORECASE)
+    regex_mobile_en = re.compile(r'as enmobile', re.IGNORECASE)
+    regex_email = re.compile(r'as email', re.IGNORECASE)
+    regex_email_en = re.compile(r'as enemail', re.IGNORECASE)
+    if not regex_email.search(sql_query) and not regex_email_en.search(sql_query) \
+            and not regex_mobile.search(sql_query) and not regex_mobile_en.search(sql_query):
+        logger.error(f"generate_test_query :: Neither of Mobile or Email alias found in query")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message=f"At least one of 'As Mobile, As Email, As EnMobile, As EnEmail' should be present")
+
     for alias_pattern in TAG_TEST_CAMPAIGN_QUERY_ALIAS_PATTERNS:
         pattern = re.compile(alias_pattern, re.IGNORECASE)
         iterator = re.finditer(pattern, sql_query)
@@ -455,23 +475,27 @@ def generate_test_query(sql_query: str, headers_list=None) -> dict:
         for match in iterator:
             match_count += 1
 
-        if match_count == 1 and alias_pattern in TEST_CAMPAIGN_QUERY_CONTACT_ALIAS_PATTERNS:
-            contact_found = True
-
         if match_count > 1:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message=f"As Mobile, As Email alias can only be used once.")
+                        details_message=f"As Mobile, As Email alias can only be used once")
 
-    if contact_found is False:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message=f"Atleast one of 'As Mobile, As Email' should be present")
+    test_query_encrypted_projections = ""
+
+    if regex_email_en.search(sql_query):
+        test_query_encrypted_projections += ", @ENCRYPTED_EMAIL_ID as EnEmail "
+    if regex_mobile_en.search(sql_query):
+        test_query_encrypted_projections += ", @ENCRYPTED_MOBILE_NUMBER as EnMobile "
 
     sql_query = re.sub("(?i)as email", "AS SampOrgEmail ", sql_query)
+    sql_query = re.sub("(?i)as enemail", "AS SampOrgEnEmail ", sql_query)
     sql_query = re.sub("(?i)as mobile", "AS SampOrgMobile ", sql_query)
+    sql_query = re.sub("(?i)as enmobile", "AS SampOrgEnMobile ", sql_query)
     sql_query = re.sub("(?i)group by mobile ", "GROUP BY SampOrgMobile ", sql_query)
+    sql_query = re.sub("(?i)group by enmobile ", "GROUP BY SampOrgEnMobile ", sql_query)
     sql_query = re.sub("(?i)group by email ", "GROUP BY SampOrgEmail ", sql_query)
+    sql_query = re.sub("(?i)group by enemail ", "GROUP BY SampOrgEnEmail ", sql_query)
 
-    test_sql_query = "SELECT derived_table.*, @MOBILE_NUMBER as Mobile, @EMAIL_ID as Email FROM (" + sql_query + " ORDER BY AccountNumber DESC LIMIT 1 ) derived_table"
+    test_sql_query = "SELECT derived_table.*, @MOBILE_NUMBER as Mobile, @EMAIL_ID as Email" + test_query_encrypted_projections + "FROM (" + sql_query + " ORDER BY AccountNumber DESC LIMIT 1 ) derived_table"
 
     return dict(result=TAG_SUCCESS, query=test_sql_query)
 

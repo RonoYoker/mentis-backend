@@ -73,7 +73,7 @@ LOCAL_CAMPAIGN_SCHEDULING_DATA_PACKET_HANDLER = "hyperioncampaigntooldashboard/c
 
 SEGMENT_RECORDS_COUNT_API_PATH = "hyperioncampaigntooldashboard/segment/recordcount"
 
-CUSTOM_TEST_QUERY_PARAMETERS = ["FirstName", "Mobile"]
+# CUSTOM_TEST_QUERY_PARAMETERS = ["FirstName", "Mobile"]
 
 HYPERION_CAMPAIGN_APPROVAL_FLOW = "hyperioncampaigntooldashboard/campaignbuilder/approvalaction/"
 

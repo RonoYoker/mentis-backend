@@ -24,6 +24,7 @@ from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CUSTOM_QUERY_AS
 from onyx_proj.apps.segments.app_settings import AsyncTaskRequestKeys, AsyncTaskSourceKeys, AsyncTaskCallbackKeys, \
     QueryKeys, DATA_THRESHOLD_MINUTES
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
+# from onyx_proj.apps.segments.app_settings import TEST_CAMPAIGN_DATA_ENCRYPTED_HEADERS
 
 logger = logging.getLogger("apps")
 
@@ -140,8 +141,8 @@ def fetch_test_campaign_data(request_data) -> json:
 
             # record = json.loads(records_data.get("sample_data", []))[0]
 
-            record["Mobile"] = user_data.get("MobileNumber", None)
-            record["Email"] = user_data.get("EmailId", None)
+            record["Mobile"] = user_data["MobileNumber"]
+            record["Email"] = user_data["EmailId"]
 
             return dict(status_code=http.HTTPStatus.OK, active=False, campaignId=campaign_id, sampleData=[record])
     else:
