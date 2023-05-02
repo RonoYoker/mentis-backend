@@ -386,7 +386,7 @@ def decrypt_test_segment_data(data,headers,project_id):
     for record in data:
         record = {k.lower():v for k,v in record.items()}
         for header in headers:
-            if header.get("encrypted",False) == True:
+            if header.get("encrypted",False) == True and record[header["headerName"].lower()] is not None:
                 encrypted_values.append(record[header["headerName"].lower()])
         lower_case_data.append(record)
 
@@ -402,7 +402,7 @@ def decrypt_test_segment_data(data,headers,project_id):
     for record in data:
         record = {k.lower():v for k,v in record.items()}
         for header in headers:
-            if header.get("encrypted",False) == True:
+            if header.get("encrypted",False) == True and record[header["headerName"].lower()] is not None:
                 record[header["headerName"].lower()] = decrypted_data[index]
                 index+=1
         final_data.append(record)
