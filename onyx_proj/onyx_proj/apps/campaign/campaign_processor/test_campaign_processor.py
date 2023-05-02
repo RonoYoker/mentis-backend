@@ -380,6 +380,7 @@ def decrypt_test_segment_data(data,headers,project_id):
     project_data = CEDProjects().get_project_data_by_project_id(project_id=project_id)
     project_data = project_data[0]
     final_data = []
+    lower_case_data = []
     encrypted_values = []
 
     for record in data:
@@ -387,9 +388,10 @@ def decrypt_test_segment_data(data,headers,project_id):
         for header in headers:
             if header.get("encrypted",False) == True:
                 encrypted_values.append(record[header["headerName"].lower()])
+        lower_case_data.append(record)
 
     if len(encrypted_values) == 0:
-        return data
+        return lower_case_data
 
     decrypted_data_resp = RequestClient.post_onyx_local_api_request_rsa(project_data["BankName"],encrypted_values,domain,GET_DECRYPTED_DATA)
     if decrypted_data_resp["success"] != True:
