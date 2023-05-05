@@ -680,7 +680,7 @@ class RateLimitationLevels(Enum):
 ASYNC_QUERY_EXECUTION_ENABLED = ["VST_Ethera", "TEST_VST", "IBL_CRD_Ethera", "IBL_AOC_Ethera", "IBL_Ethera",
                                  "HDB_Ethera", "CMD_Ethera", "CMD_TATA_AIA", "CMD_HSBC", "PRL_Ethera", "RBL_Ethera",
                                  "TEST_IBL_CC_UPGRADE", "TEST_IBL_DC_UPGRADE", "TEST_IBL_OCL", "IBL_OCL_Ethera",
-                                 "TEST_IBL_CASA","TEST_IBL","IBL_CASA"]
+                                 "TEST_IBL_CASA", "TEST_IBL", "IBL_CASA", "IBL_CC_UPGRADE_Ethera"]
 
 
 class CampaignStatus(Enum):
@@ -878,10 +878,10 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     'inbound_ivr_id': 'inboundIvrId',
     'sms': 'sms',
     'ivr_id': 'ivrId',
-    'master_header':'masterHeader',
-    'header_name':'headerName',
-    'file_data_field_type':'fileDataFieldType',
-    'encrypted':'encrypted'
+    'master_header': 'masterHeader',
+    'header_name': 'headerName',
+    'file_data_field_type': 'fileDataFieldType',
+    'encrypted': 'encrypted'
 }
 
 CAMPAIGN_APPROVAL_STATUS_SUBJECT_MAPPING = {
