@@ -88,7 +88,11 @@ def get_sample_data_by_unique_id(request_data: dict):
             headers_list = extra_data.get("headers_list", [])
 
             record_list = decrypt_test_segment_data(sample_data[:10],headers_list,segment_data.get("ProjectId"))
-            sample_data = sample_data[10:] + record_list
+            rem_sample_data = []
+            for sample in sample_data[10:]:
+                record = {k.lower():v for k,v in sample.items()}
+                rem_sample_data.append(record)
+            sample_data = record_list + rem_sample_data
             sample_data_dict = dict(
                 sampleData=sample_data,
                 records=segment_data["Records"],
