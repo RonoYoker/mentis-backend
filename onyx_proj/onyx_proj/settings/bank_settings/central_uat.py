@@ -43,6 +43,7 @@ HYPERION_LOCAL_DOMAIN = {
     "TEST_IBL_DC_ENBL": "http://uatpay.indusind.com/",
     "TEST_YBL_CLE": "http://m-stage-uat-web-1463991111.ap-south-1.elb.amazonaws.com/",
     "TEST_YBL_CC_UPG": "http://m-stage-uat-web-1463991111.ap-south-1.elb.amazonaws.com/",
+    "TEST_YBL_ACQ": "http://m-stage-uat-web-1463991111.ap-south-1.elb.amazonaws.com/",
 }
 
 ONYX_LOCAL_DOMAIN = {
@@ -58,7 +59,8 @@ ONYX_LOCAL_DOMAIN = {
     "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd": "http://m-stage-onyxlocal-elb-978631915.ap-south-1.elb.amazonaws.com",
     "vstaocnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nauspr": "http://m-stage-onyx-elb-1846785611.ap-south-1.elb.amazonaws.com",
     "yblclejlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-alb-1016107848.ap-south-1.elb.amazonaws.com",
-    "yblccujlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-alb-1016107848.ap-south-1.elb.amazonaws.com"
+    "yblccujlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-alb-1016107848.ap-south-1.elb.amazonaws.com",
+    "yblacqjlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-alb-1016107848.ap-south-1.elb.amazonaws.com"
 }
 
 ONYX_LOCAL_CAMP_VALIDATION = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj","ibldcuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
@@ -67,7 +69,8 @@ ONYX_LOCAL_CAMP_VALIDATION = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyn
                               "iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj","prlhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausbrd",
                               "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd", "vstaocnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nauspr",
                               "hdbhwnjlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj", "yblclejlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                              "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd","yblccujlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj"]
+                              "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd","yblccujlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                              "yblacqjlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj"]
 
 JWT_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["JWT_ENCRYPTION_KEY"]
 # RSA_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["RSA_KEYS"]
