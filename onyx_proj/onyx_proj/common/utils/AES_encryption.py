@@ -64,7 +64,7 @@ class AesEncryptDecrypt:
 
     def decrypt_str_with_missing_padding(self, message: str) -> str:
         # convert the message to bytes
-        message += "=" * ((4 - len(message) % 4) % 4)
+        message += "=" * ((self.block_size - len(message) % self.block_size) % self.block_size)
         byte_array = message.encode("utf-8")
         # base64 decode
         message = base64.b64decode(byte_array)
