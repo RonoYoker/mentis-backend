@@ -22,11 +22,11 @@ def get_cssd_test_entity(params: list, columns: list):
     return fetch_columns(engine, CED_CampaignSchedulingSegmentDetailsTEST, columns, params)
 
 
-def save_campaign_progress_entity(cep_entity: CED_CampaignExecutionProgress):
+def save_or_update_campaign_progress_entity(cep_entity: CED_CampaignExecutionProgress):
     """
     save or update CED_CampaignSchedulingSegmentDetailsTEST entity (updation happens on duplicate key)
     """
-    return insert(engine, cep_entity)
+    return save_or_update(engine, cep_entity)
 
 
 def save_or_update_ccd(ccd_entity: CED_CampaignCreationDetails):

@@ -87,7 +87,7 @@ class RequestClient:
         # request send
         api_url = f"{domain}/{api_path}"
         headers = {"Content-Type": "application/json"}
-        encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(json.dumps(body))
+        encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(json.dumps(body, default=str))
         try:
             response = requests.post(api_url, data=encrypted_data, headers=headers, verify=False)
             if response.status_code == 200:
