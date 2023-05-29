@@ -302,7 +302,6 @@ def initiate_test_campaign(request):
 
 
 @csrf_exempt
-@UserAuth.user_authentication()
 def create_campaign_details(request):
     decrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).decrypt(request.body.decode("utf-8"))
     request_body = json.loads(decrypted_data)
