@@ -151,6 +151,10 @@ def test_campaign_process(request: dict):
     logger.info(f"{method_name} :: request response status_code for local api: {request_response}")
 
     if request_response is None or request_response.get("success", False) is False:
+        campaign_execution_progress_entity.status = CampaignExecutionProgressStatus.ERROR.value
+        campaign_scheduling_segment_details_test_entity.updation_date = datetime.datetime.utcnow()
+        campaign_scheduling_segment_details_test_entity.error_message = request_response.get("details_message", None)
+        save_campaign_progress_entity(campaign_execution_progress_entity)
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
                     details_message="Error while populating data in bank's database")
     else:
@@ -158,11 +162,10 @@ def test_campaign_process(request: dict):
                      f"pushed packet to SNS of Campaign Segment Evaluator.")
         campaign_scheduling_segment_details_test_entity.status = CampaignSchedulingSegmentStatus.LAMBDA_TRIGGERED.value
         save_or_update_cssdtest(campaign_scheduling_segment_details_test_entity)
-
-    # update status of campaign instance in CED_CampaignExecutionProgress to SCHEDULED
-    campaign_execution_progress_entity.status = CampaignExecutionProgressStatus.SCHEDULED.value
-    campaign_scheduling_segment_details_test_entity.updation_date = datetime.datetime.utcnow()
-    save_campaign_progress_entity(campaign_execution_progress_entity)
+        # update status of campaign instance in CED_CampaignExecutionProgress to SCHEDULED
+        campaign_execution_progress_entity.status = CampaignExecutionProgressStatus.SCHEDULED.value
+        campaign_scheduling_segment_details_test_entity.updation_date = datetime.datetime.utcnow()
+        save_campaign_progress_entity(campaign_execution_progress_entity)
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                 details_message="Test campaign has been initiated! Please wait while you receive the communication.")
