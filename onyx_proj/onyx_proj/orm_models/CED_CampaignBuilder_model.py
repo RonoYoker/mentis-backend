@@ -28,6 +28,7 @@ class CED_CampaignBuilder(Base, Orm_helper):
     history_id = Column("HistoryId", String)
     recurring_detail = Column("RecurringDetail", String)
     campaign_list = relationship("CED_CampaignBuilderCampaign")
+    segment_data = relationship("CED_Segment", uselist=False)
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)

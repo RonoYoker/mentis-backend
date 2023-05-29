@@ -4,15 +4,20 @@ import http
 import logging
 import uuid
 
+from django.conf import settings
+
+from models.CED_UserSession_model import CEDUserSession
+from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT
 from onyx_proj.apps.campaign.test_campaign.test_campaign_helper import validate_test_campaign_data, get_time_difference, \
-    get_campaign_service_vendor, generate_test_file_name
-from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CampaignSchedulingSegmentStatus
+    get_campaign_service_vendor, generate_test_file_name, create_file_details_json
+from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CampaignSchedulingSegmentStatus, TAG_REQUEST_POST
 from onyx_proj.orm_models.CED_CampaignSchedulingSegmentDetailsTEST_model import CED_CampaignSchedulingSegmentDetailsTEST
 from onyx_proj.orm_models.CED_CampaignExecutionProgress_model import CED_CampaignExecutionProgress
 from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.apps.campaign.test_campaign.db_helper import save_or_update_cssdtest, get_cssd_test_entity, \
     save_campaign_progress_entity
 from onyx_proj.common.constants import CampaignExecutionProgressStatus
+from onyx_proj.common.request_helper import RequestClient
 
 logger = logging.getLogger("apps")
 
@@ -31,6 +36,11 @@ def test_campaign_process(request: dict):
 
     validation_object = validate_test_campaign_data(request)
 
+    # fetch user data
+    user = CEDUserSession().get_user_personal_data_by_session_id(request["auth_token"])
+    user_dict = dict(first_name=user[0].get("FirstName", None), mobile_number=user[0].get("MobileNumber", None),
+                     email=user[0].get("EmailId", None))
+
     if validation_object["success"] == TAG_FAILURE:
         return dict(status_code=validation_object["status_code"], result=TAG_FAILURE,
                     details_message=validation_object["details_message"])
@@ -38,32 +48,50 @@ def test_campaign_process(request: dict):
         validation_object = validation_object["data"]
 
     # check if segment data is fresh and records != 0, else return with data stale message
-    # if validation_object["campaign_builder_data"]["segment_data"]["records"] == 0 or \
-    #         get_time_difference(
-    #             validation_object["campaign_builder_data"]["segment_data"]["count_refresh_end_date"]) > 30:
-    #     return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-    #                 details_message="Date is stale, need to refresh data to process test campaign for the given instance.")
+    if validation_object["campaign_builder_data"]["segment_data"]["records"] == 0 or \
+            get_time_difference(
+                validation_object["campaign_builder_data"]["segment_data"]["count_refresh_end_date"]) > 30:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Date is stale, need to refresh data to process test campaign for the given instance.")
 
     # if data is not stale, proceed with flow
 
     # fetch project entity for by using the segment_id in campaign_builder entity
-    project_entity = CEDProjects().get_project_entity_by_unique_id(validation_object["campaign_builder_data"]["segment_data"]["project_id"])
+    project_entity = CEDProjects().get_project_entity_by_unique_id(
+        validation_object["campaign_builder_data"]["segment_data"]["project_id"])
     if project_entity is None:
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
                     details_message="Unable to fetch project details")
+    else:
+        project_id = validation_object["campaign_builder_data"]["segment_data"]["project_id"]
+
+    if project_id not in ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj"]:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="API only enabled for project TEST_VST")
 
     # create entries in CED_CampaignSchedulingSegmentDetailsTEST and CED_CampaignExecutionProgress
-
     # creating CED_CampaignSchedulingSegmentDetailsTEST entity
     campaign_scheduling_segment_details_test_entity = CED_CampaignSchedulingSegmentDetailsTEST()
     campaign_scheduling_segment_details_test_entity.unique_id = uuid.uuid4().hex
+    campaign_scheduling_segment_details_test_entity.project_id = project_id
     campaign_scheduling_segment_details_test_entity.campaign_id = validation_object["unique_id"]
-    campaign_scheduling_segment_details_test_entity.segment_id = validation_object["campaign_builder_data"]["segment_id"]
-    campaign_scheduling_segment_details_test_entity.campaign_service_vendor = get_campaign_service_vendor(project_entity, validation_object["content_type"])
-    campaign_scheduling_segment_details_test_entity.records = validation_object["campaign_builder_data"]["segment_data"]["records"]
+    campaign_scheduling_segment_details_test_entity.campaign_title = validation_object["campaign_builder_data"]["name"]
+    campaign_scheduling_segment_details_test_entity.segment_id = validation_object["campaign_builder_data"][
+        "segment_id"]
+    campaign_scheduling_segment_details_test_entity.segment_type = \
+        validation_object["campaign_builder_data"]["segment_data"]["type"]
+    campaign_scheduling_segment_details_test_entity.data_id = \
+        validation_object["campaign_builder_data"]["segment_data"]["data_id"]
+    campaign_scheduling_segment_details_test_entity.campaign_type = validation_object["campaign_builder_data"]["type"]
+    campaign_scheduling_segment_details_test_entity.test_campaign = 1
+    campaign_scheduling_segment_details_test_entity.campaign_service_vendor = get_campaign_service_vendor(
+        project_entity, validation_object["content_type"])
+    campaign_scheduling_segment_details_test_entity.records = \
+        validation_object["campaign_builder_data"]["segment_data"]["records"]
     campaign_scheduling_segment_details_test_entity.needed_slots = 0
     campaign_scheduling_segment_details_test_entity.status = CampaignSchedulingSegmentStatus.STARTED.value
-    campaign_scheduling_segment_details_test_entity.file_name = generate_test_file_name(validation_object["content_type"], validation_object["campaign_builder_data"]["segment_id"])
+    campaign_scheduling_segment_details_test_entity.file_name = generate_test_file_name(
+        validation_object["content_type"], validation_object["campaign_builder_data"]["segment_id"])
     campaign_scheduling_segment_details_test_entity.job_id = uuid.uuid4().hex
     campaign_scheduling_segment_details_test_entity.channel = validation_object["content_type"]
     campaign_scheduling_segment_details_test_entity.per_slot_record_count = 10
@@ -78,7 +106,8 @@ def test_campaign_process(request: dict):
     save_or_update_cssdtest(campaign_scheduling_segment_details_test_entity)
 
     # fetch campaign_scheduling_segment_details_test_entity.id from CED_CampaignSchedulingSegmentDetailsTEST
-    filter_list = [{"column": "unique_id", "value": campaign_scheduling_segment_details_test_entity.unique_id, "op": "=="}]
+    filter_list = [
+        {"column": "unique_id", "value": campaign_scheduling_segment_details_test_entity.unique_id, "op": "=="}]
     cssd_test_id = get_cssd_test_entity(filter_list, ["id"])[0]["id"]
 
     # creating CED_CampaignExecutionProgress entity
@@ -100,4 +129,41 @@ def test_campaign_process(request: dict):
     save_or_update_cssdtest(campaign_scheduling_segment_details_test_entity)
 
     # creating project_details json to trigger the Lambda (FileData/Lambda1) via local api
-    project_details_object = {}
+    project_details_object = create_file_details_json(campaign_scheduling_segment_details_test_entity, project_id)
+
+    if project_details_object["success"] is False:
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message=project_details_object["details_message"])
+    else:
+        project_details_object = project_details_object["data"]
+
+    # call local API to populate data or the given test_campaign in local db tables
+    request_body = dict(is_test_campaign=True, project_details_object=project_details_object,
+                        segment_data=validation_object["campaign_builder_data"]["segment_data"], user_data=user_dict)
+    rest_object = RequestClient()
+    request_response = rest_object.post_onyx_local_api_request(request_body, settings.ONYX_LOCAL_DOMAIN[project_id], FILE_DATA_API_ENDPOINT)
+
+    # from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import create_campaign_details_in_local_db
+    # request_response = create_campaign_details_in_local_db(project_details_object,
+    #                                                        validation_object["campaign_builder_data"]["segment_data"],
+    #                                                        user_data=user_dict)
+
+    logger.info(f"{method_name} :: request response status_code for local api: {request_response}")
+
+    if request_response is None or request_response.get("success", False) is False:
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message="Error while populating data in bank's database")
+    else:
+        logger.debug(f"{method_name} :: Successfully created entries in Bank's infra and "
+                     f"pushed packet to SNS of Campaign Segment Evaluator.")
+        campaign_scheduling_segment_details_test_entity.status = CampaignSchedulingSegmentStatus.LAMBDA_TRIGGERED.value
+        save_or_update_cssdtest(campaign_scheduling_segment_details_test_entity)
+
+    # update status of campaign instance in CED_CampaignExecutionProgress to SCHEDULED
+    campaign_execution_progress_entity.status = CampaignExecutionProgressStatus.SCHEDULED.value
+    campaign_scheduling_segment_details_test_entity.updation_date = datetime.datetime.utcnow()
+    save_campaign_progress_entity(campaign_execution_progress_entity)
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                details_message="Test campaign has been initiated! Please wait while you receive the communication.")
+

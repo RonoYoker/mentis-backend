@@ -22,5 +22,6 @@ urlpatterns = [
     path("view_campaign/", views.get_campaign_data_by_unique_id),
     path("deactivate_campaign/", views.deactivate_campaign),
     path("approval_action/", views.approval_action_on_campaign_builder),
-    path("test_campaign/", views.initiate_test_campaign)
+    path("test_campaign/", views.initiate_test_campaign),
+    path("local/create_campaign_details/", views.create_campaign_details)
 ]

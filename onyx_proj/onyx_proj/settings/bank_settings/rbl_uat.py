@@ -64,3 +64,7 @@ ONYX_DOMAIN = "http://onyxuat.hyperiontool.com"  # uat
 # ONYX_DOMAIN = "http://127.0.0.1:8084" # dev
 
 ONYX_CENTRAL_AUTH_TOKEN = "348691BE-D2AA-4460-9A42-2B4A9FFD3296"
+
+AWS_REGION = "ap-south-1"
+AWS_ACCOUNTID = INFRA_CONF["AWS_ACCOUNTID"]
+SNS_SEGMENT_EVALUATOR = "TEST_HYP_DK_Campaign_Segment_Evaluator"

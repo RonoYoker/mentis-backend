@@ -18,3 +18,5 @@ CAMPAIGN_BUILDER_CAMPAIGN_VALID_STATUS = [CampaignStatus.APPROVED.value, Campaig
 
 SEGMENT_STATUS_FOR_TEST_CAMPAIGN = [SegmentStatusKeys.APPROVED.value, SegmentStatusKeys.SAVED.value,
                                     SegmentStatusKeys.APPROVAL_PENDING.value]
+
+FILE_DATA_API_ENDPOINT = "local/create_campaign_details/"

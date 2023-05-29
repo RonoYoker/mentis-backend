@@ -4,7 +4,7 @@ class CED_Segment(Base, Orm_helper):
     __tablename__ = 'CED_Segment'
 
     id = Column("Id", Integer, primary_key=True, autoincrement=True)
-    unique_id = Column("UniqueId", String, unique=True)
+    unique_id = Column("UniqueId", String, ForeignKey("CED_CampaignBuilder.SegmentId"), unique=True)
     title = Column("Title", String)
     project_id = Column("ProjectId", String)
     data_id = Column("DataId", String)
