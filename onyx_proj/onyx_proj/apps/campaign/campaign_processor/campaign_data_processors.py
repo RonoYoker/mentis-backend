@@ -1745,16 +1745,16 @@ def create_campaign_details_in_local_db(request: dict):
     """
     method_name = "create_campaign_details_in_local_db"
     logger.debug(f"{method_name} :: request: {request}")
-    request = json.loads(request["project_details_object"])
+    project_details_object = json.loads(request["project_details_object"])
     segment_data = json.loads(request["segment_data"])
     user_data = json.loads(request["user_data"])
     # validation checks for project_details_json data structure
-    validation_response = validate_project_details_json(request)
+    validation_response = validate_project_details_json(project_details_object)
     if validation_response["success"] is False:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=validation_response["details_message"])
 
-    fp_project_details_json = request["projectDetail"]
+    fp_project_details_json = project_details_object["projectDetail"]
 
     # parse content specific data from request object
     content_data = get_campaign_content_data_by_channel(fp_project_details_json)
@@ -1773,9 +1773,9 @@ def create_campaign_details_in_local_db(request: dict):
     ccd_entity.per_slot_record_count = fp_project_details_json["perSlotRecordCount"]
     ccd_entity.campaign_title = fp_project_details_json["campaignTitle"]
     ccd_entity.campaign_type = fp_project_details_json["campaignType"]
-    ccd_entity.segment_type = request["segmentType"]
+    ccd_entity.segment_type = project_details_object["segmentType"]
     ccd_entity.file_name = fp_project_details_json["fileName"]
-    ccd_entity.campaign_uuid = request["campaignBuilderCampaignId"]
+    ccd_entity.campaign_uuid = project_details_object["campaignBuilderCampaignId"]
     ccd_entity.test_campaign = 1
     ccd_entity.template_id = content_data.get("template_id")
     ccd_entity.campaign_deactivation_date_time = None
@@ -1793,10 +1793,10 @@ def create_campaign_details_in_local_db(request: dict):
     fp_file_data_entity = CED_FP_FileData()
     fp_file_data_entity.file_name = fp_project_details_json["fileName"]
     fp_file_data_entity.unique_name = fp_project_details_json["fileName"]
-    fp_file_data_entity.project_type = request["projectType"]
+    fp_file_data_entity.project_type = project_details_object["projectType"]
     fp_file_data_entity.project_detail = json.dumps(fp_project_details_json)
     fp_file_data_entity.file_status = "FILE_IMPORT_UPLOADED"
-    fp_file_data_entity.file_type = request["fileType"]
+    fp_file_data_entity.file_type = project_details_object["fileType"]
     fp_file_data_entity.unique_id = uuid.uuid4().hex
     fp_file_data_entity.row_count = 1
     fp_file_data_entity.success_row_count = 1
@@ -1808,7 +1808,7 @@ def create_campaign_details_in_local_db(request: dict):
     fp_file_data_entity.process_result_json = None
     fp_file_data_entity.to_notification_email = None
     fp_file_data_entity.error_message = None
-    fp_file_data_entity.campaign_builder_campaign_id = request["campaignBuilderCampaignId"]
+    fp_file_data_entity.campaign_builder_campaign_id = project_details_object["campaignBuilderCampaignId"]
     fp_file_data_entity.test_campaign = 1
 
     # save entity to CED_FP_FileData
@@ -1819,7 +1819,7 @@ def create_campaign_details_in_local_db(request: dict):
     campaign_segment_eval_packet = dict(
         campaigns=[
             dict(
-                campaign_builder_campaign_id=request["campaignBuilderCampaignId"],
+                campaign_builder_campaign_id=project_details_object["campaignBuilderCampaignId"],
                 campaign_name=fp_project_details_json["campaignTitle"],
                 record_count=fp_project_details_json["records"],
                 query=segment_data["sql_query"],
