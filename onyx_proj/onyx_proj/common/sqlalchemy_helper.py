@@ -316,3 +316,24 @@ def add_relationshsip_projections(q,relationships=[]):
         q = q.options(joined)
     return q
 
+
+def save_or_update_merge(engine, entity):
+    """
+        Function to insert a single row into table.
+        parameters:
+            table: Table class object
+            entity: table entity to insert
+        returns:
+    """
+    with Session(engine) as session:
+        session.begin()
+        try:
+            upd_entity = session.merge(entity)
+        except Exception as ex:
+            session.rollback()
+            logging.error(f"error while inserting in table, Error: ", ex)
+        else:
+            session.commit()
+            # entity = result
+        dict = create_dict_from_object(upd_entity)
+    return entity.__class__(dict)

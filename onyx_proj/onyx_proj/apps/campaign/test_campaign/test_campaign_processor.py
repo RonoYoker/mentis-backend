@@ -48,11 +48,11 @@ def test_campaign_process(request: dict):
         validation_object = validation_object["data"]
 
     # check if segment data is fresh and records != 0, else return with data stale message
-    if validation_object["campaign_builder_data"]["segment_data"]["records"] == 0 or \
-            get_time_difference(
-                validation_object["campaign_builder_data"]["segment_data"]["count_refresh_end_date"]) > 30:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Date is stale, need to refresh data to process test campaign for the given instance.")
+    # if validation_object["campaign_builder_data"]["segment_data"]["records"] == 0 or \
+    #         get_time_difference(
+    #             validation_object["campaign_builder_data"]["segment_data"]["count_refresh_end_date"]) > 30:
+    #     return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+    #                 details_message="Date is stale, need to refresh data to process test campaign for the given instance.")
 
     # if data is not stale, proceed with flow
 
@@ -121,7 +121,8 @@ def test_campaign_process(request: dict):
     campaign_execution_progress_entity.status = CampaignExecutionProgressStatus.INITIATED.value
 
     # save CED_CampaignExecutionProgress entity in DB
-    save_or_update_campaign_progress_entity(campaign_execution_progress_entity)
+    # campaign_execution_progress_entity_final = CED_CampaignExecutionProgress()
+    campaign_execution_progress_entity_final = save_or_update_campaign_progress_entity(campaign_execution_progress_entity)
 
     # before triggering lambda, we need to update the cssd_test entity status to BEFORE_LAMBDA_TRIGGERED
     campaign_scheduling_segment_details_test_entity.id = cssd_test_id
@@ -144,17 +145,15 @@ def test_campaign_process(request: dict):
     request_response = rest_object.post_onyx_local_api_request(request_body, settings.ONYX_LOCAL_DOMAIN[project_id], FILE_DATA_API_ENDPOINT)
 
     # from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import create_campaign_details_in_local_db
-    # request_response = create_campaign_details_in_local_db(project_details_object,
-    #                                                        validation_object["campaign_builder_data"]["segment_data"],
-    #                                                        user_data=user_dict)
+    # request_response = create_campaign_details_in_local_db(json.dumps(request_body, default=str))
 
     logger.info(f"{method_name} :: request response status_code for local api: {request_response}")
 
     if request_response is None or request_response.get("success", False) is False:
-        campaign_execution_progress_entity.status = CampaignExecutionProgressStatus.ERROR.value
-        campaign_scheduling_segment_details_test_entity.updation_date = datetime.datetime.utcnow()
-        campaign_scheduling_segment_details_test_entity.error_message = request_response.get("details_message", None)
-        save_or_update_campaign_progress_entity(campaign_execution_progress_entity)
+        campaign_execution_progress_entity_final.status = CampaignExecutionProgressStatus.ERROR.value
+        campaign_execution_progress_entity_final.updation_date = datetime.datetime.utcnow()
+        campaign_execution_progress_entity_final.error_message = request_response.get("details_message", None)
+        save_or_update_campaign_progress_entity(campaign_execution_progress_entity_final)
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
                     details_message="Error while populating data in bank's database")
     else:
@@ -163,9 +162,9 @@ def test_campaign_process(request: dict):
         campaign_scheduling_segment_details_test_entity.status = CampaignSchedulingSegmentStatus.LAMBDA_TRIGGERED.value
         save_or_update_cssdtest(campaign_scheduling_segment_details_test_entity)
         # update status of campaign instance in CED_CampaignExecutionProgress to SCHEDULED
-        campaign_execution_progress_entity.status = CampaignExecutionProgressStatus.SCHEDULED.value
-        campaign_scheduling_segment_details_test_entity.updation_date = datetime.datetime.utcnow()
-        save_or_update_campaign_progress_entity(campaign_execution_progress_entity)
+        campaign_execution_progress_entity_final.status = CampaignExecutionProgressStatus.SCHEDULED.value
+        campaign_execution_progress_entity_final.updation_date = datetime.datetime.utcnow()
+        save_or_update_campaign_progress_entity(campaign_execution_progress_entity_final)
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                 details_message="Test campaign has been initiated! Please wait while you receive the communication.")
