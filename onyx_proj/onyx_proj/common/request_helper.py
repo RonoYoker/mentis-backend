@@ -96,7 +96,7 @@ class RequestClient:
                     encrypted_response_data)
                 resp = json.loads(decrypted_data)
             else:
-                return {"success": False}
+                return {"success": False, "status_code": response.status_code, "data": response.text}
         except Exception as e:
             logger.debug(f"Unable to process localdb api, Exception message :: {e}")
             return {"success": False}

@@ -308,4 +308,6 @@ def create_campaign_details(request):
     request_body = json.loads(decrypted_data)
     response = create_campaign_details_in_local_db(request_body)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
-    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+    encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(
+        json.dumps(response, default=str))
+    return HttpResponse(encrypted_data, status=status_code, content_type="application/json")
