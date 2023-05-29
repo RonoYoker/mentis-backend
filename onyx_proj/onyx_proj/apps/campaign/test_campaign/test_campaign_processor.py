@@ -52,7 +52,7 @@ def test_campaign_process(request: dict):
     #         get_time_difference(
     #             validation_object["campaign_builder_data"]["segment_data"]["count_refresh_end_date"]) > 30:
     #     return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-    #                 details_message="Date is stale, need to refresh data to process test campaign for the given instance.")
+    #                 details_message="Data is stale, need to refresh data to process test campaign for the given instance.")
 
     # if data is not stale, proceed with flow
 
@@ -147,7 +147,7 @@ def test_campaign_process(request: dict):
     # from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import create_campaign_details_in_local_db
     # request_response = create_campaign_details_in_local_db(json.dumps(request_body, default=str))
 
-    logger.info(f"{method_name} :: request response status_code for local api: {request_response['status_cose']}")
+    logger.info(f"{method_name} :: request response status_code for local api: {request_response['status_code']}")
 
     if request_response is None or request_response.get("success", False) is False:
         campaign_execution_progress_entity_final.status = CampaignExecutionProgressStatus.ERROR.value
