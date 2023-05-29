@@ -1746,8 +1746,8 @@ def create_campaign_details_in_local_db(request: dict):
     method_name = "create_campaign_details_in_local_db"
     logger.debug(f"{method_name} :: request: {request}")
     project_details_object = json.loads(request["project_details_object"])
-    segment_data = json.loads(request["segment_data"])
-    user_data = json.loads(request["user_data"])
+    segment_data = request["segment_data"]
+    user_data = request["user_data"]
     # validation checks for project_details_json data structure
     validation_response = validate_project_details_json(project_details_object)
     if validation_response["success"] is False:
