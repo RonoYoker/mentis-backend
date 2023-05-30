@@ -85,7 +85,7 @@ def test_campaign_process(request: dict):
     campaign_scheduling_segment_details_test_entity.campaign_type = validation_object["campaign_builder_data"]["type"]
     campaign_scheduling_segment_details_test_entity.test_campaign = 1
     campaign_scheduling_segment_details_test_entity.campaign_service_vendor = get_campaign_service_vendor(
-        project_entity, validation_object["content_type"])
+        project_entity, validation_object["content_type"])["data"]
     campaign_scheduling_segment_details_test_entity.records = \
         validation_object["campaign_builder_data"]["segment_data"]["records"]
     campaign_scheduling_segment_details_test_entity.needed_slots = 0
