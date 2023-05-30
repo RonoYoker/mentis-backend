@@ -1,12 +1,18 @@
 import http
 import json
 import logging
-
+import random
+import string
 import requests
+
+from common.utils.logging_helpers import log_entry
 from onyx_proj.common.constants import *
 from django.conf import settings
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
-
+from Crypto.Cipher import AES
+from onyx_proj.common.utils.RSA_encryption import RsaEncrypt
+from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException
+from onyx_proj.common.logging_helper import log_exit,log_entry
 logger = logging.getLogger("apps")
 
 
@@ -101,10 +107,10 @@ class RequestClient:
         except Exception as e:
             logger.error(f"Unable to process localdb api, Exception message :: {e}")
             return {"success": False}
-        return {"success": True, "data": resp}
+        return {"success": True, "data": resp, "status_code": response.status_code}
 
     @staticmethod
-    def post_onyx_local_api_request_rsa(bank,body, domain, api_path):
+    def post_onyx_local_api_request_rsa(bank, body, domain, api_path, AES=None):
         # request send
         log_entry(bank)
         api_url = f"{domain}/{api_path}"

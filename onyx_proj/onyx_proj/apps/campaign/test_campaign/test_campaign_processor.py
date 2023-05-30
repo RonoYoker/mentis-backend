@@ -143,7 +143,7 @@ def test_campaign_process(request: dict):
                         segment_data=validation_object["campaign_builder_data"]["segment_data"], user_data=user_dict)
     rest_object = RequestClient()
     request_response = rest_object.post_onyx_local_api_request(request_body, settings.ONYX_LOCAL_DOMAIN[project_id], FILE_DATA_API_ENDPOINT)
-
+    logger.debug(f"{method_name} :: local api request_response: {request_response}")
     # from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import create_campaign_details_in_local_db
     # request_response = create_campaign_details_in_local_db(json.dumps(request_body, default=str))
 
