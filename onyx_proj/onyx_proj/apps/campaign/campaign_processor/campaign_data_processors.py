@@ -253,19 +253,48 @@ def update_campaign_status(data) -> json:
 
 
 def get_filtered_recurring_date_time(data):
-    start_date = data.get("body").get('start_date')
-    campaign_type = data.get("body").get('campaign_type')
-    end_date = data.get("body").get('end_date')
-    repeat_type = data.get("body").get('repeat_type')
-    days = data.get("body").get('days')
-    number_of_days = data.get("body").get('number_of_days')
-    start_time = data.get("body").get('start_time')
-    end_time = data.get("body").get('end_time')
+    sched_data = {
+        "start_date": data["body"].get('start_date'),
+        "campaign_type": data["body"].get('campaign_type'),
+        "end_date": data["body"].get('end_date'),
+        "repeat_type": data["body"].get('repeat_type'),
+        "days": data["body"].get('days'),
+        "number_of_days": data["body"].get('number_of_days'),
+    }
+    multi_slot = data["body"].get("multi_slot",[])
+
+    recurring_schedule = []
+    if len(multi_slot) == 0:
+        start_time = data["body"].get('start_time')
+        end_time = data["body"].get('end_time')
+        recurring_schedule = generate_schedule(sched_data,start_time,end_time)
+    else:
+        validate_multi_slots(slots=multi_slot)
+        for slot in multi_slot:
+            start_time = slot.get('start_time')
+            end_time = slot.get('end_time')
+            recurring_schedule.extend(generate_schedule(sched_data,start_time,end_time))
+
+    if len(recurring_schedule) == 0:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="dates not found.")
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                data=recurring_schedule)
+
+
+def generate_schedule(sched_data,start_time,end_time):
+    start_date = sched_data.get('start_date')
+    campaign_type = sched_data.get('campaign_type')
+    end_date = sched_data.get('end_date')
+    repeat_type = sched_data.get('repeat_type')
+    days = sched_data.get('days')
+    number_of_days = sched_data.get('number_of_days')
+
 
     if start_date is None or end_date is None or start_time is None or end_time is None or campaign_type is None or (
             campaign_type == "SCHEDULELATER" and repeat_type is None):
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="mandatory params missing.")
+        raise ValidationFailedException(method_name="generate_schedule",reason="mandatory params missing.")
 
     dates = []
     if campaign_type == "SCHEDULENOW":
@@ -300,11 +329,23 @@ def get_filtered_recurring_date_time(data):
             recurring_date_time.append({"date": date, "start_time": start_time, "end_time": end_time})
 
     if dates is None:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="dates not found.")
+        return []
 
-    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
-                data=recurring_date_time)
+    return recurring_date_time
+
+
+def validate_multi_slots(slots):
+    datetime_slots = [
+        {
+            "start": datetime.datetime.strptime(slot["start_time"],"%H:%M:%S"),
+            "end": datetime.datetime.strptime(slot["end_time"],"%H:%M:%S")
+        } for slot in slots
+    ]
+
+    datetime_slots = sorted(datetime_slots, key=lambda x:x["start"])
+    for index in range(0,len(datetime_slots)-1):
+        if datetime_slots[index]["end"] >= datetime_slots[index+1]["start"]:
+            raise ValidationFailedException(reason="Overlapping Slots Configured")
 
 
 def get_all_dates_between_dates(start_date, end_date):
