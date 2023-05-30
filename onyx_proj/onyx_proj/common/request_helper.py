@@ -5,7 +5,7 @@ import random
 import string
 import requests
 
-from common.utils.logging_helpers import log_entry
+from onyx_proj.common.utils.logging_helpers import log_entry
 from onyx_proj.common.constants import *
 from django.conf import settings
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt

@@ -1828,7 +1828,8 @@ def create_campaign_details_in_local_db(request: dict):
                 contentType=fp_project_details_json["channel"],
                 campaign_schedule_segment_details_id=fp_project_details_json["id"],
                 is_test=True,
-                user_data=user_data
+                user_data=user_data,
+                file_id=fp_file_data_entity.unique_id
             )
         ]
     )
