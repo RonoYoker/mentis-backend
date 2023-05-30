@@ -3,7 +3,9 @@ import time
 from celery import task
 from Crypto.Cipher import AES
 
-import settings
+from django.conf import settings
+from onyx_proj.apps.campaign.campaign_engagement_data.engagement_data_processor import \
+    prepare_and_update_campaign_engagement_data
 from onyx_proj.models.CED_Projects_local import CED_Projects_local
 from onyx_proj.common.utils.newrelic_helpers import push_custom_parameters_to_newrelic
 from onyx_proj.models.custom_query_execution_model import CustomQueryExecution
@@ -139,6 +141,10 @@ def callback_resolver(parent_id: str):
 
 
 @task
+def trigger_eng_data():
+    prepare_and_update_campaign_engagement_data()
+
+@task
 def segment_refresh_for_campaign_approval(cb_id, segment_id, retry_count=0):
     from onyx_proj.apps.segments.segments_processor.segment_processor import \
         trigger_update_segment_count_for_campaign_approval
@@ -166,3 +172,5 @@ def uuid_processor(uuid_data):
 def update_segment_data_encrypted(segment_data):
     from onyx_proj.models.CED_Segment_model import CEDSegment
     CEDSegment().update_segment(dict(UniqueId=segment_data["UniqueId"]), dict(Extra=segment_data["Extra"]))
+
+

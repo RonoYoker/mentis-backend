@@ -11,13 +11,17 @@ from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import f
 from onyx_proj.apps.campaign.campaign_processor.campaign_content_processor import fetch_vendor_config_data
 from onyx_proj.apps.campaign.campaign_monitoring.campaign_stats_processor import get_filtered_campaign_stats, \
     update_campaign_stats_to_central_db, get_filtered_campaign_stats_v2
+
+from onyx_proj.apps.campaign.campaign_engagement_data.engagement_data_processor import \
+    prepare_and_update_campaign_engagement_data
+from onyx_proj.common.decorators import *
 from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import save_or_update_campaign_data, \
     get_filtered_dashboard_tab_data, get_min_max_date_for_scheduler, get_time_range_from_date, \
     get_campaign_data_in_period, validate_campaign, \
     get_filtered_recurring_date_time, update_segment_count_and_status_for_campaign, update_campaign_status, filter_list, \
     deactivate_campaign_by_campaign_id, view_campaign_data, approval_action_on_campaign_builder_by_unique_id
 from django.views.decorators.csrf import csrf_exempt
-
+from onyx_proj.celery_app.tasks import trigger_eng_data
 
 @csrf_exempt
 @UserAuth.user_authentication()
@@ -287,3 +291,9 @@ def approval_action_on_campaign_builder(request):
     response = approval_action_on_campaign_builder_by_unique_id(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+def trigger_camp_eng_data(request):
+    trigger_eng_data.apply_async(queue="celery_query_executor")
+    return HttpResponse("", status=200, content_type="application/json")

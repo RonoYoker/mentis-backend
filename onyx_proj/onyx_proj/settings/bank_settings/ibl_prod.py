@@ -34,29 +34,6 @@ CELERY_RESULT_BACKEND = "redis://%s:6379/1" % f'{INFRA_CONF["BROKER_URL"]}'
 # *********** CELERY CONFIGURATION FIN ********************************
 
 
-CELERY_IMPORTS = [
-    'onyx_proj.celery_app.tasks',
-    'onyx_proj.apps.async_task_invocation.async_tasks_processor'
-]
-# CELERY_BEAT_SCHEDULE = CELERY_BEAT_SCHEDULE
-CELERY_IMPORTS = CELERY_IMPORTS
-# Celery application definition
-CELERY_APP_NAME = 'celery'
-CELERY_CREATE_MISSING_QUEUES = True
-# Do not store any async task return result, as we do not use them
-CELERY_IGNORE_RESULT = True
-
-# But store errors if any
-CELERY_STORE_ERRORS_EVEN_IF_IGNORED = True
-
-CELERYD_PREFETCH_MULTIPLIER = 1
-
-CELERY_ACCEPT_CONTENT = ['pickle', 'json']
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TASK_SERIALIZER = 'json'
-
-CELERY_TIMEZONE = 'UTC'
-CELERY_ENABLE_UTC = False
 
 ONYX_DOMAIN = "https://onyx.hyperiontool.com" # prod
 # ONYX_DOMAIN = "http://onyxuat.hyperiontool.com"  # uat

@@ -126,7 +126,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # *********** CELERY CONFIGURATION ********************************
 CELERY_IMPORTS = [
     'onyx_proj.celery_app.tasks',
-    'onyx_proj.apps.async_task_invocation.async_tasks_processor'
+    'onyx_proj.apps.async_task_invocation.async_tasks_processor',
+    'onyx_proj.apps.campaign.campaign_engagement_data.engagement_data_processor',
+    'onyx_proj.apps.campaign.views'
 ]
 # CELERY_BEAT_SCHEDULE = CELERY_BEAT_SCHEDULE
 CELERY_IMPORTS = CELERY_IMPORTS

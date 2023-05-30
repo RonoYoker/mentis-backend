@@ -316,3 +316,26 @@ def add_relationshsip_projections(q,relationships=[]):
         q = q.options(joined)
     return q
 
+
+
+def execute_write(engine, query, values):
+    try:
+        with engine.connect() as cursor:
+            resp = cursor.execute(query, values)
+            return {'last_row_id': resp.lastrowid, 'row_count': resp.rowcount}
+    except Exception as e:
+        logging.error({'error': 'mysql thrown exception while updating', 'exception': str(e), 'logkey': 'mysql_helper'})
+        return {'exception': str(e)}
+
+def fetch_all(engine, query, params=[]):
+    try:
+        with engine.connect() as cursor:
+            resp = cursor.execute(query, params)
+            desc = resp.cursor.description
+            result = [dict(zip([col[0] for col in desc], row)) for row in resp.fetchall()]
+            return result
+    except Exception as e:
+        logging.error({
+            'error': 'mysql thrown exception while fetching dict one.', 'exception': e, 'logkey': 'mysql_helper'
+        })
+        return None
