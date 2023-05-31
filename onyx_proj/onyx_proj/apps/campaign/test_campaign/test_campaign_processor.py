@@ -83,7 +83,7 @@ def test_campaign_process(request: dict):
     campaign_scheduling_segment_details_test_entity.data_id = \
         validation_object["campaign_builder_data"]["segment_data"]["data_id"]
     campaign_scheduling_segment_details_test_entity.campaign_type = validation_object["campaign_builder_data"]["type"]
-    campaign_scheduling_segment_details_test_entity.test_campaign = 1
+    campaign_scheduling_segment_details_test_entity.test_campaign = True
     campaign_scheduling_segment_details_test_entity.campaign_service_vendor = get_campaign_service_vendor(
         project_entity, validation_object["content_type"])["data"]
     campaign_scheduling_segment_details_test_entity.records = \
@@ -114,7 +114,7 @@ def test_campaign_process(request: dict):
     campaign_execution_progress_entity = CED_CampaignExecutionProgress()
     campaign_execution_progress_entity.unique_id = None
     campaign_execution_progress_entity.campaign_id = cssd_test_id
-    campaign_execution_progress_entity.test_campaign = 1
+    campaign_execution_progress_entity.test_campaign = True
     campaign_execution_progress_entity.campaign_builder_id = validation_object["unique_id"]
     campaign_execution_progress_entity.creation_date = datetime.datetime.utcnow()
     campaign_execution_progress_entity.updation_date = datetime.datetime.utcnow()
