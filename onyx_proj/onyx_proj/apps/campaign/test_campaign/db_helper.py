@@ -40,4 +40,4 @@ def save_or_update_fp_file_data(fp_file_data_entity: CED_FP_FileData):
     """
     save or update CED_CampaignCreationDetails entity (updation happens on duplicate key)
     """
-    return save_or_update(engine, CED_FP_FileData, fp_file_data_entity)
+    return save_or_update_merge(engine, fp_file_data_entity)

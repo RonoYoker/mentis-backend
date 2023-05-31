@@ -29,6 +29,7 @@ class CED_CampaignCreationDetails(Base, Orm_helper):
     long_url = Column("LongUrl", String)
     end_time = Column("EndTime", DateTime)
     data_id = Column("DataId", String)
+    file_id = Column("FileId", Integer)
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)

@@ -1759,6 +1759,31 @@ def create_campaign_details_in_local_db(request: dict):
     # parse content specific data from request object
     content_data = get_campaign_content_data_by_channel(fp_project_details_json)
 
+    # prepare fp_file_data entity
+    fp_file_data_entity = CED_FP_FileData()
+    fp_file_data_entity.file_name = fp_project_details_json["fileName"]
+    fp_file_data_entity.unique_name = fp_project_details_json["fileName"]
+    fp_file_data_entity.project_type = project_details_object["projectType"]
+    fp_file_data_entity.project_detail = json.dumps(fp_project_details_json)
+    fp_file_data_entity.file_status = "FILE_IMPORT_UPLOADED"
+    fp_file_data_entity.file_type = project_details_object["fileType"]
+    fp_file_data_entity.unique_id = uuid.uuid4().hex
+    fp_file_data_entity.row_count = 1
+    fp_file_data_entity.success_row_count = 1
+    fp_file_data_entity.error_row_count = 0
+    fp_file_data_entity.skipped_row_count = 0
+    fp_file_data_entity.other_row_count = 0
+    fp_file_data_entity.splitted_batch_number = 1
+    fp_file_data_entity.splitted_file_number = 1
+    fp_file_data_entity.process_result_json = None
+    fp_file_data_entity.to_notification_email = None
+    fp_file_data_entity.error_message = None
+    fp_file_data_entity.campaign_builder_campaign_id = project_details_object["campaignBuilderCampaignId"]
+    fp_file_data_entity.test_campaign = 1
+
+    # save entity to CED_FP_FileData
+    fp_file_data_entity_final = save_or_update_fp_file_data(fp_file_data_entity)
+
     # create entries in CED_FP_FileData and CED_CampaignCreationDetails
     ccd_entity = CED_CampaignCreationDetails()
     ccd_entity.records = fp_project_details_json["records"]
@@ -1785,34 +1810,10 @@ def create_campaign_details_in_local_db(request: dict):
     ccd_entity.long_url = content_data["long_url"]
     ccd_entity.end_time = fp_project_details_json["scheduleEndDateTime"]
     ccd_entity.data_id = fp_project_details_json["dataId"]
+    ccd_entity.file_id = fp_file_data_entity_final.id
 
     # save entity to CED_CampaignCreationDetails table
     save_or_update_ccd(ccd_entity)
-
-    # prepare fp_file_data entity
-    fp_file_data_entity = CED_FP_FileData()
-    fp_file_data_entity.file_name = fp_project_details_json["fileName"]
-    fp_file_data_entity.unique_name = fp_project_details_json["fileName"]
-    fp_file_data_entity.project_type = project_details_object["projectType"]
-    fp_file_data_entity.project_detail = json.dumps(fp_project_details_json)
-    fp_file_data_entity.file_status = "FILE_IMPORT_UPLOADED"
-    fp_file_data_entity.file_type = project_details_object["fileType"]
-    fp_file_data_entity.unique_id = uuid.uuid4().hex
-    fp_file_data_entity.row_count = 1
-    fp_file_data_entity.success_row_count = 1
-    fp_file_data_entity.error_row_count = 0
-    fp_file_data_entity.skipped_row_count = 0
-    fp_file_data_entity.other_row_count = 0
-    fp_file_data_entity.splitted_batch_number = 1
-    fp_file_data_entity.splitted_file_number = 1
-    fp_file_data_entity.process_result_json = None
-    fp_file_data_entity.to_notification_email = None
-    fp_file_data_entity.error_message = None
-    fp_file_data_entity.campaign_builder_campaign_id = project_details_object["campaignBuilderCampaignId"]
-    fp_file_data_entity.test_campaign = 1
-
-    # save entity to CED_FP_FileData
-    save_or_update_fp_file_data(fp_file_data_entity)
 
     # TODO: create this function generic for normal campaigns as well
     # create SNS packet and push it to Campaign Segment Evaluator via SNS
@@ -1829,7 +1830,7 @@ def create_campaign_details_in_local_db(request: dict):
                 campaign_schedule_segment_details_id=fp_project_details_json["id"],
                 is_test=True,
                 user_data=user_data,
-                file_id=fp_file_data_entity.unique_id
+                file_id=fp_file_data_entity_final.id
             )
         ]
     )
