@@ -177,6 +177,7 @@ def create_file_details_json(campaign_test_segment_details,
 
     project_details_map = campaign_scheduling_segment_details_test_entity._asdict(attrs_list)
     project_details_map = update_process_file_data_map(project_details_map)
+    project_details_map["isTestDataEncrypted"] = True
     process_file_data_dict[project_details_var] = project_details_map
     process_file_data_dict[cbc_var] = campaign_scheduling_segment_details_test_entity.campaign_id
 

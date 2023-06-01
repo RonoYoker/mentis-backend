@@ -41,6 +41,11 @@ def test_campaign_process(request: dict):
     user_dict = dict(first_name=user[0].get("FirstName", None), mobile_number=user[0].get("MobileNumber", None),
                      email=user[0].get("EmailId", None))
 
+    # if user has configured a test account_number for testing,
+    # pass it in the user_dict and replace in segment_evaluator while creating data for test campaign
+    if request.get("account_number", None):
+        user_dict["account_number"] = request["account_number"]
+
     if validation_object["success"] == TAG_FAILURE:
         return dict(status_code=validation_object["status_code"], result=TAG_FAILURE,
                     details_message=validation_object["details_message"])
