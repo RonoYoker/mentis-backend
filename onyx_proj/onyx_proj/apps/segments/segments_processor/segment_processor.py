@@ -3,7 +3,7 @@ import http
 import logging
 import uuid
 from Crypto.Cipher import AES
-
+from onyx_proj.common.utils.telegram_utility import TelegramUtility
 
 from onyx_proj.common.constants import SEGMENT_REFRESH_VALIDATION_DURATION_MINUTES, \
     ASYNC_SEGMENT_QUERY_EXECUTION_WAITING_MINUTES, CampaignStatus
@@ -289,10 +289,18 @@ def trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_
     log_entry(cb_id, segment_id, retry_count)
 
     CEDCampaignBuilder().increment_approval_flow_retry_count(cb_id)
+    ##zz
+    segment_entity = CEDSegment().get_segment_data_entity(segment_id)
+    project_id = segment_entity.project_id
 
     campaign_builder_entity = CEDCampaignBuilder().get_campaign_builder_entity_by_unique_id(cb_id)
     if campaign_builder_entity.approval_retry != retry_count + 1:
         logger.error(f"method_name :: {method_name}, error :: retry count unmatched")
+        alerting_text = f'Campaign Name: {campaign_builder_entity.name}, Campaign ID : {campaign_builder_entity.id}, ERROR : Campaign retry count did not match. Please reach out to tech'
+        alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
+                                                              feature_section="DEFAULT")
+        logger.info(f'Telegram Alert Triggered Response : {alert_resp}, method_name : {method_name}')
+
         CEDCampaignBuilder().mark_campaign_as_error(cb_id, "retry count unmatched")
         # Set approval retry count as 0
         CEDCampaignBuilder().reset_approval_retries(cb_id)
@@ -308,6 +316,11 @@ def trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_
     if campaign_builder_entity.status != CampaignStatus.APPROVAL_IN_PROGRESS.value:
         logger.error(f"method_name :: {method_name}, Campaign Builder in invalid state")
         CEDCampaignBuilder().update_error_message(cb_id, "Campaign Builder in invalid state during segment validation")
+        alerting_text = f'Campaign Name: {campaign_builder_entity.name}, Campaign ID : {campaign_builder_entity.id}, ERROR : Campaign is in invalid state.'
+        alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
+                                                              feature_section="DEFAULT")
+        logger.info(f'Telegram Alert Triggered Response : {alert_resp}, method_name : {method_name}')
+
         raise BadRequestException(method_name=method_name, reason="Campaign Builder in invalid state")
 
     if cb_id is None or segment_id is None:
@@ -315,7 +328,6 @@ def trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_
         CEDCampaignBuilder().update_error_message(cb_id, "Segment id or cb id not found")
         raise NotFoundException(method_name=method_name, reason="segment entity not found")
 
-    segment_entity = CEDSegment().get_segment_data_entity(segment_id)
     if segment_entity is None:
         logger.error(f"method_name :: {method_name}, segment entity not found")
         CEDCampaignBuilder().update_error_message(cb_id, "Segment entity not found")
@@ -337,6 +349,10 @@ def trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_
             CEDCampaignBuilder().mark_campaign_as_error(cb_id, f"Async query count refresh timeout, count_refresh_start_date {segment_entity.count_refresh_start_date} , current_time: {current_time}")
             generate_campaign_approval_status_mail(
                 {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
+            alerting_text = f'Campaign Name: {campaign_builder_entity.name}, Campaign ID : {campaign_builder_entity.id}, ERROR : Segment Count Refresh timeout'
+            alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
+                                                                  feature_section="DEFAULT")
+            logger.info(f'Telegram Alert Triggered Response : {alert_resp}, method_name : {method_name}')
             raise ValidationFailedException(method_name=method_name, reason="Async query count refresh timeout")
         elif segment_entity.count_refresh_end_date is None or segment_entity.count_refresh_start_date > segment_entity.count_refresh_end_date:
             logger.debug(f"method_name :: {method_name}, Segment is already being processed")
