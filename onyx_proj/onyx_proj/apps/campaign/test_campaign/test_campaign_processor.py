@@ -3,6 +3,7 @@ import datetime
 import http
 import logging
 import uuid
+import requests
 
 from django.conf import settings
 
@@ -71,8 +72,17 @@ def test_campaign_process(request: dict):
         project_id = validation_object["campaign_builder_data"]["segment_data"]["project_id"]
 
     if project_id not in ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj"]:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="API only enabled for project TEST_VST")
+        url = settings.HYPERION_TEST_CAMPAIGN_URL
+        payload = json.dumps({"campaignId": request["campaign_id"]})
+        headers = {"Connection": "keep-alive", "Accept": "application/json, text/plain, */*",
+                   "X-AuthToken": request["auth_token"]}
+        response = requests.request("POST", url, headers=headers, data=payload)
+        if response.status_code == http.HTTPStatus.OK:
+            return dict(status_code=http.HTTPStatus.OK, result=TAG_FAILURE,
+                        details_message="Test campaign has been initiated! Please wait while you receive the communication.")
+        else:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Error while scheduling test campaign")
 
     # create entries in CED_CampaignSchedulingSegmentDetailsTEST and CED_CampaignExecutionProgress
     # creating CED_CampaignSchedulingSegmentDetailsTEST entity
@@ -127,7 +137,8 @@ def test_campaign_process(request: dict):
 
     # save CED_CampaignExecutionProgress entity in DB
     # campaign_execution_progress_entity_final = CED_CampaignExecutionProgress()
-    campaign_execution_progress_entity_final = save_or_update_campaign_progress_entity(campaign_execution_progress_entity)
+    campaign_execution_progress_entity_final = save_or_update_campaign_progress_entity(
+        campaign_execution_progress_entity)
 
     # before triggering lambda, we need to update the cssd_test entity status to BEFORE_LAMBDA_TRIGGERED
     campaign_scheduling_segment_details_test_entity.id = cssd_test_id
@@ -147,7 +158,8 @@ def test_campaign_process(request: dict):
     request_body = dict(is_test_campaign=True, project_details_object=project_details_object,
                         segment_data=validation_object["campaign_builder_data"]["segment_data"], user_data=user_dict)
     rest_object = RequestClient()
-    request_response = rest_object.post_onyx_local_api_request(request_body, settings.ONYX_LOCAL_DOMAIN[project_id], FILE_DATA_API_ENDPOINT)
+    request_response = rest_object.post_onyx_local_api_request(request_body, settings.ONYX_LOCAL_DOMAIN[project_id],
+                                                               FILE_DATA_API_ENDPOINT)
     logger.debug(f"{method_name} :: local api request_response: {request_response}")
     # from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import create_campaign_details_in_local_db
     # request_response = create_campaign_details_in_local_db(json.dumps(request_body, default=str))
@@ -173,4 +185,3 @@ def test_campaign_process(request: dict):
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                 details_message="Test campaign has been initiated! Please wait while you receive the communication.")
-
