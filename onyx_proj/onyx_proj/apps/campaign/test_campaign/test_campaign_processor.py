@@ -4,14 +4,16 @@ import http
 import logging
 import uuid
 import requests
-
+from Crypto.Cipher import AES
 from django.conf import settings
 
+from common.utils.AES_encryption import AesEncryptDecrypt
 from models.CED_UserSession_model import CEDUserSession
-from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT
-from onyx_proj.apps.campaign.test_campaign.test_campaign_helper import validate_test_campaign_data, get_time_difference, \
-    get_campaign_service_vendor, generate_test_file_name, create_file_details_json
-from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CampaignSchedulingSegmentStatus, TAG_REQUEST_POST
+from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT, \
+    USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN, TEST_CAMPAIGN_ENABLED
+from onyx_proj.apps.campaign.test_campaign.test_campaign_helper import validate_test_campaign_data, \
+    get_campaign_service_vendor, generate_test_file_name, create_file_details_json, get_time_difference
+from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CampaignSchedulingSegmentStatus
 from onyx_proj.orm_models.CED_CampaignSchedulingSegmentDetailsTEST_model import CED_CampaignSchedulingSegmentDetailsTEST
 from onyx_proj.orm_models.CED_CampaignExecutionProgress_model import CED_CampaignExecutionProgress
 from onyx_proj.models.CED_Projects import CEDProjects
@@ -54,11 +56,11 @@ def test_campaign_process(request: dict):
         validation_object = validation_object["data"]
 
     # check if segment data is fresh and records != 0, else return with data stale message
-    # if validation_object["campaign_builder_data"]["segment_data"]["records"] == 0 or \
-    #         get_time_difference(
-    #             validation_object["campaign_builder_data"]["segment_data"]["count_refresh_end_date"]) > 30:
-    #     return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-    #                 details_message="Data is stale, need to refresh data to process test campaign for the given instance.")
+    if validation_object["campaign_builder_data"]["segment_data"]["records"] == 0 or \
+            get_time_difference(
+                validation_object["campaign_builder_data"]["segment_data"]["count_refresh_end_date"]) > 30:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Data is stale, need to refresh data to process test campaign for the given instance.")
 
     # if data is not stale, proceed with flow
 
@@ -71,7 +73,7 @@ def test_campaign_process(request: dict):
     else:
         project_id = validation_object["campaign_builder_data"]["segment_data"]["project_id"]
 
-    if project_id not in ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj"]:
+    if project_id not in TEST_CAMPAIGN_ENABLED:
         url = settings.HYPERION_TEST_CAMPAIGN_URL
         payload = json.dumps({"campaignId": request["campaign_id"]})
         headers = {"Connection": "keep-alive", "Accept": "application/json, text/plain, */*",
@@ -154,9 +156,31 @@ def test_campaign_process(request: dict):
     else:
         project_details_object = project_details_object["data"]
 
+    # if cached setting is True, and we do not want to execute segment query at Segment_Evaluator Lambda,
+    # push decrypted segment data to local api as well as a use_cached_data flag
+
+    segment_data = validation_object["campaign_builder_data"]["segment_data"]
+    if project_id in USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN:
+        extra_data = json.loads(
+                AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
+                                  iv=settings.SEGMENT_AES_KEYS["AES_IV"],
+                                  mode=AES.MODE_CBC).decrypt_aes_cbc(segment_data.get("Extra", "")))
+        if extra_data is None or extra_data == "":
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Segment data seems to be empty! Please check segment.")
+        else:
+            try:
+                sample_data = json.loads(extra_data.get("sample_data", ""))
+            except TypeError:
+                sample_data = extra_data.get("sample_data", [])
+            test_campaign_data = sample_data[0]
+            request_body = dict(is_test_campaign=True, project_details_object=project_details_object,
+                                segment_data=segment_data, user_data=user_dict, cached_test_campaign_data=test_campaign_data)
+    else:
+        request_body = dict(is_test_campaign=True, project_details_object=project_details_object,
+                            segment_data=segment_data, user_data=user_dict)
+
     # call local API to populate data or the given test_campaign in local db tables
-    request_body = dict(is_test_campaign=True, project_details_object=project_details_object,
-                        segment_data=validation_object["campaign_builder_data"]["segment_data"], user_data=user_dict)
     rest_object = RequestClient()
     request_response = rest_object.post_onyx_local_api_request(request_body, settings.ONYX_LOCAL_DOMAIN[project_id],
                                                                FILE_DATA_API_ENDPOINT)

@@ -1815,11 +1815,11 @@ def create_campaign_details_in_local_db(request: dict):
     # save entity to CED_CampaignCreationDetails table
     save_or_update_ccd(ccd_entity)
 
+    # decrypt extra data and send cached data packet to Segment_Evaluator via SNS packet to avoid executing query
+    segment_sample_data = segment_data["Extra"]
     # TODO: create this function generic for normal campaigns as well
     # create SNS packet and push it to Campaign Segment Evaluator via SNS
-    campaign_segment_eval_packet = dict(
-        campaigns=[
-            dict(
+    campaign_packet = dict(
                 campaign_builder_campaign_id=project_details_object["campaignBuilderCampaignId"],
                 campaign_name=fp_project_details_json["campaignTitle"],
                 record_count=fp_project_details_json["records"],
@@ -1832,8 +1832,9 @@ def create_campaign_details_in_local_db(request: dict):
                 user_data=user_data,
                 file_id=fp_file_data_entity_final.id
             )
-        ]
-    )
+    if request.get("cached_test_campaign_data", None):
+        campaign_packet["cached_segment_data"] = request["cached_test_campaign_data"]
+    campaign_segment_eval_packet = dict(campaigns=[campaign_packet])
 
     from onyx_proj.common.utils.sns_helper import SnsHelper
     sns_response = SnsHelper().publish_data_to_topic(settings.SNS_SEGMENT_EVALUATOR,
