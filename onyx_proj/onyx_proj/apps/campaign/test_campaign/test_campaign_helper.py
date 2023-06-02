@@ -44,8 +44,9 @@ def validate_test_campaign_data(data_dict: dict):
         campaign_builder_campaign_id = data_dict["campaign_id"]
 
     # validating campaign builder campaign instance
-    campaign_builder_campaign_entity = CEDCampaignBuilderCampaign().fetch_entity_by_unique_id(
-        campaign_builder_campaign_id, CAMPAIGN_BUILDER_CAMPAIGN_VALID_STATUS)
+    # campaign_builder_campaign_entity = CEDCampaignBuilderCampaign().fetch_entity_by_unique_id(
+    #     campaign_builder_campaign_id, CAMPAIGN_BUILDER_CAMPAIGN_VALID_STATUS)
+    campaign_builder_campaign_entity = CEDCampaignBuilderCampaign().fetch_entity_by_unique_id(campaign_builder_campaign_id)
 
     if campaign_builder_campaign_entity is None:
         logger.error(

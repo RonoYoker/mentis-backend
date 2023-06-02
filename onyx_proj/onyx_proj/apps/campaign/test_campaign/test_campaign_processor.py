@@ -83,6 +83,8 @@ def test_campaign_process(request: dict):
             return dict(status_code=http.HTTPStatus.OK, result=TAG_FAILURE,
                         details_message="Test campaign has been initiated! Please wait while you receive the communication.")
         else:
+            logger.error(f"{method_name} :: Error while redirecting flow to Hyperion test campaign for request: {request}."
+                         f"Exception: {response.text}, Status_code: {response.status_code}")
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="Error while scheduling test campaign")
 
