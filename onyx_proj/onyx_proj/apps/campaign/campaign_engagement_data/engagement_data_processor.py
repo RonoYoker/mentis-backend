@@ -11,6 +11,8 @@ from celery import task
 
 db_conn = SqlAlchemyEngine().get_connection()
 
+bot_agents = ['Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36 Google-PageRenderer Google (+https://developers.google.com/+/web/snippet/)','Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)']
+
 @task
 def prepare_and_update_campaign_engagement_data(date_to_refresh=None):
     t1 = time.time()
@@ -103,7 +105,8 @@ def prepare_sms_data(date_to_refresh=None):
         accum_data[key]["LastSmsSent"] = choose_max_datetime(accum_data[key].get("LastSmsSent"),row["SentTime"])
         if accum_data[key]["Status"] is not None and accum_data[key]["Status"].lower() == "delivered":
             accum_data[key]["LastSmsDelivered"] = choose_max_datetime(accum_data[key].get("LastSmsDelivered"),row["DeliveryTime"])
-        accum_data[key]["LastSmsClicked"] = choose_max_datetime(accum_data[key].get("LastSmsClicked"),row["ClickTime"])
+        if row.get("UserAgent") not in bot_agents:
+            accum_data[key]["LastSmsClicked"] = choose_max_datetime(accum_data[key].get("LastSmsClicked"),row["ClickTime"])
     return accum_data
 
 def prepare_email_data(date_to_refresh=None):
@@ -120,7 +123,8 @@ def prepare_email_data(date_to_refresh=None):
         if accum_data[key]["Status"] is not None and accum_data[key]["Status"].lower() == "delivered":
             accum_data[key]["LastEmailDelivered"] = choose_max_datetime(accum_data[key].get("LastEmailDelivered"),
                                                                   row["DeliveryTime"])
-        accum_data[key]["LastEmailClicked"] = choose_max_datetime(accum_data[key].get("LastEmailClicked"), row["ClickTime"])
+        if row.get("UserAgent") not in bot_agents:
+            accum_data[key]["LastEmailClicked"] = choose_max_datetime(accum_data[key].get("LastEmailClicked"), row["ClickTime"])
     return accum_data
 
 def prepare_ivr_data(date_to_refresh=None):
@@ -154,7 +158,8 @@ def prepare_whatsapp_data(date_to_refresh=None):
         if accum_data[key]["Status"] is not None and accum_data[key]["Status"].lower() == "delivered":
             accum_data[key]["LastWhatsappDelivered"] = choose_max_datetime(accum_data[key].get("LastWhatsappDelivered"),
                                                                   row["DeliveryTime"])
-        accum_data[key]["LastWhatsappClicked"] = choose_max_datetime(accum_data[key].get("LastWhatsappClicked"), row["ClickTime"])
+        if row.get("UserAgent") not in bot_agents:
+            accum_data[key]["LastWhatsappClicked"] = choose_max_datetime(accum_data[key].get("LastWhatsappClicked"), row["ClickTime"])
     return accum_data
 
 def choose_max_datetime(t1,t2):
