@@ -1816,7 +1816,6 @@ def create_campaign_details_in_local_db(request: dict):
     save_or_update_ccd(ccd_entity)
 
     # decrypt extra data and send cached data packet to Segment_Evaluator via SNS packet to avoid executing query
-    segment_sample_data = segment_data["Extra"]
     # TODO: create this function generic for normal campaigns as well
     # create SNS packet and push it to Campaign Segment Evaluator via SNS
     campaign_packet = dict(

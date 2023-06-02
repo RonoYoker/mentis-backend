@@ -164,7 +164,7 @@ def test_campaign_process(request: dict):
         extra_data = json.loads(
                 AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
                                   iv=settings.SEGMENT_AES_KEYS["AES_IV"],
-                                  mode=AES.MODE_CBC).decrypt_aes_cbc(segment_data.get("Extra", "")))
+                                  mode=AES.MODE_CBC).decrypt_aes_cbc(segment_data.get("extra", "")))
         if extra_data is None or extra_data == "":
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="Segment data seems to be empty! Please check segment.")
