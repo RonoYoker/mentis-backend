@@ -103,7 +103,7 @@ def prepare_sms_data(date_to_refresh=None):
         key = (row["AccountNumber"],row["ProjectId"],row["DataId"])
         accum_data.setdefault(key,{})
         accum_data[key]["LastSmsSent"] = choose_max_datetime(accum_data[key].get("LastSmsSent"),row["SentTime"])
-        if accum_data[key]["Status"] is not None and accum_data[key]["Status"].lower() == "delivered":
+        if row["Status"] is not None and row["Status"].lower() == "delivered":
             accum_data[key]["LastSmsDelivered"] = choose_max_datetime(accum_data[key].get("LastSmsDelivered"),row["DeliveryTime"])
         if row.get("UserAgent") not in bot_agents:
             accum_data[key]["LastSmsClicked"] = choose_max_datetime(accum_data[key].get("LastSmsClicked"),row["ClickTime"])
@@ -120,7 +120,7 @@ def prepare_email_data(date_to_refresh=None):
         key = (row["AccountNumber"], row["ProjectId"], row["DataId"])
         accum_data.setdefault(key, {})
         accum_data[key]["LastEmailSent"] = choose_max_datetime(accum_data[key].get("LastEmailSent"), row["SentTime"])
-        if accum_data[key]["Status"] is not None and accum_data[key]["Status"].lower() == "delivered":
+        if row["Status"] is not None and row["Status"].lower() == "delivered":
             accum_data[key]["LastEmailDelivered"] = choose_max_datetime(accum_data[key].get("LastEmailDelivered"),
                                                                   row["DeliveryTime"])
         if row.get("UserAgent") not in bot_agents:
@@ -138,7 +138,7 @@ def prepare_ivr_data(date_to_refresh=None):
         key = (row["AccountNumber"], row["ProjectId"], row["DataId"])
         accum_data.setdefault(key, {})
         accum_data[key]["LastIvrSent"] = choose_max_datetime(accum_data[key].get("LastIvrSent"), row["SentTime"])
-        if accum_data[key]["Status"] is not None and accum_data[key]["Status"].lower() == "delivered":
+        if row["Status"] is not None and row["Status"].lower() == "delivered":
             accum_data[key]["LastIvrDelivered"] = choose_max_datetime(accum_data[key].get("LastIvrDelivered"),
                                                                   row["DeliveryTime"])
         accum_data[key]["LastIvrClicked"] = choose_max_datetime(accum_data[key].get("LastIvrClicked"), row.get("ClickTime"))
@@ -155,7 +155,7 @@ def prepare_whatsapp_data(date_to_refresh=None):
         key = (row["AccountNumber"], row["ProjectId"], row["DataId"])
         accum_data.setdefault(key, {})
         accum_data[key]["LastWhatsappSent"] = choose_max_datetime(accum_data[key].get("LastWhatsappSent"), row["SentTime"])
-        if accum_data[key]["Status"] is not None and accum_data[key]["Status"].lower() == "delivered":
+        if row["Status"] is not None and row["Status"].lower() == "delivered":
             accum_data[key]["LastWhatsappDelivered"] = choose_max_datetime(accum_data[key].get("LastWhatsappDelivered"),
                                                                   row["DeliveryTime"])
         if row.get("UserAgent") not in bot_agents:
