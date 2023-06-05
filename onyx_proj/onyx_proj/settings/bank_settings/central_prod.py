@@ -125,3 +125,12 @@ CELERY_TASK_SERIALIZER = 'json'
 
 CELERY_TIMEZONE = 'UTC'
 CELERY_ENABLE_UTC = False
+
+
+VENDOR_CONFIG = {
+    "telegram": {
+        "API_URL": "http://m-prod-sandesh-ecs-elb-1412672779.ap-south-1.elb.amazonaws.com/api/send_communication",
+        "CLIENT": "HYPERION_CENTRAL",
+        "CONFIG_ID": "hyp_telegram_prod"
+    }
+}

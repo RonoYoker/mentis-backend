@@ -233,3 +233,5 @@ LOGGING = {
         },
     }
 }
+
+VENDOR_CONFIG = {}
