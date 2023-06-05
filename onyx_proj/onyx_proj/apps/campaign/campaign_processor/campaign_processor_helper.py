@@ -81,21 +81,49 @@ def get_campaign_content_data_by_channel(details_dict: dict):
 
     channel = details_dict["channel"]
     if channel.lower() == "sms":
-        long_url = None if len(details_dict["campaignSMSContentEntity"].get("urlMapping", [])) == 0 else details_dict["campaignSMSContentEntity"]["urlMapping"][0]["url"]["contentText"]
+        long_url_fetch_dict = dict(configured_url_id=details_dict["campaignBuilderCampaignEntity"]["smsCampaign"].get("urlId", None),
+                                   url_mapping=details_dict["campaignSMSContentEntity"].get("urlMapping", []))
+        long_url = get_long_url_by_url_id(long_url_fetch_dict)
         return dict(template_id=details_dict["campaignSMSContentEntity"]["id"], long_url=long_url,
                     template_content=details_dict["campaignSMSContentEntity"]["contentText"])
     elif channel.lower() == "email":
-        long_url = None if len(details_dict["campaignEmailContentEntity"].get("urlMapping", [])) == 0 else details_dict["campaignEmailContentEntity"]["urlMapping"][0]["url"]["contentText"]
+        long_url_fetch_dict = dict(configured_url_id=details_dict["campaignBuilderCampaignEntity"]["emailCampaign"].get("urlId", None),
+                                   url_mapping=details_dict["campaignEmailContentEntity"].get("urlMapping", []))
+        long_url = get_long_url_by_url_id(long_url_fetch_dict)
         return dict(template_id=details_dict["campaignEmailContentEntity"]["id"], long_url=long_url,
                     template_content=details_dict["campaignEmailContentEntity"]["contentText"])
     elif channel.lower() == "ivr":
-        long_url = None if len(details_dict["campaignIvrContentEntity"].get("urlMapping", [])) == 0 else details_dict["campaignIvrContentEntity"]["urlMapping"][0]["url"]["contentText"]
-        return dict(template_id=details_dict["campaignIvrContentEntity"]["id"], long_url=long_url,
+        # long_url = None if len(details_dict["campaignIvrContentEntity"].get("urlMapping", [])) == 0 else details_dict["campaignIvrContentEntity"]["urlMapping"][0]["url"]["contentText"]
+        return dict(template_id=details_dict["campaignIvrContentEntity"]["id"], long_url=None,
                     template_content=details_dict["campaignIvrContentEntity"]["contentText"])
     elif channel.lower() == "whatsapp":
-        long_url = None if len(details_dict["campaignWhatsAppContentEntity"].get("urlMapping", [])) == 0 else details_dict["campaignWhatsAppContentEntity"]["urlMapping"][0]["url"]["contentText"]
+        long_url_fetch_dict = dict(configured_url_id=details_dict["campaignBuilderCampaignEntity"]["whatsAppCampaign"].get("urlId", None),
+                                   url_mapping=details_dict["campaignWhatsAppContentEntity"].get("urlMapping", []))
+        long_url = get_long_url_by_url_id(long_url_fetch_dict)
         return dict(template_id=details_dict["campaignWhatsAppContentEntity"]["id"], long_url=long_url,
                     template_content=details_dict["campaignWhatsAppContentEntity"]["contentText"])
     else:
         return None
 
+
+def get_long_url_by_url_id(details_dict: dict):
+    """
+    get longURL mapped with the campaign in the campaign configuration
+    currently we have a list of all mapped urls with the template_id, we need to parse the long_url configured with the campaign
+    """
+    method_name = "get_long_url_by_url_id"
+    logger.debug(f"{method_name} :: details_dict: {details_dict}")
+
+    configured_url_id = details_dict["configured_url_id"]
+
+    if not configured_url_id:
+        return None
+
+    if len(details_dict["url_mapping"]) == 0:
+        return None
+
+    for mapping in details_dict["url_mapping"]:
+        if configured_url_id == mapping["url"]["uniqueId"]:
+            return mapping["url"]["contentText"]
+
+    return None
