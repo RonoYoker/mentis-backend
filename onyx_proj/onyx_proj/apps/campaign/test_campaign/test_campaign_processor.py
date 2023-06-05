@@ -76,15 +76,14 @@ def test_campaign_process(request: dict):
     if project_id not in TEST_CAMPAIGN_ENABLED:
         url = settings.HYPERION_TEST_CAMPAIGN_URL
         payload = json.dumps({"campaignId": request["campaign_id"]})
-        headers = {"Connection": "keep-alive", "Accept": "application/json, text/plain, */*",
-                   "X-AuthToken": request["auth_token"]}
-        response = requests.request("POST", url, headers=headers, data=payload)
+        headers = {"Content-Type": "application/json", "X-AuthToken": request["auth_token"]}
+        response = requests.post(url, data=payload, headers=headers, verify=False)
         if response.status_code == http.HTTPStatus.OK:
             return dict(status_code=http.HTTPStatus.OK, result=TAG_FAILURE,
                         details_message="Test campaign has been initiated! Please wait while you receive the communication.")
         else:
-            logger.error(f"{method_name} :: Error while redirecting flow to Hyperion test campaign for request: {request}."
-                         f"Exception: {response.text}, Status_code: {response.status_code}")
+            logger.error(
+                f"{method_name} :: Error while redirecting flow to Hyperion test campaign for request. Exception: {str(response.text)}, Status_code: {response.status_code}")
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="Error while scheduling test campaign")
 
