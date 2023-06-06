@@ -11,11 +11,13 @@ from django.conf import settings
 import requests
 from django.template.loader import render_to_string
 
+from onyx_proj.apps.slot_management.data_processor.slots_data_processor import vaildate_campaign_for_scheduling
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.common.utils.logging_helpers import log_entry, log_exit
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException, ValidationFailedException, \
-    NotFoundException
+    NotFoundException, InternalServerError
 from onyx_proj.common.decorators import UserAuth
+from onyx_proj.common.sqlalchemy_helper import create_dict_from_object
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.apps.campaign.campaign_processor.campaign_processor_helper import add_filter_to_query_using_params, \
     add_status_to_query_using_params, validate_project_details_json, get_campaign_content_data_by_channel
@@ -24,6 +26,19 @@ from onyx_proj.apps.campaign.campaign_processor.app_settings import SCHEDULED_CA
 from onyx_proj.common.constants import *
 from onyx_proj.models.CED_ActivityLog_model import CEDActivityLog
 from onyx_proj.common.utils.email_utility import email_utility
+from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
+from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
+from onyx_proj.models.CED_ActivityLog_model import CEDActivityLog
+from onyx_proj.models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
+from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
+from onyx_proj.models.CED_CampaignContentFollowUPSmsMapping_model import CEDCampaignContentFollowUPSmsMapping
+from onyx_proj.models.CED_CampaignContentSenderIdMapping_model import CEDCampaignContentSenderIdMapping
+from onyx_proj.models.CED_CampaignContentUrlMapping_model import CEDCampaignContentUrlMapping
+from onyx_proj.models.CED_CampaignContentVariableMapping_model import CEDCampaignContentVariableMapping
+from onyx_proj.models.CED_CampaignEmailContent_model import CEDCampaignEmailContent
+from onyx_proj.models.CED_CampaignSMSContent_model import CEDCampaignSMSContent
+from onyx_proj.models.CED_CampaignContentSenderIdMapping_model import CEDCampaignContentSenderIdMapping
+from onyx_proj.models.CED_CampaignContentUrlMapping_model import CEDCampaignContentUrlMapping
 from onyx_proj.models.CED_CampaignContentVariableMapping_model import CEDCampaignContentVariableMapping
 from onyx_proj.models.CED_CampaignEmailContent_model import CEDCampaignEmailContent
 from onyx_proj.models.CED_CampaignFollowUPMapping_model import CEDCampaignFollowUPMapping
@@ -36,12 +51,18 @@ from onyx_proj.models.CED_CampaignWhatsAppContent_model import CEDCampaignWhatsA
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.models.CED_CampaignExecutionProgress_model import CEDCampaignExecutionProgress
+from onyx_proj.models.CED_CampaignWhatsAppContent_model import CEDCampaignWhatsAppContent
 from onyx_proj.models.CED_DataID_Details_model import CEDDataIDDetails
 from onyx_proj.models.CED_HIS_CampaignBuilder import CED_HISCampaignBuilder
-from onyx_proj.models.CED_HIS_CampaignBuilderCampaign import CED_HISCampaignBuilderCampaign
-from onyx_proj.models.CED_HIS_CampaignBuilder_model import CEDHIS_CampaignBuilder
 from onyx_proj.models.CED_Projects import CEDProjects
+from onyx_proj.models.CED_HIS_CampaignBuilderCampaign_model import CEDHIS_CampaignBuilderCampaign
+from onyx_proj.models.CED_HIS_CampaignBuilderEmail_model import CEDHisCampaignBuilderEmail
+from onyx_proj.models.CED_HIS_CampaignBuilderIVR_model import CEDHisCampaignBuilderIvr
+from onyx_proj.models.CED_HIS_CampaignBuilderSMS_model import CEDHisCampaignBuilderSms
+from onyx_proj.models.CED_HIS_CampaignBuilderWhatsApp_model import CEDHisCampaignBuilderWhatsapp
+from onyx_proj.models.CED_HIS_CampaignBuilder_model import CEDHIS_CampaignBuilder
 from onyx_proj.models.CED_Segment_model import CEDSegment
+from django.conf import settings
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from onyx_proj.models.CED_User_model import CEDUser
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilder, CED_CampaignSchedulingSegmentDetails, \
@@ -50,6 +71,13 @@ from onyx_proj.apps.slot_management.app_settings import SLOT_INTERVAL_MINUTES
 from onyx_proj.orm_models.CED_CampaignCreationDetails_model import CED_CampaignCreationDetails
 from onyx_proj.orm_models.CED_FP_FileData_model import CED_FP_FileData
 from onyx_proj.apps.campaign.test_campaign.db_helper import save_or_update_ccd, save_or_update_fp_file_data
+from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilderEmail, \
+    CED_HIS_CampaignBuilderCampaign, CED_HIS_CampaignBuilder, CED_ActivityLog, CED_CampaignBuilderSMS, \
+    CED_HIS_CampaignBuilderSMS, CED_CampaignBuilderWhatsApp, CED_CampaignBuilderIVR, CED_HIS_CampaignBuilderWhatsApp
+from onyx_proj.orm_models.CED_CampaignContentFollowUPSmsMapping_model import CED_CampaignContentFollowUPSmsMapping
+from onyx_proj.orm_models.CED_CampaignFollowUPMapping_model import CED_CampaignFollowUPMapping
+from onyx_proj.orm_models.CED_HIS_CampaignBuilderEmail_model import CED_HIS_CampaignBuilderEmail
+from onyx_proj.orm_models.CED_HIS_CampaignBuilderIVR_model import CED_HIS_CampaignBuilderIVR
 
 logger = logging.getLogger("apps")
 
@@ -777,7 +805,7 @@ def prepare_and_save_cbc_history_data(campaign_builder_campaign_id, user_name):
         his_obj["Comment"] = comment
         del his_obj['Id']
     try:
-        response = CED_HISCampaignBuilderCampaign().save_history_data(history_object)
+        response = CEDHIS_CampaignBuilderCampaign().save_history_data(history_object)
     except Exception as ex:
         return dict(status=False, message=str(ex))
 
@@ -1778,6 +1806,878 @@ def generate_campaign_approval_status_mail(data: dict):
 
     logger.info(f"Mailer response: {response}.")
     return
+
+
+def save_campaign_details(request_data):
+    body = request_data.get("body", {})
+    headers = request_data.get("headers", {})
+    unique_id = body.get("unique_id", None)
+    name = body.get("name", None)
+    segment_id = body.get("segment_id", None)
+    start_date_time = body.get("start_date_time", None)
+    end_date_time = body.get("end_date_time", None)
+    priority = body.get("priority", None)
+    type = body.get("type", None)
+    is_recurring = body.get("is_recurring", None)
+    recurring_detail = body.get("recurring_detail", None)
+    campaign_list = body.get("campaign_list", [])
+    description = body.get("description", None)
+    user_session = Session().get_user_session_object()
+    user_name = user_session.user.user_name
+
+    if name is None or segment_id is None or start_date_time is None or end_date_time is None\
+            or priority is None or type is None or len(campaign_list) == 0:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Request body has missing fields")
+
+    segment_entity = CEDSegment().get_segment_data_by_unique_id(segment_id)
+    if len(segment_entity) == 0:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Segment is not in Valid state")
+    data_id = segment_entity[0].get("data_id")
+    project_id = segment_entity[0].get("project_id")
+
+    if data_id is None or project_id is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="DataId/ProjectId is not present")
+
+    data_entity = CEDDataIDDetails().fetch_data_id_details(data_id)
+    project_entity = CEDProjects().get_active_project_id_entity_alchemy(project_id)
+
+    if len(data_entity) == 0 or len(project_entity) == 0:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="DataSet/Project is not in Valid state")
+
+    if unique_id is not None:
+        validated_old_camp = validate_campaign_edit_config(unique_id)
+        if validated_old_camp.get("result") == TAG_FAILURE:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message=validated_old_camp.get("details_message"))
+        campaign_builder = validated_old_camp.get("data")
+    else:
+        campaign_builder = CED_CampaignBuilder()
+        campaign_builder.unique_id = uuid.uuid4().hex
+
+    campaign_builder.status = CampaignBuilderStatus.SAVED.value
+    campaign_builder.created_by = user_name
+    campaign_builder.segment_name = segment_entity[0].get("title", "")
+    campaign_builder.records_in_segment = segment_entity[0].get("records", "")
+    campaign_builder.name = name
+    campaign_builder.segment_id = segment_id
+    campaign_builder.priority = priority
+    campaign_builder.start_date_time = start_date_time
+    campaign_builder.end_date_time = end_date_time
+    campaign_builder.recurring_detail = recurring_detail
+    campaign_builder.type = type
+    campaign_builder.is_recurring = is_recurring
+    campaign_builder.description = description
+
+    saved_campaign_builder = save_campaign_builder_details(campaign_builder, campaign_list, unique_id, data_id)
+    if saved_campaign_builder.get("result") == TAG_FAILURE:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message=saved_campaign_builder.get("details_message"))
+    campaign_builder = saved_campaign_builder.get("data")
+
+    saved_cbc_data = validate_and_save_campaign_builder_campaign_details(campaign_builder, campaign_list, segment_id, unique_id)
+    if saved_cbc_data is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Unable to save campaign builder instance")
+    if saved_cbc_data.get("result") == TAG_FAILURE:
+        campaign_builder.status = CampaignBuilderStatus.ERROR.value
+        CEDCampaignBuilder().save_or_update_campaign_builder_details(campaign_builder)
+        return dict(status_code=saved_cbc_data.get("status_code"), result=TAG_FAILURE,
+                    details_message=saved_cbc_data.get("details_message"))
+    campaign_builder = saved_cbc_data
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=campaign_builder)
+
+
+def save_campaign_builder_details(campaign_builder, campaign_list, unique_id, data_id):
+    method_name = "save_campaign_builder_details"
+    if unique_id is None:
+        is_campaign_name_exist = CEDCampaignBuilder().get_campaign_builder_detail_from_campaign_name(campaign_builder.name, data_id)
+        if len(is_campaign_name_exist) > 0:
+            return dict(result=TAG_FAILURE, details_message="Name is already used with another campaign builder")
+    if campaign_builder.type.upper() == "SCHEDULED":
+        try:
+            validate_followup_sms_details(campaign_list)
+            db_res = CEDCampaignBuilder().save_or_update_campaign_builder_details(campaign_builder)
+            if not db_res.get("status"):
+                raise BadRequestException(method_name=method_name,
+                                          reason="Unable to save campaign builder details")
+            campaign_builder = db_res.get("response")
+            prepare_and_save_camp_builder_history_data(campaign_builder)
+            set_followup_sms_details(campaign_list)
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
+            logger.error(f"Error while prepare and saving campaign builder details ::{e}")
+            campaign_builder.status = CampaignBuilderStatus.ERROR.value
+            campaign_builder.error_msg = str(e)
+        finally:
+            if campaign_builder.id is not None:
+                db_res = CEDCampaignBuilder().save_or_update_campaign_builder_details(campaign_builder)
+                if not db_res.get("status"):
+                    raise InternalServerError(method_name=method_name,
+                                              reason="Enable to save campaign builder details")
+                if campaign_builder.status == CampaignBuilderStatus.ERROR.value:
+                    raise InternalServerError(method_name=method_name,
+                                              reason=campaign_builder.error_msg)
+                return dict(result=TAG_SUCCESS, data=campaign_builder)
+            else:
+                raise InternalServerError(method_name=method_name,
+                                          reason=campaign_builder.error_msg)
+
+
+def validate_campaign_edit_config(unique_id):
+    campaign_builder_entity_db = CEDCampaignBuilder().get_campaign_builder_entity_by_unique_id(unique_id)
+    if campaign_builder_entity_db is None or campaign_builder_entity_db.unique_id != unique_id:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Campaign builder not found")
+    campaign_builder = campaign_builder_entity_db
+
+    campaign_builder.unique_id = unique_id
+    campaign_builder.approval_retry = 0
+    cbc_min_start_date_time = CEDCampaignBuilderCampaign().fetch_min_start_time_by_cb_id(unique_id)
+    if cbc_min_start_date_time is not None:
+        if campaign_builder_entity_db.status.upper() == CampaignBuilderStatus.APPROVED.value or \
+                campaign_builder_entity_db.status.upper() == CampaignBuilderStatus.APPROVAL_PENDING.value or \
+                campaign_builder_entity_db.status.upper() == CampaignBuilderStatus.ERROR.value:
+            return dict(result=TAG_FAILURE,
+                        details_message="Campaign is not in valid state.")
+        elif campaign_builder_entity_db.status.upper() == CampaignBuilderStatus.DEACTIVATE.value:
+            curr_utc_time = datetime.datetime.utcnow() + \
+                            datetime.timedelta(minutes=MINUTES_LIMIT_FOR_EDIT_DEACTIVATED_CAMPAIGN)
+            if cbc_min_start_date_time < curr_utc_time:
+                return dict(result=TAG_FAILURE,
+                            details_message="Deactivated campaign after start date time cannot be edited.")
+            campaign_builder.is_active = True
+            campaign_builder.approval_retry = 0
+    return dict(result=TAG_SUCCESS, data=campaign_builder)
+
+
+def set_followup_sms_details(campaign_list):
+    method_name = "set_followup_sms_details"
+    logger.debug(f"Trace Entry: {method_name}")
+    for campaign in campaign_list:
+        if campaign.get("content_type").upper() == "IVR" and campaign.get("ivr_campaign") is not None\
+                and campaign.get("ivr_campaign").get("have_follow_up_sms") is True:
+            follow_up_sms_list = campaign.get("ivr_campaign").get("follow_up_sms_list")
+            ivr_id = campaign.get("ivr_campaign").get("ivr_id")
+            for follow_up_sms in follow_up_sms_list:
+                type = follow_up_sms.get("type","")
+                sms_id = follow_up_sms.get("sms_id")
+                url_id = follow_up_sms.get("url_id")
+                sender_id = follow_up_sms.get("sender_id")
+
+                ivr_follow_up_details = CED_CampaignContentFollowUPSmsMapping()
+                ivr_follow_up_details.content_id = ivr_id
+                ivr_follow_up_details.content_type = CampaignBuilderCampaignContentType.IVR.value
+                ivr_follow_up_details.follow_up_sms_type = type
+                ivr_follow_up_details.sms_id = sms_id
+                ivr_follow_up_details.sender_id = sender_id
+                ivr_follow_up_details.url_id = url_id
+                ivr_follow_up_details.vendor_config_id = follow_up_sms.get("vendor_config_id", "")
+                db_res = CEDCampaignContentFollowUPSmsMapping().update_content_follow_up_sms_mapping(ivr_follow_up_details)
+                if not db_res.get("status"):
+                    raise BadRequestException(method_name=method_name,
+                                              reason="Not able to update follow up sms mapping")
+
+                campaign_follow_up_mapping = CED_CampaignFollowUPMapping()
+                campaign_follow_up_mapping.sms_id = sms_id
+                campaign_follow_up_mapping.url_id = url_id
+                campaign_follow_up_mapping.sender_id = sender_id
+                campaign_follow_up_mapping.vendor_config_id = follow_up_sms.get("vendor_config_id", "")
+                campaign_follow_up_mapping.campaign_builder_campaign_id = campaign.get("unique_id", "")
+                db_res = CEDCampaignContentFollowUPSmsMapping().get_ivr_follow_up_sms_mapping_id(ivr_id, type)
+                if not db_res.get("status") or db_res.get("response") is None:
+                    raise BadRequestException(method_name=method_name,
+                                              reason="Not able to fetch ivr follow up sms mapping")
+                ivr_follow_up_sms_mapping_id = db_res.get("response")[0].get("unique_id")
+                campaign_follow_up_mapping.ivr_follow_up_sms_mapping_id = ivr_follow_up_sms_mapping_id
+                db_res = CEDCampaignFollowUPMapping().\
+                    save_or_update_campaign_follow_up_mapping(campaign_follow_up_mapping)
+                if not db_res.get("status"):
+                    raise BadRequestException(method_name=method_name,
+                                              reason="Not able to save follow up sms mapping")
+
+
+def validate_followup_sms_details(campaign_list):
+    method_name = "validate_followup_sms_details"
+    for campaign in campaign_list:
+        if campaign.get("content_type").upper() == "IVR" and campaign.get("ivr_campaign")\
+                is not None and campaign.get("ivr_campaign").get("have_follow_up_sms") is True:
+            follow_up_sms_list = campaign.get("ivr_campaign").get("follow_up_sms_list")
+            ivr_id = campaign.get("ivr_campaign").get("ivr_id")
+            for follow_up_sms in follow_up_sms_list:
+                if ivr_id is None or follow_up_sms.get("type") is None or\
+                        follow_up_sms.get("sms_id") is None and follow_up_sms.get("sender_id") is None:
+                    raise BadRequestException(method_name=method_name,
+                                              reason="Either url id or sms id or sender id or key press type is missing")
+                validate_url_mandatory_for_sms(follow_up_sms.get("sms_id"), follow_up_sms.get("url_id"))
+
+
+def validate_url_mandatory_for_sms(sms_id, url_id):
+    method_name = "validate_url_mandatory_for_sms"
+    if url_id is not None:
+        return None
+    db_resp = CEDCampaignContentVariableMapping().get_content_variable_for_sms(sms_id)
+    if not db_resp.get("status"):
+        raise BadRequestException(method_name=method_name,
+                                  reason=db_resp.get("response"))
+    variable_for_sms = db_resp.get("response")
+    for cont_var in variable_for_sms:
+        if cont_var.get("column_name").lower() == "url":
+            raise BadRequestException(method_name=method_name,
+                                      reason="Urlid is missing")
+
+
+def validate_campaign_builder_campaign_details(campaign_builder, campaign_list, segment_id, campaign_id):
+    method_name = "validate_campaign_builder_campaign_details"
+    logger.debug(f"Trace Entry: {method_name}")
+    unique_id = campaign_builder.unique_id
+    if unique_id is None:
+        return dict(result=TAG_FAILURE, details_message="Campaign builder id is not provided")
+    campaign_builder_details = CEDCampaignBuilder().get_campaign_builder_details_by_unique_id(unique_id)
+    if campaign_builder_details is None or len(campaign_builder_details) == 0:
+        return dict(result=TAG_FAILURE, details_message="Campaign builder details are not valid")
+
+    response = validate_schedule(campaign_list, segment_id, unique_id, campaign_id)
+    if response.get("result") == TAG_FAILURE:
+        logger.error(f"{method_name}, validate schedule resp :: {response}  ")
+        return dict(result=TAG_FAILURE, details_message=response.get("details_message"))
+
+    response = validate_headers_compatibility(campaign_list, segment_id, unique_id)
+    if response.get("result") == TAG_FAILURE:
+        logger.error(f"{method_name}, validate schedule resp :: {response}  ")
+        return dict(result=TAG_FAILURE, details_message=response.get("details_message"))
+
+    campaign_final_list = []
+    order_number = 0
+    for campaign in campaign_list:
+        if campaign is None:
+            logger.error(f"{method_name}, campaign :: {campaign}  ")
+            return dict(result=TAG_FAILURE, details_message="Campaign details is not provided")
+        validate_time = validate_date_time(campaign)
+        if validate_time.get("result") == TAG_FAILURE:
+            logger.error(f"{method_name}, validate date time :: {validate_time}  ")
+            return dict(result=TAG_FAILURE, details_message=validate_time.get("details_message"))
+        campaign["order_number"] = order_number
+        content_mapping_validation_resp = validate_campaign_content_mapping(campaign)
+        if content_mapping_validation_resp is not None and content_mapping_validation_resp.get("result") == TAG_FAILURE:
+            logger.error(f"{method_name}, validate content details :: {content_mapping_validation_resp}  ")
+            return dict(result=TAG_FAILURE, details_message=content_mapping_validation_resp.get("details_message"))
+        content_validation_resp = validate_content_status(campaign)
+        if content_validation_resp.get("result") == TAG_FAILURE:
+            logger.error(f"{method_name}, validate content details :: {content_validation_resp}  ")
+            return dict(result=TAG_FAILURE, details_message=content_validation_resp.get("details_message"))
+        type = campaign_builder.type
+        order_number = order_number + 1
+        if type == "SCHEDULED":
+            campaign["start_date_time"] = campaign.get("input_start_date_time")
+            campaign["end_date_time"] = campaign.get("input_end_date_time")
+        campaign_final_list.append(campaign)
+    logger.debug(f"Trace Exit: {method_name}, campaign final list :: {campaign_final_list}")
+    return dict(result=TAG_SUCCESS, data=campaign_final_list)
+
+
+def prepare_and_save_campaign_builder_campaign_details(campaign_builder, campaign_final_list, unique_id, campaign_list):
+    method_name = "prepare_and_save_campaign_builder_campaign_details"
+    logger.debug(f"Trace Exit: {method_name}")
+    for campaign in campaign_final_list:
+        campaign_entity = CED_CampaignBuilderCampaign(campaign)
+        campaign_entity.campaign_builder_id = unique_id
+        campaign_entity.unique_id = uuid.uuid4().hex
+
+        campaign_his_entity = CED_HIS_CampaignBuilderCampaign(create_dict_from_object(campaign_entity))
+        campaign_his_entity.campaign_builder_campaign_id = campaign_entity.unique_id
+        campaign_his_entity.unique_id = uuid.uuid4().hex
+        base_campaign_builder_campaign_entity = save_campaign_details_and_return_id(campaign_entity, campaign, campaign_his_entity.unique_id)
+        campaign_entity.campaign_id = base_campaign_builder_campaign_entity.unique_id
+        campaign_his_entity.campaign_id = base_campaign_builder_campaign_entity.history_id
+        campaign_entity.test_campaign_state = TestCampStatus.NOT_DONE.value
+        try:
+            CEDCampaignBuilderCampaign().save_or_update_campaign_builder_campaign_details(campaign_entity)
+        except:
+            raise BadRequestException(method_name=method_name,
+                                      reason="Unable to save campaign builder campaign details")
+        history_id = campaign_builder.history_id
+        try:
+            prepare_and_save_campaign_builder_campaign_history_data(campaign_his_entity, campaign_entity, history_id)
+        except:
+            logger.error(f"{method_name}, Unable to save campaign builder campaign history details")
+            raise BadRequestException(method_name=method_name,
+                                      reason="Unable to save campaign builder campaign history details")
+    set_followup_sms_details(campaign_list)
+
+
+def validate_and_save_campaign_builder_campaign_details(campaign_builder, campaign_list, segment_id, campaign_id):
+    method_name = "validate_and_save_campaign_builder_campaign_details"
+    unique_id = campaign_builder.unique_id
+    if unique_id is None:
+        return dict(result=TAG_FAILURE, details_message="Campaign builder id is not provided")
+    try:
+        validate_resp = validate_campaign_builder_campaign_details(campaign_builder, campaign_list, segment_id,
+                                                                   campaign_id)
+        if validate_resp.get('result') == TAG_FAILURE:
+            return dict(result=TAG_FAILURE, details_message=validate_resp.get('details_message'))
+        campaign_final_list = validate_resp.get('data')
+    except Exception as e:
+        raise BadRequestException(method_name=method_name,
+                                  reason="Unable to save campaign builder campaign details")
+    try:
+        CEDCampaignBuilderCampaign().delete_campaign_builder_campaign_by_unique_id(unique_id)
+        prepare_and_save_campaign_builder_campaign_details(campaign_builder, campaign_final_list, unique_id, campaign_list)
+    except Exception as e:
+        campaign_builder.status = CampaignBuilderStatus.ERROR.value
+        campaign_builder.error_msg = str(e)
+        logger.error(f"Error while Saving CampaignBuilderCampaign data ::{e}")
+    finally:
+        db_res = CEDCampaignBuilder().save_or_update_campaign_builder_details(campaign_builder)
+        if not db_res.get("status"):
+            raise InternalServerError(method_name=method_name,
+                                      reason="Enable to save campaign builder details")
+        if campaign_builder.status == CampaignBuilderStatus.ERROR.value:
+            raise InternalServerError(method_name=method_name,
+                                      reason=campaign_builder.error_msg)
+
+    saved_campaign_builder_details = CEDCampaignBuilder().get_campaign_builder_details_unique_id(unique_id)
+    if saved_campaign_builder_details is None or len(saved_campaign_builder_details) == 0:
+        return dict(result=TAG_FAILURE, details_message="Unable to fetch saved Campaign details")
+    return saved_campaign_builder_details[0]
+
+
+def validate_date_time(campaign):
+    curr_date_time = datetime.datetime.utcnow()
+    start_date_time = campaign.get("input_start_date_time", "")
+    end_date_time = campaign.get("input_end_date_time", "")
+    if start_date_time == "" or end_date_time == "":
+        return dict(result=TAG_FAILURE, details_message="Start or End date time of instance is null")
+    if datetime.datetime.strptime(start_date_time, "%Y-%m-%d %H:%M:%S") < curr_date_time + datetime.timedelta(
+            minutes=45) or datetime.datetime.strptime(end_date_time, "%Y-%m-%d %H:%M:%S")\
+            < curr_date_time + datetime.timedelta(minutes=60):
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Start or End date time of instance is for past")
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
+
+
+def prepare_and_save_camp_builder_history_data(campaign_builder_details):
+    module_name = "CampaignBuilder"
+    user_session = Session().get_user_session_object()
+    user_name = user_session.user.user_name
+    id = campaign_builder_details.id
+    unique_id = campaign_builder_details.unique_id
+    history_id = campaign_builder_details.history_id
+    segment_id = campaign_builder_details.segment_id
+    try:
+        campaign_builder_his_entity = CED_HIS_CampaignBuilder(campaign_builder_details._asdict())
+        campaign_builder_his_entity.campaign_builder_id = unique_id
+        campaign_builder_his_entity.unique_id = uuid.uuid4().hex
+        campaign_builder_his_entity.id = None
+        if history_id is None or history_id != campaign_builder_his_entity.unique_id:
+            if history_id is None:
+                campaign_builder_his_entity.comment = f"{module_name} {id}  is Created by {user_name}"
+            else:
+                campaign_builder_his_entity.comment = f"{module_name} {id}  is Modified by {user_name}"
+            CEDHIS_CampaignBuilder().save_or_update_his_campaign_builder(campaign_builder_his_entity)
+            CEDCampaignBuilder().update_campaign_builder_history(unique_id, dict(history_id=campaign_builder_his_entity.unique_id))
+            campaign_builder_details.history_id = campaign_builder_his_entity.unique_id
+            activity_log_entity = CED_ActivityLog()
+            activity_log_entity.data_source = DataSource.CAMPAIGN_BUILDER.value,
+            activity_log_entity.sub_data_source = SubDataSource.CAMPAIGN_BUILDER.value,
+            activity_log_entity.data_source_id = unique_id
+            activity_log_entity.comment = campaign_builder_his_entity.comment
+            activity_log_entity.filter_id = segment_id
+            activity_log_entity.history_table_id = campaign_builder_his_entity.unique_id
+            activity_log_entity.unique_id = uuid.uuid4().hex
+            activity_log_entity.created_by = Session().get_user_session_object().user.user_uuid
+            activity_log_entity.updated_by = Session().get_user_session_object().user.user_uuid
+            CEDActivityLog().save_or_update_activity_log(activity_log_entity)
+    except Exception as e:
+        logger.error(f"Error while prepare and saving campaign builder history data ::{e}")
+        raise Exception
+
+
+def prepare_and_save_campaign_builder_campaign_history_data(campaign_his_entity, campaign_entity, history_id):
+    module_name = "CampaignBuilderCampaign"
+    user_session = Session().get_user_session_object()
+    user_name = user_session.user.user_name
+    campaign_his_entity.campaign_builder_id = history_id
+    try:
+        if campaign_entity.history_id is None or campaign_entity.history_id != campaign_his_entity.unique_id:
+            if campaign_entity.history_id is None:
+                campaign_his_entity.comment = f"{module_name} is Created by {user_name}"
+            else:
+                campaign_his_entity.comment = f"{module_name} is Modified by {user_name}"
+            CEDHIS_CampaignBuilderCampaign().save_or_update_campaign_builder_history(campaign_his_entity)
+            campaign_entity.history_id = campaign_his_entity.unique_id
+            CEDCampaignBuilderCampaign().update_campaign_builder_campaign_history(
+                dict(history_id=campaign_his_entity.unique_id), campaign_entity.unique_id)
+    except Exception as e:
+        logger.error(f"Error while Saving CampaignBuilderCampaignHistory data ::{e}")
+        raise Exception
+
+
+def save_campaign_details_and_return_id(campaign_entity, campaign, history_id):
+    user_session = Session().get_user_session_object()
+    user_name = user_session.user.user_name
+    content_type = campaign.get("content_type")
+
+    if content_type == CampaignBuilderCampaignContentType.EMAIL.value:
+        try:
+            email_campaign_entity = prepare_and_save_campaign_builder_email(campaign, campaign_entity, user_name)
+            email_campaign_entity = prepare_and_save_campaign_builder_email_history(history_id, email_campaign_entity)
+            return email_campaign_entity
+        except Exception as e:
+            logger.error(f"Error while saving campaign content details ::{e}")
+            raise e
+    elif content_type == CampaignBuilderCampaignContentType.SMS.value:
+        try:
+            sms_campaign_entity = prepare_and_save_campaign_builder_sms(campaign, campaign_entity, user_name)
+            sms_campaign_entity = prepare_and_save_campaign_builder_sms_history(history_id, sms_campaign_entity)
+            return sms_campaign_entity
+        except Exception as e:
+            logger.error(f"Error while saving campaign content details ::{e}")
+            raise e
+    elif content_type == CampaignBuilderCampaignContentType.WHATSAPP.value:
+        try:
+            whatsapp_campaign_entity = prepare_and_save_campaign_builder_whatsapp(campaign, campaign_entity, user_name)
+            whatsapp_campaign_entity = prepare_and_save_campaign_builder_whatsapp_history(history_id, whatsapp_campaign_entity)
+            return whatsapp_campaign_entity
+        except Exception as e:
+            logger.error(f"Error while saving campaign content details ::{e}")
+            raise e
+    elif content_type == CampaignBuilderCampaignContentType.IVR.value:
+        try:
+            ivr_campaign_entity = prepare_and_save_campaign_builder_ivr(campaign, campaign_entity, user_name)
+            ivr_campaign_entity = prepare_and_save_campaign_builder_ivr_history(history_id, ivr_campaign_entity)
+            return ivr_campaign_entity
+        except Exception as e:
+            logger.error(f"Error while saving campaign content details ::{e}")
+            raise e
+
+
+def prepare_and_save_campaign_builder_email(campaign, campaign_entity, user_name):
+    module_name = "prepare_and_save_campaign_builder_email"
+    email_campaign = campaign.get("email_campaign")
+    email_campaign_entity = CED_CampaignBuilderEmail()
+    email_campaign_entity.unique_id = uuid.uuid4().hex
+    email_campaign_entity.created_by = user_name
+    email_campaign_entity.mapping_id = campaign_entity.unique_id
+    email_campaign_entity.email_id = email_campaign.get("email_id")
+    email_campaign_entity.subject_line_id = email_campaign.get("subject_line_id")
+    email_campaign_entity.url_id = email_campaign.get("url_id")
+    try:
+        CEDCampaignBuilderEmail().save_or_update_email_campaign_details(email_campaign_entity)
+        return email_campaign_entity
+    except Exception as e:
+        logger.error(f"{module_name}, Error while saving email campaign content details ::{e}")
+        raise e
+
+
+def prepare_and_save_campaign_builder_sms(campaign, campaign_entity, user_name):
+    module_name = "prepare_and_save_campaign_builder_sms"
+    sms_campaign = campaign.get("sms_campaign")
+    sms_campaign_entity = CED_CampaignBuilderSMS()
+    sms_campaign_entity.unique_id = uuid.uuid4().hex
+    sms_campaign_entity.created_by = user_name
+    sms_campaign_entity.mapping_id = campaign_entity.unique_id
+    sms_campaign_entity.sms_id = sms_campaign.get("sms_id")
+    sms_campaign_entity.sender_id = sms_campaign.get("sender_id")
+    sms_campaign_entity.url_id = sms_campaign.get("url_id")
+    try:
+        CEDCampaignBuilderSMS().save_or_update_sms_campaign_details(sms_campaign_entity)
+        return sms_campaign_entity
+    except Exception as e:
+        logger.error(f"{module_name}, Error while saving sms campaign content details ::{e}")
+        raise e
+
+
+def prepare_and_save_campaign_builder_whatsapp(campaign, campaign_entity, user_name):
+    module_name = "prepare_and_save_campaign_builder_whatsapp"
+    whatsapp_campaign = campaign.get("whatsapp_campaign")
+    whatsapp_campaign_entity = CED_CampaignBuilderWhatsApp()
+    whatsapp_campaign_entity.unique_id = uuid.uuid4().hex
+    whatsapp_campaign_entity.created_by = user_name
+    whatsapp_campaign_entity.mapping_id = campaign_entity.unique_id
+    whatsapp_campaign_entity.whats_app_content_id = whatsapp_campaign.get("whats_app_content_id")
+    whatsapp_campaign_entity.url_id = whatsapp_campaign.get("url_id")
+    try:
+        CEDCampaignBuilderWhatsApp().save_or_update_sms_campaign_details(whatsapp_campaign_entity)
+        return whatsapp_campaign_entity
+    except Exception as e:
+        logger.error(f"{module_name}, Error while saving whatsapp campaign content details ::{e}")
+        raise e
+
+
+def prepare_and_save_campaign_builder_ivr(campaign, campaign_entity, user_name):
+    module_name = "prepare_and_save_campaign_builder_ivr"
+    ivr_campaign = campaign.get("ivr_campaign")
+    ivr_campaign_entity = CED_CampaignBuilderIVR()
+    ivr_campaign_entity.unique_id = uuid.uuid4().hex
+    ivr_campaign_entity.created_by = user_name
+    ivr_campaign_entity.mapping_id = campaign_entity.unique_id
+    ivr_campaign_entity.ivr_id = ivr_campaign.get("ivr_id")
+    try:
+        CEDCampaignBuilderIVR().save_or_update_ivr_campaign_details(ivr_campaign_entity)
+        return ivr_campaign_entity
+    except Exception as e:
+        logger.error(f"{module_name}, Error while saving ivr campaign content details ::{e}")
+        raise e
+
+
+def prepare_and_save_campaign_builder_ivr_history(campaign_history_id, ivr_campaign_entity):
+    module_name = "CampaignBuilderIvr"
+    user_session = Session().get_user_session_object()
+    user_name = user_session.user.user_name
+    campaign_history_ivr_entity = CED_HIS_CampaignBuilderIVR(create_dict_from_object(ivr_campaign_entity))
+    campaign_history_ivr_entity.campaign_builder_ivr_entity_id = ivr_campaign_entity.unique_id
+    campaign_history_ivr_entity.unique_id = uuid.uuid4().hex
+    campaign_history_ivr_entity.mapping_id = campaign_history_id
+    try:
+        if ivr_campaign_entity.history_id is None or ivr_campaign_entity.history_id != campaign_history_ivr_entity.unique_id:
+            ivr_campaign = CEDCampaignBuilderIVR().get_ivr_campaign(ivr_campaign_entity.unique_id)
+            if ivr_campaign is None or len(ivr_campaign) == 0:
+                return dict(result=TAG_FAILURE, details_message="Campaign builder ivr details not found")
+            ivr_campaign_id = ivr_campaign[0].get("id")
+            if ivr_campaign_entity.history_id is None:
+                campaign_history_ivr_entity.comment = f"{module_name} {ivr_campaign_id} is Created by {user_name}"
+            else:
+                db_res = CEDHIS_CampaignBuilderCampaign().get_campaign_content_history(ivr_campaign_entity.history_id)
+                if not db_res:
+                    campaign_history_ivr_entity.comment = f"{module_name} {ivr_campaign_id} is Modified by {user_name}"
+            CEDHisCampaignBuilderIvr().save_campaign_builder_campaign_history(campaign_history_ivr_entity)
+            ivr_campaign_entity.history_id = campaign_history_ivr_entity.unique_id
+            CEDCampaignBuilderIVR().update_campaign_builder_campaign_history(ivr_campaign_entity.unique_id, dict(
+                history_id=campaign_history_ivr_entity.unique_id))
+            return ivr_campaign_entity
+    except Exception as e:
+        logger.error(f"Error while preparing and  Saving CampaignBuilderCampaign history data ::{e}")
+        raise Exception
+
+
+def prepare_and_save_campaign_builder_whatsapp_history(campaign_history_id, whatsapp_campaign_entity):
+    module_name = "CampaignBuilderWhatsapp"
+    user_session = Session().get_user_session_object()
+    user_name = user_session.user.user_name
+    campaign_history_whatsapp_entity = CED_HIS_CampaignBuilderWhatsApp(create_dict_from_object(whatsapp_campaign_entity))
+    campaign_history_whatsapp_entity.campaign_builder_whatsapp_entity_id = whatsapp_campaign_entity.unique_id
+    campaign_history_whatsapp_entity.unique_id = uuid.uuid4().hex
+    campaign_history_whatsapp_entity.mapping_id = campaign_history_id
+    try:
+        if whatsapp_campaign_entity.history_id is None or whatsapp_campaign_entity.history_id != campaign_history_whatsapp_entity.unique_id:
+            whatsapp_campaign = CEDCampaignBuilderWhatsApp().get_whatsapp_campaign(whatsapp_campaign_entity.unique_id)
+            if whatsapp_campaign is None or len(whatsapp_campaign) == 0:
+                return dict(result=TAG_FAILURE, details_message="Campaign builder whatsapp details not found")
+            whatsapp_campaign_id = whatsapp_campaign[0].get("id")
+            if whatsapp_campaign_entity.history_id is None:
+                campaign_history_whatsapp_entity.comment = f"{module_name} {whatsapp_campaign_id} is Created by {user_name}"
+            else:
+                db_res = CEDHIS_CampaignBuilderCampaign().get_campaign_content_history(whatsapp_campaign_entity.history_id)
+                if not db_res:
+                    campaign_history_whatsapp_entity.comment = f"{module_name} {whatsapp_campaign_id} is Modified by {user_name}"
+            CEDHisCampaignBuilderWhatsapp().save_campaign_builder_campaign_whatsapp_history(campaign_history_whatsapp_entity)
+            whatsapp_campaign_entity.history_id = campaign_history_whatsapp_entity.unique_id
+            CEDCampaignBuilderWhatsApp().update_campaign_builder_campaign_history(whatsapp_campaign_entity.unique_id, dict(history_id=campaign_history_whatsapp_entity.unique_id))
+            return whatsapp_campaign_entity
+    except Exception as e:
+        logger.error(f"Error while preparing and  Saving CampaignBuilderCampaign history data ::{e}")
+        raise Exception
+
+
+def prepare_and_save_campaign_builder_sms_history(campaign_history_id, sms_campaign_entity):
+    module_name = "CampaignBuilderSms"
+    user_session = Session().get_user_session_object()
+    user_name = user_session.user.user_name
+    campaign_history_sms_entity = CED_HIS_CampaignBuilderSMS(create_dict_from_object(sms_campaign_entity))
+    campaign_history_sms_entity.campaign_builder_sms_entity_id = sms_campaign_entity.unique_id
+    campaign_history_sms_entity.unique_id = uuid.uuid4().hex
+    campaign_history_sms_entity.mapping_id = campaign_history_id
+    try:
+        if sms_campaign_entity.history_id is None or sms_campaign_entity.history_id != campaign_history_sms_entity.unique_id:
+            sms_campaign = CEDCampaignBuilderSMS().get_sms_campaign(sms_campaign_entity.unique_id)
+            if sms_campaign is None or len(sms_campaign) == 0:
+                return dict(result=TAG_FAILURE, details_message="Campaign builder sms details not found")
+            sms_campaign_id = sms_campaign[0].get("id")
+            if sms_campaign_entity.history_id is None:
+                campaign_history_sms_entity.comment = f"{module_name} {sms_campaign_id} is Created by {user_name}"
+            else:
+                db_res = CEDHIS_CampaignBuilderCampaign().get_campaign_content_history(sms_campaign_entity.history_id)
+                if not db_res:
+                    campaign_history_sms_entity.comment = f"{module_name} {sms_campaign_id} is Modified by {user_name}"
+            CEDHisCampaignBuilderSms().save_campaign_builder_campaign_history(campaign_history_sms_entity)
+            sms_campaign_entity.history_id = campaign_history_sms_entity.unique_id
+            CEDCampaignBuilderSMS().update_campaign_builder_campaign_history(sms_campaign_entity.unique_id, dict(history_id=campaign_history_sms_entity.unique_id))
+            return sms_campaign_entity
+    except Exception as e:
+        logger.error(f"Error while preparing and  Saving CampaignBuilderCampaign history data ::{e}")
+        raise Exception
+
+
+def prepare_and_save_campaign_builder_email_history(campaign_history_id, email_campaign_entity):
+    module_name = "CampaignBuilderEmail"
+    user_session = Session().get_user_session_object()
+    user_name = user_session.user.user_name
+    campaign_email_history_entity = CED_HIS_CampaignBuilderEmail(create_dict_from_object(email_campaign_entity))
+    campaign_email_history_entity.campaign_builder_email_entity_id = email_campaign_entity.unique_id
+    campaign_email_history_entity.unique_id = uuid.uuid4().hex
+    campaign_email_history_entity.mapping_id = campaign_history_id
+    try:
+        if email_campaign_entity.history_id is None or email_campaign_entity.history_id != campaign_email_history_entity.unique_id:
+            email_campaign = CEDCampaignBuilderEmail().get_email_campaign(email_campaign_entity.unique_id)
+            if email_campaign is None or len(email_campaign) == 0:
+                return dict(result=TAG_FAILURE, details_message="Campaign builder email details not found")
+            email_campaign_id = email_campaign[0].get("id")
+            if email_campaign_entity.history_id is None:
+                campaign_email_history_entity.comment = f"{module_name} {email_campaign_id} is Created by {user_name}"
+            else:
+                db_res = CEDHIS_CampaignBuilderCampaign().get_campaign_content_history(email_campaign_entity.history_id)
+                if not db_res:
+                    campaign_email_history_entity.comment = f"{module_name} {email_campaign_id} is Modified by {user_name}"
+            CEDHisCampaignBuilderEmail().save_campaign_builder_email_history(campaign_email_history_entity)
+            email_campaign_entity.history_id = campaign_email_history_entity.unique_id
+            CEDCampaignBuilderEmail().update_campaign_builder_email_history_id(email_campaign_entity.unique_id, dict(history_id=campaign_email_history_entity.unique_id))
+            return email_campaign_entity
+    except Exception as e:
+        logger.error(f"Error while preparing and  Saving CampaignBuilderCampaign history data ::{e}")
+        raise Exception
+
+
+def validate_content_status(campaign):
+    method_name = "validate_content_status"
+    logger.debug(f"Trace Entry: {method_name}")
+    status_list = [CampaignContent.APPROVAL_PENDING.value, CampaignContent.APPROVED.value]
+    if campaign.get("content_type") is None:
+        return dict(result=TAG_FAILURE, details_message="Campaign Content type is not provided")
+    if campaign.get("content_type") == CampaignBuilderCampaignContentType.EMAIL.value:
+        email_campaign = campaign.get("email_campaign")
+        email_id = email_campaign.get("email_id")
+        campaign_email_content = CEDCampaignEmailContent().get_email_content_by_unqiue_id_and_status(email_id, status_list)
+        if campaign_email_content is None or len(campaign_email_content) == 0:
+            return dict(result=TAG_FAILURE, details_message="Email Content not found")
+        if campaign_email_content[0].get("is_contains_url") is not None and campaign_email_content[0].get("is_contains_url") == 1:
+            url_id = email_campaign.get("url_id")
+            if url_id is None:
+                return dict(result=TAG_FAILURE, details_message="Url Id is missing")
+            else:
+                campaign_content_url_mapping = CEDCampaignContentUrlMapping().get_content_and_url_mapping_data(email_id,
+                                                                url_id, CampaignBuilderCampaignContentType.EMAIL.value)
+                if campaign_content_url_mapping is None:
+                    return dict(result=TAG_FAILURE, details_message="Url mapping not found")
+        return dict(result=TAG_SUCCESS, details_message="Email Url mapping found")
+
+    elif campaign.get("content_type") == CampaignBuilderCampaignContentType.IVR.value:
+        return dict(result=TAG_SUCCESS, details_message="IVR content mapping found")
+    elif campaign.get("content_type") == CampaignBuilderCampaignContentType.SMS.value:
+        sms_campaign = campaign.get("sms_campaign")
+        sms_id = sms_campaign.get("sms_id")
+        sender_id = sms_campaign.get("sender_id")
+        campaign_sms_content = CEDCampaignSMSContent().get_sms_content_by_unique_id(sms_id, status_list)
+        if campaign_sms_content is None or len(campaign_sms_content) == 0:
+            return dict(result=TAG_FAILURE, details_message="Sms Content not found")
+        if campaign_sms_content[0].get("is_contain_url") is not None and campaign_sms_content[0].get("is_contain_url") == 1:
+            url_id = sms_campaign.get("url_id")
+            if url_id is None:
+                return dict(result=TAG_FAILURE, details_message="Url Id is missing")
+            else:
+                db_res = CEDCampaignContentUrlMapping().get_content_and_url_mapping_data(sms_id, url_id,
+                                                                        CampaignBuilderCampaignContentType.SMS.value)
+                if not db_res.get("status"):
+                    return dict(result=TAG_FAILURE, details_message="Not able to fetch content url mapping")
+                else:
+                    if db_res.get("response") is None or len(db_res.get("response")) == 0:
+                        return dict(result=TAG_FAILURE, details_message="Url Mapping not found")
+        db_res = CEDCampaignContentSenderIdMapping().get_content_and_sender_id_mapping(sms_id, sender_id)
+        if not db_res.get("status"):
+            return dict(result=TAG_FAILURE, details_message="Not able to fetch sender id mapping")
+        else:
+            if db_res.get("response") is None or len(db_res.get("response")) == 0:
+                return dict(result=TAG_FAILURE, details_message="Sender id Mapping not found")
+        return dict(result=TAG_SUCCESS, details_message="Sms Url and Sender mapping found")
+
+    elif campaign.get("content_type") == CampaignBuilderCampaignContentType.WHATSAPP.value:
+        whatsapp_campaign = campaign.get("whatsapp_campaign")
+        whatsapp_content_id = whatsapp_campaign.get("whats_app_content_id")
+        campaign_whatsapp_content = CEDCampaignWhatsAppContent().get_whatsapp_content_by_unique_id(whatsapp_content_id, status_list)
+        if campaign_whatsapp_content is None or len(campaign_whatsapp_content) == 0:
+            return dict(result=TAG_FAILURE, details_message="whatsapp Content not found")
+        if campaign_whatsapp_content[0].get("contain_url") is not None and campaign_whatsapp_content[0].get("contain_url") == 1:
+            url_id = whatsapp_campaign.get("url_id")
+            if url_id is None:
+                return dict(result=TAG_FAILURE, details_message="Url Id is missing")
+            else:
+                db_res = CEDCampaignContentUrlMapping().get_content_and_url_mapping_data(whatsapp_content_id, url_id,
+                                                                  CampaignBuilderCampaignContentType.WHATSAPP.value)
+                if not db_res.get("status"):
+                    return dict(result=TAG_FAILURE, details_message="Not able to fetch content url mapping")
+                else:
+                    if db_res.get("response") is None or len(db_res.get("response")) == 0:
+                        return dict(result=TAG_FAILURE, details_message="Url Mapping not found")
+        return dict(result=TAG_SUCCESS, details_message="Whatsapp Url and Sender mapping found")
+
+    else:
+        return dict(result=TAG_FAILURE, details_message="Campaign Content type is not valid")
+
+
+def validate_campaign_content_mapping(campaign):
+    method_name = "validate_campaign_content_mapping"
+    logger.debug(f"Trace Entry: {method_name}")
+    content_type = campaign.get("content_type")
+    if content_type is None:
+        return dict(result=TAG_FAILURE, details_message="Campaign content type is not provided")
+    if content_type == CampaignBuilderCampaignContentType.EMAIL.value:
+        if campaign.get("email_campaign") is None:
+            return dict(result=TAG_FAILURE, details_message="Campaign content details are not provided")
+        subject_line_id = campaign.get("email_campaign").get("subject_line_id")
+        email_id = campaign.get("email_campaign").get("email_id")
+        if subject_line_id is None or email_id is None:
+            return dict(result=TAG_FAILURE, details_message="SubjectLineId or EmailId not provided")
+    elif content_type == CampaignBuilderCampaignContentType.IVR.value:
+        if campaign.get("ivr_campaign") is None:
+            return dict(result=TAG_FAILURE, details_message="Campaign content details are not provided")
+        ivr_id = campaign.get("ivr_campaign").get("ivr_id")
+        if ivr_id is None:
+            return dict(result=TAG_FAILURE, details_message="IvrId not provided")
+    elif content_type == CampaignBuilderCampaignContentType.SMS.value:
+        if campaign.get("sms_campaign") is None:
+            return dict(result=TAG_FAILURE, details_message="Campaign content details are not provided")
+        sender_id = campaign.get("sms_campaign").get("sender_id")
+        sms_id = campaign.get("sms_campaign").get("sms_id")
+        if sms_id is None or sender_id is None:
+            return dict(result=TAG_FAILURE, details_message="SmsId or senderId not provided")
+    elif content_type == CampaignBuilderCampaignContentType.WHATSAPP.value:
+        if campaign.get("whatsapp_campaign") is None:
+            return dict(result=TAG_FAILURE, details_message="Campaign content details are not provided")
+        whatsapp_content_id = campaign.get("whatsapp_campaign").get("whats_app_content_id")
+        if whatsapp_content_id is None:
+            return dict(result=TAG_FAILURE, details_message="Whatsapp content is not provided")
+    else:
+        return dict(result=TAG_FAILURE, details_message="Campaign Content type is not valid")
+
+
+def validate_schedule(campaign_list, segment_id, unique_id, campaign_id):
+    method_name = "validate_schedule"
+    campaign_data = []
+    for campaign in campaign_list:
+        content_type = campaign.get("content_type", "")
+        start_date_time = campaign.get("input_start_date_time", "")
+        end_date_time = campaign.get("input_end_date_time", "")
+        campaign_data.append({"contentType": content_type, "startDateTime": start_date_time, "endDateTime": end_date_time, "campaignId": campaign_id})
+    request_data = {"body": {"segmentId": segment_id, "campaigns": campaign_data, }}
+    validated = True
+    try:
+        campaign_validate_response = vaildate_campaign_for_scheduling(request_data)
+        if campaign_validate_response.get("result") == TAG_FAILURE:
+            logger.error(f"{method_name}, Error: {campaign_validate_response.get('response','')}  ")
+            error = campaign_validate_response.get("response", "")
+            raise Exception(error)
+        for validate_response in campaign_validate_response.get("response"):
+            validated = validated and validate_response.get("valid_schedule")
+        if validated is False:
+            logger.error(f"{method_name}, Slots you are trying to book are already occupied  ")
+            raise Exception("Slots you are trying to book are already occupied")
+    except Exception as e:
+        logger.error(f"{method_name}, Exception :: {e}  ")
+        CEDCampaignBuilder().delete_campaign_builder_by_unique_id(unique_id)
+        return dict(result=TAG_FAILURE, details_message=e)
+    return dict(result=TAG_SUCCESS, details_message="schedule validated successfully")
+
+
+def validate_headers_compatibility(campaign_list, segment_id, unique_id):
+    from onyx_proj.apps.segments.segments_processor.segment_headers_processor import \
+        check_headers_compatibility_with_content_template
+    method_name = "validate_headers_compatibility"
+    logger.debug(f"Trace Entry: {method_name}")
+    try:
+        content_id_map = prepare_unique_content_id_map(campaign_list)
+        request_list = prepare_and_check_headers_compatibility(content_id_map, segment_id)
+        for request in request_list:
+            resp = check_headers_compatibility_with_content_template(request)
+            if resp.get('result') == TAG_FAILURE:
+                logger.error(f"{method_name}, header compatibility failure")
+                return dict(result=TAG_FAILURE, details_message=resp.get('details_message'))
+    except Exception as e:
+        logger.error(f"{method_name}, Exception:: {e}")
+        CEDCampaignBuilder().delete_campaign_builder_by_unique_id(unique_id)
+        return dict(result=TAG_FAILURE, details_message=e)
+    logger.debug(f"Trace Exit: {method_name}")
+    return dict(result=TAG_SUCCESS, details_message="schedule validated successfully")
+
+
+def prepare_unique_content_id_map(campaign_list):
+    method_name = "prepare_unique_content_id_map"
+    logger.debug(f"Trace Entry: {method_name}")
+    content_id_map = {}
+    email_id = []
+    subject_line_id = []
+    url_id = []
+    sms_id = []
+    whats_app_content_id = []
+    for campaign in campaign_list:
+        if campaign.get("content_type", "") == CampaignChannel.EMAIL.value:
+            email_camp = campaign.get("email_campaign")
+            if email_camp is not None:
+                if email_camp.get('email_id') is not None and email_camp.get('email_id') not in email_id:
+                    email_id.append(email_camp.get('email_id'))
+                if email_camp.get('subject_line_id') is not None and email_camp.get('subject_line_id') not in email_id:
+                    subject_line_id.append(email_camp.get('subject_line_id'))
+                if email_camp.get('url_id') is not None and email_camp.get('url_id') not in email_id:
+                    url_id.append(email_camp.get('url_id'))
+        if campaign.get("content_type", "") == CampaignChannel.SMS.value:
+            sms_campaign = campaign.get("sms_campaign")
+            if sms_campaign is not None:
+                if sms_campaign.get('sms_id') is not None and sms_campaign.get('sms_id') not in email_id:
+                    sms_id.append(sms_campaign.get('sms_id'))
+                if sms_campaign.get('url_id') is not None and sms_campaign.get('url_id') not in email_id:
+                    url_id.append(sms_campaign.get('url_id'))
+        if campaign.get("content_type", "") == CampaignChannel.WHATSAPP.value:
+            whatsapp_campaign = campaign.get("whatsapp_campaign")
+            if whatsapp_campaign is not None:
+                if whatsapp_campaign.get('whats_app_content_id') is not None and whatsapp_campaign.get(
+                        'whats_app_content_id') not in email_id:
+                    whats_app_content_id.append(whatsapp_campaign.get('whats_app_content_id'))
+                if whatsapp_campaign.get('url_id') is not None and whatsapp_campaign.get('url_id') not in email_id:
+                    url_id.append(whatsapp_campaign.get('url_id'))
+
+    if len(email_id) > 0:
+        content_id_map['email_id'] = email_id
+    if len(url_id) > 0:
+        content_id_map['url_id'] = url_id
+    if len(whats_app_content_id) > 0:
+        content_id_map['whats_app_content_id'] = whats_app_content_id
+    if len(sms_id) > 0:
+        content_id_map['sms_id'] = sms_id
+    if len(subject_line_id) > 0:
+        content_id_map['subject_line_id'] = subject_line_id
+    logger.debug(f"Trace Exit: {method_name}")
+    return content_id_map
+
+
+def prepare_and_check_headers_compatibility(content_id_map, segment_id):
+    method_name = "prepare_and_check_headers_compatibility"
+    logger.debug(f"Trace Entry: {method_name}")
+
+    request_list = []
+    if content_id_map.get('email_id') is not None and len(content_id_map.get('email_id')) > 0:
+        for email_id in content_id_map.get('email_id'):
+            request_list.append({"segment_id": segment_id, "content_id": email_id, "template_type": "EMAIL"})
+    if content_id_map.get('url_id') is not None and len(content_id_map.get('url_id')) > 0:
+        for url_id in content_id_map.get('url_id'):
+            request_list.append({"segment_id": segment_id, "content_id": url_id, "template_type": "URL"})
+    if content_id_map.get('whats_app_content_id') is not None and len(content_id_map.get('whats_app_content_id')) > 0:
+        for whats_app_content_id in content_id_map.get('whats_app_content_id'):
+            request_list.append({"segment_id": segment_id, "content_id": whats_app_content_id, "template_type": "WHATSAPP"})
+    if content_id_map.get('subject_line_id') is not None and len(content_id_map.get('subject_line_id')) > 0:
+        for subject_line_id in content_id_map.get('subject_line_id'):
+            request_list.append({"segment_id": segment_id, "content_id": subject_line_id, "template_type": "SUBJECT"})
+    if content_id_map.get('sms_id') is not None and len(content_id_map.get('sms_id')) > 0:
+        for sms_id in content_id_map.get('sms_id'):
+            request_list.append({"segment_id": segment_id, "content_id": sms_id, "template_type": "SMS"})
+
+    logger.debug(f"Trace Exit: {method_name}")
+    return request_list
+
+
 
 
 def create_campaign_details_in_local_db(request: dict):

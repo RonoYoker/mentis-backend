@@ -24,7 +24,7 @@ class CED_CampaignBuilderCampaign(Base, Orm_helper):
     is_deleted = Column("IsDeleted", Boolean, default=False)
     start_date_time = Column("StartDateTime", DateTime)
     end_date_time = Column("EndDateTime", DateTime)
-    creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
+    creation_date = Column("CreationDate", DateTime, default=datetime.utcnow())
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     history_id = Column("HistoryId", String)

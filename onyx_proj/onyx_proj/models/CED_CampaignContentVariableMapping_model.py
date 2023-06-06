@@ -9,8 +9,8 @@ class CEDCampaignContentVariableMapping:
     def __init__(self, **kwargs):
         self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_CampaignContentVariableMapping"
-        self.table = CED_CampaignContentVariableMapping
         self.curr = mysql_connect(self.database)
+        self.table = CED_CampaignContentVariableMapping
         self.engine = sql_alchemy_connect(self.database)
 
     def get_column_names_for_content_template(self, params_dict: dict, headers_list="ColumnName") -> list:
@@ -35,3 +35,16 @@ class CEDCampaignContentVariableMapping:
         result = fetch_rows(self.engine, self.table, filter_list)
         return result
 
+
+    def get_content_variable_for_sms(self, sms_id):
+        filter_list = [
+            {"column": "is_active", "value": 1, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "content_id", "value": sms_id, "op": "=="},
+            {"column": "content_type", "value": "SMS", "op": "=="}
+        ]
+        try:
+            res = fetch_rows(self.engine, self.table, filter_list)
+        except Exception as ex:
+            return dict(status=False, response=str(ex))
+        return dict(status=True, response=res)

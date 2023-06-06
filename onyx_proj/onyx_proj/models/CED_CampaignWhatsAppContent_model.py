@@ -39,6 +39,16 @@ class CEDCampaignWhatsAppContent:
         res = [entity._asdict(fetch_loaded_only=True) for entity in res]
         return res
 
+    def get_whatsapp_content_by_unique_id(self, whatsapp_content_id, status_list):
+        filter_list = [
+                {"column": "unique_id", "value": whatsapp_content_id, "op": "=="},
+                {"column": "is_deleted", "value": 0, "op": "=="},
+                {"column": "is_active", "value": 1, "op": "=="},
+                {"column": "status", "value": status_list, "op": "in"}
+            ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
+
     def fetch_content_data(self, content_id):
         filter_list = [
             {"column": "unique_id", "value": content_id, "op": "=="}

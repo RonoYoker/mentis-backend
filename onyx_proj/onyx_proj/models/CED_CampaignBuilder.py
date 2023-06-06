@@ -2,8 +2,10 @@ from django.conf import settings
 
 from onyx_proj.common.constants import CampaignStatus
 from onyx_proj.common.mysql_helper import *
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, save_or_update_merge, fetch_one_row
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, update, execute_query, fetch_rows
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilder
+from onyx_proj.common.sqlalchemy_helper import save_or_update, sql_alchemy_connect, fetch_rows, update
 
 
 class CEDCampaignBuilder:
@@ -142,3 +144,57 @@ class CEDCampaignBuilder:
         ]
         update_dict = {"approval_retry": 0}
         return update(self.engine, self.table, filter, update_dict)
+
+    def get_campaign_builder_detail_from_campaign_name(self, name, data_id):
+        base_query = f"select cb.* from CED_CampaignBuilder cb join CED_Segment s on s.uniqueId = cb.segmentId" \
+                     f" where cb.name = '{name}' and cb.IsDeleted = 0 and cb.IsActive = 1 and s.DataId = '{data_id}' and cb.Status != 'ERROR'"
+        return dict_fetch_query_all(self.curr, base_query)
+
+    def get_campaign_builder_details_from_segment(self,segment_id,type):
+        base_query = f"select s from CED_CampaignBuilder where s.segmentId = {segment_id} and and s.deleted = false and s.type = '{type}'"
+        return dict_fetch_query_all(self.curr, base_query)
+
+    def save_or_update_campaign_builder_details(self, campaign_builder):
+        try:
+            res = save_or_update_merge(self.engine, campaign_builder)
+        except Exception as ex:
+            return dict(status=False, response=str(ex))
+        return dict(status=True, response=res)
+
+    def get_campaign_builder_details_by_unique_id(self, unique_id):
+        filter_list = [
+            {"column": "unique_id", "value": unique_id, "op": "=="},
+            {"column": "is_active", "value": 1, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "status", "value": ["SAVED", "DIS_APPROVED", "DEACTIVATE"], "op": "in"}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
+
+    def delete_campaign_builder_by_unique_id(self, unique_id):
+        return delete_rows_from_table(self.curr, self.table_name, {"campaignBuilderId": unique_id})
+
+    def udpate_campaign_active_status(self, unique_id):
+        filter_list = [
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        ]
+        update_dict = dict(is_active=1)
+        res = update(self.engine, self.table, filter_list, update_dict)
+        return res
+
+    def update_campaign_builder_history(self, unique_id, update_dict):
+        filter_list = [
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        ]
+        res = update(self.engine, self.table, filter_list, update_dict)
+        return res
+
+    def get_campaign_builder_details_unique_id(self, unique_id):
+        filter_list = [
+            {"column": "unique_id", "value": unique_id, "op": "=="},
+            {"column": "is_active", "value": 1, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
+

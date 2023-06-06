@@ -21,8 +21,9 @@ class CED_CampaignBuilder(Base, Orm_helper):
     error_msg = Column("ErrorMsg", String)
     type = Column("Type", String, default="AUTOMATION")
     is_recurring = Column("IsRecurring", String, default=0)
+    description = Column("Description", String)
     approval_retry = Column("ApprovalRetry", Integer, default=0)
-    creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
+    creation_date = Column("CreationDate", DateTime, default=datetime.utcnow())
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     history_id = Column("HistoryId", String)

@@ -18,3 +18,19 @@ class CEDCampaignFollowUPMapping:
         ]
         res = fetch_one_row(self.engine, self.table, filter_list)
         return res
+
+    def get_segment_data_by_unique_id(self, segment_id):
+        filter_list = [
+            {"column": "unique_id", "value": segment_id, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "status", "value": ["APPROVAL_PENDING", "APPROVED"], "op": "in"}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
+
+    def save_or_update_campaign_follow_up_mapping(self, campaign_follow_up_mapping):
+        try:
+            res = save_or_update_merge(self.engine, campaign_follow_up_mapping)
+        except Exception as ex:
+            return dict(status=False, response=str(ex))
+        return dict(status=True, response=res)

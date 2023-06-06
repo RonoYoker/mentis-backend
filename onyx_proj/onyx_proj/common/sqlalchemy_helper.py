@@ -123,6 +123,7 @@ def fetch_rows(engine, table, filter_list,projections=[],return_type = 'dict'):
             return result
         except Exception as ex:
             logging.error(f"error while fetching from table {str(table)}, Error: ", ex)
+            raise ex
 
 
 def fetch_columns(engine, table, column_list, filter_list={}):

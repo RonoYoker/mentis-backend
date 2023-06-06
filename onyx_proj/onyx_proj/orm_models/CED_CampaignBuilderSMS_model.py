@@ -12,7 +12,7 @@ class CED_CampaignBuilderSMS(Base, Orm_helper):
     created_by = Column("CreatedBy", String)
     is_active = Column("IsActive", Boolean, default=True)
     is_deleted = Column("IsDeleted", Boolean, default=False)
-    creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
+    creation_date = Column("CreationDate", DateTime, default=datetime.utcnow())
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     history_id = Column("HistoryId", String)

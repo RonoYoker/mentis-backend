@@ -19,8 +19,9 @@ from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import 
     get_filtered_dashboard_tab_data, get_min_max_date_for_scheduler, get_time_range_from_date, \
     get_campaign_data_in_period, validate_campaign, create_campaign_details_in_local_db, \
     get_filtered_recurring_date_time, update_segment_count_and_status_for_campaign, update_campaign_status, filter_list, \
-    deactivate_campaign_by_campaign_id, view_campaign_data, approval_action_on_campaign_builder_by_unique_id
-from apps.campaign.test_campaign.test_campaign_processor import test_campaign_process
+    deactivate_campaign_by_campaign_id, view_campaign_data, save_campaign_details, \
+    approval_action_on_campaign_builder_by_unique_id
+from onyx_proj.apps.campaign.test_campaign.test_campaign_processor import test_campaign_process
 from django.views.decorators.csrf import csrf_exempt
 from onyx_proj.celery_app.tasks import trigger_eng_data
 
@@ -253,6 +254,17 @@ def test_campaign_validator(request):
     data = dict(body=request_body, headers=session_id)
     # query processor call
     response = fetch_test_campaign_validation_status(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def save_campaign(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    data = dict(body=request_body, headers=request_headers)
+    # process and save campaign data
+    response = save_campaign_details(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
 

@@ -3,14 +3,17 @@ from onyx_proj.common.decorators import UserAuth
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, save_or_update, update, execute_query
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilderCampaign
+from onyx_proj.common.sqlalchemy_helper import save_or_update, sql_alchemy_connect, update, fetch_rows, \
+    save_or_update_merge
+from onyx_proj.orm_models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
 
 
 class CEDCampaignBuilderCampaign:
     def __init__(self, **kwargs):
         self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_CampaignBuilderCampaign"
-        self.table = CED_CampaignBuilderCampaign
         self.curr = mysql_connect(self.database)
+        self.table = CED_CampaignBuilderCampaign
         self.engine = sql_alchemy_connect(self.database)
 
     def delete_campaigns_by_campaign_builder_id(self, campaign_builder_id):
@@ -133,6 +136,13 @@ class CEDCampaignBuilderCampaign:
         result = dict_fetch_query_all(self.curr, query)
         return result[0].get("project_id") if result is not None else None
 
+    def delete_campaign_builder_campaign_by_unique_id(self, unique_id):
+        return delete_rows_from_table(self.curr, self.table_name, {"campaignBuilderId": unique_id})
+
+    def save_or_update_campaign_builder_campaign_details(self, campaign_builder):
+        res = save_or_update_merge(self.engine, campaign_builder)
+        return res
+
     def get_campaign_data_by_cbc_id(self, campaign_builder_campaign_ids):
         query = f"""select cbc.UniqueId as cbc_id, cbc.EndDateTime as end_date_time, cb.name as campaign_name, 
         cb.UniqueId as campaign_builder_id, cp.Name as project_name from CED_CampaignBuilderCampaign cbc join 
@@ -192,3 +202,17 @@ class CEDCampaignBuilderCampaign:
         query = f"SELECT MIN(StartDateTime) as start_time from {self.table_name} where CampaignBuilderId = '{cb_id}'"
         res = execute_query(self.engine, query)
         return None if res is None or len(res)<=0 or res[0].get('start_time') is None or res[0]['start_time'] is None else res[0]['start_time']
+
+    def update_campaign_builder_campaign_history(self, update_dict, unique_id):
+        filter_list = [
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        ]
+        res = update(self.engine, self.table, filter_list, update_dict)
+        return res
+
+    def get_campaign_builder_details_by_id(self, unique_id):
+        filter_list = [{
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        }]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res

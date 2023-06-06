@@ -65,3 +65,13 @@ class CEDCampaignSMSContent:
         ]
         res = fetch_one_row(self.engine, self.table, filter_list)
         return res
+
+    def get_sms_content_by_unique_id(self,sms_id, status_list):
+        filter_list = [
+            {"column": "unique_id", "value": sms_id, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "is_active", "value": 1, "op": "=="},
+            {"column": "status", "value": status_list, "op": "in"}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
