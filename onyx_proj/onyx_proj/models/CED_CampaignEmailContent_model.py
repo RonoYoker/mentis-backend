@@ -1,3 +1,5 @@
+import copy
+
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, fetch_one_row, fetch_rows_limited
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignEmailContent
@@ -35,16 +37,8 @@ class CEDCampaignEmailContent:
         res = fetch_rows(self.engine, self.table, filter_list)
         return res
 
-    def get_content_data(self, project_id, status):
-        filter_list = [
-            {"column": "project_id", "value": project_id, "op": "=="}
-        ]
-        if len(status) == 0:
-            pass
-        else:
-            filter_list.append(
-                {"column": "status", "value": status, "op": "in"}
-            )
+    def get_content_data(self, filters=[]):
+        filter_list = copy.deepcopy(filters)
         res = fetch_rows_limited(self.engine, self.table, filter_list,columns=[],relationships=["tag_mapping.tag"])
         res = [entity._asdict(fetch_loaded_only=True) for entity in res]
         return res

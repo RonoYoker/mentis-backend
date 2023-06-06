@@ -6,6 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import deactivate_campaign_by_campaign_id
 from onyx_proj.apps.content import app_settings
+from onyx_proj.apps.content.app_settings import FETCH_CONTENT_MODE_FILTERS
 from onyx_proj.common.utils.logging_helpers import log_entry, log_exit
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException, ValidationFailedException, \
     NotFoundException
@@ -16,7 +17,7 @@ from onyx_proj.models.CED_CampaignSubjectLineContent_model import CEDCampaignSub
 from onyx_proj.models.CED_CampaignTagContent_model import CEDCampaignTagContent
 from onyx_proj.models.CED_CampaignURLContent_model import CEDCampaignURLContent
 from onyx_proj.common.constants import CHANNELS_LIST, TAG_FAILURE, TAG_SUCCESS, FETCH_CAMPAIGN_QUERY, \
-    CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, Roles
+    CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, Roles, ContentFetchModes
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.common.constants import CHANNELS_LIST, TAG_FAILURE, TAG_SUCCESS, FETCH_CAMPAIGN_QUERY, Roles, \
     CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, CampaignContentStatus, ContentType, CONTENT_TYPE_LIST
@@ -166,10 +167,54 @@ def get_content_list(data) -> dict:
     if len(entity_table_list) == 0:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid Content")
+
+    content_filters = [{"column": "project_id", "value": project_id, "op": "=="}]
+    if len(entity_status_list) > 0:
+        content_filters.append({"column": "status", "value": entity_status_list, "op": "in"})
+
     for entity_table in entity_table_list:
         entity_type = entity_table.get("entity_type")
         entity_table_name = entity_table.get("entity_table_name")
-        campaign_entity_dict[entity_type] = entity_table_name().get_content_data(project_id, entity_status_list)
+        campaign_entity_dict[entity_type] = entity_table_name().get_content_data(content_filters)
+
+    if campaign_entity_dict is None:
+        return dict(status_code=http.HTTPStatus.NOT_FOUND, result=TAG_SUCCESS,
+                    response=[])
+    else:
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=campaign_entity_dict)
+
+
+def get_content_list_v2(data) -> dict:
+    request_body = data.get("body", {})
+    entity_type_list = request_body.get("entity_type", None)
+    project_id = request_body.get("project_id", None)
+    content_fetch_mode = request_body.get("mode", None)
+    entity_table_list = []
+    campaign_entity_dict = {}
+    if project_id is None or entity_type_list is None or content_fetch_mode is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Request body has missing field")
+
+    # configure the tables required for fetching content
+    for entity_type in entity_type_list:
+        entity_table_name = app_settings.CONTENT_TABLE_MAPPING[entity_type.upper()]
+        entity_table_list.append({"entity_type": entity_type.upper(), "entity_table_name": entity_table_name})
+    if len(entity_table_list) == 0:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid Content")
+
+    # generate status list and content filters based on content fetch mode
+    if FETCH_CONTENT_MODE_FILTERS.get(content_fetch_mode.upper(), None) is not None:
+        content_filters = FETCH_CONTENT_MODE_FILTERS[content_fetch_mode.upper()]["filters"]
+        content_filters.append({"column": "project_id", "value": project_id, "op": "=="})
+    else:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid mode selected")
+
+    for entity_table in entity_table_list:
+        entity_type = entity_table.get("entity_type")
+        entity_table_name = entity_table.get("entity_table_name")
+        campaign_entity_dict[entity_type] = entity_table_name().get_content_data(content_filters)
 
     if campaign_entity_dict is None:
         return dict(status_code=http.HTTPStatus.NOT_FOUND, result=TAG_SUCCESS,

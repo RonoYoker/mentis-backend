@@ -1,3 +1,4 @@
+from onyx_proj.common.constants import ContentFetchModes, CampaignContentStatus
 from onyx_proj.models.CED_CampaignEmailContent_model import CEDCampaignEmailContent
 from onyx_proj.models.CED_CampaignIvrContent_model import CEDCampaignIvrContent
 from onyx_proj.models.CED_CampaignSMSContent_model import CEDCampaignSMSContent
@@ -31,4 +32,18 @@ HIS_CONTENT_TABLE_MAPPING = {
     "URL": CED_HISCampaignURLContent,
     "TAG": CED_HISCampaignContentTag,
     "SUBJECTLINE": CED_HISCampaignSubjectLineContent
+}
+
+FETCH_CONTENT_MODE_FILTERS = {
+    ContentFetchModes.SAVE_CAMPAIGN.value: {
+        "filters": [{"column": "is_active", "value": True, "op": "=="},
+                    {"column": "is_deleted", "value": False, "op": "=="},
+                    {"column": "status", "value": [CampaignContentStatus.APPROVED.value, CampaignContentStatus.APPROVAL_PENDING.value], "op": "in"}]
+    },
+    ContentFetchModes.VIEW_CONTENT.value: {
+        "filters": []
+    },
+    ContentFetchModes.APPROVAL_PENDING.value: {
+        "filters": [{"column": "status", "value": [CampaignContentStatus.APPROVAL_PENDING.value], "op": "in"}]
+    },
 }
