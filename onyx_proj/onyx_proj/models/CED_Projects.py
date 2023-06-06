@@ -45,3 +45,14 @@ class CEDProjects:
         ]
         return fetch_one_row(self.engine, self.table, filter_list)
 
+    def get_all_project_entity_with_active_check(self, active_check=False):
+        if active_check:
+            filter_list = [
+                {"column": "deleted", "value": "0", "op": "=="},
+                {"column": "active", "value": "1", "op": "=="}
+            ]
+        else:
+            filter_list = [
+                {"column": "deleted", "value": "0", "op": "=="}
+            ]
+        return fetch_rows(self.engine, self.table, filter_list)

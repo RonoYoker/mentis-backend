@@ -15,6 +15,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+
+from onyx_proj.apps.project import urls as project
 from onyx_proj.apps.segments import urls as segment_urls
 from onyx_proj.apps.campaign import urls as campaign_urls
 from onyx_proj.apps.home import urls as home_urls
@@ -40,5 +42,6 @@ urlpatterns = [
     path("local/uuid/", include(uuid_urls)),
     path("data_id/", include(dataid_urls)),
     path("content/", include(content_urls)),
-    path("file_processing/", include(file_process_route_urls))
+    path("file_processing/", include(file_process_route_urls)),
+    path("project/", include(project))
 ]
