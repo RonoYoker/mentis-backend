@@ -1,4 +1,5 @@
 import datetime
+from datetime import timedelta
 import http
 import json
 import os
@@ -17,28 +18,23 @@ from onyx_proj.exceptions.permission_validation_exception import BadRequestExcep
 from onyx_proj.common.decorators import UserAuth
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.apps.campaign.campaign_processor.campaign_processor_helper import add_filter_to_query_using_params, \
-    add_status_to_query_using_params
+    add_status_to_query_using_params, validate_project_details_json, get_campaign_content_data_by_channel
 from onyx_proj.apps.campaign.campaign_processor import app_settings
 from onyx_proj.apps.campaign.campaign_processor.app_settings import SCHEDULED_CAMPAIGN_TIME_RANGE_UTC
 from onyx_proj.common.constants import *
 from onyx_proj.models.CED_ActivityLog_model import CEDActivityLog
 from onyx_proj.common.utils.email_utility import email_utility
-from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
-from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
-from onyx_proj.models.CED_CampaignContentSenderIdMapping_model import CEDCampaignContentSenderIdMapping
-from onyx_proj.models.CED_CampaignContentUrlMapping_model import CEDCampaignContentUrlMapping
 from onyx_proj.models.CED_CampaignContentVariableMapping_model import CEDCampaignContentVariableMapping
 from onyx_proj.models.CED_CampaignEmailContent_model import CEDCampaignEmailContent
 from onyx_proj.models.CED_CampaignFollowUPMapping_model import CEDCampaignFollowUPMapping
 from onyx_proj.models.CED_CampaignIvrContent_model import CEDCampaignIvrContent
 from onyx_proj.models.CED_CampaignSMSContent_model import CEDCampaignSMSContent
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetails_model import CEDCampaignSchedulingSegmentDetails
-from onyx_proj.models.CED_CampaignExecutionProgress_model import CEDCampaignExecutionProgress
+from onyx_proj.models.CED_CampaignSchedulingSegmentDetailsTest_model import CEDCampaignSchedulingSegmentDetailsTest
 from onyx_proj.models.CED_CampaignSubjectLineContent_model import CEDCampaignSubjectLineContent
 from onyx_proj.models.CED_CampaignWhatsAppContent_model import CEDCampaignWhatsAppContent
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
-from onyx_proj.models.CED_CampaignSchedulingSegmentDetails_model import CED_CampaignSchedulingSegmentDetails
 from onyx_proj.models.CED_CampaignExecutionProgress_model import CEDCampaignExecutionProgress
 from onyx_proj.models.CED_DataID_Details_model import CEDDataIDDetails
 from onyx_proj.models.CED_HIS_CampaignBuilder import CED_HISCampaignBuilder
@@ -46,13 +42,14 @@ from onyx_proj.models.CED_HIS_CampaignBuilderCampaign import CED_HISCampaignBuil
 from onyx_proj.models.CED_HIS_CampaignBuilder_model import CEDHIS_CampaignBuilder
 from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.models.CED_Segment_model import CEDSegment
-from onyx_proj.apps.slot_management.app_settings import SLOT_INTERVAL_MINUTES
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from onyx_proj.models.CED_User_model import CEDUser
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilder, CED_CampaignSchedulingSegmentDetails, \
     CED_CampaignExecutionProgress, CED_CampaignSubjectLineContent, CED_HIS_CampaignBuilder, CED_ActivityLog
 from onyx_proj.apps.slot_management.app_settings import SLOT_INTERVAL_MINUTES
-
+from onyx_proj.orm_models.CED_CampaignCreationDetails_model import CED_CampaignCreationDetails
+from onyx_proj.orm_models.CED_FP_FileData_model import CED_FP_FileData
+from onyx_proj.apps.campaign.test_campaign.db_helper import save_or_update_ccd, save_or_update_fp_file_data
 
 logger = logging.getLogger("apps")
 
@@ -156,7 +153,6 @@ def get_time_range_from_date(request_data):
     max_time = datetime.datetime.utcnow().time().replace(hour=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["max"]["hour"],
                                                          minute=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["max"]["min"],
                                                          second=SCHEDULED_CAMPAIGN_TIME_RANGE_UTC["max"]["sec"])
-
 
     if date_object == datetime.datetime.utcnow().date():
         min_time = datetime.datetime.utcnow().replace(minute=0, second=0) + datetime.timedelta(hours=1)
@@ -376,6 +372,7 @@ def update_segment_count_and_status_for_campaign(request_data):
     campaign_id = data.get("campaign_id")
     segment_count = data.get("segment_count")
     status = data.get("status")
+    is_test = data.get("is_test", False)
     curr_date_time = datetime.datetime.utcnow()
     resp = {
         "upd_segment_table": False,
@@ -394,7 +391,10 @@ def update_segment_count_and_status_for_campaign(request_data):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Mandatory Data Missing")
 
-    segment_unique_id = CEDCampaignSchedulingSegmentDetails().fetch_campaign_segment_unique_id(campaign_id)
+    if is_test is False:
+        segment_unique_id = CEDCampaignSchedulingSegmentDetails().fetch_campaign_segment_unique_id(campaign_id)
+    else:
+        segment_unique_id = CEDCampaignSchedulingSegmentDetailsTest().fetch_campaign_segment_unique_id(campaign_id)
 
     if segment_unique_id is None:
         logger.debug(f"API Resp ::{resp}")
@@ -409,8 +409,13 @@ def update_segment_count_and_status_for_campaign(request_data):
         if upd_resp is not None and upd_resp.get("row_count", 0) > 0:
             resp["upd_segment_table"] = True
 
-        upd_resp = CEDCampaignSchedulingSegmentDetails().update_segment_record_count(campaign_id=campaign_id,
-                                                                                     segment_count=segment_count)
+        if is_test is False:
+            upd_resp = CEDCampaignSchedulingSegmentDetails().update_segment_record_count(campaign_id=campaign_id,
+                                                                                         segment_count=segment_count)
+        else:
+            upd_resp = CEDCampaignSchedulingSegmentDetailsTest().update_segment_record_count(campaign_id=campaign_id,
+                                                                                             segment_count=segment_count)
+
         if upd_resp is not None and upd_resp.get("row_count", 0) > 0:
             resp["upd_sched_table"] = True
 
@@ -477,7 +482,8 @@ def validate_campaign(request_data):
         logger.info(f"method name: {method_name}, camp_status: {camp_status}")
         if camp_status[0].get("camp_status") == TestCampStatus.NOT_DONE.value:
             update_resp = CEDCampaignBuilderCampaign().maker_validate_campaign_builder_campaign(cb_id,
-                                                                                                TestCampStatus.MAKER_VALIDATED.value, user_name)
+                                                                                                TestCampStatus.MAKER_VALIDATED.value,
+                                                                                                user_name)
             if update_resp is True:
                 data['validated'] = True
                 return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
@@ -488,7 +494,8 @@ def validate_campaign(request_data):
                             details_message="Maker validator is not found or the same as approver validator")
             else:
                 update_resp = CEDCampaignBuilderCampaign().approver_validate_campaign_builder_campaign(cb_id,
-                                                                                                       TestCampStatus.VALIDATED.value, user_name)
+                                                                                                       TestCampStatus.VALIDATED.value,
+                                                                                                       user_name)
                 if update_resp is True:
                     data['validated'] = True
                     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
@@ -502,7 +509,8 @@ def validate_campaign(request_data):
         logger.info(f"method name: {method_name}, camp_status: {camp_status}")
         if camp_status[0].get("camp_status") == TestCampStatus.NOT_DONE.value:
             update_resp = CEDCampaignBuilderCampaign().maker_validate_campaign_builder_campaign_by_unique_id(cbc_id,
-                                                                                                             TestCampStatus.MAKER_VALIDATED.value, user_name)
+                                                                                                             TestCampStatus.MAKER_VALIDATED.value,
+                                                                                                             user_name)
             if update_resp is True:
                 data['validated'] = True
                 return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
@@ -512,8 +520,9 @@ def validate_campaign(request_data):
                 return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                             details_message="Maker validator is not found or the same as approver validator")
             else:
-                update_resp = CEDCampaignBuilderCampaign().approver_validate_campaign_builder_campaign_by_unique_id(cbc_id,
-                                                                                                                    TestCampStatus.VALIDATED.value, user_name)
+                update_resp = CEDCampaignBuilderCampaign().approver_validate_campaign_builder_campaign_by_unique_id(
+                    cbc_id,
+                    TestCampStatus.VALIDATED.value, user_name)
                 if update_resp is True:
                     data['validated'] = True
                     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
@@ -637,8 +646,10 @@ def deactivate_campaign_by_campaign_id(request_body):
 
     email_response = send_status_email(campaign_details)
     if not email_response.get("status"):
-        logger.error(f"deactivate_campaign_by_campaign_id :: Unable to trigger mail for deactivation, campaign_details: {campaign_details}")
-        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE, details_message=email_response.get("message"))
+        logger.error(
+            f"deactivate_campaign_by_campaign_id :: Unable to trigger mail for deactivation, campaign_details: {campaign_details}")
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message=email_response.get("message"))
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, details_message="Campaign deactivated successfully")
 
@@ -651,7 +662,8 @@ def deactivate_campaign_by_campaign_id(request_body):
     "entity_type": "CAMPAIGNBUILDER"
 })
 def deactivate_campaign_by_campaign_builder_id(campaign_builder_id, user_name):
-    logger.debug(f"deactivate_campaign_by_campaign_builder_id :: campaign_builder_id: {campaign_builder_id}, user_name: {user_name}")
+    logger.debug(
+        f"deactivate_campaign_by_campaign_builder_id :: campaign_builder_id: {campaign_builder_id}, user_name: {user_name}")
 
     if len(campaign_builder_id) == 0:
         return dict(status=False, message="Campaign builder ids are missing")
@@ -689,7 +701,8 @@ def deactivate_campaign_by_campaign_builder_id(campaign_builder_id, user_name):
     "entity_type": "CAMPAIGNBUILDERCAMPAIGN"
 })
 def deactivate_campaign_by_campaign_builder_campaign_id(campaign_builder_campaign_ids, user_name):
-    logger.debug(f"deactivate_campaign_by_campaign_builder_campaign_id :: campaign_builder_campaign_id: {campaign_builder_campaign_ids}")
+    logger.debug(
+        f"deactivate_campaign_by_campaign_builder_campaign_id :: campaign_builder_campaign_id: {campaign_builder_campaign_ids}")
 
     if len(campaign_builder_campaign_ids) == 0:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -877,13 +890,15 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
             # check for valid test campaign state in campaign builder
             for cbc in campaign_builder_entity_db.campaign_list:
                 if cbc.test_campign_state != TestCampStatus.VALIDATED.value:
-                    raise ValidationFailedException(method_name=method_name, reason="Please validate the test campaign.")
+                    raise ValidationFailedException(method_name=method_name,
+                                                    reason="Please validate the test campaign.")
 
             # check campaign starts atleast 30 minutes before campaign schedule time
             validate_campaign_builder_campaign_for_scheduled_time(campaign_builder_entity_db)
 
             # Validated the segment
-            segment_entity = validate_segment_status(campaign_builder_entity_db.segment_id, SegmentStatus.APPROVED.value)
+            segment_entity = validate_segment_status(campaign_builder_entity_db.segment_id,
+                                                     SegmentStatus.APPROVED.value)
 
             # Validate content details
             for cbc in campaign_builder_entity_db.campaign_list:
@@ -891,7 +906,8 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
 
             approved_by = user_session.user.user_name
             if campaign_builder_entity_db.created_by == approved_by:
-                raise BadRequestException(method_name=method_name, reason="Campaign can't be created and approved by same user!")
+                raise BadRequestException(method_name=method_name,
+                                          reason="Campaign can't be created and approved by same user!")
 
             # validate project id
             if not segment_entity.project_id:
@@ -904,10 +920,12 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
             #     # call hyperion central for campaign approval flow
             #     return call_hyperion_for_campaign_approval(campaign_builder_id, input_status)
 
-            CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity_db.unique_id, CampaignStatus.APPROVAL_IN_PROGRESS.value, approved_by)
+            CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity_db.unique_id,
+                                                                CampaignStatus.APPROVAL_IN_PROGRESS.value, approved_by)
 
             # Evaluate the segment and proceed for Campaign approval
-            segment_refresh_for_campaign_approval.apply_async(args=(campaign_builder_id, segment_entity.unique_id), queue="celery_campaign_approval")
+            segment_refresh_for_campaign_approval.apply_async(args=(campaign_builder_id, segment_entity.unique_id),
+                                                              queue="celery_campaign_approval")
             # trigger_update_segment_count_for_campaign_approval(campaign_builder_id, segment_entity.unique_id)
 
         elif input_status == CampaignStatus.DIS_APPROVED.value:
@@ -918,7 +936,8 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
                 raise BadRequestException(method_name=method_name, reason="Campaign Builder cannot be dis approved")
             # update campaign builder status as DIS_APPROVED
             CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity_db.unique_id,
-                                                                CampaignStatus.DIS_APPROVED.value, approved_by=None, rejection_reason=reason)
+                                                                CampaignStatus.DIS_APPROVED.value, approved_by=None,
+                                                                rejection_reason=reason)
             generate_campaign_approval_status_mail(
                 {'unique_id': campaign_builder_entity_db.unique_id, 'status': CampaignStatus.DIS_APPROVED.value})
         else:
@@ -942,13 +961,15 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
 
     log_exit()
 
+
 def validate_campaign_builder_for_campaign_id(campaign_builder_entity):
     """
     Method to validate campaign builder campaigns for campaign builder id
     """
     method_name = "validate_campaign_builder_for_campaign_id"
     log_entry()
-    if campaign_builder_entity is None or campaign_builder_entity.campaign_list is None or len(campaign_builder_entity.campaign_list) == 0:
+    if campaign_builder_entity is None or campaign_builder_entity.campaign_list is None or len(
+            campaign_builder_entity.campaign_list) == 0:
         raise ValidationFailedException(method_name=method_name, reason="Invalid campaign")
     for cbc in campaign_builder_entity.campaign_list:
         if not cbc.campaign_builder_id:
@@ -964,14 +985,16 @@ def validate_campaign_builder_campaign_for_scheduled_time(campaign_builder_entit
     method_name = "validate_campaign_builder_campaign_for_scheduled_time"
     log_entry()
 
-    if campaign_builder_entity is None or campaign_builder_entity.campaign_list is None or len(campaign_builder_entity.campaign_list) <= 0:
+    if campaign_builder_entity is None or campaign_builder_entity.campaign_list is None or len(
+            campaign_builder_entity.campaign_list) <= 0:
         raise ValidationFailedException(method_name=method_name, reason="Valid Campaign details not found")
     for cbc in campaign_builder_entity.campaign_list:
         start_time = cbc.start_date_time
-        current_time =  datetime.datetime.utcnow()
+        current_time = datetime.datetime.utcnow()
         final_time = current_time + datetime.timedelta(minutes=SCHEDULED_CAMPAIGN_TIME_DELAY_MINUTES)
         if final_time > start_time:
-            raise ValidationFailedException(method_name=method_name, reason="Scheduled Campaign must be approved atleast 30 minutes before its start time")
+            raise ValidationFailedException(method_name=method_name,
+                                            reason="Scheduled Campaign must be approved atleast 30 minutes before its start time")
 
     log_exit()
 
@@ -1000,18 +1023,21 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
     try:
         # fetch segment details
         segment_entity = validate_segment_status(campaign_builder_entity.segment_id,
-                                                         SegmentStatus.APPROVED.value)
+                                                 SegmentStatus.APPROVED.value)
     except ValidationFailedException as ex:
         logger.error(f"method_name :: {method_name}, Error while fetching segment entity, {ex.reason}")
-        CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id, "Error while fetching segment entity")
+        CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id,
+                                                    "Error while fetching segment entity")
         raise ValidationFailedException(method_name=method_name, reason="Segment entity not found")
     except BadRequestException as ex:
         logger.error(f"method_name :: {method_name}, Error while fetching segment entity, {ex.reason}")
-        CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id, "Error while fetching segment entity")
+        CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id,
+                                                    "Error while fetching segment entity")
         raise BadRequestException(method_name=method_name, reason="Segment entity not found")
     except Exception as ex:
         logger.error(f"method_name :: {method_name}, Error while fetching segment entity, {ex}")
-        CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id,"Error while fetching segment entity")
+        CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id,
+                                                    "Error while fetching segment entity")
         raise BadRequestException(method_name=method_name, reason="Segment entity not found")
 
     if segment_entity.records is None or segment_entity.records <= 0:
@@ -1035,7 +1061,8 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
         raise NotFoundException(method_name=method_name, reason="Project entity not found")
 
     # update campaign status as approved
-    CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity.unique_id, CampaignStatus.APPROVED.value)
+    CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity.unique_id,
+                                                        CampaignStatus.APPROVED.value)
 
     for campaign in campaign_builder_entity.campaign_list:
         try:
@@ -1044,10 +1071,12 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
             channel = ContentType(campaign.content_type).value
 
             # check unique entry in CSSD for campaign builder campaign id
-            scheduling_segment_entity_db = CEDCampaignSchedulingSegmentDetails().fetch_scheduling_segment_entity_by_cbc_id(campaign.unique_id)
+            scheduling_segment_entity_db = CEDCampaignSchedulingSegmentDetails().fetch_scheduling_segment_entity_by_cbc_id(
+                campaign.unique_id)
             if scheduling_segment_entity_db is not None:
                 logger.error(f"method_name :: {method_name}, Campaign Scheduling Segment entity already exists")
-                raise ValidationFailedException(method_name=method_name, reason="Campaign Scheduling Segment entity already exists")
+                raise ValidationFailedException(method_name=method_name,
+                                                reason="Campaign Scheduling Segment entity already exists")
 
             # avoiding slot check
             scheduling_segment_entity = CED_CampaignSchedulingSegmentDetails()
@@ -1060,38 +1089,48 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
             scheduling_segment_entity.campaign_type = campaign_builder_entity.type
             scheduling_segment_entity.test_campaign = False
             start_trigger_schedule_lambda_processing(scheduling_segment_entity, uuid.uuid4().hex, channel,
-                                                      project_entity, segment_entity)
+                                                     project_entity, segment_entity)
         except NotFoundException as ex:
             logger.debug(f"method_name: {method_name}, error: {ex.reason}")
             CEDCampaignBuilderCampaign().update_cbc_status(campaign.unique_id, CampaignStatus.ERROR.value)
-            CEDCampaignExecutionProgress().update_campaign_status(CampaignStatus.ERROR.value, campaign.unique_id, ex.reason)
-            generate_campaign_approval_status_mail({'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
+            CEDCampaignExecutionProgress().update_campaign_status(CampaignStatus.ERROR.value, campaign.unique_id,
+                                                                  ex.reason)
+            generate_campaign_approval_status_mail(
+                {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
             raise NotFoundException(method_name=method_name, reason=ex.reason)
         except BadRequestException as ex:
             logger.debug(f"method_name: {method_name}, error: {ex.reason}")
             CEDCampaignBuilderCampaign().update_cbc_status(campaign.unique_id, CampaignStatus.ERROR.value)
-            CEDCampaignExecutionProgress().update_campaign_status(CampaignStatus.ERROR.value, campaign.unique_id, ex.reason)
-            generate_campaign_approval_status_mail({'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
+            CEDCampaignExecutionProgress().update_campaign_status(CampaignStatus.ERROR.value, campaign.unique_id,
+                                                                  ex.reason)
+            generate_campaign_approval_status_mail(
+                {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
             raise BadRequestException(method_name=method_name, reason=ex.reason)
         except ValidationFailedException as ex:
             logger.debug(f"method_name: {method_name}, error: {ex.reason}")
             CEDCampaignBuilderCampaign().update_cbc_status(campaign.unique_id, CampaignStatus.ERROR.value)
-            CEDCampaignExecutionProgress().update_campaign_status(CampaignStatus.ERROR.value, campaign.unique_id, ex.reason)
-            generate_campaign_approval_status_mail({'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
+            CEDCampaignExecutionProgress().update_campaign_status(CampaignStatus.ERROR.value, campaign.unique_id,
+                                                                  ex.reason)
+            generate_campaign_approval_status_mail(
+                {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
             raise ValidationFailedException(method_name=method_name, reason=ex.reason)
         except Exception as ex:
             logger.debug(f"method_name: {method_name}, error: error while scheduling campaign {ex}")
             CEDCampaignBuilderCampaign().update_cbc_status(campaign.unique_id, CampaignStatus.ERROR.value)
-            CEDCampaignExecutionProgress().update_campaign_status(CampaignStatus.ERROR.value, campaign.unique_id, ex.reason)
-            generate_campaign_approval_status_mail({'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
+            CEDCampaignExecutionProgress().update_campaign_status(CampaignStatus.ERROR.value, campaign.unique_id,
+                                                                  ex.reason)
+            generate_campaign_approval_status_mail(
+                {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
             raise BadRequestException(method_name=method_name, reason="error while scheduling campaign")
 
-    generate_campaign_approval_status_mail({'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.APPROVED.value})
+    generate_campaign_approval_status_mail(
+        {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.APPROVED.value})
 
     log_exit()
 
 
-def start_trigger_schedule_lambda_processing(campaign_scheduling_segment_entity, job_id, channel, project_entity, segment_entity, test_campaign=False):
+def start_trigger_schedule_lambda_processing(campaign_scheduling_segment_entity, job_id, channel, project_entity,
+                                             segment_entity, test_campaign=False):
     method_name = "start_trigger_schedule_lambda_processing"
     log_entry()
 
@@ -1113,11 +1152,13 @@ def start_trigger_schedule_lambda_processing(campaign_scheduling_segment_entity,
 
         segment_details_unique_id = campaign_scheduling_segment_entity.unique_id
         # set status in db as started
-        CEDCampaignSchedulingSegmentDetails().save_or_update_campaign_scheduling_segment_data_entity(campaign_scheduling_segment_entity)
+        CEDCampaignSchedulingSegmentDetails().save_or_update_campaign_scheduling_segment_data_entity(
+            campaign_scheduling_segment_entity)
 
         # save campaign execution process in db
         try:
-            segment_details_id = CEDCampaignSchedulingSegmentDetails().fetch_scheduling_segment_id_by_unique_id(segment_details_unique_id)
+            segment_details_id = CEDCampaignSchedulingSegmentDetails().fetch_scheduling_segment_id_by_unique_id(
+                segment_details_unique_id)
             if not segment_details_id:
                 raise NotFoundException(method_name=method_name, reason="Campaign Scheduling segment data Id not found")
             campaign_execution_progress_entity = CED_CampaignExecutionProgress()
@@ -1125,14 +1166,16 @@ def start_trigger_schedule_lambda_processing(campaign_scheduling_segment_entity,
             campaign_execution_progress_entity.campaign_builder_id = campaign_scheduling_segment_entity.campaign_id
             campaign_execution_progress_entity.test_campaign = 1 if test_campaign else 0
             campaign_execution_progress_entity.status = CampaignExecutionProgressStatus.INITIATED.value
-            CEDCampaignExecutionProgress().save_or_update_campaign_excution_progress_entity(campaign_execution_progress_entity)
+            CEDCampaignExecutionProgress().save_or_update_campaign_excution_progress_entity(
+                campaign_execution_progress_entity)
         except NotFoundException as ex:
             logger.error(f"method_name: {method_name}, error: {ex.reason}")
             raise NotFoundException(method_name=method_name, reason=ex.reason)
         except Exception as ex:
-            logger.error(f"method_name: {method_name}, error: Error while inserting in campaign execution progress table {ex}")
-            raise BadRequestException(method_name=method_name, reason="Error while inserting in campaign execution progress table")
-
+            logger.error(
+                f"method_name: {method_name}, error: Error while inserting in campaign execution progress table {ex}")
+            raise BadRequestException(method_name=method_name,
+                                      reason="Error while inserting in campaign execution progress table")
 
         file_name = generate_file_name(campaign_scheduling_segment_entity, segment_entity)
         campaign_scheduling_segment_entity.file_name = file_name
@@ -1140,7 +1183,7 @@ def start_trigger_schedule_lambda_processing(campaign_scheduling_segment_entity,
         # Save Campaign Scheduling segment entity with status BEFORE_LAMBDA_TRIGGERED
         campaign_scheduling_segment_entity.status = CampaignSchedulingSegmentStatus.BEFORE_LAMBDA_TRIGGERED.value
         CEDCampaignSchedulingSegmentDetails().save_or_update_campaign_scheduling_segment_data_entity(
-        campaign_scheduling_segment_entity)
+            campaign_scheduling_segment_entity)
 
         # Trigger lambda
         trigger_lambda_function_for_campaign_scheduling(campaign_scheduling_segment_entity, project_entity.name)
@@ -1152,7 +1195,8 @@ def start_trigger_schedule_lambda_processing(campaign_scheduling_segment_entity,
 
         # if not test campaign, then mark cbc as processed
         if not test_campaign:
-            campaign = CEDCampaignBuilderCampaign().update_processed_status(campaign_scheduling_segment_entity.campaign_id, is_processed=1)
+            campaign = CEDCampaignBuilderCampaign().update_processed_status(
+                campaign_scheduling_segment_entity.campaign_id, is_processed=1)
 
     except NotFoundException as ex:
         logger.error(f"method_name: {method_name}, error: {ex.reason}")
@@ -1179,7 +1223,8 @@ def start_trigger_schedule_lambda_processing(campaign_scheduling_segment_entity,
         raise BadRequestException(method_name=method_name, reason="error while triggering scheduler lambda")
     finally:
         # Save entity details in database
-        CEDCampaignSchedulingSegmentDetails().save_or_update_campaign_scheduling_segment_data_entity(campaign_scheduling_segment_entity)
+        CEDCampaignSchedulingSegmentDetails().save_or_update_campaign_scheduling_segment_data_entity(
+            campaign_scheduling_segment_entity)
 
     log_exit()
 
@@ -1189,7 +1234,8 @@ def set_service_vendor_details(campaign_scheduling_segment_entity, project_entit
     log_entry()
 
     if not campaign_scheduling_segment_entity or not project_entity:
-        raise ValidationFailedException(method_name=method_name, reason="Campaign scheduling segment entity or Project entity not found ")
+        raise ValidationFailedException(method_name=method_name,
+                                        reason="Campaign scheduling segment entity or Project entity not found ")
 
     if campaign_scheduling_segment_entity.channel == ContentType.SMS.value:
         campaign_scheduling_segment_entity.campaign_service_vendor = project_entity.sms_service_vendor
@@ -1232,6 +1278,7 @@ def generate_file_name(campaign_scheduling_segment_entity, segment_entity, is_te
     log_exit()
     return file_name
 
+
 def trigger_lambda_function_for_campaign_scheduling(campaign_segment_details, project_name, backwords_compatible=True):
     """
     Method to trigger the lambda function and generate request paylaod
@@ -1249,7 +1296,8 @@ def trigger_lambda_function_for_campaign_scheduling(campaign_segment_details, pr
     cbc_var = "campaignBuilderCampaignId" if backwords_compatible else "campaign_builder_campaign_id"
     pulish_data_var = "publishData" if backwords_compatible else "publish_data"
 
-    campaign_scheduling_segment_entity = generate_campaign_scheduling_segment_entity_for_camp_scheduling(campaign_segment_details)
+    campaign_scheduling_segment_entity = generate_campaign_scheduling_segment_entity_for_camp_scheduling(
+        campaign_segment_details)
 
     process_file_data_dict = {
         file_name_var: campaign_scheduling_segment_entity.file_name,
@@ -1263,8 +1311,10 @@ def trigger_lambda_function_for_campaign_scheduling(campaign_segment_details, pr
     set_follow_up_sms_template_details(campaign_scheduling_segment_entity)
 
     # create a list of Attributes to be added to dictionary of scheduling segment data apart from table attributes
-    attrs_list = ["campaign_sms_content_entity", "campaign_email_content_entity", "campaign_ivr_content_entity","campaign_whatsapp_content_entity","campaign_title",
-                  "campaign_subjectline_content_entity","cbc_entity", "project_id", "schedule_end_date_time", "schedule_start_date_time", "status", "segment_type", "test_campaign",
+    attrs_list = ["campaign_sms_content_entity", "campaign_email_content_entity", "campaign_ivr_content_entity",
+                  "campaign_whatsapp_content_entity", "campaign_title",
+                  "campaign_subjectline_content_entity", "cbc_entity", "project_id", "schedule_end_date_time",
+                  "schedule_start_date_time", "status", "segment_type", "test_campaign",
                   "data_id", "campaign_type", "follow_up_sms_variables"]
     project_details_map = campaign_scheduling_segment_entity._asdict(attrs_list)
     project_details_map = update_process_file_data_map(project_details_map)
@@ -1277,12 +1327,16 @@ def trigger_lambda_function_for_campaign_scheduling(campaign_segment_details, pr
 
     # call local to push data to sns to be processed
     logger.debug(f"method_name: {method_name}, request_created: {req_map}")
-    request_response = RequestClient.post_local_api_request(req_map, project_name, LOCAL_CAMPAIGN_SCHEDULING_DATA_PACKET_HANDLER, send_dict=True)
+    request_response = RequestClient.post_local_api_request(req_map, project_name,
+                                                            LOCAL_CAMPAIGN_SCHEDULING_DATA_PACKET_HANDLER,
+                                                            send_dict=True)
     logger.debug(f"method_name: {method_name}, request response: {request_response}")
     if request_response is None:
-        raise BadRequestException(method_name=method_name, reason="Error while calling hyperion local to publish data to SNS")
+        raise BadRequestException(method_name=method_name,
+                                  reason="Error while calling hyperion local to publish data to SNS")
 
     log_exit()
+
 
 def set_follow_up_sms_template_details(campaign_segment_entity):
     method_name = "set_follow_up_sms_template_details"
@@ -1291,19 +1345,22 @@ def set_follow_up_sms_template_details(campaign_segment_entity):
     if campaign_segment_entity.channel != ContentType.IVR.value:
         return
     ivr_content_entity = campaign_segment_entity.campaign_ivr_content_entity
-    if ivr_content_entity and ivr_content_entity['have_follow_up_sms'] and ivr_content_entity['follow_up_sms_list'] and len(ivr_content_entity['follow_up_sms_list']) > 0:
+    if ivr_content_entity and ivr_content_entity['have_follow_up_sms'] and ivr_content_entity[
+        'follow_up_sms_list'] and len(ivr_content_entity['follow_up_sms_list']) > 0:
         follow_up_sms = ivr_content_entity['follow_up_sms_list']
         sms_ids = [fsms['sms_id'] for fsms in follow_up_sms]
 
         try:
-            follow_up_sms_variables_dict= {}
+            follow_up_sms_variables_dict = {}
             for sms_id in sms_ids:
-                follow_up_sms_variables_dict[sms_id] = CEDCampaignContentVariableMapping().get_follow_up_sms_variables(sms_id)
+                follow_up_sms_variables_dict[sms_id] = CEDCampaignContentVariableMapping().get_follow_up_sms_variables(
+                    sms_id)
             campaign_segment_entity.follow_up_sms_variables = follow_up_sms_variables_dict
         except Exception as ex:
             raise BadRequestException(method_name=method_name, reason="Error while fetching follow up sms variables")
 
     log_exit()
+
 
 def generate_campaign_scheduling_segment_entity_for_camp_scheduling(scheduling_segment_details):
     """
@@ -1312,21 +1369,26 @@ def generate_campaign_scheduling_segment_entity_for_camp_scheduling(scheduling_s
     method_name = "generate_campaign_scheduling_segment_entity_for_camp_scheduling"
     log_entry()
 
-    campaign_scheduling_segment_entity = CEDCampaignSchedulingSegmentDetails().fetch_scheduling_segment_entity(scheduling_segment_details.unique_id)
+    campaign_scheduling_segment_entity = CEDCampaignSchedulingSegmentDetails().fetch_scheduling_segment_entity(
+        scheduling_segment_details.unique_id)
 
     # fetch campaign builder campaign using campaign id
-    campaign_builder_campaign = CEDCampaignBuilderCampaign().fetch_entity_by_unique_id(scheduling_segment_details.campaign_id)
+    campaign_builder_campaign = CEDCampaignBuilderCampaign().fetch_entity_by_unique_id(
+        scheduling_segment_details.campaign_id)
     campaign_builder_campaign_dict = campaign_builder_campaign._asdict()
 
-    if campaign_builder_campaign_dict.get('ivr_campaign', None) is not None and campaign_builder_campaign_dict['ivr_campaign'].get('follow_up_sms_list', None) is not None:
+    if campaign_builder_campaign_dict.get('ivr_campaign', None) is not None and campaign_builder_campaign_dict[
+        'ivr_campaign'].get('follow_up_sms_list', None) is not None:
         campaign_builder_campaign_dict['ivr_campaign']['follow_up_sms_list'] = []
 
     campaign_scheduling_segment_entity.cbc_entity = campaign_builder_campaign_dict
     campaign_scheduling_segment_entity.campaign_title = scheduling_segment_details.campaign_title
     campaign_scheduling_segment_entity.segment_type = scheduling_segment_details.segment_type
     campaign_scheduling_segment_entity.project_id = scheduling_segment_details.project_id
-    campaign_scheduling_segment_entity.schedule_start_date_time = campaign_builder_campaign.start_date_time.strftime("%Y-%m-%d %H:%M:%S")
-    campaign_scheduling_segment_entity.schedule_end_date_time = campaign_builder_campaign.end_date_time.strftime("%Y-%m-%d %H:%M:%S")
+    campaign_scheduling_segment_entity.schedule_start_date_time = campaign_builder_campaign.start_date_time.strftime(
+        "%Y-%m-%d %H:%M:%S")
+    campaign_scheduling_segment_entity.schedule_end_date_time = campaign_builder_campaign.end_date_time.strftime(
+        "%Y-%m-%d %H:%M:%S")
     campaign_scheduling_segment_entity.data_id = scheduling_segment_details.data_id
     campaign_scheduling_segment_entity.segment_type = scheduling_segment_details.segment_type
     campaign_scheduling_segment_entity.campaign_type = scheduling_segment_details.campaign_type
@@ -1358,16 +1420,20 @@ def prepare_sms_related_data(cbc_entity, campaign_segment_entity):
         raise NotFoundException(method_name=method_name, reason="Campaign SMS content details not found")
 
     campaign_sms_content_entity = CEDCampaignSMSContent().get_sms_content_data_by_unique_id_and_status(cbc_entity.
-                                                    sms_campaign.sms_id, [CampaignContentStatus.APPROVED.value])
+                                                                                                       sms_campaign.sms_id,
+                                                                                                       [
+                                                                                                           CampaignContentStatus.APPROVED.value])
     if not campaign_sms_content_entity:
         raise NotFoundException(method_name=method_name, reason="Campaign SMS Content entity not found")
 
     # set the url mapping
-    if cbc_entity.sms_campaign.url_id and (campaign_sms_content_entity.url_mapping is None or len(campaign_sms_content_entity.url_mapping) <= 0):
+    if cbc_entity.sms_campaign.url_id and (
+            campaign_sms_content_entity.url_mapping is None or len(campaign_sms_content_entity.url_mapping) <= 0):
         # campaign_sms_content_entity.url_mapping = CEDCampaignContentUrlMapping().fetch_url_details_list_by_content_and_url_id(cbc_entity.sms_campaign[0].sms_id, cbc_entity.sms_campaign[0].url_id)
         raise NotFoundException(method_name=method_name, reason="Url id mapping for SMS campaign not found")
     # set the sender id mapping
-    if cbc_entity.sms_campaign.sender_id and (campaign_sms_content_entity.sender_id_mapping is None or len(campaign_sms_content_entity.sender_id_mapping) <= 0):
+    if cbc_entity.sms_campaign.sender_id and (campaign_sms_content_entity.sender_id_mapping is None or len(
+            campaign_sms_content_entity.sender_id_mapping) <= 0):
         # campaign_sms_content_entity.sender_id_mapping = CEDCampaignContentSenderIdMapping().fetch_sender_details_list_by_content_and_sender_id(cbc_entity.sms_campaign[0].sms_id, cbc_entity.sms_campaign[0].sender_id)
         raise NotFoundException(method_name=method_name, reason="Sender id mapping for SMS campaign not found")
 
@@ -1395,20 +1461,23 @@ def prepare_email_related_data(cbc_entity, campaign_segment_entity):
         raise NotFoundException(method_name=method_name, reason="Campaign Email content details not found")
 
     # Fetch email content entity
-    campaign_email_content_entity = CEDCampaignEmailContent().get_email_content_data_by_unique_id_and_status(cbc_entity.email_campaign.email_id,
-                                                                                                              [CampaignContentStatus.APPROVED.value])
+    campaign_email_content_entity = CEDCampaignEmailContent().get_email_content_data_by_unique_id_and_status(
+        cbc_entity.email_campaign.email_id,
+        [CampaignContentStatus.APPROVED.value])
     if not campaign_email_content_entity:
         raise NotFoundException(method_name=method_name, reason="Campaign Email Content entity not found")
 
     campaign_email_content_entity_dict = campaign_email_content_entity._asdict(["url_mapping"])
 
     # Set the url mapping
-    if cbc_entity.email_campaign.url_id and (campaign_email_content_entity.url_mapping is None or len(campaign_email_content_entity.url_mapping) <= 0):
+    if cbc_entity.email_campaign.url_id and (
+            campaign_email_content_entity.url_mapping is None or len(campaign_email_content_entity.url_mapping) <= 0):
         raise NotFoundException(method_name=method_name, reason="Url id mapping for Email campaign not found")
 
     # Fetch subject line content entity
-    campaign_subjectline_content_entity = CEDCampaignSubjectLineContent().get_subject_line_data_by_unique_id_and_status(cbc_entity.email_campaign.subject_line_id,
-                                                                                                                        [CampaignContentStatus.APPROVED.value])
+    campaign_subjectline_content_entity = CEDCampaignSubjectLineContent().get_subject_line_data_by_unique_id_and_status(
+        cbc_entity.email_campaign.subject_line_id,
+        [CampaignContentStatus.APPROVED.value])
     if not campaign_subjectline_content_entity:
         raise NotFoundException(method_name=method_name, reason="Campaign SubjectLine Content entity not found")
     campaign_subjectline_content_entity = campaign_subjectline_content_entity._asdict()
@@ -1440,8 +1509,9 @@ def prepare_ivr_related_data(cbc_entity, campaign_segment_entity):
         raise NotFoundException(method_name=method_name, reason="Campaign IVR content details not found")
 
     # Fetch ivr content entity
-    campaign_ivr_content_entity = CEDCampaignIvrContent().get_ivr_content_data_by_unique_id_and_status(cbc_entity.ivr_campaign.ivr_id,
-                                                                                                              [CampaignContentStatus.APPROVED.value])
+    campaign_ivr_content_entity = CEDCampaignIvrContent().get_ivr_content_data_by_unique_id_and_status(
+        cbc_entity.ivr_campaign.ivr_id,
+        [CampaignContentStatus.APPROVED.value])
     if not campaign_ivr_content_entity:
         raise NotFoundException(method_name=method_name, reason="Campaign IVR Content entity not found")
 
@@ -1449,7 +1519,8 @@ def prepare_ivr_related_data(cbc_entity, campaign_segment_entity):
 
     # Fetch urlId, SmsId, SenderId, VendorConfigId from CED_CampaignFollowUPMapping table
     for follow_up_sms in campaign_ivr_content_entity_dict['follow_up_sms_list']:
-        follow_up_sms_details = CEDCampaignFollowUPMapping().fetch_follow_up_by_cbc_and_mapping_id(follow_up_sms['unique_id'], cbc_entity.unique_id)
+        follow_up_sms_details = CEDCampaignFollowUPMapping().fetch_follow_up_by_cbc_and_mapping_id(
+            follow_up_sms['unique_id'], cbc_entity.unique_id)
 
         # Validate the follow up sms details
         if follow_up_sms_details and follow_up_sms_details.url_id and follow_up_sms_details.sender_id and follow_up_sms_details.sms_id and follow_up_sms_details.vendor_config_id:
@@ -1458,10 +1529,12 @@ def prepare_ivr_related_data(cbc_entity, campaign_segment_entity):
             follow_up_sms['sms_id'] = follow_up_sms_details.sms_id
             follow_up_sms['vendor_config_id'] = follow_up_sms_details.vendor_config_id
 
-        if follow_up_sms is not None and follow_up_sms.get('url', None) is not None and len(follow_up_sms.get('url')) > 0:
+        if follow_up_sms is not None and follow_up_sms.get('url', None) is not None and len(
+                follow_up_sms.get('url')) > 0:
             if follow_up_sms['url'].get('url', None) is not None:
                 follow_up_sms['url']['content_text'] = follow_up_sms['url']['url']
-        if follow_up_sms is not None and follow_up_sms.get('sms', None) is not None and len(follow_up_sms.get('sms')) > 0:
+        if follow_up_sms is not None and follow_up_sms.get('sms', None) is not None and len(
+                follow_up_sms.get('sms')) > 0:
             follow_up_sms['sms']['sender_id_mapping'] = []
             follow_up_sms['sms']['url_mapping'] = []
 
@@ -1482,13 +1555,15 @@ def prepare_whatsapp_related_data(cbc_entity, campaign_segment_entity):
         raise NotFoundException(method_name=method_name, reason="Campaign Whatsapp content details not found")
 
     # Fetch whatsapp content entity
-    campaign_whatsapp_content_entity = CEDCampaignWhatsAppContent().get_whatsapp_content_data_by_unique_id_and_status(cbc_entity.whatsapp_campaign.whats_app_content_id,
-                                                                                                              [CampaignContentStatus.APPROVED.value])
+    campaign_whatsapp_content_entity = CEDCampaignWhatsAppContent().get_whatsapp_content_data_by_unique_id_and_status(
+        cbc_entity.whatsapp_campaign.whats_app_content_id,
+        [CampaignContentStatus.APPROVED.value])
     if not campaign_whatsapp_content_entity:
         raise NotFoundException(method_name=method_name, reason="Campaign Whatsapp Content entity not found")
 
     # Set the url mapping
-    if cbc_entity.whatsapp_campaign.url_id and (campaign_whatsapp_content_entity.url_mapping is None or len(campaign_whatsapp_content_entity.url_mapping) <=0):
+    if cbc_entity.whatsapp_campaign.url_id and (campaign_whatsapp_content_entity.url_mapping is None or len(
+            campaign_whatsapp_content_entity.url_mapping) <= 0):
         raise NotFoundException(method_name=method_name, reason="Url id mapping for WHATSAPP campaign not found")
 
     campaign_whatsapp_content_entity_dict = campaign_whatsapp_content_entity._asdict(["url_mapping"])
@@ -1513,20 +1588,25 @@ def prepare_and_save_campaign_builder_history_data(campaign_builder_entity):
 
     module_name = "CampaignBuilder"
     if not campaign_builder_entity.id:
-        campaign_builder_entity.id = CEDCampaignBuilder().get_campaign_builder_id_by_unique_id(campaign_builder_entity.unique_id)
+        campaign_builder_entity.id = CEDCampaignBuilder().get_campaign_builder_id_by_unique_id(
+            campaign_builder_entity.unique_id)
     try:
         history_campaign_builder_entity = CED_HIS_CampaignBuilder(campaign_builder_entity._asdict())
         history_campaign_builder_entity.end_date_time = campaign_builder_entity.end_date_time
         history_campaign_builder_entity.id = None
         history_campaign_builder_entity.campaign_builder_id = campaign_builder_entity.unique_id
-        history_campaign_builder_entity.segment_name = CEDSegment().get_segment_name_by_id(campaign_builder_entity.segment_id)
+        history_campaign_builder_entity.segment_name = CEDSegment().get_segment_name_by_id(
+            campaign_builder_entity.segment_id)
         history_campaign_builder_entity.unique_id = uuid.uuid4().hex
 
-        prepare_campaign_builder_history_comment_and_details(history_campaign_builder_entity, campaign_builder_entity.history_id, campaign_builder_entity.id, module_name)
+        prepare_campaign_builder_history_comment_and_details(history_campaign_builder_entity,
+                                                             campaign_builder_entity.history_id,
+                                                             campaign_builder_entity.id, module_name)
         # Insert history entity
         CEDHIS_CampaignBuilder().save_history_entity(history_campaign_builder_entity)
         # Update campaign builder history id
-        CEDCampaignBuilder().update_campaign_builder_history_id(campaign_builder_entity.unique_id, history_campaign_builder_entity.unique_id)
+        CEDCampaignBuilder().update_campaign_builder_history_id(campaign_builder_entity.unique_id,
+                                                                history_campaign_builder_entity.unique_id)
         # Prepare activity log
         activity_log_entity = CED_ActivityLog({
             "unique_id": uuid.uuid4().hex,
@@ -1539,7 +1619,7 @@ def prepare_and_save_campaign_builder_history_data(campaign_builder_entity):
             "history_table_id": history_campaign_builder_entity.unique_id,
             "filter_id": campaign_builder_entity.segment_id
         })
-        #save activity log
+        # save activity log
         CEDActivityLog().save_activit_log(activity_log_entity)
     except Exception as ex:
         logger.error(f"method_name :: {method_name}, error while creating campaign builder history object :: {ex}")
@@ -1556,10 +1636,12 @@ def prepare_campaign_builder_history_comment_and_details(history_campaign_builde
 
     # History id None means first entry
     if history_id is None:
-        history_campaign_builder_entity.comment = ACTIVITY_LOG_COMMENT_CREATED.format(module_name, id, history_campaign_builder_entity.updated_by)
+        history_campaign_builder_entity.comment = ACTIVITY_LOG_COMMENT_CREATED.format(module_name, id,
+                                                                                      history_campaign_builder_entity.updated_by)
     else:
         old_history_cb_status = CEDHIS_CampaignBuilder().fetch_status_by_unique_id(history_id)
-        history_campaign_builder_entity.comment = get_detailed_comment(history_campaign_builder_entity.status, old_history_cb_status, id, module_name)
+        history_campaign_builder_entity.comment = get_detailed_comment(history_campaign_builder_entity.status,
+                                                                       old_history_cb_status, id, module_name)
 
     log_exit()
     return history_campaign_builder_entity
@@ -1590,7 +1672,8 @@ def update_process_file_data_map(data_map):
             if key == "follow_up_sms_variables":
                 updated_data = {}
                 for follow_up_sms_variable in data_map[key]:
-                    updated_data[follow_up_sms_variable] = update_process_file_data_map(data_map[key][follow_up_sms_variable])
+                    updated_data[follow_up_sms_variable] = update_process_file_data_map(
+                        data_map[key][follow_up_sms_variable])
                 data_map_updated[snake_to_camel_converter[key]] = updated_data
             elif isinstance(data_map[key], dict) or isinstance(data_map[key], list):
                 updated_data = update_process_file_data_map(data_map[key])
@@ -1601,11 +1684,13 @@ def update_process_file_data_map(data_map):
                     data_map_updated[snake_to_camel_converter[key]] = str(data_map[key])
     return data_map_updated
 
+
 def datetime_converter(data):
     if isinstance(data, datetime.datetime):
         return data.strftime("%Y-%m-%dT%H:%M:%S.%f%z")
     elif isinstance(data, datetime.date):
         return data.strftime("%Y-%m-%d")
+
 
 def call_hyperion_for_campaign_approval(campaign_builder_id, input_status):
     """
@@ -1629,7 +1714,7 @@ def call_hyperion_for_campaign_approval(campaign_builder_id, input_status):
         logger.error(f"method_name :: {method_name}, not able to hit hyperionCentral api")
         raise BadRequestException(method_name=method_name, reason="Something went wrong")
     logger.debug(f"method_name :: {method_name}, hyperion central api response :: {api_response}")
-    if api_response.get("result", None) is not None and  api_response.get("result") == TAG_FAILURE:
+    if api_response.get("result", None) is not None and api_response.get("result") == TAG_FAILURE:
         cause = "Something went wrong"
         if api_response.get('data', None) is not None and api_response['data'].get('cause', None) is not None:
             cause = api_response['data']['cause']
@@ -1637,6 +1722,7 @@ def call_hyperion_for_campaign_approval(campaign_builder_id, input_status):
         logger.error(f"method_name :: {method_name}, {cause}")
         raise BadRequestException(method_name=method_name, reason=f"{cause}")
     return
+
 
 def generate_campaign_approval_status_mail(data: dict):
     if not data.get("unique_id", None):
@@ -1663,8 +1749,10 @@ def generate_campaign_approval_status_mail(data: dict):
         email = CEDUser().get_user_email_id(user)
         if email is not None:
             email_tos.append(email)
-    email_data = {"CampaignName": campaign_details.get("Name"), "CampaignId": str(campaign_details.get("Id")), "Segment": campaign_details.get("SegmentName"),
-                  "Status": campaign_status, "Start": (start_date_time + datetime.timedelta(minutes=330)).strftime("%Y-%m-%d %H:%M:%S")}
+    email_data = {"CampaignName": campaign_details.get("Name"), "CampaignId": str(campaign_details.get("Id")),
+                  "Segment": campaign_details.get("SegmentName"),
+                  "Status": campaign_status,
+                  "Start": (start_date_time + datetime.timedelta(minutes=330)).strftime("%Y-%m-%d %H:%M:%S")}
 
     if campaign_status == "APPROVED":
         email_data["FinalStatusColorCode"] = "GREEN"
@@ -1690,3 +1778,112 @@ def generate_campaign_approval_status_mail(data: dict):
 
     logger.info(f"Mailer response: {response}.")
     return
+
+
+def create_campaign_details_in_local_db(request: dict):
+    """
+    this local api is used to create entries in CED_FP_FileData and CED_CampaignCreationDetails tables
+    """
+    method_name = "create_campaign_details_in_local_db"
+    logger.debug(f"{method_name} :: request: {request}")
+    project_details_object = json.loads(request["project_details_object"])
+    segment_data = request["segment_data"]
+    user_data = request["user_data"]
+    # validation checks for project_details_json data structure
+    validation_response = validate_project_details_json(project_details_object)
+    if validation_response["success"] is False:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message=validation_response["details_message"])
+
+    fp_project_details_json = project_details_object["projectDetail"]
+
+    # parse content specific data from request object
+    content_data = get_campaign_content_data_by_channel(fp_project_details_json)
+
+    # prepare fp_file_data entity
+    fp_file_data_entity = CED_FP_FileData()
+    fp_file_data_entity.file_name = fp_project_details_json["fileName"]
+    fp_file_data_entity.unique_name = fp_project_details_json["fileName"]
+    fp_file_data_entity.project_type = project_details_object["projectType"]
+    fp_file_data_entity.project_detail = json.dumps(fp_project_details_json)
+    fp_file_data_entity.file_status = "FILE_IMPORT_UPLOADED"
+    fp_file_data_entity.file_type = project_details_object["fileType"]
+    fp_file_data_entity.unique_id = uuid.uuid4().hex
+    fp_file_data_entity.row_count = 1
+    fp_file_data_entity.success_row_count = 1
+    fp_file_data_entity.error_row_count = 0
+    fp_file_data_entity.skipped_row_count = 0
+    fp_file_data_entity.other_row_count = 0
+    fp_file_data_entity.splitted_batch_number = 1
+    fp_file_data_entity.splitted_file_number = 1
+    fp_file_data_entity.process_result_json = None
+    fp_file_data_entity.to_notification_email = None
+    fp_file_data_entity.error_message = None
+    fp_file_data_entity.campaign_builder_campaign_id = project_details_object["campaignBuilderCampaignId"]
+    fp_file_data_entity.test_campaign = 1
+
+    # save entity to CED_FP_FileData
+    fp_file_data_entity_final = save_or_update_fp_file_data(fp_file_data_entity)
+
+    # create entries in CED_FP_FileData and CED_CampaignCreationDetails
+    ccd_entity = CED_CampaignCreationDetails()
+    ccd_entity.records = fp_project_details_json["records"]
+    ccd_entity.channel = fp_project_details_json["channel"]
+    ccd_entity.schedule_date = fp_project_details_json["scheduleDate"]
+    ccd_entity.schedule_time = datetime.datetime.utcnow().time()
+    ccd_entity.campaign_id = fp_project_details_json["id"]
+    ccd_entity.unique_id = uuid.uuid4().hex
+    ccd_entity.campaign_service_vendor = fp_project_details_json["campaignServiceVendor"]
+    ccd_entity.active = True
+    ccd_entity.deleted = False
+    ccd_entity.per_slot_record_count = fp_project_details_json["perSlotRecordCount"]
+    ccd_entity.campaign_title = fp_project_details_json["campaignTitle"]
+    ccd_entity.campaign_type = fp_project_details_json["campaignType"]
+    ccd_entity.segment_type = project_details_object["segmentType"]
+    ccd_entity.file_name = fp_project_details_json["fileName"]
+    ccd_entity.campaign_uuid = project_details_object["campaignBuilderCampaignId"]
+    ccd_entity.test_campaign = 1
+    ccd_entity.template_id = content_data.get("template_id")
+    ccd_entity.campaign_deactivation_date_time = None
+    ccd_entity.template_content = content_data.get("template_content")
+    ccd_entity.creation_date = datetime.datetime.utcnow()
+    ccd_entity.project_id = fp_project_details_json["projectId"]
+    ccd_entity.long_url = content_data["long_url"]
+    ccd_entity.end_time = fp_project_details_json["scheduleEndDateTime"]
+    ccd_entity.data_id = fp_project_details_json["dataId"]
+    ccd_entity.file_id = fp_file_data_entity_final.id
+
+    # save entity to CED_CampaignCreationDetails table
+    save_or_update_ccd(ccd_entity)
+
+    # decrypt extra data and send cached data packet to Segment_Evaluator via SNS packet to avoid executing query
+    # TODO: create this function generic for normal campaigns as well
+    # create SNS packet and push it to Campaign Segment Evaluator via SNS
+    campaign_packet = dict(
+                campaign_builder_campaign_id=project_details_object["campaignBuilderCampaignId"],
+                campaign_name=fp_project_details_json["campaignTitle"],
+                record_count=fp_project_details_json["records"],
+                query=segment_data["sql_query"],
+                startDate=datetime.datetime.utcnow(),
+                endDate=datetime.datetime.utcnow() + timedelta(minutes=10),
+                contentType=fp_project_details_json["channel"],
+                campaign_schedule_segment_details_id=fp_project_details_json["id"],
+                is_test=True,
+                user_data=user_data,
+                file_id=fp_file_data_entity_final.id
+            )
+    if request.get("cached_test_campaign_data", None):
+        campaign_packet["cached_segment_data"] = request["cached_test_campaign_data"]
+    campaign_segment_eval_packet = dict(campaigns=[campaign_packet])
+
+    from onyx_proj.common.utils.sns_helper import SnsHelper
+    sns_response = SnsHelper().publish_data_to_topic(settings.SNS_SEGMENT_EVALUATOR,
+                                                     {"default": json.dumps(campaign_segment_eval_packet, default=str)})
+    if sns_response is False:
+        logger.error(
+            f"{method_name} :: Error: Unable to push packet in SNS for campaign_id: {fp_project_details_json['id']}"
+            f"and sns_topic: {settings.SNS_SEGMENT_EVALUATOR}")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="SNS push failure!")
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)

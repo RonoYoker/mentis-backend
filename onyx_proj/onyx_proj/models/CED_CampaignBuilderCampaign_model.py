@@ -167,7 +167,7 @@ class CEDCampaignBuilderCampaign:
     def fetch_entity_by_unique_id(self, unique_id, status=None):
         filter_list = [{"column": "unique_id", "value": unique_id, "op": "=="}]
         if status is not None:
-            filter_list.append({"column": "status", "value": status, "op": "=="})
+            filter_list.append({"column": "status", "value": status, "op": "in"})
         return fetch_one_row(self.engine, self.table, filter_list)
 
     def save_or_update_cbc(self, cbc_entity):

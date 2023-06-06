@@ -17,9 +17,10 @@ from onyx_proj.apps.campaign.campaign_engagement_data.engagement_data_processor 
 from onyx_proj.common.decorators import *
 from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import save_or_update_campaign_data, \
     get_filtered_dashboard_tab_data, get_min_max_date_for_scheduler, get_time_range_from_date, \
-    get_campaign_data_in_period, validate_campaign, \
+    get_campaign_data_in_period, validate_campaign, create_campaign_details_in_local_db, \
     get_filtered_recurring_date_time, update_segment_count_and_status_for_campaign, update_campaign_status, filter_list, \
     deactivate_campaign_by_campaign_id, view_campaign_data, approval_action_on_campaign_builder_by_unique_id
+from apps.campaign.test_campaign.test_campaign_processor import test_campaign_process
 from django.views.decorators.csrf import csrf_exempt
 from onyx_proj.celery_app.tasks import trigger_eng_data
 
@@ -297,3 +298,25 @@ def approval_action_on_campaign_builder(request):
 def trigger_camp_eng_data(request):
     trigger_eng_data.apply_async(queue="celery_query_executor")
     return HttpResponse("", status=200, content_type="application/json")
+
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def initiate_test_campaign(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    auth_token = request.headers["X-AuthToken"]
+    request_body["auth_token"] = auth_token
+    response = test_campaign_process(request_body)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+def create_campaign_details(request):
+    decrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).decrypt(request.body.decode("utf-8"))
+    request_body = json.loads(decrypted_data)
+    response = create_campaign_details_in_local_db(request_body)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(
+        json.dumps(response, default=str))
+    return HttpResponse(encrypted_data, status=status_code, content_type="application/json")

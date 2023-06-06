@@ -47,9 +47,9 @@ class RequestClient:
         headers = {"Content-Type": "application/json"}
         try:
             if send_dict == True:
-                response = requests.post(api_url, json={"data": encrypted_data}, headers=headers,verify=False)
+                response = requests.post(api_url, json={"data": encrypted_data}, headers=headers, verify=False)
             else:
-                response = requests.post(api_url, data=encrypted_data, headers=headers,verify=False)
+                response = requests.post(api_url, data=encrypted_data, headers=headers, verify=False)
             if response.status_code == 200:
                 encrypted_data = response.text
                 encrypted_data_dict = json.loads(encrypted_data)
@@ -92,7 +92,9 @@ class RequestClient:
         # request send
         api_url = f"{domain}/{api_path}"
         headers = {"Content-Type": "application/json"}
-        encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(json.dumps(body))
+        encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(
+            json.dumps(body, default=str))
+        logger.debug(f"post_onyx_local_api_request :: {headers}, {api_url}")
         try:
             response = requests.post(api_url, data=encrypted_data, headers=headers, verify=False)
             if response.status_code == 200:
@@ -101,11 +103,11 @@ class RequestClient:
                     encrypted_response_data)
                 resp = json.loads(decrypted_data)
             else:
-                return {"success": False}
+                return {"success": False, "status_code": response.status_code}
         except Exception as e:
             logger.error(f"Unable to process localdb api, Exception message :: {e}")
             return {"success": False}
-        return {"success": True, "data": resp}
+        return {"success": True, "data": resp, "status_code": response.status_code}
 
     @staticmethod
     def post_onyx_local_api_request_rsa(bank,body, domain, api_path):
@@ -148,4 +150,3 @@ class RequestClient:
             return {"success": False}
         log_exit()
         return {"success": True, "data": resp}
-

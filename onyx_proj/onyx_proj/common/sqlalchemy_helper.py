@@ -124,6 +124,7 @@ def fetch_rows(engine, table, filter_list,projections=[],return_type = 'dict'):
         except Exception as ex:
             logging.error(f"error while fetching from table {str(table)}, Error: ", ex)
 
+
 def fetch_columns(engine, table, column_list, filter_list={}):
     """
         Function to fetch specific columns from table.
@@ -190,6 +191,7 @@ def add_filter(query, value, column, operator):
     elif operator.lower() == "orderbydesc":
         return query.order_by(column.desc())
 
+
 def crete_update_dict(object):
     """
         Function to create dict object for update query.
@@ -212,6 +214,7 @@ def create_dict_from_object(object):
         returns: Dict of result
     """
     return {c.key: getattr(object, c.key) for c in inspect(object).mapper.column_attrs}
+
 
 def save_or_update(engine, table, entity):
     """
@@ -244,6 +247,7 @@ def save_or_update(engine, table, entity):
         else:
             session.commit()
 
+
 def bulk_insert(engine, entity_list):
     with Session(engine) as session:
         session.begin()
@@ -255,6 +259,7 @@ def bulk_insert(engine, entity_list):
             raise ex
         else:
             session.commit()
+
 
 def save(engine, table, entity):
     """
@@ -299,11 +304,13 @@ def fetch_rows_limited(engine,table,filter_list,columns=[],relationships=[],limi
         except Exception as ex:
             logging.error(f"error while fetching from table {str(table)}, Error: ", ex)
 
+
 def add_columns_projections(q,columns=[]):
     if len(columns) == 0:
         return q
     q = q.options(load_only(*columns))
     return q
+
 
 def add_relationshsip_projections(q,relationships=[]):
     if len(relationships) == 0:
@@ -317,7 +324,6 @@ def add_relationshsip_projections(q,relationships=[]):
     return q
 
 
-
 def execute_write(engine, query, values):
     try:
         with engine.connect() as cursor:
@@ -326,6 +332,7 @@ def execute_write(engine, query, values):
     except Exception as e:
         logging.error({'error': 'mysql thrown exception while updating', 'exception': str(e), 'logkey': 'mysql_helper'})
         return {'exception': str(e)}
+
 
 def fetch_all(engine, query, params=[]):
     try:
@@ -339,3 +346,25 @@ def fetch_all(engine, query, params=[]):
             'error': 'mysql thrown exception while fetching dict one.', 'exception': e, 'logkey': 'mysql_helper'
         })
         return None
+
+
+def save_or_update_merge(engine, entity):
+    """
+        Function to insert a single row into table.
+        parameters:
+            table: Table class object
+            entity: table entity to insert
+        returns:
+    """
+    with Session(engine) as session:
+        session.begin()
+        try:
+            upd_entity = session.merge(entity)
+        except Exception as ex:
+            session.rollback()
+            logging.error(f"error while inserting in table, Error: ", ex)
+        else:
+            session.commit()
+            # entity = result
+        dict = create_dict_from_object(upd_entity)
+    return entity.__class__(dict)

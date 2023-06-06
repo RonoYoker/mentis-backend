@@ -61,3 +61,10 @@ class CEDUserSession:
         except Exception as ex:
             return dict(status=False, message=str(ex))
         return dict(status=True, response=response)
+
+    def get_user_personal_data_by_session_id(self, session_id):
+        query = f"SELECT cu.FirstName, cu.LastName, cu.MobileNumber, cu.EmailId FROM CED_User cu JOIN CED_UserSession " \
+                f"cus ON cus.UserName = cu.UserName WHERE cus.SessionId = '{session_id}' AND cus.Expired = 0"
+        return dict_fetch_query_all(self.curr, query)
+
+

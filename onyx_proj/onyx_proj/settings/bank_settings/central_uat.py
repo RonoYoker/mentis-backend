@@ -72,6 +72,8 @@ ONYX_LOCAL_CAMP_VALIDATION = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyn
                               "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd","yblccujlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                               "yblacqjlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj"]
 
+HYPERION_TEST_CAMPAIGN_URL = "http://uatdev.hyperiontool.com/hyperioncampaigntooldashboard/campaignbuilder/testcampaign/"
+
 JWT_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["JWT_ENCRYPTION_KEY"]
 # RSA_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["RSA_KEYS"]
 CENTRAL_TO_LOCAL_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["CENTRAL_TO_LOCAL_ENCRYPTION_KEY"]
@@ -139,3 +141,12 @@ VENDOR_CONFIG = {
         "CONFIG_ID": "hyp_telegram_uat"
     }
 }
+
+
+USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                                              "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                                              "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd"]
+
+TEST_CAMPAIGN_ENABLED = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                         "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                         "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd"]

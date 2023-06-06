@@ -734,6 +734,8 @@ class CampaignChannel(Enum):
 
 class CampaignExecutionProgressStatus(Enum):
     INITIATED = "INITIATED"
+    SCHEDULED = "SCHEDULED"
+    ERROR = "ERROR"
 
 
 class DataSource(Enum):

@@ -1,5 +1,6 @@
 from onyx_proj.orm_models.base_model import *
 
+
 class CED_MasterHeaderMapping(Base, Orm_helper):
     __tablename__ = 'CED_MasterHeaderMapping'
 
@@ -10,4 +11,4 @@ class CED_MasterHeaderMapping(Base, Orm_helper):
     file_data_field_type = Column("FileDataFieldType", String)
     content_type = Column("ContentType", String)
     project_id = Column("ProjectId", String, ForeignKey("CED_Projects.UniqueId"))
-    encrypted = Column("Encrypted",Boolean)
+    encrypted = Column("Encrypted", Boolean)
