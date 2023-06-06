@@ -78,7 +78,7 @@ def test_campaign_process(request: dict):
         headers = {"Content-Type": "application/json", "X-AuthToken": request["auth_token"]}
         response = requests.post(url, data=payload, headers=headers, verify=False)
         if response.status_code == http.HTTPStatus.OK:
-            return dict(status_code=http.HTTPStatus.OK, result=TAG_FAILURE,
+            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                         details_message="Test campaign has been initiated! Please wait while you receive the communication.")
         else:
             logger.error(
