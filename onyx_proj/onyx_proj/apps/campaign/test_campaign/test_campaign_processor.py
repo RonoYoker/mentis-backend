@@ -9,8 +9,7 @@ from django.conf import settings
 
 from common.utils.AES_encryption import AesEncryptDecrypt
 from models.CED_UserSession_model import CEDUserSession
-from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT, \
-    USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN, TEST_CAMPAIGN_ENABLED
+from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT
 from onyx_proj.apps.campaign.test_campaign.test_campaign_helper import validate_test_campaign_data, \
     get_campaign_service_vendor, generate_test_file_name, create_file_details_json, get_time_difference
 from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CampaignSchedulingSegmentStatus
@@ -73,7 +72,7 @@ def test_campaign_process(request: dict):
     else:
         project_id = validation_object["campaign_builder_data"]["segment_data"]["project_id"]
 
-    if project_id not in TEST_CAMPAIGN_ENABLED:
+    if project_id not in settings.TEST_CAMPAIGN_ENABLED:
         url = settings.HYPERION_TEST_CAMPAIGN_URL
         payload = json.dumps({"campaignId": request["campaign_id"]})
         headers = {"Content-Type": "application/json", "X-AuthToken": request["auth_token"]}
@@ -161,7 +160,7 @@ def test_campaign_process(request: dict):
     # push decrypted segment data to local api as well as a use_cached_data flag
 
     segment_data = validation_object["campaign_builder_data"]["segment_data"]
-    if project_id in USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN:
+    if project_id in settings.USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN:
         extra_data = json.loads(
                 AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
                                   iv=settings.SEGMENT_AES_KEYS["AES_IV"],

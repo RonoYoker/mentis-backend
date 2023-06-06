@@ -116,3 +116,11 @@ CELERY_TASK_SERIALIZER = 'json'
 
 CELERY_TIMEZONE = 'UTC'
 CELERY_ENABLE_UTC = False
+
+USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                                              "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                                              "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd"]
+
+TEST_CAMPAIGN_ENABLED = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                         "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                         "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd"]

@@ -5,14 +5,13 @@ import random
 import string
 import requests
 
-from onyx_proj.common.utils.logging_helpers import log_entry
 from onyx_proj.common.constants import *
 from django.conf import settings
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from Crypto.Cipher import AES
 from onyx_proj.common.utils.RSA_encryption import RsaEncrypt
 from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException
-from onyx_proj.common.logging_helper import log_exit,log_entry
+
 logger = logging.getLogger("apps")
 
 
@@ -48,9 +47,9 @@ class RequestClient:
         headers = {"Content-Type": "application/json"}
         try:
             if send_dict == True:
-                response = requests.post(api_url, json={"data": encrypted_data}, headers=headers,verify=False)
+                response = requests.post(api_url, json={"data": encrypted_data}, headers=headers, verify=False)
             else:
-                response = requests.post(api_url, data=encrypted_data, headers=headers,verify=False)
+                response = requests.post(api_url, data=encrypted_data, headers=headers, verify=False)
             if response.status_code == 200:
                 encrypted_data = response.text
                 encrypted_data_dict = json.loads(encrypted_data)
@@ -90,10 +89,10 @@ class RequestClient:
 
     @staticmethod
     def post_onyx_local_api_request(body, domain, api_path):
-        # request send
         api_url = f"{domain}/{api_path}"
         headers = {"Content-Type": "application/json"}
-        encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(json.dumps(body, default=str))
+        encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(
+            json.dumps(body, default=str))
         logger.debug(f"post_onyx_local_api_request :: {headers}, {api_url}")
         try:
             response = requests.post(api_url, data=encrypted_data, headers=headers, verify=False)
@@ -110,49 +109,7 @@ class RequestClient:
         return {"success": True, "data": resp, "status_code": response.status_code}
 
     @staticmethod
-    def post_onyx_local_api_request_rsa(bank, body, domain, api_path, AES=None):
-        # request send
-        log_entry(bank)
-        api_url = f"{domain}/{api_path}"
-        headers = {"Content-Type": "application/json"}
-        enc_obj = RsaEncrypt()
-        enc_obj.encryption_key = settings.ONYX_LOCAL_RSA_KEYS[bank]
-        enc_obj.decryption_key = settings.ONYX_CENTRAL_RSA_KEY
-        key = ''.join(random.choices(string.ascii_lowercase + string.digits, k=32))
-        iv = ''.join(random.choices(string.ascii_lowercase + string.digits, k=16))
-        encrypted_data = AesEncryptDecrypt(key=key, iv=iv, mode=AES.MODE_CBC).encrypt_aes_cbc(json.dumps(body))
-        encrypted_key = enc_obj.rsa_encrypt_data(key)
-        encrypted_iv = enc_obj.rsa_encrypt_data(iv)
-        result = {
-            'key': encrypted_key,
-            'iv': encrypted_iv,
-            'data': encrypted_data
-        }
-        try:
-            response = requests.post(api_url, data=json.dumps(result), headers=headers, verify=False)
-            if response.status_code == 200:
-                encrypted_response_data = response.text
-                response_body = json.loads(encrypted_response_data)
-                key = response_body.get('key', None)
-                iv = response_body.get('iv', None)
-                data = response_body.get('data', None)
-                if not key or not iv or not data:
-                    raise ValidationFailedException(method_name="", reason="Invalid request")
-                decrypted_key = enc_obj.rsa_decrypt_data(key)
-                decrypted_iv = enc_obj.rsa_decrypt_data(iv)
-                decrypted_data = AesEncryptDecrypt(key=decrypted_key, iv=decrypted_iv,
-                                                   mode=AES.MODE_CBC).decrypt_aes_cbc(data)
-                resp = json.loads(decrypted_data)
-            else:
-                return {"success": False}
-        except Exception as e:
-            logger.error(f"Unable to process localdb api, Exception message :: {e}")
-            return {"success": False}
-        log_exit()
-        return {"success": True, "data": resp}
-
-    @staticmethod
-    def post_onyx_local_api_request_rsa(bank,body, domain, api_path):
+    def post_onyx_local_api_request_rsa(bank, body, domain, api_path):
         # request send
         api_url = f"{domain}/{api_path}"
         headers = {"Content-Type": "application/json"}
@@ -192,4 +149,3 @@ class RequestClient:
             logger.debug(f"Unable to process localdb api, Exception message :: {e}")
             return {"success": False}
         return {"success": True, "data": resp}
-
