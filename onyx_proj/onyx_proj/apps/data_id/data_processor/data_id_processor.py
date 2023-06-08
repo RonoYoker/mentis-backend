@@ -13,12 +13,6 @@ def fetch_data_id_details(request):
     logger.debug(f"fetch_data_id_details :: request_data: {request}")
     # Fetch project is
     project_id = request.get("project_id")
-    alerting_text = 'Testing Onyx Central'
-    try:
-        alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text, feature_section="DEFAULT")
-        logger.info(f'Alert Triggered Response : {alert_resp}')
-    except Exception as ex:
-        logger.error(f'Unable to process project alerting, Exp : {ex}')
     if project_id is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid Input")
