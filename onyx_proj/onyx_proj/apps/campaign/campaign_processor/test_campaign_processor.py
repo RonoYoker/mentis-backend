@@ -26,8 +26,7 @@ from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CUSTOM_QUERY_AS
 from onyx_proj.apps.segments.app_settings import AsyncTaskRequestKeys, AsyncTaskSourceKeys, AsyncTaskCallbackKeys, \
     QueryKeys, DATA_THRESHOLD_MINUTES
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
-from onyx_proj.common.logging_helper import log_entry,log_exit
-
+from onyx_proj.common.logging_helper import log_entry, log_exit
 
 logger = logging.getLogger("apps")
 
@@ -138,12 +137,18 @@ def fetch_test_campaign_data(request_data) -> json:
             #                 details_message="Segment has no data")
 
             try:
-                record = json.loads(records_data.get("sample_data", []))[0]
+                record = json.loads(records_data.get("sample_data", []))
             except TypeError:
-                record = records_data["sample_data"][0]
+                record = records_data.get("sample_data", [])
+
+            if len(record) == 0:
+                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                            details_message=f"Segment has no records, please check segment!")
+            else:
+                record = record[0]
 
             headers_list = records_data.get("headers_list", [])
-            record_list = decrypt_test_segment_data([record],headers_list,segment_data.get("ProjectId"))
+            record_list = decrypt_test_segment_data([record], headers_list, segment_data.get("ProjectId"))
             record = record_list[0]
             header_name_list = [header["headerName"].lower() for header in headers_list]
 
@@ -371,7 +376,7 @@ def fetch_test_campaign_validation_status(request_data) -> json:
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result, details_message="")
 
 
-def decrypt_test_segment_data(data,headers,project_id):
+def decrypt_test_segment_data(data, headers, project_id):
     log_entry()
     domain = settings.ONYX_LOCAL_DOMAIN.get(project_id)
     if domain is None:
@@ -384,28 +389,28 @@ def decrypt_test_segment_data(data,headers,project_id):
     encrypted_values = []
 
     for record in data:
-        record = {k.lower():v for k,v in record.items()}
+        record = {k.lower(): v for k, v in record.items()}
         for header in headers:
-            if header.get("encrypted",False) == True and record[header["headerName"].lower()] is not None:
+            if header.get("encrypted", False) == True and record[header["headerName"].lower()] is not None:
                 encrypted_values.append(record[header["headerName"].lower()])
         lower_case_data.append(record)
 
     if len(encrypted_values) == 0:
         return lower_case_data
 
-    decrypted_data_resp = RequestClient.post_onyx_local_api_request_rsa(project_data["BankName"],encrypted_values,domain,GET_DECRYPTED_DATA)
+    decrypted_data_resp = RequestClient.post_onyx_local_api_request_rsa(project_data["BankName"], encrypted_values,
+                                                                        domain, GET_DECRYPTED_DATA)
     if decrypted_data_resp["success"] != True:
         raise ValidationFailedException(method_name="", reason="Unable to Decrypt Data")
     decrypted_data = decrypted_data_resp["data"]["data"]
 
-    index= 0
+    index = 0
     for record in data:
-        record = {k.lower():v for k,v in record.items()}
+        record = {k.lower(): v for k, v in record.items()}
         for header in headers:
-            if header.get("encrypted",False) == True and record[header["headerName"].lower()] is not None:
+            if header.get("encrypted", False) == True and record[header["headerName"].lower()] is not None:
                 record[header["headerName"].lower()] = decrypted_data[index]
-                index+=1
+                index += 1
         final_data.append(record)
     log_exit()
     return final_data
-

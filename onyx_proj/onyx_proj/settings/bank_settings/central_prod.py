@@ -11,7 +11,6 @@ INFRA_CONF = fetch_secrets_from_secret_manager(secret_name, region_name)
 
 DATABASES = INFRA_CONF["DATABASE"]
 
-
 HYPERION_LOCAL_DOMAIN = {
     "IBL_Ethera": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
     "TCL_Ethera": "http://m-prod-tatacapital-hyp-1407059969.ap-south-1.elb.amazonaws.com/",
@@ -50,14 +49,22 @@ ONYX_LOCAL_DOMAIN = {
     "yblclejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
 }
 
-ONYX_LOCAL_CAMP_VALIDATION = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj", "iblcrdjlsdsmablpxpqclospknify44mveqlhiqxtdjplapyndmenfn11nausprj",
-                              "iblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd", "iblaocjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                              "hdbethjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapradmenfn11nausprj", "cmdhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                              "hsbcwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj", "prlethjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapradmenfn11nausprj",
-                              "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd","iblocljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
-                              "iblccupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj","aiahwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                              "iblcsupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj", "iblccupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj",
-                              "aiahwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj","yblclejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
+ONYX_LOCAL_CAMP_VALIDATION = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj",
+                              "iblcrdjlsdsmablpxpqclospknify44mveqlhiqxtdjplapyndmenfn11nausprj",
+                              "iblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                              "iblaocjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                              "hdbethjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapradmenfn11nausprj",
+                              "cmdhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                              "hsbcwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                              "prlethjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapradmenfn11nausprj",
+                              "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd",
+                              "iblocljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                              "iblccupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj",
+                              "aiahwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                              "iblcsupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj",
+                              "iblccupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj",
+                              "aiahwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                              "yblclejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                               "ibldcljlsdsmablpxpqclospknifyewmenblhiqxtdjplapyndmenfn11nausprj"]
 
 CAMPAIGN_THRESHOLDS_PER_MINUTE = {
@@ -72,7 +79,6 @@ JWT_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["JWT_ENCRYPTION_KEY"]
 CENTRAL_TO_LOCAL_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["CENTRAL_TO_LOCAL_ENCRYPTION_KEY"]
 HYPERION_CENTRAL_DOMAIN = "https://hyperiontool.com/"
 
-
 DEFAULT_ENCRYPTION_SECRET_KEY = "C23D2$2F38YU@YYPROD"
 SEGMENT_AES_KEYS = INFRA_CONF["SEGMENT_AES_KEYS"]
 ONYX_LOCAL_RSA_KEYS = INFRA_CONF["ONYX_LOCAL_RSA_KEYS"]
@@ -81,14 +87,12 @@ ONYX_CENTRAL_RSA_KEY = INFRA_CONF["ONYX_CENTRAL_RSA_KEY"]
 CC_USER_EMAIL_ID = []
 BCC_USER_EMAIL_ID = []
 
-TO_CAMPAIGN_DEACTIVATE_EMAIL_ID = ["devesh.satija@creditas.in","vanshkumar.dua@creditas.in","ritik.saini@creditas.in"]
+TO_CAMPAIGN_DEACTIVATE_EMAIL_ID = ["devesh.satija@creditas.in", "vanshkumar.dua@creditas.in", "ritik.saini@creditas.in"]
 CC_CAMPAIGN_DEACTIVATE_EMAIL_ID = []
 BCC_CAMPAIGN_DEACTIVATE_EMAIL_ID = []
 
 CC_LIST = []
 BCC_LIST = []
-
-
 
 # *********** CELERY CONFIGURATION ********************************
 BROKER_URL = f"redis://{INFRA_CONF['BROKER_URL']}:6379/12"
@@ -126,7 +130,6 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 CELERY_ENABLE_UTC = False
 
-
 VENDOR_CONFIG = {
     "telegram": {
         "API_URL": "http://m-prod-sandesh-ecs-elb-1412672779.ap-south-1.elb.amazonaws.com/api/send_communication",
@@ -135,10 +138,22 @@ VENDOR_CONFIG = {
     }
 }
 
+USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj",
+                                              "iblaocjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                                              "iblcsupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj",
+                                              "iblccupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj",
+                                              "iblcrdjlsdsmablpxpqclospknify44mveqlhiqxtdjplapyndmenfn11nausprj",
+                                              "ibldcljlsdsmablpxpqclospknifyewmenblhiqxtdjplapyndmenfn11nausprj",
+                                              "iblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                                              "iblocljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd"]
 
-USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj"]
-
-TEST_CAMPAIGN_ENABLED = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj"]
+TEST_CAMPAIGN_ENABLED = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj",
+                         "iblaocjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                         "iblcsupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj",
+                         "iblccupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj",
+                         "iblcrdjlsdsmablpxpqclospknify44mveqlhiqxtdjplapyndmenfn11nausprj",
+                         "ibldcljlsdsmablpxpqclospknifyewmenblhiqxtdjplapyndmenfn11nausprj",
+                         "iblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                         "iblocljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd"]
 
 HYPERION_TEST_CAMPAIGN_URL = "https://hyperiontool.com/hyperioncampaigntooldashboard/campaignbuilder/testcampaign/"
-
