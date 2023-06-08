@@ -1,3 +1,4 @@
+import copy
 import http
 import logging
 import uuid
@@ -205,7 +206,7 @@ def get_content_list_v2(data) -> dict:
 
     # generate status list and content filters based on content fetch mode
     if FETCH_CONTENT_MODE_FILTERS.get(content_fetch_mode.upper(), None) is not None:
-        content_filters = FETCH_CONTENT_MODE_FILTERS[content_fetch_mode.upper()]["filters"]
+        content_filters = copy.deepcopy(FETCH_CONTENT_MODE_FILTERS[content_fetch_mode.upper()]["filters"])
         content_filters.append({"column": "project_id", "value": project_id, "op": "=="})
     else:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
