@@ -429,7 +429,7 @@ def update_segment_count_and_status_for_campaign(request_data):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid campaign_id")
 
-    if segment_count is not None:
+    if segment_count is not None and is_test is False:
         upd_resp = CEDSegment().update_segment_record_count_refresh_date(segment_count=segment_count,
                                                                          segment_unique_id=segment_unique_id,
                                                                          refresh_date=curr_date_time,
