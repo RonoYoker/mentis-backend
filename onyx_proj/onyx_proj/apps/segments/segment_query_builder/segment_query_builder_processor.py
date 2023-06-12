@@ -98,7 +98,8 @@ class SegmentQueryBuilder:
                 "column_name": header["columnName"],
                 "mapping_type": header["mappingType"],
                 "content_type": header["contentType"],
-                "header_name": header["headerName"]
+                "header_name": header["headerName"],
+                "file_data_field_type":header["fileDataFieldType"]
             } for header in FIXED_HEADER_MAPPING_COLUMN_DETAILS}
 
         fp_header_map = {}
