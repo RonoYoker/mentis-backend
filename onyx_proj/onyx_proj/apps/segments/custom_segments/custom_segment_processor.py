@@ -19,7 +19,7 @@ from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from onyx_proj.apps.segments.app_settings import QueryKeys, AsyncTaskCallbackKeys, AsyncTaskSourceKeys, \
     AsyncTaskRequestKeys, SegmentStatusKeys
-
+from onyx_proj.common.utils.telegram_utility import TelegramUtility
 
 logger = logging.getLogger("apps")
 
@@ -416,6 +416,7 @@ def hyperion_local_rest_call(project_name: str, sql_query: str, limit=1):
 
 
 def hyperion_local_async_rest_call(url: str, request_body):
+    method_name = 'hyperion_local_async_rest_call'
     domain = settings.ONYX_LOCAL_DOMAIN.get(request_body["project_id"])
 
     if not domain:
@@ -425,6 +426,15 @@ def hyperion_local_async_rest_call(url: str, request_body):
     request_response = RequestClient.post_onyx_local_api_request(request_body, domain, url)
     logger.debug(f"request response: {request_response}")
     if request_response is None or request_response.get("success", False) is False:
+        try:
+            alerting_text = f'Payload Data {request_response}, ERROR : Unable to update task status at Onyx Local, Reach out to tech.'
+            alert_resp = TelegramUtility().process_telegram_alert(project_id=request_body["project_id"],
+                                                                  message_text=alerting_text,
+                                                                  feature_section="DEFAULT")
+            logger.info(f'Telegram Alert Triggered Response : {alert_resp}, method_name : {method_name}')
+        except Exception as ex:
+            logger.error(f'Unable to process telegram alerting, method_name: {method_name}, Exp : {ex}')
+
         return {"result": TAG_FAILURE}
     return {"result": TAG_SUCCESS}
 

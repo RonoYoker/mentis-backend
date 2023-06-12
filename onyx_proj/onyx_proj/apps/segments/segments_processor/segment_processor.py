@@ -289,7 +289,7 @@ def trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_
     log_entry(cb_id, segment_id, retry_count)
 
     CEDCampaignBuilder().increment_approval_flow_retry_count(cb_id)
-    ##zz
+
     segment_entity = CEDSegment().get_segment_data_entity(segment_id)
     project_id = segment_entity.project_id
 

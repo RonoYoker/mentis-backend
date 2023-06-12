@@ -13,6 +13,7 @@ from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS
 from onyx_proj.apps.async_task_invocation.app_settings import AsyncJobStatus
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import generate_test_query
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
+from onyx_proj.common.utils.telegram_utility import TelegramUtility
 
 logger = logging.getLogger("apps")
 
@@ -57,6 +58,14 @@ def process_segment_callback(body):
 
         if bool(error_update_dict):
             try:
+                alerting_text = f'Segment ID : {segment_id}, Segment Error Details: {error_update_dict}, ERROR : Process Segment Async Job Error'
+                try:
+                    alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
+                                                                          message_text=alerting_text,
+                                                                          feature_section="DEFAULT")
+                    logger.info(f'Alert Triggered Response : {alert_resp}')
+                except Exception as ex1:
+                    logger.error(f'Unable to process project alerting, Exp : {ex1}')
                 db_resp = CEDSegment().update_segment(dict(UniqueId=segment_id), error_update_dict)
             except Exception as ex:
                 return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -73,6 +82,15 @@ def process_segment_callback(body):
                 update_dict = dict(UpdationDate=datetime.datetime.utcnow(), Status=AsyncJobStatus.ERROR.value,
                                    RejectionReason="Record Count zero.", Records=segment_count)
                 try:
+                    alerting_text = f'Segment ID : {segment_id}, Segment Error Details: {update_dict}, ERROR : Segment Update Record Count is Zero'
+                    try:
+                        alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
+                                                                              message_text=alerting_text,
+                                                                              feature_section="DEFAULT")
+                        logger.info(f'Alert Triggered Response : {alert_resp}')
+                    except Exception as ex1:
+                        logger.error(f'Unable to process project alerting, Exp : {ex1}')
+
                     db_resp = CEDSegment().update_segment(dict(UniqueId=segment_id), update_dict)
                 except Exception as ex:
                     return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -90,6 +108,15 @@ def process_segment_callback(body):
             try:
                 sql_query = segment["SqlQuery"]
             except Exception as ex:
+                alerting_text = f'Segment ID : {segment_id}, ERROR : process_segment_callback :: error thrown while fetching sql_query for given segment_id.'
+                try:
+                    alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
+                                                                          message_text=alerting_text,
+                                                                          feature_section="DEFAULT")
+                    logger.info(f'Alert Triggered Response : {alert_resp}')
+                except Exception as ex1:
+                    logger.error(f'Unable to process project alerting, Exp : {ex1}')
+
                 logger.error(
                     f"process_segment_callback :: error thrown while fetching sql_query for given segment_id: {segment_id},"
                     f"error_message: {str(ex)}")
@@ -101,6 +128,15 @@ def process_segment_callback(body):
                 update_dict = dict(UpdationDate=datetime.datetime.utcnow(), Status=SegmentStatusKeys.ERROR.value,
                                    RejectionReason=test_sql_query_response["details_message"],
                                    RefreshDate=datetime.datetime.utcnow())
+                alerting_text = f'Segment ID : {segment_id}, Segment Error Details: {update_dict}'
+                try:
+                    alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
+                                                                          message_text=alerting_text,
+                                                                          feature_section="DEFAULT")
+                    logger.info(f'Alert Triggered Response : {alert_resp}')
+                except Exception as ex:
+                    logger.error(f'Unable to process project alerting, Exp : {ex}')
+
                 try:
                     db_resp = CEDSegment().update_segment(dict(UniqueId=segment_id), update_dict)
                 except Exception as ex:
@@ -135,6 +171,15 @@ def process_segment_callback(body):
                     details_message=f"Count and headers updated for segment_id: {segment_id}.")
 
     except Exception as e:
+        alerting_text = f'Segment ID : {segment_id}, ERROR : Sprocess_segment_callback :: Error in save custom segment callback flow, Please Reach Out to Tech.'
+        try:
+            alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
+                                                                  message_text=alerting_text,
+                                                                  feature_section="DEFAULT")
+            logger.info(f'Alert Triggered Response : {alert_resp}')
+        except Exception as ex:
+            logger.error(f'Unable to process project alerting, Exp : {ex}')
+
         logger.error(f"process_segment_callback :: Error in save custom segment callback flow: {e}.")
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
                     details_message=str(e))
