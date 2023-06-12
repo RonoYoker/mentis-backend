@@ -25,9 +25,8 @@ class CED_Segment(Base, Orm_helper):
     is_deleted = Column("IsDeleted",  Integer, default=0)
     ever_scheduled = Column("EverScheduled", Integer, default=0)
     last_campaign_date = Column("LastCampaignDate", TIMESTAMP)
-    creation_date = Column("CreationDate", TIMESTAMP,default="CURRENT_TIMESTAMP",server_default=func.now())
-    updation_date = Column("UpdationDate", TIMESTAMP,default="CURRENT_TIMESTAMP",
-                           server_default=func.now())
+    creation_date = Column("CreationDate", DateTime,default=datetime.utcnow())
+    updation_date = Column("UpdationDate", DateTime,default=datetime.utcnow())
     history_id = Column("HistoryId", String)
     extra = Column("Extra", String)
     type = Column("Type", String)
