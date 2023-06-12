@@ -25,6 +25,7 @@ class CED_DataID_Details(Base, Orm_helper):
     main_table_name = Column("MainTableName", String)
     creation_date = Column("CreationDate", DateTime)
     updation_date = Column("UpdationDate", DateTime)
+    default_filters = Column("DefaultFilters",String)
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)

@@ -61,6 +61,8 @@ CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH = "local/async_task_invocation/async_query
 
 GET_DECRYPTED_DATA = "/local/uuid/get_decrypted_data/"
 
+GET_ENCRYPTED_DATA = "/local/uuid/get_encrypted_data/"
+
 SAMPLE_DATA_ASYNC_EXECUTION_API_PATH = "local/async_task_invocation/async_query_execution/"
 
 DEACTIVATE_CAMPAIGNS_FROM_CREATION_DETAILS = "hyperioncampaigntooldashboard/deactivate/localdb/campaignFromCreationdetails"
@@ -931,6 +933,75 @@ class ApplicationName(Enum):
     HYPERION_LAMBDA = "HYPERION_LAMBDA"
     PEGASUS = "PEGASUS"
     ONYX_LOCAL = "PEGASUS"
+
+    
+class SqlQueryType(Enum):
+    SQL = "sql"
+    CAMPAIGN_SQL_QUERY = "campaignsql"
+    DATA_IMAGE_SQL = "dataimagesql"
+    EMAIL_CAMPAIGN_SQL = "emailsql"
+    TEST_CAMPAIGN_SQL = "testsql"
+    COUNT_SQL = "countsql"
+
+
+SELECT_PLACEHOLDERS = {
+    "sql": "IFNULL({table}.{column}, '') as {header}",
+    "campaignsql": "IFNULL({table}.{column}, '') as {header}",
+    "dataimagesql": "{table}.{column}",
+    "emailsql": "IFNULL({table}.{column}, '') as {header}",
+    "testsql": "IFNULL({table}.{column}, '') as {header}",
+    "countsql": "count(*)"
+}
+
+JOIN_CONDITION_PLACEHOLDER = {
+    "EQUALS":"="
+}
+
+
+class SqlQueryFilterOperators(Enum):
+    IS = "IS"
+    IS_NOT = "IS NOT"
+    GT = ">"
+    GTE = ">="
+    LT = "<"
+    LTE = "<="
+    EQ = "="
+    NEQ = "!="
+    LLIKE = "LIKE '{value}%' "
+    RLIKE = "LIKE '%{value}' "
+    LIKE = "LIKE '%{value}%' "
+    NOT_LLIKE = "NOT LIKE '{value}%' "
+    NOT_RLIKE = "NOT LIKE '%{value}' "
+    NOT_LIKE = "NOT LIKE '%{value}%' "
+    ISN = "IS NULL"
+    INN = "IS NOT NULL"
+    INB = "!= '' "
+    ISB = "= ''"
+    GTECD = ">= CURRENT_DATE"
+    BETWEEN = "BETWEEN {min_value} AND {max_value}"
+
+class DynamicDateQueryOperator(Enum):
+    DTREL = " DATE_ADD(CURRENT_DATE,INTERVAL {value} DAY)"
+    EQDAY = " DAYOFWEEK({column})"
+    ABS = " "
+
+class ContentDataType(Enum):
+    TEXT = "TEXT"
+    INTEGER = "INTEGER"
+    BOOLEAN = "BOOLEAN"
+
+class FileDataFieldType(Enum):
+    NUMBER = 20
+    AMOUNT = 64
+    TEXT = 256
+    DATE = 10
+    YEAR = 4
+    MOBILE = 10
+    EMAIL = 256
+    BOOLEAN = 1
+    PAN_NUMBER = 10
+    PINCODE = 6
+
 
 class ContentFetchModes(Enum):
     SAVE_CAMPAIGN = "SAVE_CAMPAIGN"

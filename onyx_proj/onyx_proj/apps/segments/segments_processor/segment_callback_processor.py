@@ -39,6 +39,13 @@ def process_segment_callback(body):
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="Segment_id missing in request payload.")
 
+        segment = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))
+        if len (segment)!=1:
+            logger.error(f"Invalid segment id::{segment_id}")
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Invalid segment Id")
+        segment = segment[0]
+
         project_id = body.get("project_id", None)
         task_data = body["tasks"]
 
@@ -81,7 +88,7 @@ def process_segment_callback(body):
                     headers.append(ele.get("columnName"))
 
             try:
-                sql_query = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))[0]["SqlQuery"]
+                sql_query = segment["SqlQuery"]
             except Exception as ex:
                 logger.error(
                     f"process_segment_callback :: error thrown while fetching sql_query for given segment_id: {segment_id},"
@@ -90,7 +97,7 @@ def process_segment_callback(body):
 
             test_sql_query_response = generate_test_query(sql_query, headers)
 
-            if test_sql_query_response.get("result") == TAG_FAILURE:
+            if test_sql_query_response.get("result") == TAG_FAILURE and segment.get("SegmentBuilderId") is None:
                 update_dict = dict(UpdationDate=datetime.datetime.utcnow(), Status=SegmentStatusKeys.ERROR.value,
                                    RejectionReason=test_sql_query_response["details_message"],
                                    RefreshDate=datetime.datetime.utcnow())
@@ -101,7 +108,8 @@ def process_segment_callback(body):
                                 details_message="Exception during update query execution.",
                                 ex=str(ex))
             else:
-                update_dict = dict(TestCampaignSqlQuery=test_sql_query_response["query"], Records=segment_count,
+                test_query = segment.get("TestCampaignSqlQuery") if segment.get("SegmentBuilderId") is not None else test_sql_query_response["query"]
+                update_dict = dict(TestCampaignSqlQuery=test_query, Records=segment_count,
                                    Extra=AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
                                                            iv=settings.SEGMENT_AES_KEYS["AES_IV"],
                                                            mode=AES.MODE_CBC).encrypt_aes_cbc(json.dumps(extra_data)),

@@ -1,5 +1,5 @@
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, fetch_rows
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, fetch_rows,fetch_columns
 from onyx_proj.models.CreditasCampaignEngine import CED_DataID_Details
 
 
@@ -13,6 +13,18 @@ class CEDDataIDDetails:
 
     def get_data_id_mapping(self, project_id: str):
         return dict_fetch_all(self.curr, self.table_name, {"ProjectId": project_id})
+
+
+    def get_file_ids_from_data_ids(self,data_ids):
+        filter_list = [
+            {"column": "unique_id", "value": data_ids, "op": "in"},
+            {"column": "is_active", "value": "1", "op": "=="}
+        ]
+        return fetch_columns(self.engine, self.table,["file_id","description","name","main_table_name","unique_id","default_filters"], filter_list)
+
+    def get_data_id_details(self, filter):
+        query = """SELECT IsActive as active, IsBusyFileProcessing as busy_file_processing, CreationDate as creation_date, DetailedStatus as detailed_status, ExpireDate as expire_date, FileId as file_id, FileName as file_name,HaveAccountNumber as have_account_number,HaveEmail as have_email, HaveMobile as have_mobile, HaveSuccessFile as have_success_file, Id as id, NoOfRecords as number_of_records, ProjectId as project_id,Status as status, UniqueId as unique_id, UpdationDate as updation_date FROM CED_DataID_Details WHERE %s""" % filter
+        return dict_fetch_query_all(self.curr, query)
 
     def get_active_data_id_entity(self, unique_id: str):
         return dict_fetch_one(self.curr, self.table_name, {"UniqueId": unique_id, "IsDeleted": 0, "IsActive": 1})

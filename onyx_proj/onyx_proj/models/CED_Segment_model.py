@@ -1,5 +1,5 @@
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, fetch_one_row, execute_query
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, fetch_one_row, execute_query,save_or_update_merge
 from onyx_proj.models.CreditasCampaignEngine import CED_Segment
 
 
@@ -103,6 +103,18 @@ class CEDSegment:
     def check_segment_type_by_unique_id(self, unique_id):
         query = f"""SELECT Type FROM CED_Segment WHERE UniqueId = '{unique_id}'"""
         return dict_fetch_query_all(self.curr, query)
+
+    def save_segment(self,segment_entity):
+        return save_or_update_merge(self.engine,segment_entity)
+
+    def get_segment_data_by_title(self, title):
+        filter_list = [
+            {"column": "title", "value": title, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "active", "value": 1, "op": "=="}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
 
     def update_segment_status(self, segment_id, status, flag, history_id):
         return update_row(self.curr, self.table_name, {"UniqueId": segment_id},

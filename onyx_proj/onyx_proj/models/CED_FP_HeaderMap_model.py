@@ -21,3 +21,9 @@ class CEDFPHeaderMapping:
             {"column": "file_id", "value": file_id, "op": "=="}
         ]
         return fetch_rows(self.engine, self.table, filter_list)
+
+    def get_file_headers_from_file_ids(self,file_ids):
+        filter_list = [
+            {"column": "file_id", "value": file_ids, "op": "in"}
+        ]
+        return fetch_rows(self.engine, self.table, filter_list)

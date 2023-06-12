@@ -30,6 +30,25 @@ def insert(engine, entity):
         else:
             session.commit()
 
+def save_or_update_merge(engine, entity):
+    """
+        Function to insert a single row into table.
+        parameters:
+            table: Table class object
+            entity: table entity to insert
+        returns:
+    """
+    table = entity.__class__
+    class_object = table(entity._asdict())
+    with Session(engine) as session:
+        session.begin()
+        try:
+            session.merge(class_object)
+        except Exception as ex:
+            session.rollback()
+            logging.error(f"error while inserting in table, Error: ", ex)
+        else:
+            session.commit()
 
 def update(engine, table, filter_list, update_dict):
     """
@@ -81,7 +100,7 @@ def delete(engine, table, filter_list):
             session.commit()
 
 
-def fetch_one_row(engine, table, filter_list):
+def fetch_one_row(engine, table, filter_list,return_type = 'entity'):
     """
         Function to fetch a single row from table.
         parameters:
@@ -95,6 +114,8 @@ def fetch_one_row(engine, table, filter_list):
         for filters in filter_list:
             q = add_filter(q, filters["value"], getattr(table, filters["column"]), filters["op"])
         result = q.first()
+        if return_type == "dict":
+            result = result._asdict()
         return result
     except Exception as ex:
         logging.error(f"error while fetching from table {str(table)}, Error: ", ex)
@@ -135,18 +156,17 @@ def fetch_columns(engine, table, column_list, filter_list={}):
             filter_list: List of dict of filters, format - [{"column": "col", "value": "val", "op": "=="}]
         returns: List of dict of result
     """
-    with Session(engine) as session:
-        session.begin()
-        try:
-            columns = [getattr(table, column) for column in column_list]
-            q = session.query().with_entities(*columns)
-            for filters in filter_list:
-                q = add_filter(q, filters["value"], getattr(table, filters["column"]), filters["op"])
-            segment = q.all()
-            result = [x._asdict() for x in segment]
-            return result
-        except Exception as ex:
-            logging.error(f"error while fetching from table {str(table)}, Error: ", ex)
+    session = Session(engine)
+    try:
+        columns = [getattr(table, column) for column in column_list]
+        q = session.query().with_entities(*columns)
+        for filters in filter_list:
+            q = add_filter(q, filters["value"], getattr(table, filters["column"]), filters["op"])
+        entities = q.all()
+        result = [x._asdict() for x in entities]
+        return result
+    except Exception as ex:
+        logging.error(f"error while fetching from table {str(table)}, Error: ", ex)
 
 
 def execute_query(engine, query: str):
@@ -323,6 +343,7 @@ def add_relationshsip_projections(q,relationships=[]):
             joined = joined.joinedload(split)
         q = q.options(joined)
     return q
+
 
 
 def execute_write(engine, query, values):

@@ -3,6 +3,7 @@ from django.conf import settings
 from Crypto.Cipher import AES
 
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import hyperion_local_rest_call
+from onyx_proj.apps.segments.segment_query_builder.segment_query_builder_processor import SegmentQueryBuilder
 from onyx_proj.common.constants import *
 from onyx_proj.models.CED_CampaignEmailContent_model import *
 from onyx_proj.models.CED_CampaignIvrContent_model import *
@@ -46,7 +47,7 @@ def check_headers_compatibility_with_content_template(request_data) -> json:
     fetch_headers_params_dict = {"UniqueId": segment_id}
     segment_data = CEDSegment().get_headers_for_custom_segment(fetch_headers_params_dict,
                                                                headers_list=["Type", "Extra", "ProjectId", "DataId",
-                                                                             "SqlQuery", "Status"])
+                                                                             "SqlQuery", "Status","SegmentBuilderId"])
     logger.debug(f"segment data :: {segment_data}")
     if not segment_data:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -119,8 +120,14 @@ def check_headers_compatibility_with_content_template(request_data) -> json:
         if flag is False:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="Segment compatibility failure.")
-
-        headers_list = get_headers_list_for_non_custom(segment_data)
+        if segment_data[0].get("SegmentBuilderId") is None:
+            headers_list = get_headers_list_for_non_custom(segment_data)
+        else:
+            headers_list_data = get_headers_list_for_segment_builder(segment_data)
+            if headers_list_data["success"] is False:
+                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                            details_message="Segment compatibility failure.")
+            headers_list = headers_list_data["headers"]
         logger.debug(f"headers_list for non custom:: {headers_list}")
 
     elif segment_data[0]['Extra'] is None and segment_data[0]['Type'] == 'custom':
@@ -228,3 +235,12 @@ def get_template_status(content_id, template_type):
         return False
     else:
         return True
+
+def get_headers_list_for_segment_builder(segment_data):
+    segment_builder_id = segment_data[0]["SegmentBuilderId"]
+    try:
+        headers_list=SegmentQueryBuilder().fetch_headers_for_segment_builder_id(segment_builder_id)
+    except Exception as e:
+        logger.error(f"Error while fetching Headers for Segment Builder Id::{segment_builder_id} error:{str(e)}")
+        return {"success":False}
+    return {"success":True,"headers":headers_list}

@@ -4,6 +4,7 @@ from django.shortcuts import HttpResponse
 from onyx_proj.common.constants import Roles
 from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import fetch_test_campaign_data
 from onyx_proj.apps.segments.segments_processor.get_sample_data import get_sample_data_by_unique_id
+from onyx_proj.apps.segments.segment_query_builder.segment_query_builder_processor import SegmentQueryBuilder
 from onyx_proj.apps.segments.segments_processor.segment_fetcher import fetch_segment_by_id, fetch_segments
 from onyx_proj.apps.segments.segments_processor.segment_headers_processor import \
     check_headers_compatibility_with_content_template
@@ -159,6 +160,9 @@ def fetch_segments_list(request):
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
 
 
+
+
+
 @csrf_exempt
 @UserAuth.user_authentication()
 def custom_segment_callback(request):
@@ -228,5 +232,32 @@ def get_master_mapping_by_data_id(request):
 def back_fill_segment_data(request):
     request_body = json.loads(request.body.decode("utf-8"))
     data = back_fill_encrypt_segment_data(request_body)
+    status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
+@csrf_exempt
+# @UserAuth.user_authentication()
+def fetch_segment_builder_list(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    project_id = request_body.get('project_id')
+    data = SegmentQueryBuilder().get_segment_builder_list(project_id)
+    status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
+@csrf_exempt
+# @UserAuth.user_authentication()
+def fetch_segment_builder_headers(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    segment_builder_id = request_body.get('segment_builder_id')
+    data = SegmentQueryBuilder().get_segment_builder_headers(segment_builder_id)
+    status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
+@csrf_exempt
+# @UserAuth.user_authentication()
+def save_segment_using_segment_builder(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    data = SegmentQueryBuilder().save_segment(request_body)
     status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")

@@ -18,6 +18,9 @@ class CED_FP_HeaderMap(Base, Orm_helper):
     updation_date = Column("UpdationDate", DateTime,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
 
+    master_header_mapping = relationship("CED_MasterHeaderMapping", lazy="joined")
+
+
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)
 
