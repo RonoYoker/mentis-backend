@@ -9,7 +9,7 @@ class CED_FP_HeaderMap(Base, Orm_helper):
     header_name = Column("HeaderName", String)
     is_mandatory = Column("IsMandatory", Integer, default=0)
     is_unique = Column("IsUnique", Integer, default=0)
-    master_header_map_id = Column("MasterHeaderMapId", String)
+    master_header_map_id = Column("MasterHeaderMapId", String, ForeignKey("CED_MasterHeaderMapping.UniqueId"))
     file_id = Column("FileId", String)
     valid_records = Column("ValidRecords", Integer, default=0)
     in_valid_records = Column("InValidRecords", Integer, default=0)
