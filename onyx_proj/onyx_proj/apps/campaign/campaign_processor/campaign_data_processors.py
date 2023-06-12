@@ -1809,6 +1809,7 @@ def generate_campaign_approval_status_mail(data: dict):
 
 
 def save_campaign_details(request_data):
+    method_name = "save_campaign_details"
     body = request_data.get("body", {})
     headers = request_data.get("headers", {})
     unique_id = body.get("unique_id", None)
@@ -1872,23 +1873,59 @@ def save_campaign_details(request_data):
     campaign_builder.is_recurring = is_recurring
     campaign_builder.description = description
 
-    saved_campaign_builder = save_campaign_builder_details(campaign_builder, campaign_list, unique_id, data_id)
-    if saved_campaign_builder.get("result") == TAG_FAILURE:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message=saved_campaign_builder.get("details_message"))
-    campaign_builder = saved_campaign_builder.get("data")
+    try:
+        saved_campaign_builder = save_campaign_builder_details(campaign_builder, campaign_list, unique_id, data_id)
+        if saved_campaign_builder.get("result") == TAG_FAILURE:
+            raise BadRequestException(method_name=method_name,
+                                      reason=saved_campaign_builder.get("details_message"))
+        campaign_builder = saved_campaign_builder.get("data")
 
-    saved_cbc_data = validate_and_save_campaign_builder_campaign_details(campaign_builder, campaign_list, segment_id, unique_id)
-    if saved_cbc_data is None:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Unable to save campaign builder instance")
-    if saved_cbc_data.get("result") == TAG_FAILURE:
+        saved_cbc_data = validate_and_save_campaign_builder_campaign_details(campaign_builder, campaign_list, segment_id, unique_id)
+        if saved_cbc_data.get("result") == TAG_FAILURE:
+            campaign_builder.status = CampaignBuilderStatus.ERROR.value
+            CEDCampaignBuilder().save_or_update_campaign_builder_details(campaign_builder)
+            raise BadRequestException(method_name=method_name,
+                                      reason=saved_cbc_data.get("details_message"))
+    except BadRequestException as ex:
+        logger.error(f"Error while prepare and saving campaign builder details BadRequestException ::{ex}")
         campaign_builder.status = CampaignBuilderStatus.ERROR.value
-        CEDCampaignBuilder().save_or_update_campaign_builder_details(campaign_builder)
-        return dict(status_code=saved_cbc_data.get("status_code"), result=TAG_FAILURE,
-                    details_message=saved_cbc_data.get("details_message"))
-    campaign_builder = saved_cbc_data
-    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=campaign_builder)
+        campaign_builder.error_msg = ex.reason
+        status_code = http.HTTPStatus.BAD_REQUEST
+    except InternalServerError as ey:
+        logger.error(f"Error while prepare and saving campaign builder details InternalServerError ::{ey}")
+        campaign_builder.status = CampaignBuilderStatus.ERROR.value
+        campaign_builder.error_msg = ey.reason
+        status_code = http.HTTPStatus.INTERNAL_SERVER_ERROR
+    except NotFoundException as ez:
+        logger.error(f"Error while prepare and saving campaign builder details NotFoundException ::{ez}")
+        campaign_builder.status = CampaignBuilderStatus.ERROR.value
+        campaign_builder.error_msg = ez.reason
+        status_code = http.HTTPStatus.NOT_FOUND
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        logger.error(f"Error while prepare and saving campaign builder details Exception ::{e}")
+        campaign_builder.status = CampaignBuilderStatus.ERROR.value
+        campaign_builder.error_msg = str(e)
+        status_code = http.HTTPStatus.INTERNAL_SERVER_ERROR
+    finally:
+        if campaign_builder.id is not None:
+            db_res = CEDCampaignBuilder().save_or_update_campaign_builder_details(campaign_builder)
+            if not db_res.get("status"):
+                return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                            details_message="Enable to save campaign builder details")
+            if campaign_builder.status == CampaignBuilderStatus.ERROR.value:
+                return dict(status_code=status_code, result=TAG_FAILURE,
+                            details_message=campaign_builder.error_msg)
+            saved_campaign_builder_details = CEDCampaignBuilder().get_campaign_builder_details_unique_id(campaign_builder.unique_id)
+            if saved_campaign_builder_details is None or len(saved_campaign_builder_details) == 0:
+                return dict(status_code=http.HTTPStatus.NOT_FOUND, result=TAG_FAILURE,
+                            details_message="Unable to fetch saved campaign details")
+            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=saved_campaign_builder_details[0])
+        else:
+            return dict(status_code=status_code, result=TAG_FAILURE,
+                        details_message=campaign_builder.error_msg)
 
 
 def save_campaign_builder_details(campaign_builder, campaign_list, unique_id, data_id):
@@ -1907,26 +1944,13 @@ def save_campaign_builder_details(campaign_builder, campaign_list, unique_id, da
             campaign_builder = db_res.get("response")
             prepare_and_save_camp_builder_history_data(campaign_builder)
             set_followup_sms_details(campaign_list)
+            return dict(result=TAG_SUCCESS, data=campaign_builder)
+        except BadRequestException as ex:
+            logger.error(f"{method_name}, BadRequestException :: {ex}  ")
+            raise ex
         except Exception as e:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            print(exc_type, fname, exc_tb.tb_lineno)
-            logger.error(f"Error while prepare and saving campaign builder details ::{e}")
-            campaign_builder.status = CampaignBuilderStatus.ERROR.value
-            campaign_builder.error_msg = str(e)
-        finally:
-            if campaign_builder.id is not None:
-                db_res = CEDCampaignBuilder().save_or_update_campaign_builder_details(campaign_builder)
-                if not db_res.get("status"):
-                    raise InternalServerError(method_name=method_name,
-                                              reason="Enable to save campaign builder details")
-                if campaign_builder.status == CampaignBuilderStatus.ERROR.value:
-                    raise InternalServerError(method_name=method_name,
-                                              reason=campaign_builder.error_msg)
-                return dict(result=TAG_SUCCESS, data=campaign_builder)
-            else:
-                raise InternalServerError(method_name=method_name,
-                                          reason=campaign_builder.error_msg)
+            logger.error(f"{method_name}, Exception :: {e}  ")
+            raise e
 
 
 def validate_campaign_edit_config(unique_id):
@@ -2092,22 +2116,23 @@ def prepare_and_save_campaign_builder_campaign_details(campaign_builder, campaig
         campaign_his_entity = CED_HIS_CampaignBuilderCampaign(create_dict_from_object(campaign_entity))
         campaign_his_entity.campaign_builder_campaign_id = campaign_entity.unique_id
         campaign_his_entity.unique_id = uuid.uuid4().hex
-        base_campaign_builder_campaign_entity = save_campaign_details_and_return_id(campaign_entity, campaign, campaign_his_entity.unique_id)
-        campaign_entity.campaign_id = base_campaign_builder_campaign_entity.unique_id
-        campaign_his_entity.campaign_id = base_campaign_builder_campaign_entity.history_id
-        campaign_entity.test_campaign_state = TestCampStatus.NOT_DONE.value
         try:
+            base_campaign_builder_campaign_entity = save_campaign_details_and_return_id(campaign_entity, campaign, campaign_his_entity.unique_id)
+            campaign_entity.campaign_id = base_campaign_builder_campaign_entity.unique_id
+            campaign_his_entity.campaign_id = base_campaign_builder_campaign_entity.history_id
+            campaign_entity.test_campaign_state = TestCampStatus.NOT_DONE.value
             CEDCampaignBuilderCampaign().save_or_update_campaign_builder_campaign_details(campaign_entity)
-        except:
-            raise BadRequestException(method_name=method_name,
-                                      reason="Unable to save campaign builder campaign details")
-        history_id = campaign_builder.history_id
-        try:
+            history_id = campaign_builder.history_id
             prepare_and_save_campaign_builder_campaign_history_data(campaign_his_entity, campaign_entity, history_id)
-        except:
-            logger.error(f"{method_name}, Unable to save campaign builder campaign history details")
-            raise BadRequestException(method_name=method_name,
-                                      reason="Unable to save campaign builder campaign history details")
+        except NotFoundException as e:
+            logger.error(f"{method_name}, NotFoundException:: {e.reason}")
+            raise e
+        except BadRequestException as ex:
+            logger.error(f"{method_name}, BadRequestException:: {ex.reason}")
+            raise ex
+        except Exception as ey:
+            logger.error(f"{method_name}, Exception:: {ey}")
+            raise ey
     set_followup_sms_details(campaign_list)
 
 
@@ -2122,29 +2147,19 @@ def validate_and_save_campaign_builder_campaign_details(campaign_builder, campai
         if validate_resp.get('result') == TAG_FAILURE:
             return dict(result=TAG_FAILURE, details_message=validate_resp.get('details_message'))
         campaign_final_list = validate_resp.get('data')
-    except Exception as e:
-        raise BadRequestException(method_name=method_name,
-                                  reason="Unable to save campaign builder campaign details")
-    try:
         CEDCampaignBuilderCampaign().delete_campaign_builder_campaign_by_unique_id(unique_id)
         prepare_and_save_campaign_builder_campaign_details(campaign_builder, campaign_final_list, unique_id, campaign_list)
-    except Exception as e:
-        campaign_builder.status = CampaignBuilderStatus.ERROR.value
-        campaign_builder.error_msg = str(e)
-        logger.error(f"Error while Saving CampaignBuilderCampaign data ::{e}")
-    finally:
-        db_res = CEDCampaignBuilder().save_or_update_campaign_builder_details(campaign_builder)
-        if not db_res.get("status"):
-            raise InternalServerError(method_name=method_name,
-                                      reason="Enable to save campaign builder details")
-        if campaign_builder.status == CampaignBuilderStatus.ERROR.value:
-            raise InternalServerError(method_name=method_name,
-                                      reason=campaign_builder.error_msg)
+        return dict(result=TAG_SUCCESS)
+    except BadRequestException as ex:
+        logger.error(f"{method_name}, BadRequestException :: {ex.reason}  ")
+        raise ex
+    except InternalServerError as ey:
+        logger.error(f"{method_name}, InternalServerError :: {ey.reason}  ")
+        raise ey
+    except Exception as ez:
+        logger.error(f"{method_name}, Exception :: {ez}  ")
+        raise ez
 
-    saved_campaign_builder_details = CEDCampaignBuilder().get_campaign_builder_details_unique_id(unique_id)
-    if saved_campaign_builder_details is None or len(saved_campaign_builder_details) == 0:
-        return dict(result=TAG_FAILURE, details_message="Unable to fetch saved Campaign details")
-    return saved_campaign_builder_details[0]
 
 
 def validate_date_time(campaign):
@@ -2156,9 +2171,8 @@ def validate_date_time(campaign):
     if datetime.datetime.strptime(start_date_time, "%Y-%m-%d %H:%M:%S") < curr_date_time + datetime.timedelta(
             minutes=45) or datetime.datetime.strptime(end_date_time, "%Y-%m-%d %H:%M:%S")\
             < curr_date_time + datetime.timedelta(minutes=60):
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Start or End date time of instance is for past")
-    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
+        return dict(result=TAG_FAILURE, details_message="Start or End date time of instance is for past")
+    return dict(result=TAG_SUCCESS)
 
 
 def prepare_and_save_camp_builder_history_data(campaign_builder_details):
@@ -2195,7 +2209,7 @@ def prepare_and_save_camp_builder_history_data(campaign_builder_details):
             CEDActivityLog().save_or_update_activity_log(activity_log_entity)
     except Exception as e:
         logger.error(f"Error while prepare and saving campaign builder history data ::{e}")
-        raise Exception
+        raise e
 
 
 def prepare_and_save_campaign_builder_campaign_history_data(campaign_his_entity, campaign_entity, history_id):
@@ -2222,39 +2236,29 @@ def save_campaign_details_and_return_id(campaign_entity, campaign, history_id):
     user_session = Session().get_user_session_object()
     user_name = user_session.user.user_name
     content_type = campaign.get("content_type")
-
-    if content_type == CampaignBuilderCampaignContentType.EMAIL.value:
-        try:
-            email_campaign_entity = prepare_and_save_campaign_builder_email(campaign, campaign_entity, user_name)
-            email_campaign_entity = prepare_and_save_campaign_builder_email_history(history_id, email_campaign_entity)
-            return email_campaign_entity
-        except Exception as e:
-            logger.error(f"Error while saving campaign content details ::{e}")
-            raise e
-    elif content_type == CampaignBuilderCampaignContentType.SMS.value:
-        try:
-            sms_campaign_entity = prepare_and_save_campaign_builder_sms(campaign, campaign_entity, user_name)
-            sms_campaign_entity = prepare_and_save_campaign_builder_sms_history(history_id, sms_campaign_entity)
-            return sms_campaign_entity
-        except Exception as e:
-            logger.error(f"Error while saving campaign content details ::{e}")
-            raise e
-    elif content_type == CampaignBuilderCampaignContentType.WHATSAPP.value:
-        try:
-            whatsapp_campaign_entity = prepare_and_save_campaign_builder_whatsapp(campaign, campaign_entity, user_name)
-            whatsapp_campaign_entity = prepare_and_save_campaign_builder_whatsapp_history(history_id, whatsapp_campaign_entity)
-            return whatsapp_campaign_entity
-        except Exception as e:
-            logger.error(f"Error while saving campaign content details ::{e}")
-            raise e
-    elif content_type == CampaignBuilderCampaignContentType.IVR.value:
-        try:
-            ivr_campaign_entity = prepare_and_save_campaign_builder_ivr(campaign, campaign_entity, user_name)
-            ivr_campaign_entity = prepare_and_save_campaign_builder_ivr_history(history_id, ivr_campaign_entity)
-            return ivr_campaign_entity
-        except Exception as e:
-            logger.error(f"Error while saving campaign content details ::{e}")
-            raise e
+    try:
+        if content_type == CampaignBuilderCampaignContentType.EMAIL.value:
+                email_campaign_entity = prepare_and_save_campaign_builder_email(campaign, campaign_entity, user_name)
+                email_campaign_entity = prepare_and_save_campaign_builder_email_history(history_id, email_campaign_entity)
+                return email_campaign_entity
+        elif content_type == CampaignBuilderCampaignContentType.SMS.value:
+                sms_campaign_entity = prepare_and_save_campaign_builder_sms(campaign, campaign_entity, user_name)
+                sms_campaign_entity = prepare_and_save_campaign_builder_sms_history(history_id, sms_campaign_entity)
+                return sms_campaign_entity
+        elif content_type == CampaignBuilderCampaignContentType.WHATSAPP.value:
+                whatsapp_campaign_entity = prepare_and_save_campaign_builder_whatsapp(campaign, campaign_entity, user_name)
+                whatsapp_campaign_entity = prepare_and_save_campaign_builder_whatsapp_history(history_id, whatsapp_campaign_entity)
+                return whatsapp_campaign_entity
+        elif content_type == CampaignBuilderCampaignContentType.IVR.value:
+                ivr_campaign_entity = prepare_and_save_campaign_builder_ivr(campaign, campaign_entity, user_name)
+                ivr_campaign_entity = prepare_and_save_campaign_builder_ivr_history(history_id, ivr_campaign_entity)
+                return ivr_campaign_entity
+    except NotFoundException as ex:
+        logger.error(f"Error while saving campaign content details ::{ex}")
+        raise ex
+    except Exception as e:
+        logger.error(f"Error while saving campaign content details ::{e}")
+        raise e
 
 
 def prepare_and_save_campaign_builder_email(campaign, campaign_entity, user_name):
@@ -2338,7 +2342,8 @@ def prepare_and_save_campaign_builder_ivr_history(campaign_history_id, ivr_campa
         if ivr_campaign_entity.history_id is None or ivr_campaign_entity.history_id != campaign_history_ivr_entity.unique_id:
             ivr_campaign = CEDCampaignBuilderIVR().get_ivr_campaign(ivr_campaign_entity.unique_id)
             if ivr_campaign is None or len(ivr_campaign) == 0:
-                return dict(result=TAG_FAILURE, details_message="Campaign builder ivr details not found")
+                raise NotFoundException(method_name=module_name,
+                                        reason="Campaign builder ivr details not found")
             ivr_campaign_id = ivr_campaign[0].get("id")
             if ivr_campaign_entity.history_id is None:
                 campaign_history_ivr_entity.comment = f"{module_name} {ivr_campaign_id} is Created by {user_name}"
@@ -2351,9 +2356,12 @@ def prepare_and_save_campaign_builder_ivr_history(campaign_history_id, ivr_campa
             CEDCampaignBuilderIVR().update_campaign_builder_campaign_history(ivr_campaign_entity.unique_id, dict(
                 history_id=campaign_history_ivr_entity.unique_id))
             return ivr_campaign_entity
+    except NotFoundException as ex:
+        logger.error(f"Error while preparing and Saving CampaignBuilderIVR history data ::{ex}")
+        raise ex
     except Exception as e:
-        logger.error(f"Error while preparing and  Saving CampaignBuilderCampaign history data ::{e}")
-        raise Exception
+        logger.error(f"Error while preparing and Saving CampaignBuilderIVR history data ::{e}")
+        raise e
 
 
 def prepare_and_save_campaign_builder_whatsapp_history(campaign_history_id, whatsapp_campaign_entity):
@@ -2368,7 +2376,8 @@ def prepare_and_save_campaign_builder_whatsapp_history(campaign_history_id, what
         if whatsapp_campaign_entity.history_id is None or whatsapp_campaign_entity.history_id != campaign_history_whatsapp_entity.unique_id:
             whatsapp_campaign = CEDCampaignBuilderWhatsApp().get_whatsapp_campaign(whatsapp_campaign_entity.unique_id)
             if whatsapp_campaign is None or len(whatsapp_campaign) == 0:
-                return dict(result=TAG_FAILURE, details_message="Campaign builder whatsapp details not found")
+                raise NotFoundException(method_name=module_name,
+                                        reason="Campaign builder whatsapp details not found")
             whatsapp_campaign_id = whatsapp_campaign[0].get("id")
             if whatsapp_campaign_entity.history_id is None:
                 campaign_history_whatsapp_entity.comment = f"{module_name} {whatsapp_campaign_id} is Created by {user_name}"
@@ -2380,9 +2389,12 @@ def prepare_and_save_campaign_builder_whatsapp_history(campaign_history_id, what
             whatsapp_campaign_entity.history_id = campaign_history_whatsapp_entity.unique_id
             CEDCampaignBuilderWhatsApp().update_campaign_builder_campaign_history(whatsapp_campaign_entity.unique_id, dict(history_id=campaign_history_whatsapp_entity.unique_id))
             return whatsapp_campaign_entity
+    except NotFoundException as ex:
+        logger.error(f"Error while preparing and  Saving CampaignBuilderWhatsapp history data ::{ex}")
+        raise ex
     except Exception as e:
         logger.error(f"Error while preparing and  Saving CampaignBuilderCampaign history data ::{e}")
-        raise Exception
+        raise e
 
 
 def prepare_and_save_campaign_builder_sms_history(campaign_history_id, sms_campaign_entity):
@@ -2397,7 +2409,8 @@ def prepare_and_save_campaign_builder_sms_history(campaign_history_id, sms_campa
         if sms_campaign_entity.history_id is None or sms_campaign_entity.history_id != campaign_history_sms_entity.unique_id:
             sms_campaign = CEDCampaignBuilderSMS().get_sms_campaign(sms_campaign_entity.unique_id)
             if sms_campaign is None or len(sms_campaign) == 0:
-                return dict(result=TAG_FAILURE, details_message="Campaign builder sms details not found")
+                raise NotFoundException(method_name=module_name,
+                                        reason="Campaign builder sms details not found")
             sms_campaign_id = sms_campaign[0].get("id")
             if sms_campaign_entity.history_id is None:
                 campaign_history_sms_entity.comment = f"{module_name} {sms_campaign_id} is Created by {user_name}"
@@ -2409,9 +2422,12 @@ def prepare_and_save_campaign_builder_sms_history(campaign_history_id, sms_campa
             sms_campaign_entity.history_id = campaign_history_sms_entity.unique_id
             CEDCampaignBuilderSMS().update_campaign_builder_campaign_history(sms_campaign_entity.unique_id, dict(history_id=campaign_history_sms_entity.unique_id))
             return sms_campaign_entity
+    except NotFoundException as ex:
+        logger.error(f"Error while preparing and  Saving CampaignBuilderSMS history data ::{ex}")
+        raise ex
     except Exception as e:
         logger.error(f"Error while preparing and  Saving CampaignBuilderCampaign history data ::{e}")
-        raise Exception
+        raise e
 
 
 def prepare_and_save_campaign_builder_email_history(campaign_history_id, email_campaign_entity):
@@ -2426,7 +2442,8 @@ def prepare_and_save_campaign_builder_email_history(campaign_history_id, email_c
         if email_campaign_entity.history_id is None or email_campaign_entity.history_id != campaign_email_history_entity.unique_id:
             email_campaign = CEDCampaignBuilderEmail().get_email_campaign(email_campaign_entity.unique_id)
             if email_campaign is None or len(email_campaign) == 0:
-                return dict(result=TAG_FAILURE, details_message="Campaign builder email details not found")
+                raise NotFoundException(method_name=module_name,
+                                          reason="Campaign builder email details not found")
             email_campaign_id = email_campaign[0].get("id")
             if email_campaign_entity.history_id is None:
                 campaign_email_history_entity.comment = f"{module_name} {email_campaign_id} is Created by {user_name}"
@@ -2438,9 +2455,12 @@ def prepare_and_save_campaign_builder_email_history(campaign_history_id, email_c
             email_campaign_entity.history_id = campaign_email_history_entity.unique_id
             CEDCampaignBuilderEmail().update_campaign_builder_email_history_id(email_campaign_entity.unique_id, dict(history_id=campaign_email_history_entity.unique_id))
             return email_campaign_entity
+    except NotFoundException as ex:
+        logger.error(f"Error while preparing and  Saving CampaignBuilderEmail history data ::{ex}")
+        raise ex
     except Exception as e:
-        logger.error(f"Error while preparing and  Saving CampaignBuilderCampaign history data ::{e}")
-        raise Exception
+        logger.error(f"Error while preparing and  Saving CampaignBuilderEmail history data ::{e}")
+        raise e
 
 
 def validate_content_status(campaign):
@@ -2455,7 +2475,7 @@ def validate_content_status(campaign):
         campaign_email_content = CEDCampaignEmailContent().get_email_content_by_unqiue_id_and_status(email_id, status_list)
         if campaign_email_content is None or len(campaign_email_content) == 0:
             return dict(result=TAG_FAILURE, details_message="Email Content not found")
-        if campaign_email_content[0].get("is_contains_url") is not None and campaign_email_content[0].get("is_contains_url") == 1:
+        if campaign_email_content[0].get("is_contain_url") is not None and campaign_email_content[0].get("is_contain_url") == 1:
             url_id = email_campaign.get("url_id")
             if url_id is None:
                 return dict(result=TAG_FAILURE, details_message="Url Id is missing")
@@ -2570,16 +2590,16 @@ def validate_schedule(campaign_list, segment_id, unique_id, campaign_id):
         if campaign_validate_response.get("result") == TAG_FAILURE:
             logger.error(f"{method_name}, Error: {campaign_validate_response.get('response','')}  ")
             error = campaign_validate_response.get("response", "")
-            raise Exception(error)
+            raise BadRequestException(method_name=method_name, reason=error)
         for validate_response in campaign_validate_response.get("response"):
             validated = validated and validate_response.get("valid_schedule")
         if validated is False:
             logger.error(f"{method_name}, Slots you are trying to book are already occupied  ")
-            raise Exception("Slots you are trying to book are already occupied")
+            raise BadRequestException(method_name=method_name, reason="Slots you are trying to book are already occupied")
+    except BadRequestException as ex:
+        raise ex
     except Exception as e:
-        logger.error(f"{method_name}, Exception :: {e}  ")
-        CEDCampaignBuilder().delete_campaign_builder_by_unique_id(unique_id)
-        return dict(result=TAG_FAILURE, details_message=e)
+        raise e
     return dict(result=TAG_SUCCESS, details_message="schedule validated successfully")
 
 
@@ -2597,9 +2617,7 @@ def validate_headers_compatibility(campaign_list, segment_id, unique_id):
                 logger.error(f"{method_name}, header compatibility failure")
                 return dict(result=TAG_FAILURE, details_message=resp.get('details_message'))
     except Exception as e:
-        logger.error(f"{method_name}, Exception:: {e}")
-        CEDCampaignBuilder().delete_campaign_builder_by_unique_id(unique_id)
-        return dict(result=TAG_FAILURE, details_message=e)
+        raise e
     logger.debug(f"Trace Exit: {method_name}")
     return dict(result=TAG_SUCCESS, details_message="schedule validated successfully")
 
