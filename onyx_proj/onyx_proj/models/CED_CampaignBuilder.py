@@ -73,7 +73,7 @@ class CEDCampaignBuilder:
         return dict_fetch_query_all(self.curr, query)
 
     def get_campaigns_by_segment_id(self, segment_id):
-        return dict_fetch_all(self.curr, self.table_name, {"SegmentId": segment_id})
+        return dict_fetch_all(self.curr, self.table_name, {"SegmentId": segment_id, "IsActive": 1})
 
     def get_campaign_details(self, campaign_id):
         filter_list = [
