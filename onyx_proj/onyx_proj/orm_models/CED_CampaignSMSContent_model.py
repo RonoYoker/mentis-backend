@@ -23,6 +23,7 @@ class CED_CampaignSMSContent(Base, Orm_helper):
     extra = Column("Extra", String)
     vendor_mapping_enabled = Column("IsVendorMappingEnabled", Integer, default=1)
     vendor_template_id = Column("VendorTemplateId", String)
+    description = Column("Description", String)
 
     variables = relationship("CED_CampaignContentVariableMapping")
 

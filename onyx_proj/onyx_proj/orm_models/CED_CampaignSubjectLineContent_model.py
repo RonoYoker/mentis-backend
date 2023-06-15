@@ -18,6 +18,7 @@ class CED_CampaignSubjectLineContent(Base, Orm_helper):
     rejection_reason = Column("RejectionReason", String)
     error_message = Column("ErrorMessage", String)
     is_deleted = Column("IsDeleted", Boolean, default=False)
+    description = Column("Description", String)
     creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))

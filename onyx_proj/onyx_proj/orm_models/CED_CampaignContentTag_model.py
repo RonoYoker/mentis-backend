@@ -18,6 +18,7 @@ class CED_CampaignContentTag(Base,Orm_helper):
     is_deleted = Column("IsDeleted", Boolean, default=False)
     updation_date = Column("UpdationDate", TIMESTAMP)
     history_id = Column("HistoryId", String)
+    description = Column("Description", String)
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)

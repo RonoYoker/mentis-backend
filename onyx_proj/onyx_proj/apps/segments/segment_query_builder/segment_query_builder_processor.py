@@ -133,6 +133,7 @@ class SegmentQueryBuilder:
 
         old_history_id = None
         old_id = None
+        description = None
         if old_segment_unique_id is not None:
             old_segment_entity = CEDSegment().get_segment_data(old_segment_unique_id)
             if old_segment_entity is None or len(old_segment_entity) != 1:
@@ -140,6 +141,10 @@ class SegmentQueryBuilder:
             old_segment_entity = old_segment_entity[0]
             old_history_id = old_segment_entity["history_id"]
             old_id = old_segment_entity["id"]
+            description = old_segment_entity["description"]
+
+        if request.get("description", None) is not None:
+            description = request["description"]
 
         self.validate_title(request.get("title"),old_id)
         self.get_segment_builder_headers(request.get('segment_builder_id'))
@@ -163,6 +168,7 @@ class SegmentQueryBuilder:
         segment_entity.test_campaign_sql_query = self.generate_sql_query(request.get("filters",[]),SqlQueryType.TEST_CAMPAIGN_SQL)
         segment_entity.email_campaign_sql_query = self.generate_sql_query(request.get("filters",[]),SqlQueryType.EMAIL_CAMPAIGN_SQL)
         segment_entity.status = "DRAFTED"
+        segment_entity.description = description
         if old_id is not None:
             segment_entity.id = old_id
 

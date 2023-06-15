@@ -22,6 +22,7 @@ class CED_CampaignIvrContent(Base, Orm_helper):
     is_static_flow = Column("IsStaticFlow", Boolean, default=False)
     is_deleted = Column("IsDeleted", Boolean, default=False)
     error_message = Column("ErrorMessage", String)
+    description = Column("Description", String)
     creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))

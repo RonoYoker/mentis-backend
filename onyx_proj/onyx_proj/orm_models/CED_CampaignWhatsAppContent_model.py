@@ -23,6 +23,7 @@ class CED_CampaignWhatsAppContent(Base, Orm_helper):
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     history_id = Column("HistoryId", String)
     extra = Column("Extra", String)
+    description = Column("Description", String)
 
     variables = relationship("CED_CampaignContentVariableMapping")
 

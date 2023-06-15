@@ -47,6 +47,7 @@ def custom_segment_processor(request_data) -> json:
     data_id = body.get("data_id", None)
     project_id = body.get("project_id", None)
     tag_mapping = body.get("tag_mapping", None)
+    description = body.get("description", None)
 
     # check if request has data_id and project_id
     if project_id is None:
@@ -62,6 +63,16 @@ def custom_segment_processor(request_data) -> json:
     if str(body.get("title")) is None or str(body.get("title")) == "":
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Custom segment cannot be saved without a title.")
+
+    # check Title length
+    if len(body.get("title")) < 5 or len(body.get("title")) > 128:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="length of segment title should be between 5 and 128")
+
+    # check description length
+    if description is not None and len(description) > 512:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="length of description should be less than 512")
 
     if tag_mapping is None or len(tag_mapping) == 0:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -91,7 +102,8 @@ def custom_segment_processor(request_data) -> json:
                                                      Headers=None,
                                                      TestCampaignSqlQuery=None,
                                                      DataImageSqlQuery=sql_query,
-                                                     EmailCampaignSqlQuery=sql_query)
+                                                     EmailCampaignSqlQuery=sql_query,
+                                                     Description=description)
 
         db_res = save_custom_segment(save_segment_dict)
         save_tags_for_segment(segment_id, tag_mapping)
@@ -149,7 +161,8 @@ def custom_segment_processor(request_data) -> json:
                                                   Headers=extra_field_string,
                                                   TestCampaignSqlQuery=test_sql_query_response.get("query"),
                                                   DataImageSqlQuery=sql_query,
-                                                  EmailCampaignSqlQuery=sql_query)
+                                                  EmailCampaignSqlQuery=sql_query,
+                                                  Description=description)
 
         db_res = save_custom_segment(save_segment_dict)
         save_tags_for_segment(segment_id, tag_mapping)
@@ -185,7 +198,8 @@ def get_save_segment_dict(**kwargs) -> dict:
         "CreationDate": datetime.now(),
         "UpdationDate": datetime.now(),
         "Extra": kwargs.get("Headers"),
-        "EmailCampaignSqlQuery": kwargs.get("EmailCampaignSqlQuery")
+        "EmailCampaignSqlQuery": kwargs.get("EmailCampaignSqlQuery"),
+        "Description": kwargs.get("Description", "")
     }
 
     return save_segment_dict
@@ -267,6 +281,7 @@ def update_custom_segment_process(data) -> dict:
     project_name = data.get("project_name", None)
     project_id = data.get("project_id", None)
     tag_mapping = data.get("tag_mapping", None)
+    description = data.get("description", None)
 
     if not sql_query or not segment_id or not title or not project_id:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -283,7 +298,7 @@ def update_custom_segment_process(data) -> dict:
 
     if project_name in ASYNC_QUERY_EXECUTION_ENABLED:
         params_dict = dict(UniqueId=segment_id)
-        update_dict = dict(Title=title, Status="DRAFTED", UpdationDate=datetime.utcnow())
+        update_dict = dict(Title=title, Status="DRAFTED", UpdationDate=datetime.utcnow(), Description=description)
         try:
             db_resp = CEDSegment().update_segment(params_dict, update_dict)
         except Exception as ex:
@@ -343,7 +358,8 @@ def update_custom_segment_process(data) -> dict:
                            Records=request_response.get("count"),
                            Extra=extra_field_string,
                            TestCampaignSqlQuery=test_sql_query_response.get("query"),
-                           UpdationDate=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                           UpdationDate=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                           description=description)
         try:
             CEDEntityTagMapping().delete_tags_from_segment(segment_id)
             save_tags_for_segment(segment_id, tag_mapping)
@@ -625,7 +641,8 @@ def get_drafted_segment_dict(**kwargs) -> dict:
         "CreationDate": datetime.now(),
         "UpdationDate": datetime.now(),
         "Extra": kwargs.get("Headers", None),
-        "EmailCampaignSqlQuery": kwargs.get("EmailCampaignSqlQuery")
+        "EmailCampaignSqlQuery": kwargs.get("EmailCampaignSqlQuery"),
+        "Description": kwargs.get("Description", "")
     }
 
     return drafted_segment_dict
