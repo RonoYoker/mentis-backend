@@ -28,6 +28,7 @@ from onyx_proj.apps.data_id import urls as dataid_urls
 from onyx_proj.apps.file_processing import urls as file_process_route_urls
 from onyx_proj.apps.async_task_invocation import urls as async_task_urls
 from onyx_proj.apps.uuid import urls as uuid_urls
+from onyx_proj.apps.admin import urls as admin_controller
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -43,5 +44,6 @@ urlpatterns = [
     path("data_id/", include(dataid_urls)),
     path("content/", include(content_urls)),
     path("file_processing/", include(file_process_route_urls)),
-    path("project/", include(project))
+    path("project/", include(project)),
+    path("admin_controller/", include(admin_controller))
 ]

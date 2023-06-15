@@ -345,7 +345,6 @@ def add_relationshsip_projections(q,relationships=[]):
     return q
 
 
-
 def execute_write(engine, query, values):
     try:
         with engine.connect() as cursor:

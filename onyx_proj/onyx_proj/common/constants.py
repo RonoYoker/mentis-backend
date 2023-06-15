@@ -475,6 +475,8 @@ STATS_VIEW_QUERY_CONDITIONS_FOR_ADMINS = " AND cep.TestCampaign = 0 ORDER BY cep
 
 ACTIVITY_LOG_COMMENT_CREATED = "<strong>{} {}</strong> is Created by {}"
 
+ACTIVITY_LOG_COMMENT_MODIFIED = "<strong>{} {}</strong> is Modified by {}"
+
 ACTIVITY_LOG_COMMENT_FORMAT_MAIN = "<strong>{} {}</strong> is {} by {}"
 
 STATS_VIEW_BASE_QUERY_FOR_ADMINS = """SELECT 
@@ -935,7 +937,7 @@ class ApplicationName(Enum):
     PEGASUS = "PEGASUS"
     ONYX_LOCAL = "PEGASUS"
 
-    
+
 class SqlQueryType(Enum):
     SQL = "sql"
     CAMPAIGN_SQL_QUERY = "campaignsql"
@@ -1038,3 +1040,7 @@ class CampaignBuilderCampaignContentType(Enum):
     SMS = "SMS"
     IVR = "IVR"
     WHATSAPP = "WHATSAPP"
+
+
+MIN_ALLOWED_ROLE_NAME_LENGTH = 5
+MAX_ALLOWED_ROLE_NAME_LENGTH = 32
