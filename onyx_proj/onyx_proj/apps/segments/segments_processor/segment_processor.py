@@ -185,6 +185,7 @@ def save_deactivation_segment_history(user_name, segment_id):
     del history_object['Id']
     del history_object['MappingId']
     del history_object['Extra']
+    del history_object["Description"]
     logger.error(f"history object:: {history_object}")
 
     try:
