@@ -7,8 +7,8 @@ import requests
 from Crypto.Cipher import AES
 from django.conf import settings
 
-from common.utils.AES_encryption import AesEncryptDecrypt
-from models.CED_UserSession_model import CEDUserSession
+from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
+from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT
 from onyx_proj.apps.campaign.test_campaign.test_campaign_helper import validate_test_campaign_data, \
     get_campaign_service_vendor, generate_test_file_name, create_file_details_json, get_time_difference

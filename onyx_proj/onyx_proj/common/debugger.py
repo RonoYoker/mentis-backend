@@ -447,5 +447,3 @@ def check_name_similarity():
         print(f"fname::{' '.join(list(tc['first'].values())) }  sname::{' '.join(list(tc['second'].values()))}  result::{result}")
 
 
-def abc():
-    from onyx_proj.common.sqlalchemy_helper import SqlAlchemyEngine

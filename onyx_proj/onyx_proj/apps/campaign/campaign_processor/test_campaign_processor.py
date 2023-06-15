@@ -57,149 +57,105 @@ def fetch_test_campaign_data(request_data) -> json:
 
     user_data = CEDUser().get_user_details(dict(UserName=user[0].get("UserName", None)))[0]
 
-    if project_name in ASYNC_QUERY_EXECUTION_ENABLED:
-        if segment_id:
-            segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))
-            if len(segment_data) == 0 or segment_data is None:
-                return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
-                            details_message=f"Segment data not found for {segment_id}.")
-            else:
-                segment_data = segment_data[0]
-        elif campaign_id:
-            segment_id = CEDCampaignBuilder().fetch_segment_id_from_campaign_id(campaign_id)
-            if len(segment_id) == 0 or segment_id is None:
-                return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
-                            details_message=f"Segment data not found for {campaign_id}.")
-            else:
-                segment_id = segment_id[0][0]
-            segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))
-            if len(segment_data) == 0 or segment_data is None:
-                return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
-                            details_message=f"Segment data not found for {campaign_id}.")
-            else:
-                segment_data = segment_data[0]
+    if segment_id:
+        segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))
+        if len(segment_data) == 0 or segment_data is None:
+            return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                        details_message=f"Segment data not found for {segment_id}.")
         else:
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message=f"Invalid identifier.")
-
-        # check to prevent client from bombarding local async system
-        if segment_data.get("DataRefreshStartDate", None) > segment_data.get("DataRefreshEndDate", None):
-            # check if restart needed or request is stuck
-            reset_flag = check_restart_flag(segment_data.get("DataRefreshStartDate"))
-            if not reset_flag:
-                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                            details_message=f"Segment is already being processed.")
-
-        records_data = segment_data.get("Extra", "")
-
-        sql_query = segment_data.get("SqlQuery", None)
-        count_sql_query = f"SELECT COUNT(*) AS row_count FROM ({sql_query}) derived_table"
-
-        validity_flag = check_validity_flag(records_data, segment_data.get("DataRefreshEndDate", None),
-                                            expire_time=DATA_THRESHOLD_MINUTES)
-
-        if validity_flag is False:
-            # initiate async flow for data population
-
-            queries_data = [dict(query=sql_query + " ORDER BY AccountNumber DESC LIMIT 50", response_format="json",
-                                 query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
-                            dict(query=count_sql_query, response_format="json",
-                                 query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)]
-
-            request_body = dict(
-                source=AsyncTaskSourceKeys.ONYX_CENTRAL.value,
-                request_type=AsyncTaskRequestKeys.ONYX_TEST_CAMPAIGN_DATA_FETCH.value,
-                request_id=segment_id,
-                project_id=segment_data.get("ProjectId"),
-                callback=dict(callback_key=AsyncTaskCallbackKeys.ONYX_GET_TEST_CAMPAIGN_DATA.value),
-                project_name=body.get("project_name", None),
-                queries=queries_data
-            )
-
-            validation_response = hyperion_local_async_rest_call(CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, request_body)
-
-            if not validation_response:
-                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                            details_message="Unable to extract result set.")
-
-            update_dict = dict(DataRefreshStartDate=datetime.datetime.utcnow())
-            db_resp = CEDSegment().update_segment(dict(UniqueId=segment_data.get("UniqueId")), update_dict)
-
-            return dict(status_code=200, result=TAG_SUCCESS,
-                        details_message="Segment data being processed, please return after 5 minutes.")
-
+            segment_data = segment_data[0]
+    elif campaign_id:
+        segment_id = CEDCampaignBuilder().fetch_segment_id_from_campaign_id(campaign_id)
+        if len(segment_id) == 0 or segment_id is None:
+            return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                        details_message=f"Segment data not found for {campaign_id}.")
         else:
-            records_data = json.loads(AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
-                                                        iv=settings.SEGMENT_AES_KEYS["AES_IV"],
-                                                        mode=AES.MODE_CBC).decrypt_aes_cbc(records_data))
-            # if len(records_data.get("sample_data", [])) == 0:
-            #     return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-            #                 details_message="Segment has no data")
-
-            try:
-                record = json.loads(records_data.get("sample_data", []))
-            except TypeError:
-                record = records_data.get("sample_data", [])
-
-            if len(record) == 0:
-                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                            details_message=f"Segment has no records, please check segment!")
-            else:
-                record = record[0]
-
-            headers_list = records_data.get("headers_list", [])
-            record_list = decrypt_test_segment_data([record], headers_list, segment_data.get("ProjectId"))
-            record = record_list[0]
-            header_name_list = [header["headerName"].lower() for header in headers_list]
-
-            # record = json.loads(records_data.get("sample_data", []))[0]
-
-            record["mobile"] = user_data.get("MobileNumber", None)
-            record["email"] = user_data.get("EmailId", None)
-            if "enmobile" in header_name_list:
-                record["enmobile"] = user_data.get("MobileNumber", None)
-            if "enemail" in header_name_list:
-                record["enemail"] = user_data.get("EmailId", None)
-
-            return dict(status_code=http.HTTPStatus.OK, active=False, campaignId=campaign_id, sampleData=[record])
+            segment_id = segment_id[0][0]
+        segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))
+        if len(segment_data) == 0 or segment_data is None:
+            return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                        details_message=f"Segment data not found for {campaign_id}.")
+        else:
+            segment_data = segment_data[0]
     else:
-        domain = settings.HYPERION_LOCAL_DOMAIN.get(project_name)
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message=f"Invalid identifier.")
 
-        if not domain:
+    # check to prevent client from bombarding local async system
+    if segment_data.get("DataRefreshStartDate", None) > segment_data.get("DataRefreshEndDate", None):
+        # check if restart needed or request is stuck
+        reset_flag = check_restart_flag(segment_data.get("DataRefreshStartDate"))
+        if not reset_flag:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message=f"Hyperion local credentials not found for {project_name}.")
+                        details_message=f"Segment is already being processed.")
 
-        segment_data = None
+    records_data = segment_data.get("Extra", "")
 
-        if segment_id:
-            segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))[0]
-        elif campaign_id:
-            segment_id = CEDCampaignBuilder().fetch_segment_id_from_campaign_id(campaign_id)[0][0]
-            segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))[0]
+    sql_query = segment_data.get("SqlQuery", None)
+    count_sql_query = f"SELECT COUNT(*) AS row_count FROM ({sql_query}) derived_table"
 
-        sql_query = segment_data.get("SqlQuery", None)
+    validity_flag = check_validity_flag(records_data, segment_data.get("DataRefreshEndDate", None),
+                                        expire_time=DATA_THRESHOLD_MINUTES)
 
-        if not sql_query:
+    if validity_flag is False:
+        # initiate async flow for data population
+
+        queries_data = [dict(query=sql_query + " ORDER BY AccountNumber DESC LIMIT 50", response_format="json",
+                             query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
+                        dict(query=count_sql_query, response_format="json",
+                             query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)]
+
+        request_body = dict(
+            source=AsyncTaskSourceKeys.ONYX_CENTRAL.value,
+            request_type=AsyncTaskRequestKeys.ONYX_TEST_CAMPAIGN_DATA_FETCH.value,
+            request_id=segment_id,
+            project_id=segment_data.get("ProjectId"),
+            callback=dict(callback_key=AsyncTaskCallbackKeys.ONYX_GET_TEST_CAMPAIGN_DATA.value),
+            project_name=body.get("project_name", None),
+            queries=queries_data
+        )
+
+        validation_response = hyperion_local_async_rest_call(CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, request_body)
+
+        if not validation_response:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message=f"Unable to find query for the given {segment_id}.")
+                        details_message="Unable to extract result set.")
 
-        validation_response = hyperion_local_rest_call(project_name, sql_query)
+        update_dict = dict(DataRefreshStartDate=datetime.datetime.utcnow())
+        db_resp = CEDSegment().update_segment(dict(UniqueId=segment_data.get("UniqueId")), update_dict)
 
-        if validation_response.get("result") == TAG_FAILURE:
-            return validation_response
+        return dict(status_code=200, result=TAG_SUCCESS,
+                    details_message="Segment data being processed, please return after 5 minutes.")
 
-        if len(validation_response.get("data")) == 0:
+    else:
+        records_data = json.loads(AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
+                                                    iv=settings.SEGMENT_AES_KEYS["AES_IV"],
+                                                    mode=AES.MODE_CBC).decrypt_aes_cbc(records_data))
+
+        try:
+            record = json.loads(records_data.get("sample_data", []))
+        except TypeError:
+            record = records_data.get("sample_data", [])
+
+        if len(record) == 0:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message=f"Empty response for segment_id: {segment_id}.")
+                        details_message=f"Segment has no records, please check segment!")
+        else:
+            record = record[0]
 
-        query_data = validation_response.get("data")[0]
-        query_data["Mobile"] = user_data.get("MobileNumber", None)
-        # query_data["FirstName"] = user_data.get("FirstName", None)
-        # query_data["LastName"] = user_data.get("LastName", None)
-        # query_data["Name"] = user_data.get("FirstName", None) + " " + user_data.get("LastName", None)
-        query_data["Email"] = user_data.get("EmailId", None)
+        headers_list = records_data.get("headers_list", [])
+        record_list = decrypt_test_segment_data([record], headers_list, segment_data.get("ProjectId"))
+        record = record_list[0]
+        header_name_list = [header["headerName"].lower() for header in headers_list]
 
-        return dict(status_code=http.HTTPStatus.OK, active=False, campaignId=campaign_id, sampleData=[query_data])
+        record["mobile"] = user_data.get("MobileNumber", None)
+        record["email"] = user_data.get("EmailId", None)
+        if "enmobile" in header_name_list:
+            record["enmobile"] = user_data.get("MobileNumber", None)
+        if "enemail" in header_name_list:
+            record["enemail"] = user_data.get("EmailId", None)
+
+        return dict(status_code=http.HTTPStatus.OK, active=False, campaignId=campaign_id, sampleData=[record])
 
 
 def fetch_test_campaign_validation_status_local(request_data) -> json:

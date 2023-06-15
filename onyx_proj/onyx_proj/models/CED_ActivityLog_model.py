@@ -22,7 +22,7 @@ class CEDActivityLog:
             return dict(status=False, message=str(ex))
         return dict(status=True, response=response)
 
-    def save_activit_log(self, activity_log_entity):
+    def save_activity_log(self, activity_log_entity):
         insert(self.engine, activity_log_entity)
 
     def get_campaign_email_history(self, history_id):

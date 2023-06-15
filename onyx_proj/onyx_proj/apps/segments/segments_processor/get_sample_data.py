@@ -46,109 +46,82 @@ def get_sample_data_by_unique_id(request_data: dict):
     else:
         segment_data = db_res[0]
 
-    if body.get("project_name") in ASYNC_QUERY_EXECUTION_ENABLED:
-        # check to prevent client from bombarding local async system
-        if segment_data.get("DataRefreshStartDate", None) > segment_data.get("DataRefreshEndDate", None):
-            # check if restart needed or request is stuck
-            reset_flag = check_restart_flag(segment_data.get("DataRefreshEndDate"))
-            if not reset_flag:
-                return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
-                            data=dict(details_message=f"Segment {segment_data.get('Title')} already being processed."))
+    # check to prevent client from bombarding local async system
+    if segment_data.get("DataRefreshStartDate", None) > segment_data.get("DataRefreshEndDate", None):
+        # check if restart needed or request is stuck
+        reset_flag = check_restart_flag(segment_data.get("DataRefreshEndDate"))
+        if not reset_flag:
+            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                        data=dict(details_message=f"Segment {segment_data.get('Title')} already being processed."))
 
-        validity_flag = check_validity_flag(segment_data.get("Extra", ""), segment_data.get("DataRefreshEndDate"),
-                                            expire_time=DATA_THRESHOLD_MINUTES)
+    validity_flag = check_validity_flag(segment_data.get("Extra", ""), segment_data.get("DataRefreshEndDate"),
+                                        expire_time=DATA_THRESHOLD_MINUTES)
 
+    try:
+        extra_data = json.loads(
+            AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
+                              iv=settings.SEGMENT_AES_KEYS["AES_IV"],
+                              mode=AES.MODE_CBC).decrypt_aes_cbc(segment_data.get("Extra")))
+    except Exception as ex:
+        logger.error(
+            f"get_sample_data_by_unique_id :: exception while data fetch for segment: {segment_data.get('Title')}. "
+            f"Exception: {str(ex)}")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    data=dict(
+                        details_message=f"Segment {segment_data.get('Title')} does not have any records to show."))
+
+    if validity_flag is True:
         try:
-            extra_data = json.loads(
-                AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
-                                  iv=settings.SEGMENT_AES_KEYS["AES_IV"],
-                                  mode=AES.MODE_CBC).decrypt_aes_cbc(segment_data.get("Extra")))
-        except Exception as ex:
-            logger.error(
-                f"get_sample_data_by_unique_id :: exception while data fetch for segment: {segment_data.get('Title')}. "
-                f"Exception: {str(ex)}")
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        data=dict(
-                            details_message=f"Segment {segment_data.get('Title')} does not have any records to show."))
+            sample_data = json.loads(extra_data.get("sample_data", ""))
+        except TypeError:
+            sample_data = extra_data.get("sample_data", [])
 
-        if validity_flag is True:
-            # if segment_data["Records"] == 0:
-            #     sample_data_dict = dict(
-            #         sampleData=[],
-            #         records=segment_data["Records"],
-            #         segmentId=body["segment_id"]
-            #     )
-            #     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=sample_data_dict)
-            # sample_data = json.loads(extra_data.get("sample_data", ""))
-            try:
-                sample_data = json.loads(extra_data.get("sample_data", ""))
-            except TypeError:
-                sample_data = extra_data.get("sample_data", [])
+        headers_list = extra_data.get("headers_list", [])
 
-            headers_list = extra_data.get("headers_list", [])
-
-            record_list = decrypt_test_segment_data(sample_data[:10],headers_list,segment_data.get("ProjectId"))
-            rem_sample_data = []
-            for sample in sample_data[10:]:
-                record = {k.lower():v for k,v in sample.items()}
-                rem_sample_data.append(record)
-            sample_data = record_list + rem_sample_data
-            sample_data_dict = dict(
-                sampleData=sample_data,
-                records=segment_data["Records"],
-                segmentId=body["segment_id"]
-            )
-            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=sample_data_dict)
-        else:
-            sql_query = segment_data.get("SqlQuery", None)
-            count_sql_query = f"SELECT COUNT(*) AS row_count FROM ({sql_query}) derived_table"
-
-            if not sql_query:
-                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                            details_message="Please check SQL Query for the given segment.")
-
-            queries_data = [dict(query=sql_query + " ORDER BY AccountNumber DESC LIMIT 50", response_format="json",
-                                 query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
-                            dict(query=count_sql_query, response_format="json",
-                                 query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)]
-
-            request_body = dict(
-                source=AsyncTaskSourceKeys.ONYX_CENTRAL.value,
-                request_type=AsyncTaskRequestKeys.ONYX_SAMPLE_SEGMENT_DATA_FETCH.value,
-                request_id=segment_data.get("UniqueId"),
-                project_id=segment_data.get("ProjectId"),
-                callback=dict(callback_key=AsyncTaskCallbackKeys.ONYX_GET_SAMPLE_DATA.value),
-                project_name=body.get("project_name"),
-                queries=queries_data
-            )
-
-            validation_response = hyperion_local_async_rest_call(CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, request_body)
-
-            if not validation_response:
-                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                            data=dict(details_message="Unable to extract result set."))
-
-            update_dict = dict(DataRefreshStartDate=datetime.datetime.utcnow())
-            db_resp = CEDSegment().update_segment(dict(UniqueId=body.get("segment_id")), update_dict)
-
-            return dict(status_code=200, result=TAG_SUCCESS,
-                        data=dict(details_message="Segment data being processed, please return after 5 minutes."))
+        record_list = decrypt_test_segment_data(sample_data[:10],headers_list,segment_data.get("ProjectId"))
+        rem_sample_data = []
+        for sample in sample_data[10:]:
+            record = {k.lower():v for k,v in sample.items()}
+            rem_sample_data.append(record)
+        sample_data = record_list + rem_sample_data
+        sample_data_dict = dict(
+            sampleData=sample_data,
+            records=segment_data["Records"],
+            segmentId=body["segment_id"]
+        )
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=sample_data_dict)
     else:
         sql_query = segment_data.get("SqlQuery", None)
+        count_sql_query = f"SELECT COUNT(*) AS row_count FROM ({sql_query}) derived_table"
 
         if not sql_query:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="Please check SQL Query for the given segment.")
 
-        validation_response = hyperion_local_rest_call(body.get("project_name"), sql_query, 50)
+        queries_data = [dict(query=sql_query + " ORDER BY AccountNumber DESC LIMIT 50", response_format="json",
+                             query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
+                        dict(query=count_sql_query, response_format="json",
+                             query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)]
+
+        request_body = dict(
+            source=AsyncTaskSourceKeys.ONYX_CENTRAL.value,
+            request_type=AsyncTaskRequestKeys.ONYX_SAMPLE_SEGMENT_DATA_FETCH.value,
+            request_id=segment_data.get("UniqueId"),
+            project_id=segment_data.get("ProjectId"),
+            callback=dict(callback_key=AsyncTaskCallbackKeys.ONYX_GET_SAMPLE_DATA.value),
+            project_name=body.get("project_name"),
+            queries=queries_data
+        )
+
+        validation_response = hyperion_local_async_rest_call(CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, request_body)
 
         if not validation_response:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Unable to extract result set.")
+                        data=dict(details_message="Unable to extract result set."))
 
-        validation_response["sampleData"] = validation_response.pop("data")
-        validation_response["records"] = validation_response.pop("count")
-        validation_response["segmentId"] = body.get("segment_id")
+        update_dict = dict(DataRefreshStartDate=datetime.datetime.utcnow())
+        db_resp = CEDSegment().update_segment(dict(UniqueId=body.get("segment_id")), update_dict)
 
-        return dict(status_code=200, result=TAG_SUCCESS, data=validation_response)
+        return dict(status_code=200, result=TAG_SUCCESS,
+                    data=dict(details_message="Segment data being processed, please return after 5 minutes."))
 

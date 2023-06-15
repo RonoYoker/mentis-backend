@@ -70,7 +70,11 @@ class CEDCampaignWhatsAppContent:
             {"column": "unique_id", "value": unique_id, "op": "=="},
             {"column": "is_deleted", "value": 0, "op": "=="},
             {"column": "is_active", "value": 1, "op": "=="},
-            {"column": "status", "value": status_list, "op": "IN"}
+            # {"column": "status", "value": status_list, "op": "IN"}
         ]
+
+        if len(status_list) > 0:
+            filter_list.append({"column": "status", "value": status_list, "op": "IN"})
+
         res = fetch_one_row(self.engine, self.table, filter_list)
         return res

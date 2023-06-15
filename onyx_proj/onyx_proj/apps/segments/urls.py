@@ -22,5 +22,5 @@ urlpatterns = [
     path("save_segment_using_segment_builder/", views.save_segment_using_segment_builder),
     path("deactivate_segment/", views.deactivate_segment),
     path("get_master_mapping_for_segment/", views.get_master_mapping_by_data_id),
-    path("back_fill_encrypted_data/", views.back_fill_segment_data)
+    # path("back_fill_encrypted_data/", views.back_fill_segment_data)
 ]

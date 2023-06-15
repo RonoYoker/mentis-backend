@@ -2,14 +2,21 @@ import json
 import logging
 import datetime
 import http
+import uuid
+
 from Crypto.Cipher import AES
 from django.conf import settings
 
-from django.conf import settings
 from onyx_proj.apps.content.content_procesor import content_headers_processor
 from onyx_proj.apps.segments.app_settings import QueryKeys, AsyncTaskRequestKeys, SegmentStatusKeys
+from onyx_proj.apps.segments.segments_processor.segment_helpers import \
+    create_entry_segment_history_table_and_activity_log
 from onyx_proj.models.CED_Segment_model import CEDSegment
-from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS
+from onyx_proj.models.CED_HIS_Segment_model import CEDHISSegment
+from onyx_proj.orm_models.CED_HIS_Segment_model import CED_HIS_Segment
+from onyx_proj.models.CED_ActivityLog_model import CEDActivityLog
+from onyx_proj.orm_models.CED_ActivityLog_model import CED_ActivityLog
+from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, DataSource, SubDataSource
 from onyx_proj.apps.async_task_invocation.app_settings import AsyncJobStatus
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import generate_test_query
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
@@ -41,8 +48,8 @@ def process_segment_callback(body):
                         details_message="Segment_id missing in request payload.")
 
         segment = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))
-        if len (segment)!=1:
-            logger.error(f"Invalid segment id::{segment_id}")
+        if len(segment) != 1:
+            logger.error(f"process_segment_callback :: Invalid segment id : {segment_id}")
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="Invalid segment Id")
         segment = segment[0]
@@ -55,6 +62,10 @@ def process_segment_callback(body):
                 error_update_dict = dict(UpdationDate=datetime.datetime.utcnow(), Status=AsyncJobStatus.ERROR.value,
                                          RejectionReason=val["error_message"])
                 break
+            elif val["status"] == AsyncJobStatus.TIMEOUT.value:
+                error_update_dict = dict(UpdationDate=datetime.datetime.utcnow(), Status=AsyncJobStatus.TIMEOUT.value,
+                                         RejectionReason="Query execution time limit exceeded!")
+                break
 
         if bool(error_update_dict):
             try:
@@ -63,14 +74,21 @@ def process_segment_callback(body):
                     alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                           message_text=alerting_text,
                                                                           feature_section="DEFAULT")
-                    logger.info(f'Alert Triggered Response : {alert_resp}')
+                    logger.info(f"process_segment_callback :: Alert Triggered Response: {alert_resp}")
                 except Exception as ex1:
-                    logger.error(f'Unable to process project alerting, Exp : {ex1}')
+                    logger.error(f"process_segment_callback :: Unable to process project alerting, Exp: {ex1}")
                 db_resp = CEDSegment().update_segment(dict(UniqueId=segment_id), error_update_dict)
             except Exception as ex:
                 return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                             details_message="Exception during update query execution.",
                             ex=str(ex))
+
+            if db_resp.get("row_count") <= 0 or not db_resp:
+                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                            details_message="Unable to update")
+
+            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                        details_message=f"Status is updated for segment_id: {segment_id}.")
         else:
             try:
                 segment_count = json.loads(task_data[QueryKeys.SEGMENT_COUNT.value].get("response"))[0].get("row_count", None)
@@ -87,9 +105,9 @@ def process_segment_callback(body):
                         alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                               message_text=alerting_text,
                                                                               feature_section="DEFAULT")
-                        logger.info(f'Alert Triggered Response : {alert_resp}')
+                        logger.info(f"process_segment_callback :: Alert Triggered Response: {alert_resp}")
                     except Exception as ex1:
-                        logger.error(f'Unable to process project alerting, Exp : {ex1}')
+                        logger.error(f"process_segment_callback :: Unable to process project alerting, Exp: {ex1}")
 
                     db_resp = CEDSegment().update_segment(dict(UniqueId=segment_id), update_dict)
                 except Exception as ex:
@@ -113,9 +131,9 @@ def process_segment_callback(body):
                     alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                           message_text=alerting_text,
                                                                           feature_section="DEFAULT")
-                    logger.info(f'Alert Triggered Response : {alert_resp}')
+                    logger.info(f"process_segment_callback :: Alert Triggered Response: {alert_resp}")
                 except Exception as ex1:
-                    logger.error(f'Unable to process project alerting, Exp : {ex1}')
+                    logger.error(f"process_segment_callback :: Unable to process project alerting, Exp: {ex1}")
 
                 logger.error(
                     f"process_segment_callback :: error thrown while fetching sql_query for given segment_id: {segment_id},"
@@ -133,9 +151,9 @@ def process_segment_callback(body):
                     alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                           message_text=alerting_text,
                                                                           feature_section="DEFAULT")
-                    logger.info(f'Alert Triggered Response : {alert_resp}')
+                    logger.info(f"process_segment_callback :: Alert Triggered Response: {alert_resp}")
                 except Exception as ex:
-                    logger.error(f'Unable to process project alerting, Exp : {ex}')
+                    logger.error(f"process_segment_callback :: Unable to process project alerting, Exp: {ex}")
 
                 try:
                     db_resp = CEDSegment().update_segment(dict(UniqueId=segment_id), update_dict)
@@ -144,7 +162,8 @@ def process_segment_callback(body):
                                 details_message="Exception during update query execution.",
                                 ex=str(ex))
             else:
-                test_query = segment.get("TestCampaignSqlQuery") if segment.get("SegmentBuilderId") is not None else test_sql_query_response["query"]
+                test_query = segment.get("TestCampaignSqlQuery") if segment.get("SegmentBuilderId") is not None else \
+                    test_sql_query_response["query"]
                 update_dict = dict(TestCampaignSqlQuery=test_query, Records=segment_count,
                                    Extra=AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
                                                            iv=settings.SEGMENT_AES_KEYS["AES_IV"],
@@ -163,12 +182,12 @@ def process_segment_callback(body):
                                 details_message="Exception during update query execution.",
                                 ex=str(ex))
 
-        if db_resp.get("row_count") <= 0 or not db_resp:
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Unable to update")
+            if db_resp.get("row_count") <= 0 or not db_resp:
+                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                            details_message="Unable to update")
 
-        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
-                    details_message=f"Count and headers updated for segment_id: {segment_id}.")
+            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                        details_message=f"Count and headers updated for segment_id: {segment_id}.")
 
     except Exception as e:
         alerting_text = f'Segment ID : {segment_id}, ERROR : Sprocess_segment_callback :: Error in save custom segment callback flow, Please Reach Out to Tech.'
@@ -176,9 +195,9 @@ def process_segment_callback(body):
             alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                   message_text=alerting_text,
                                                                   feature_section="DEFAULT")
-            logger.info(f'Alert Triggered Response : {alert_resp}')
+            logger.info(f"process_segment_callback :: Alert Triggered Response: {alert_resp}")
         except Exception as ex:
-            logger.error(f'Unable to process project alerting, Exp : {ex}')
+            logger.error(f"process_segment_callback :: Unable to process project alerting, Exp: {ex}")
 
         logger.error(f"process_segment_callback :: Error in save custom segment callback flow: {e}.")
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
@@ -215,6 +234,40 @@ def process_segment_data_callback(body):
 
         project_id = body.get("project_id", None)
         task_data = body["tasks"]
+
+        error_update_dict = {}
+        for key, val in task_data.items():
+            if val["status"] == AsyncJobStatus.ERROR.value:
+                error_update_dict = dict(UpdationDate=datetime.datetime.utcnow(), Status=AsyncJobStatus.ERROR.value,
+                                         RejectionReason=val["error_message"])
+                break
+            elif val["status"] == AsyncJobStatus.TIMEOUT.value:
+                error_update_dict = dict(UpdationDate=datetime.datetime.utcnow(), Status=AsyncJobStatus.TIMEOUT.value,
+                                         RejectionReason="Query execution time limit exceeded!")
+                break
+
+        if bool(error_update_dict):
+            try:
+                alerting_text = f'Segment ID : {segment_id}, Segment Error Details: {error_update_dict}, ERROR : Process Segment Async Job Error'
+                try:
+                    alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
+                                                                          message_text=alerting_text,
+                                                                          feature_section="DEFAULT")
+                    logger.info(f"process_segment_callback :: Alert Triggered Response: {alert_resp}")
+                except Exception as ex1:
+                    logger.error(f"process_segment_callback :: Unable to process project alerting, Exp: {ex1}")
+                db_resp = CEDSegment().update_segment(dict(UniqueId=segment_id), error_update_dict)
+            except Exception as ex:
+                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                            details_message="Exception during update query execution.",
+                            ex=str(ex))
+
+            if db_resp.get("row_count") <= 0 or not db_resp:
+                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                            details_message="Unable to update")
+
+            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                        details_message=f"Status is updated for segment_id: {segment_id}.")
 
         if request_type in [AsyncTaskRequestKeys.ONYX_SAMPLE_SEGMENT_DATA_FETCH.value,
                             AsyncTaskRequestKeys.ONYX_TEST_CAMPAIGN_DATA_FETCH.value,
@@ -278,4 +331,3 @@ def extra_data_parser(data: dict, project_id):
         return dict(error=True, reason="no data in segment")
     headers_list = [*data_object[0]]
     return dict(headers_list=content_headers_processor(headers_list, project_id), sample_data=data.get("response", []))
-

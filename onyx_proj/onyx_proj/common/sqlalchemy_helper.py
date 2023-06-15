@@ -30,6 +30,7 @@ def insert(engine, entity):
         else:
             session.commit()
 
+
 def save_or_update_merge(engine, entity):
     """
         Function to insert a single row into table.

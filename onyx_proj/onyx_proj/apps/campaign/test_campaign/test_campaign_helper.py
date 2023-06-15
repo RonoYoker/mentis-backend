@@ -7,7 +7,7 @@ import json
 from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import prepare_sms_related_data, \
     prepare_email_related_data, prepare_ivr_related_data, prepare_whatsapp_related_data, \
     set_follow_up_sms_template_details, update_process_file_data_map, datetime_converter
-from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CHANNELS_LIST, ContentType
+from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CHANNELS_LIST, ContentType, CampaignContentStatus
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
 from onyx_proj.apps.campaign.test_campaign.app_settings import CAMPAIGN_BUILDER_CAMPAIGN_VALID_STATUS, \
     SEGMENT_STATUS_FOR_TEST_CAMPAIGN
@@ -213,13 +213,13 @@ def generate_campaign_scheduling_segment_entity_details_test_entity(campaign_tes
     campaign_scheduling_segment_entity_final.test_campaign = campaign_test_segment_details.test_campaign
 
     if campaign_test_segment_details.channel == ContentType.SMS.value:
-        prepare_sms_related_data(campaign_builder_campaign, campaign_scheduling_segment_entity_final)
+        prepare_sms_related_data(campaign_builder_campaign, campaign_scheduling_segment_entity_final, is_test=True)
     elif campaign_test_segment_details.channel == ContentType.EMAIL.value:
-        prepare_email_related_data(campaign_builder_campaign, campaign_scheduling_segment_entity_final)
+        prepare_email_related_data(campaign_builder_campaign, campaign_scheduling_segment_entity_final, is_test=True)
     elif campaign_test_segment_details.channel == ContentType.IVR.value:
-        prepare_ivr_related_data(campaign_builder_campaign, campaign_scheduling_segment_entity_final)
+        prepare_ivr_related_data(campaign_builder_campaign, campaign_scheduling_segment_entity_final, is_test=True)
     elif campaign_test_segment_details.channel == ContentType.WHATSAPP.value:
-        prepare_whatsapp_related_data(campaign_builder_campaign, campaign_scheduling_segment_entity_final)
+        prepare_whatsapp_related_data(campaign_builder_campaign, campaign_scheduling_segment_entity_final, is_test=True)
     else:
         return dict(success=False)
     return dict(success=True, entity=campaign_scheduling_segment_entity_final)

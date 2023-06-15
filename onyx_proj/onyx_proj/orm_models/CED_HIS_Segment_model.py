@@ -26,6 +26,7 @@ class CED_HIS_Segment(Base, Orm_helper):
     last_campaign_date = Column("LastCampaignDate", TIMESTAMP)
     segment_id = Column("SegmentId", String)
     refresh_date = Column("RefreshDate", TIMESTAMP)
+    comment = Column("Comment", String)
 
 
     def __init__(self, data={}):

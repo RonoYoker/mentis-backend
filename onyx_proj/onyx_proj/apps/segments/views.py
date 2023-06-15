@@ -78,7 +78,7 @@ def get_segment_by_unique_id(request):
 @UserAuth.user_authentication()
 def update_custom_segment(request):
     data = json.loads(request.body.decode("utf-8"))
-    # update thr given custom segment
+    # update the given custom segment
     response = update_custom_segment_process(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
@@ -160,9 +160,6 @@ def fetch_segments_list(request):
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
 
 
-
-
-
 @csrf_exempt
 @UserAuth.user_authentication()
 def custom_segment_callback(request):
@@ -235,6 +232,7 @@ def back_fill_segment_data(request):
     status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
 
+
 @csrf_exempt
 # @UserAuth.user_authentication()
 def fetch_segment_builder_list(request):
@@ -244,6 +242,7 @@ def fetch_segment_builder_list(request):
     status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
 
+
 @csrf_exempt
 # @UserAuth.user_authentication()
 def fetch_segment_builder_headers(request):
@@ -252,6 +251,7 @@ def fetch_segment_builder_headers(request):
     data = SegmentQueryBuilder().get_segment_builder_headers(segment_builder_id)
     status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
 
 @csrf_exempt
 # @UserAuth.user_authentication()

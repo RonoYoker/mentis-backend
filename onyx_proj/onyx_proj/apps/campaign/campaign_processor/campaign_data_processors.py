@@ -1437,20 +1437,20 @@ def generate_campaign_scheduling_segment_entity_for_camp_scheduling(scheduling_s
     return campaign_scheduling_segment_entity
 
 
-def prepare_sms_related_data(cbc_entity, campaign_segment_entity):
+def prepare_sms_related_data(cbc_entity, campaign_segment_entity, is_test=False):
     """
     Method to prepare sms related data for scheduling segment
     """
     method_name = "prepare_sms_related_data"
     log_entry()
 
+    status_list = [CampaignContentStatus.APPROVED.value] if is_test is False else \
+        [CampaignContentStatus.APPROVAL_PENDING.value, CampaignContentStatus.APPROVED.value]
+
     if not cbc_entity.sms_campaign:
         raise NotFoundException(method_name=method_name, reason="Campaign SMS content details not found")
 
-    campaign_sms_content_entity = CEDCampaignSMSContent().get_sms_content_data_by_unique_id_and_status(cbc_entity.
-                                                                                                       sms_campaign.sms_id,
-                                                                                                       [
-                                                                                                           CampaignContentStatus.APPROVED.value])
+    campaign_sms_content_entity = CEDCampaignSMSContent().get_sms_content_data_by_unique_id_and_status(cbc_entity.sms_campaign.sms_id, status_list)
     if not campaign_sms_content_entity:
         raise NotFoundException(method_name=method_name, reason="Campaign SMS Content entity not found")
 
@@ -1478,20 +1478,21 @@ def prepare_sms_related_data(cbc_entity, campaign_segment_entity):
     return campaign_segment_entity
 
 
-def prepare_email_related_data(cbc_entity, campaign_segment_entity):
+def prepare_email_related_data(cbc_entity, campaign_segment_entity, is_test=False):
     """
     Method to prepare email related data for scheduling segment
     """
     method_name = "prepare_email_related_data"
     log_entry()
 
+    status_list = [CampaignContentStatus.APPROVED.value] if is_test is False else \
+        [CampaignContentStatus.APPROVAL_PENDING.value, CampaignContentStatus.APPROVED.value]
+
     if not cbc_entity.email_campaign:
         raise NotFoundException(method_name=method_name, reason="Campaign Email content details not found")
 
     # Fetch email content entity
-    campaign_email_content_entity = CEDCampaignEmailContent().get_email_content_data_by_unique_id_and_status(
-        cbc_entity.email_campaign.email_id,
-        [CampaignContentStatus.APPROVED.value])
+    campaign_email_content_entity = CEDCampaignEmailContent().get_email_content_data_by_unique_id_and_status(cbc_entity.email_campaign.email_id, status_list)
     if not campaign_email_content_entity:
         raise NotFoundException(method_name=method_name, reason="Campaign Email Content entity not found")
 
@@ -1504,8 +1505,7 @@ def prepare_email_related_data(cbc_entity, campaign_segment_entity):
 
     # Fetch subject line content entity
     campaign_subjectline_content_entity = CEDCampaignSubjectLineContent().get_subject_line_data_by_unique_id_and_status(
-        cbc_entity.email_campaign.subject_line_id,
-        [CampaignContentStatus.APPROVED.value])
+        cbc_entity.email_campaign.subject_line_id, status_list)
     if not campaign_subjectline_content_entity:
         raise NotFoundException(method_name=method_name, reason="Campaign SubjectLine Content entity not found")
     campaign_subjectline_content_entity = campaign_subjectline_content_entity._asdict()
@@ -1526,20 +1526,21 @@ def prepare_email_related_data(cbc_entity, campaign_segment_entity):
     return campaign_segment_entity
 
 
-def prepare_ivr_related_data(cbc_entity, campaign_segment_entity):
+def prepare_ivr_related_data(cbc_entity, campaign_segment_entity, is_test=False):
     """
     Method to prepare ivr related data for scheduling segment
     """
     method_name = "prepare_ivr_related_data"
     log_entry()
 
+    status_list = [CampaignContentStatus.APPROVED.value] if is_test is False else \
+        [CampaignContentStatus.APPROVAL_PENDING.value, CampaignContentStatus.APPROVED.value]
+
     if not cbc_entity.ivr_campaign:
         raise NotFoundException(method_name=method_name, reason="Campaign IVR content details not found")
 
     # Fetch ivr content entity
-    campaign_ivr_content_entity = CEDCampaignIvrContent().get_ivr_content_data_by_unique_id_and_status(
-        cbc_entity.ivr_campaign.ivr_id,
-        [CampaignContentStatus.APPROVED.value])
+    campaign_ivr_content_entity = CEDCampaignIvrContent().get_ivr_content_data_by_unique_id_and_status(cbc_entity.ivr_campaign.ivr_id, status_list)
     if not campaign_ivr_content_entity:
         raise NotFoundException(method_name=method_name, reason="Campaign IVR Content entity not found")
 
@@ -1572,20 +1573,21 @@ def prepare_ivr_related_data(cbc_entity, campaign_segment_entity):
     return campaign_segment_entity
 
 
-def prepare_whatsapp_related_data(cbc_entity, campaign_segment_entity):
+def prepare_whatsapp_related_data(cbc_entity, campaign_segment_entity, is_test=False):
     """
     Method to prepare whatsapp related data for scheduling segment
     """
     method_name = "prepare_whatsapp_related_data"
     log_entry()
 
+    status_list = [CampaignContentStatus.APPROVED.value] if is_test is False else \
+        [CampaignContentStatus.APPROVAL_PENDING.value, CampaignContentStatus.APPROVED.value]
+
     if not cbc_entity.whatsapp_campaign:
         raise NotFoundException(method_name=method_name, reason="Campaign Whatsapp content details not found")
 
     # Fetch whatsapp content entity
-    campaign_whatsapp_content_entity = CEDCampaignWhatsAppContent().get_whatsapp_content_data_by_unique_id_and_status(
-        cbc_entity.whatsapp_campaign.whats_app_content_id,
-        [CampaignContentStatus.APPROVED.value])
+    campaign_whatsapp_content_entity = CEDCampaignWhatsAppContent().get_whatsapp_content_data_by_unique_id_and_status(cbc_entity.whatsapp_campaign.whats_app_content_id, status_list)
     if not campaign_whatsapp_content_entity:
         raise NotFoundException(method_name=method_name, reason="Campaign Whatsapp Content entity not found")
 
@@ -1648,7 +1650,7 @@ def prepare_and_save_campaign_builder_history_data(campaign_builder_entity):
             "filter_id": campaign_builder_entity.segment_id
         })
         # save activity log
-        CEDActivityLog().save_activit_log(activity_log_entity)
+        CEDActivityLog().save_activity_log(activity_log_entity)
     except Exception as ex:
         logger.error(f"method_name :: {method_name}, error while creating campaign builder history object :: {ex}")
         raise ex

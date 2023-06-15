@@ -139,7 +139,6 @@ class CEDSegment:
         sql_query = "select UniqueId, Extra from CED_Segment where isActive = 1 and Status != 'ERROR' and Extra is not NULL"
         return execute_query(self.engine, sql_query)
 
-
     def get_segment_data_by_unique_id(self, segment_id):
         filter_list = [
             {"column": "unique_id", "value": segment_id, "op": "=="},
@@ -152,3 +151,7 @@ class CEDSegment:
     def update_segment_mapping_id(self, segment_id,campaign_builder_campaign_id):
         result = update_rows(self.curr, self.table_name, {"MappingId": campaign_builder_campaign_id}, {"UniqueId": segment_id})
         return result
+
+    def get_data_id_by_segment_id(self, segment_id: str):
+        base_query = f"SELECT DataId AS data_id FROM CED_Segment WHERE UniqueId = '{segment_id}'"
+        return dict_fetch_query_all(self.curr, base_query)

@@ -8,12 +8,15 @@ import http
 from django.conf import settings
 from Crypto.Cipher import AES
 
+from onyx_proj.apps.segments.segments_processor.segment_helpers import \
+    create_entry_segment_history_table_and_activity_log
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.apps.content.content_procesor import content_headers_processor
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.common.constants import TAG_FAILURE, CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, TAG_SUCCESS, TAG_KEY_CUSTOM, \
     CUSTOM_QUERY_FORBIDDEN_KEYWORDS, CUSTOM_QUERY_EXECUTION_API_PATH, TAG_TEST_CAMPAIGN_QUERY_ALIAS_PATTERNS, \
-    SEGMENT_RECORDS_COUNT_API_PATH, TAG_REQUEST_POST, ASYNC_QUERY_EXECUTION_ENABLED
+    SEGMENT_RECORDS_COUNT_API_PATH, TAG_REQUEST_POST, ASYNC_QUERY_EXECUTION_ENABLED, DataSource, SubDataSource
+from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.models.CED_EntityTagMapping import CEDEntityTagMapping
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
@@ -47,6 +50,7 @@ def custom_segment_processor(request_data) -> json:
     data_id = body.get("data_id", None)
     project_id = body.get("project_id", None)
     tag_mapping = body.get("tag_mapping", None)
+    history_id = uuid.uuid4().hex
     description = body.get("description", None)
 
     # check if request has data_id and project_id
@@ -89,89 +93,50 @@ def custom_segment_processor(request_data) -> json:
     if query_validation_response.get("result") == TAG_FAILURE:
         return query_validation_response
 
-    # hyperion local rest call changes here but only bank specific (currently for VST)
-    if project_name in ASYNC_QUERY_EXECUTION_ENABLED:
-        save_segment_dict = get_drafted_segment_dict(Title=body.get("title"),
-                                                     UniqueId=segment_id,
-                                                     ProjectId=project_id,
-                                                     DataId=data_id,
-                                                     SqlQuery=sql_query,
-                                                     CampaignSqlQuery=sql_query,
-                                                     Records=None,
-                                                     User=user_name,
-                                                     Headers=None,
-                                                     TestCampaignSqlQuery=None,
-                                                     DataImageSqlQuery=sql_query,
-                                                     EmailCampaignSqlQuery=sql_query,
-                                                     Description=description)
+    save_segment_dict = get_drafted_segment_dict(Title=body.get("title"),
+                                                 UniqueId=segment_id,
+                                                 ProjectId=project_id,
+                                                 DataId=data_id,
+                                                 SqlQuery=sql_query,
+                                                 CampaignSqlQuery=sql_query,
+                                                 Records=None,
+                                                 User=user_name,
+                                                 Headers=None,
+                                                 TestCampaignSqlQuery=None,
+                                                 DataImageSqlQuery=sql_query,
+                                                 EmailCampaignSqlQuery=sql_query,
+                                                 HistoryId=history_id,
+                                                 Description=description)
 
-        db_res = save_custom_segment(save_segment_dict)
-        save_tags_for_segment(segment_id, tag_mapping)
-        if db_res.get("status_code") != 200:
-            return db_res
+    db_res = save_custom_segment(save_segment_dict)
+    save_or_update_tags_for_segment(segment_id, tag_mapping)
+    if db_res.get("status_code") != 200:
+        return db_res
 
-        request_body = dict(
-            source=AsyncTaskSourceKeys.ONYX_CENTRAL.value,
-            request_type=AsyncTaskRequestKeys.ONYX_CUSTOM_SEGMENT_CREATION.value,
-            request_id=segment_id,
-            project_id=project_id,
-            callback=dict(callback_key=AsyncTaskCallbackKeys.ONYX_SAVE_CUSTOM_SEGMENT.value),
-            queries=generate_queries_for_async_task(sql_query),
-            project_name=project_name
-        )
+    request_body = dict(
+        source=AsyncTaskSourceKeys.ONYX_CENTRAL.value,
+        request_type=AsyncTaskRequestKeys.ONYX_CUSTOM_SEGMENT_CREATION.value,
+        request_id=segment_id,
+        project_id=project_id,
+        callback=dict(callback_key=AsyncTaskCallbackKeys.ONYX_SAVE_CUSTOM_SEGMENT.value),
+        queries=generate_queries_for_async_task(sql_query),
+        project_name=project_name
+    )
 
-        validation_response = hyperion_local_async_rest_call(CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, request_body)
+    validation_response = hyperion_local_async_rest_call(CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, request_body)
 
-        if validation_response.get("result", TAG_FAILURE) == TAG_SUCCESS:
-            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
-                        details_message="Segment creation under process.")
-        else:
-            return validation_response
+    if validation_response.get("result", TAG_FAILURE) == TAG_SUCCESS:
+        update_dict = dict(comment=f"""<strong>Segment {body.get('title')}</strong> is Created by {user_name}""",
+                           history_id=history_id, status=SegmentStatusKeys.DRAFTED.value, segment_count=0, active=1,
+                           is_deleted=0, data_source=DataSource.SEGMENT.value,
+                           sub_data_source=SubDataSource.SEGMENT.value,
+                           user=user_name)
+        create_entry_segment_history_table_and_activity_log(save_segment_dict, update_dict)
+
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                    details_message="Segment creation under process.")
     else:
-        validation_response = hyperion_local_rest_call(project_name, sql_query)
-
-        if validation_response.get("result") == TAG_FAILURE:
-            return validation_response
-
-        response_data = validation_response.get("data", {})
-
-        if not response_data:
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Query response data is empty/null.")
-
-        headers_data = content_headers_processor([*response_data[0]], project_id)
-
-        extra_field_string = json.dumps({"headers_list": headers_data})
-
-        headers = []
-        for ele in json.loads(extra_field_string).get("headers_list", []):
-            headers.append(ele.get("columnName"))
-
-        test_sql_query_response = generate_test_query(sql_query, headers)
-
-        # create parameter mapping to insert custom segment
-        save_segment_dict = get_save_segment_dict(Title=body.get("title"),
-                                                  UniqueId=segment_id,
-                                                  ProjectId=project_id,
-                                                  DataId=data_id,
-                                                  SqlQuery=sql_query,
-                                                  CampaignSqlQuery=sql_query,
-                                                  Records=validation_response.get("count"),
-                                                  User=user_name,
-                                                  Headers=extra_field_string,
-                                                  TestCampaignSqlQuery=test_sql_query_response.get("query"),
-                                                  DataImageSqlQuery=sql_query,
-                                                  EmailCampaignSqlQuery=sql_query,
-                                                  Description=description)
-
-        db_res = save_custom_segment(save_segment_dict)
-        save_tags_for_segment(segment_id, tag_mapping)
-        if db_res.get("status_code") != 200:
-            return db_res
-        else:
-            db_res["data"] = validation_response
-            db_res["data"]["segment_id"] = segment_id
-            return db_res
+        return validation_response
 
 
 def get_save_segment_dict(**kwargs) -> dict:
@@ -282,6 +247,10 @@ def update_custom_segment_process(data) -> dict:
     project_id = data.get("project_id", None)
     tag_mapping = data.get("tag_mapping", None)
     description = data.get("description", None)
+    history_id = uuid.uuid4().hex
+
+    user_session = Session().get_user_session_object()
+    user_name = user_session.user.user_name
 
     if not sql_query or not segment_id or not title or not project_id:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -296,95 +265,53 @@ def update_custom_segment_process(data) -> dict:
     if query_validation_response.get("result") == TAG_FAILURE:
         return query_validation_response
 
-    if project_name in ASYNC_QUERY_EXECUTION_ENABLED:
-        params_dict = dict(UniqueId=segment_id)
-        update_dict = dict(Title=title, Status="DRAFTED", UpdationDate=datetime.utcnow(), Description=description)
-        try:
-            db_resp = CEDSegment().update_segment(params_dict, update_dict)
-        except Exception as ex:
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Exception during update query execution.",
-                        ex=str(ex))
-        save_tags_for_segment(segment_id, tag_mapping)
-
-        request_body = dict(
-            source=AsyncTaskSourceKeys.ONYX_CENTRAL.value,
-            request_type=AsyncTaskRequestKeys.ONYX_EDIT_CUSTOM_SEGMENT.value,
-            request_id=segment_id,
-            project_id=project_id,
-            callback=dict(callback_key=AsyncTaskCallbackKeys.ONYX_EDIT_CUSTOM_SEGMENT.value),
-            queries=generate_queries_for_async_task(sql_query),
-            project_name=project_name
-        )
-
-        validation_response = hyperion_local_async_rest_call(CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, request_body)
-
-        if validation_response.get("result", TAG_FAILURE) == TAG_SUCCESS:
-            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
-                        details_message="Segment update under process.")
-        else:
-            return validation_response
-    else:
-        request_response = hyperion_local_rest_call(project_name, sql_query)
-
-        if request_response.get("result") == TAG_FAILURE:
-            return request_response
-
-        response_data = request_response.get("data", {})
-
-        if not response_data:
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Query response data is empty/null.")
-
-        headers_data = content_headers_processor([*response_data[0]], project_id)
-
-        extra_field_string = json.dumps({"headers_list": headers_data})
-
-        headers = []
-        for ele in json.loads(extra_field_string).get("headers_list", []):
-            headers.append(ele.get("columnName"))
-
-        test_sql_query_response = generate_test_query(sql_query, headers)
-
-        if test_sql_query_response.get("result") == TAG_FAILURE:
-            return test_sql_query_response
-
-        params_dict = dict(UniqueId=segment_id)
-
-        update_dict = dict(SqlQuery=sql_query,
-                           CampaignSqlQuery=sql_query,
-                           DataImageSqlQuery=sql_query,
-                           Title=title,
-                           Records=request_response.get("count"),
-                           Extra=extra_field_string,
-                           TestCampaignSqlQuery=test_sql_query_response.get("query"),
-                           UpdationDate=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                           description=description)
-        try:
-            CEDEntityTagMapping().delete_tags_from_segment(segment_id)
-            save_tags_for_segment(segment_id, tag_mapping)
-        except Exception as ex:
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Exception during delete tags and saving updated tags  query execution.",
-                        ex=str(ex))
-
-        try:
-            db_res = CEDSegment().update_segment(params_dict=params_dict, update_dict=update_dict)
-        except Exception as ex:
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Exception during update query execution.",
-                        ex=str(ex))
-
-        if db_res.get("row_count") <= 0 or not db_res:
+    params_dict = dict(UniqueId=segment_id)
+    update_segment_dict = dict(Status=SegmentStatusKeys.DRAFTED.value,
+                               UpdationDate=datetime.utcnow(),
+                               SqlQuery=sql_query,
+                               CampaignSqlQuery=sql_query,
+                               DataImageSqlQuery=sql_query,
+                               Title=title,
+                               HistoryId=history_id)
+    try:
+        db_resp = CEDSegment().update_segment(params_dict, update_segment_dict)
+        if db_resp.get("row_count") <= 0 or not db_resp:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="Unable to update")
+    except Exception as ex:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Exception during update query execution.",
+                    ex=str(ex))
 
-        data_dict = dict(headers_list=[*response_data[0]],
-                         count=request_response.get("count"))
+    save_or_update_tags_for_segment(segment_id, tag_mapping, mode="update")
 
-        return dict(status_code=200, result=TAG_SUCCESS,
-                    details_message="Segment Updated!",
-                    data=data_dict)
+    request_body = dict(
+        source=AsyncTaskSourceKeys.ONYX_CENTRAL.value,
+        request_type=AsyncTaskRequestKeys.ONYX_EDIT_CUSTOM_SEGMENT.value,
+        request_id=segment_id,
+        project_id=project_id,
+        callback=dict(callback_key=AsyncTaskCallbackKeys.ONYX_EDIT_CUSTOM_SEGMENT.value),
+        queries=generate_queries_for_async_task(sql_query),
+        project_name=project_name
+    )
+
+    validation_response = hyperion_local_async_rest_call(CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, request_body)
+
+    if validation_response.get("result", TAG_FAILURE) == TAG_SUCCESS:
+        data_id = CEDSegment().get_data_id_by_segment_id(segment_id)[0]["data_id"]
+        update_segment_dict["UniqueId"] = segment_id
+        update_segment_dict["ProjectId"] = project_id
+        update_segment_dict["DataId"] = data_id
+        update_dict = dict(comment=f"""<strong>Segment {title}</strong> is Updated by {user_name}""",
+                           history_id=history_id, status=SegmentStatusKeys.DRAFTED.value, segment_count=0, active=1,
+                           is_deleted=0, data_source=DataSource.SEGMENT.value,
+                           sub_data_source=SubDataSource.SEGMENT.value,
+                           user=user_name)
+        create_entry_segment_history_table_and_activity_log(update_segment_dict, update_dict)
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                    details_message="Segment update under process.")
+    else:
+        return validation_response
 
 
 def query_validation_check(sql_query: str) -> dict:
@@ -642,13 +569,15 @@ def get_drafted_segment_dict(**kwargs) -> dict:
         "UpdationDate": datetime.now(),
         "Extra": kwargs.get("Headers", None),
         "EmailCampaignSqlQuery": kwargs.get("EmailCampaignSqlQuery"),
-        "Description": kwargs.get("Description", "")
+        "HistoryId": kwargs.get("HistoryId", None)
     }
 
     return drafted_segment_dict
 
 
-def save_tags_for_segment(segment_id: str, tag_mapping: list):
+def save_or_update_tags_for_segment(segment_id: str, tag_mapping: list, mode="save"):
+    if mode == "update":
+        CEDEntityTagMapping().delete_tags_from_segment(segment_id)
     segment_tag_list = []
     segment_tag_dict = {}
     for segment_tag in tag_mapping:
