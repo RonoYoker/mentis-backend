@@ -776,15 +776,29 @@ def prepare_and_save_cb_history_data(campaign_builder_ids, user_name):
     history_object = CEDCampaignBuilder().get_cb_details_by_cb_id(campaign_builder_ids)
     if len(history_object) == 0:
         return dict(status=False, message="cb data is empty")
+    activity_logs_data = []
     for his_obj in history_object:
         his_obj["CampaignBuilderId"] = his_obj.pop("UniqueId")
         his_obj["UniqueId"] = his_obj.pop("HistoryId")
         comment = f"<strong>CampaignBuilder {his_obj.get('Id')} </strong> is Deactivated by {user_name}"
         his_obj["Comment"] = comment
+        activity_log_entity = CED_ActivityLog({
+            "unique_id": uuid.uuid4().hex,
+            "created_by": user_name,
+            "updated_by": user_name,
+            "data_source": DataSource.CAMPAIGN_BUILDER.value,
+            "sub_data_source": SubDataSource.CAMPAIGN_BUILDER.value,
+            "data_source_id": his_obj["CampaignBuilderId"],
+            "comment": comment,
+            "history_table_id": his_obj["UniqueId"],
+            "filter_id": his_obj["CampaignBuilderId"]
+        })
+        activity_logs_data.append(activity_log_entity)
         del his_obj['Id']
 
     try:
         response = CED_HISCampaignBuilder().save_history_data(history_object)
+        CEDActivityLog().save_activity_logs_bulk(activity_logs_data)
     except Exception as ex:
         return dict(status=False, message=str(ex))
 
@@ -798,14 +812,28 @@ def prepare_and_save_cbc_history_data(campaign_builder_campaign_id, user_name):
     history_object = CEDCampaignBuilderCampaign().get_cbc_details_by_cbc_id(campaign_builder_campaign_id)
     if len(history_object) == 0:
         return dict(status_code=False, message="cbc data is empty")
+    activity_logs_data = []
     for his_obj in history_object:
         his_obj["CampaignBuilderCampaignId"] = his_obj.pop("UniqueId")
         his_obj["UniqueId"] = his_obj.pop("HistoryId")
         comment = f"<strong>CampaignBuilderCampaign {his_obj.get('Id')} </strong> is Deactivated by {user_name}"
         his_obj["Comment"] = comment
+        activity_log_entity = CED_ActivityLog({
+            "unique_id": uuid.uuid4().hex,
+            "created_by": user_name,
+            "updated_by": user_name,
+            "data_source": DataSource.CAMPAIGN_BUILDER.value,
+            "sub_data_source": SubDataSource.CB_CAMPAIGN.value,
+            "data_source_id": his_obj["CampaignBuilderCampaignId"],
+            "comment": comment,
+            "history_table_id": his_obj["UniqueId"],
+            "filter_id": his_obj["CampaignBuilderCampaignId"]
+        })
+        activity_logs_data.append(activity_log_entity)
         del his_obj['Id']
     try:
         response = CEDHIS_CampaignBuilderCampaign().save_history_data(history_object)
+        CEDActivityLog().save_activity_logs_bulk(activity_logs_data)
     except Exception as ex:
         return dict(status=False, message=str(ex))
 

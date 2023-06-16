@@ -1,6 +1,6 @@
 from onyx_proj.common.mysql_helper import mysql_connect
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, save_or_update, save, \
-    save_or_update_merge
+    save_or_update_merge, bulk_insert
 from onyx_proj.models.CreditasCampaignEngine import CED_ActivityLog
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, fetch_one_row, execute_query, insert, save
@@ -37,4 +37,8 @@ class CEDActivityLog:
 
     def save_or_update_activity_log(self, activity_log_entity):
         res = save_or_update_merge(self.engine, activity_log_entity)
+        return res
+
+    def save_activity_logs_bulk(self,activity_log_entity_list):
+        res = bulk_insert(self.engine,activity_log_entity_list)
         return res
