@@ -688,7 +688,7 @@ ASYNC_QUERY_EXECUTION_ENABLED = ["VST_Ethera", "TEST_VST", "IBL_CRD_Ethera", "IB
                                  "TEST_IBL_CC_UPGRADE", "TEST_IBL_DC_UPGRADE", "TEST_IBL_OCL", "IBL_OCL_Ethera",
                                  "TEST_IBL_CASA", "TEST_IBL", "IBL_CASA", "IBL_CC_UPGRADE_Ethera", "YBL_CLE_Ethera",
                                  "TEST_YBL_CC_UPG","TEST_YBL_ACQ","IBL_DC_ENBL_Ethera","TEST_ABL", "ABL_Ethera",
-                                 "IBL_Collections"]
+                                 "IBL_Collections","YBL_ACQ","YBL_CC_UPG"]
 
 
 class CampaignStatus(Enum):
