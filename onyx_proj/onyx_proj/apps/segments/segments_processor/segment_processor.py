@@ -127,7 +127,7 @@ def deactivate_segment_by_segment_id(request_body, request_headers):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Missing segment id")
 
-    segment_data = CEDSegment().get_segment_data(segment_id)[0]
+    segment_data = CEDSegment().get_segment_by_unique_id({"UniqueId": segment_id})[0]
 
     campaign_data = CEDCampaignBuilder().get_campaigns_by_segment_id(segment_id)
     if len(campaign_data) != 0 and campaign_data:

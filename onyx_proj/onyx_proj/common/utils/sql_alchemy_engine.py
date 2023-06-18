@@ -28,7 +28,7 @@ class SqlAlchemyEngine(object, metaclass=Singleton):
                 f"mysql://{self.user}:%s@"
                 f"{settings.DATABASES[self.database]['HOST']}:{settings.DATABASES[self.database]['PORT']}/{settings.DATABASES[self.database]['NAME']}?charset=utf8mb4" % quote(
                     f"{self.password}"),
-                echo=True, pool_size=20, max_overflow=30, pool_pre_ping=True, pool_recycle=3600)
+                echo=False, pool_size=20, max_overflow=30, pool_pre_ping=True, pool_recycle=3600)
             self.engines[self.database] = engine
         return self.engines[self.database]
 
