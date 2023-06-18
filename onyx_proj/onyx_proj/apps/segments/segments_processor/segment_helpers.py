@@ -104,7 +104,7 @@ def create_entry_segment_history_table_and_activity_log(segment_data: dict, upda
     activity_log_entity.data_source = update_dict["data_source"]
     activity_log_entity.sub_data_source = update_dict["sub_data_source"]
     activity_log_entity.data_source_id = segment_data["UniqueId"]
-    activity_log_entity.filter_id = segment_data["UniqueId"]
+    activity_log_entity.filter_id = segment_data["ProjectId"]
     activity_log_entity.comment = update_dict["comment"]
     activity_log_entity.history_table_id = update_dict["history_id"]
     activity_log_entity.created_by = update_dict["user"]

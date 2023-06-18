@@ -1,6 +1,5 @@
 from datetime import datetime
 import uuid
-import http
 import logging
 import json
 import re
@@ -11,11 +10,10 @@ from Crypto.Cipher import AES
 from onyx_proj.apps.segments.segments_processor.segment_helpers import \
     create_entry_segment_history_table_and_activity_log
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
-from onyx_proj.apps.content.content_procesor import content_headers_processor
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.common.constants import TAG_FAILURE, CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, TAG_SUCCESS, TAG_KEY_CUSTOM, \
     CUSTOM_QUERY_FORBIDDEN_KEYWORDS, CUSTOM_QUERY_EXECUTION_API_PATH, TAG_TEST_CAMPAIGN_QUERY_ALIAS_PATTERNS, \
-    SEGMENT_RECORDS_COUNT_API_PATH, TAG_REQUEST_POST, ASYNC_QUERY_EXECUTION_ENABLED, DataSource, SubDataSource
+    SEGMENT_RECORDS_COUNT_API_PATH, TAG_REQUEST_POST, DataSource, SubDataSource
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.models.CED_EntityTagMapping import CEDEntityTagMapping
 from onyx_proj.models.CED_Segment_model import CEDSegment

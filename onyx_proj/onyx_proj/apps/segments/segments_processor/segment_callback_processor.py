@@ -2,21 +2,13 @@ import json
 import logging
 import datetime
 import http
-import uuid
-
 from Crypto.Cipher import AES
 from django.conf import settings
 
 from onyx_proj.apps.content.content_procesor import content_headers_processor
 from onyx_proj.apps.segments.app_settings import QueryKeys, AsyncTaskRequestKeys, SegmentStatusKeys
-from onyx_proj.apps.segments.segments_processor.segment_helpers import \
-    create_entry_segment_history_table_and_activity_log
 from onyx_proj.models.CED_Segment_model import CEDSegment
-from onyx_proj.models.CED_HIS_Segment_model import CEDHISSegment
-from onyx_proj.orm_models.CED_HIS_Segment_model import CED_HIS_Segment
-from onyx_proj.models.CED_ActivityLog_model import CEDActivityLog
-from onyx_proj.orm_models.CED_ActivityLog_model import CED_ActivityLog
-from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, DataSource, SubDataSource
+from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS
 from onyx_proj.apps.async_task_invocation.app_settings import AsyncJobStatus
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import generate_test_query
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt

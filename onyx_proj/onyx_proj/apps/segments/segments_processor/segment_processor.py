@@ -2,32 +2,26 @@ import datetime
 import http
 import logging
 import uuid
-from Crypto.Cipher import AES
 from onyx_proj.common.utils.telegram_utility import TelegramUtility
 
 from onyx_proj.common.constants import SEGMENT_REFRESH_VALIDATION_DURATION_MINUTES, \
-    ASYNC_SEGMENT_QUERY_EXECUTION_WAITING_MINUTES, CampaignStatus
+    ASYNC_SEGMENT_QUERY_EXECUTION_WAITING_MINUTES, CampaignStatus, DataSource, SubDataSource
 from onyx_proj.common.utils.logging_helpers import log_entry
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
-from onyx_proj.apps.segments.segments_processor.segment_helpers import check_validity_flag, check_restart_flag
+from onyx_proj.apps.segments.segments_processor.segment_helpers import check_validity_flag, check_restart_flag, \
+    create_entry_segment_history_table_and_activity_log
 from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import deactivate_campaign_by_campaign_id, \
     schedule_campaign_using_campaign_builder_id, generate_campaign_approval_status_mail
-from onyx_proj.common.request_helper import RequestClient
-from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, \
-    REFRESH_COUNT_LOCAL_API_PATH, SegmentRefreshStatus, SEGMENT_COUNT_QUERY, MIN_REFRESH_COUNT_DELAY, \
-    ASYNC_QUERY_EXECUTION_ENABLED
+from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import hyperion_local_async_rest_call
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.models.CED_HIS_Segment_model import CEDHISSegment
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException, NotFoundException, \
     ValidationFailedException
 from onyx_proj.models.CED_Segment_model import CEDSegment
-from onyx_proj.models.CED_Projects import CEDProjects
-from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.apps.segments.app_settings import AsyncTaskCallbackKeys, AsyncTaskSourceKeys, QueryKeys, \
-    AsyncTaskRequestKeys
+    AsyncTaskRequestKeys, SegmentStatusKeys
 from onyx_proj.celery_app.tasks import segment_refresh_for_campaign_approval
-from celery import task
 
 logger = logging.getLogger("apps")
 
@@ -133,6 +127,8 @@ def deactivate_segment_by_segment_id(request_body, request_headers):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Missing segment id")
 
+    segment_data = CEDSegment().get_segment_data(segment_id)[0]
+
     campaign_data = CEDCampaignBuilder().get_campaigns_by_segment_id(segment_id)
     if len(campaign_data) != 0 and campaign_data:
         cb_id_list = []
@@ -141,12 +137,13 @@ def deactivate_segment_by_segment_id(request_body, request_headers):
         deactivation_request_body = {"campaign_details": {"campaign_builder_id": cb_id_list}}
         response = deactivate_campaign_by_campaign_id(deactivation_request_body)
         if response.get("result", TAG_SUCCESS) == TAG_FAILURE:
-            logger.error(f"deactivate_segment_by_segment_id :: unable to deactivate campaigns aligned with segment_id: {segment_id},"
-                         f"message: {response.get('message', '')}")
+            logger.error(
+                f"deactivate_segment_by_segment_id :: unable to deactivate campaigns aligned with segment_id: {segment_id},"
+                f"message: {response.get('message', '')}")
             return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
                         details_message="Unable to deactivate campaigns aligned for the given segment.")
 
-    status = "DEACTIVATE"
+    status = SegmentStatusKeys.DEACTIVATE.value
     flag = 0
     history_id = uuid.uuid4().hex
 
@@ -163,13 +160,11 @@ def deactivate_segment_by_segment_id(request_body, request_headers):
     if not response:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Error while deactivating segment")
-
-    history_result = save_deactivation_segment_history(user_name, segment_id)
-    if history_result.get("status") != TAG_SUCCESS:
-        logger.error(f"deactivate_segment_by_segment_id :: Error while saving history log for deactivation process.")
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Error while saving history log for deactivation process")
-
+    else:
+        update_dict = dict(history_id=history_id, status=status, segment_count=segment_data["Records"], user=user_name,
+                           active=0, is_deleted=1, comment=f"""<strong>Segment {segment_data['Title']}</strong> is Deactivated by {user_name}""",
+                           data_source=DataSource.SEGMENT.value, sub_data_source=SubDataSource.SEGMENT.value)
+        create_entry_segment_history_table_and_activity_log(segment_data, update_dict)
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, details_message="Segment Deactivated Successfully!")
 
 
@@ -198,6 +193,7 @@ def save_deactivation_segment_history(user_name, segment_id):
 
     return dict(status=TAG_SUCCESS)
 
+
 def validate_segment_status(segment_id, status):
     """
     Method to validate the approved segment
@@ -210,6 +206,7 @@ def validate_segment_status(segment_id, status):
     if not segment_data.status or segment_data.status != status:
         raise ValidationFailedException(method_name=method_name, reason="Segment is not approved")
     return segment_data
+
 
 def check_segment_refresh_status(segment_entity):
     """
@@ -227,6 +224,7 @@ def check_segment_refresh_status(segment_entity):
         return True
     else:
         return False
+
 
 def trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_count):
     """
@@ -282,18 +280,23 @@ def trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_
 
     refresh_time = segment_entity.refresh_date
     current_time = datetime.datetime.utcnow()
-    logger.debug(f"method_name :: {method_name}, refresh_time: {refresh_time}, count_refresh_start_date: {segment_entity.count_refresh_start_date}, "
-                 f"count_refresh_end_date: {segment_entity.count_refresh_end_date}")
+    logger.debug(
+        f"method_name :: {method_name}, refresh_time: {refresh_time}, count_refresh_start_date: {segment_entity.count_refresh_start_date}, "
+        f"count_refresh_end_date: {segment_entity.count_refresh_end_date}")
 
     # if refresh time data is not stale
-    if refresh_time and refresh_time + datetime.timedelta(minutes=SEGMENT_REFRESH_VALIDATION_DURATION_MINUTES) >= current_time:
+    if refresh_time and refresh_time + datetime.timedelta(
+            minutes=SEGMENT_REFRESH_VALIDATION_DURATION_MINUTES) >= current_time:
         # Proceed for approval flow.
         # schedule_campaign_using_campaign_builder_id.apply_async(args=(cb_id), queue="")
         schedule_campaign_using_campaign_builder_id(cb_id)
     elif segment_entity.count_refresh_start_date and retry_count != 0:
-        if segment_entity.count_refresh_start_date <= current_time - datetime.timedelta(minutes=ASYNC_SEGMENT_QUERY_EXECUTION_WAITING_MINUTES):
-            logger.error(f"method_name :: {method_name}, Async query count refresh timeout, count_refresh_start_date {segment_entity.count_refresh_start_date} , current_time: {current_time}")
-            CEDCampaignBuilder().mark_campaign_as_error(cb_id, f"Async query count refresh timeout, count_refresh_start_date {segment_entity.count_refresh_start_date} , current_time: {current_time}")
+        if segment_entity.count_refresh_start_date <= current_time - datetime.timedelta(
+                minutes=ASYNC_SEGMENT_QUERY_EXECUTION_WAITING_MINUTES):
+            logger.error(
+                f"method_name :: {method_name}, Async query count refresh timeout, count_refresh_start_date {segment_entity.count_refresh_start_date} , current_time: {current_time}")
+            CEDCampaignBuilder().mark_campaign_as_error(cb_id,
+                                                        f"Async query count refresh timeout, count_refresh_start_date {segment_entity.count_refresh_start_date} , current_time: {current_time}")
             generate_campaign_approval_status_mail(
                 {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
             alerting_text = f'Campaign Name: {campaign_builder_entity.name}, Campaign ID : {campaign_builder_entity.id}, ERROR : Segment Count Refresh timeout'
@@ -304,14 +307,19 @@ def trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_
         elif segment_entity.count_refresh_end_date is None or segment_entity.count_refresh_start_date > segment_entity.count_refresh_end_date:
             logger.debug(f"method_name :: {method_name}, Segment is already being processed")
             # call async self
-            logger.debug(f"method_name: {method_name}, pushing for retry, cb_id: {cb_id}, retry_count: {retry_count+1}")
-            segment_refresh_for_campaign_approval.apply_async(args=(cb_id, segment_id, retry_count+1), queue="celery_campaign_approval", countdown=4*60)
+            logger.debug(
+                f"method_name: {method_name}, pushing for retry, cb_id: {cb_id}, retry_count: {retry_count + 1}")
+            segment_refresh_for_campaign_approval.apply_async(args=(cb_id, segment_id, retry_count + 1),
+                                                              queue="celery_campaign_approval", countdown=4 * 60)
             # trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_count+1)
-    elif not refresh_time or refresh_time + datetime.timedelta(minutes=SEGMENT_REFRESH_VALIDATION_DURATION_MINUTES) < current_time:
+    elif not refresh_time or refresh_time + datetime.timedelta(
+            minutes=SEGMENT_REFRESH_VALIDATION_DURATION_MINUTES) < current_time:
         # process segment count and call async self
         refresh_status = trigger_update_segment_count(dict(body=dict(unique_id=segment_id)))
         if refresh_status is not None and refresh_status.get("result", None) is not None:
-            logger.debug(f"Segment refresh result: {refresh_status['result']}, details_message: {refresh_status.get('details_message','')}")
-        logger.debug(f"method_name: {method_name}, pushing for retry, cb_id {cb_id}, retry_count: {retry_count+1}")
-        segment_refresh_for_campaign_approval.apply_async(args=(cb_id, segment_id, retry_count+1), queue="celery_campaign_approval", countdown=4*60)
+            logger.debug(
+                f"Segment refresh result: {refresh_status['result']}, details_message: {refresh_status.get('details_message', '')}")
+        logger.debug(f"method_name: {method_name}, pushing for retry, cb_id {cb_id}, retry_count: {retry_count + 1}")
+        segment_refresh_for_campaign_approval.apply_async(args=(cb_id, segment_id, retry_count + 1),
+                                                          queue="celery_campaign_approval", countdown=4 * 60)
         # trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_count+1)
