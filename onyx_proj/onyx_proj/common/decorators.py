@@ -156,3 +156,28 @@ def fetch_project_id_from_conf(conf, *args, **kwargs):
     else:
         raise MethodPermissionValidationException
     return project_id
+
+
+def fetch_project_id_from_conf_from_given_identifier(identifier_type, identifier_id, *args):
+    from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
+    from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
+    from onyx_proj.models.CED_Segment_model import CEDSegment
+    from onyx_proj.models.CED_CampaignExecutionProgress_model import CEDCampaignExecutionProgress
+    try:
+        if identifier_type == "PROJECT":
+            project_id = identifier_id
+        elif identifier_type == "SEGMENT":
+            project_id = CEDSegment().get_project_id_by_segment_id(identifier_id)
+        elif identifier_type == "CAMPAIGNBUILDER":
+            project_id = CEDCampaignBuilder().get_project_id_from_campaign_builder_id(identifier_id)
+        elif identifier_type == "CAMPAIGNBUILDERCAMPAIGN":
+            project_id = CEDCampaignBuilderCampaign().get_project_id_from_campaign_builder_campaign_id(identifier_id)
+        elif identifier_type == "CONTENT":
+            content_type = args[0].get("content_type")
+            project_id = app_settings.CONTENT_TABLE_MAPPING[f"{content_type}"]().get_project_id_by_content_id(identifier_id)
+        else:
+            raise MethodPermissionValidationException
+        return project_id
+    except Exception as ex:
+        logger.error(f'Not able to return project id for given identifier, identifier_type : {identifier_type}, identifier_id : {identifier_id}, exp : {ex}')
+        return None

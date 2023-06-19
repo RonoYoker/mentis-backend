@@ -7,6 +7,8 @@ from onyx_proj.common.constants import *
 from onyx_proj.models.CED_CampaignExecutionProgress_model import *
 from onyx_proj.apps.campaign.campaign_monitoring.stats_process_helper import *
 from onyx_proj.models.CED_User_model import CEDUser
+from onyx_proj.common.utils.telegram_utility import TelegramUtility
+from onyx_proj.common.decorators import fetch_project_id_from_conf_from_given_identifier
 
 logger = logging.getLogger("apps")
 
@@ -37,6 +39,7 @@ def update_campaign_stats_to_central_db(data):
     """
     Function to update campaign stats in the CED_CampaignExecutionProgress table in central DB
     """
+    method_name = 'update_campaign_stats_to_central_db'
     body = data.get("body")
     campaign_stats_data = body.get("data")
 
@@ -45,12 +48,31 @@ def update_campaign_stats_to_central_db(data):
                     details_message="No data to update for the campaign.")
 
     campaign_id = campaign_stats_data.pop("CampaignId")
+    campaign_builder_campaign_id = CEDCampaignExecutionProgress().get_campaing_builder_campaign_id(campaign_id)
+    project_id = fetch_project_id_from_conf_from_given_identifier("CAMPAIGNBUILDERCAMPAIGN",
+                                                                  campaign_builder_campaign_id)
+    update_status = campaign_stats_data.get("Status", None)
+    if update_status in CAMPAIGN_STATUS_FOR_ALERTING:
+        try:
+            alerting_text = f'Campaing ID : {campaign_id}, {campaign_stats_data}, ERROR: Campaign Needs attention'
+            alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
+                                                                  feature_section="DEFAULT")
+        except Exception as ex:
+            logger.error(f'Unable to process telegram alerting, method_name: {method_name}, Exp : {ex}')
+
     where_dict = {"CampaignId": campaign_id}
     try:
         db_res = CEDCampaignExecutionProgress().update_table_data_by_campaign_id(where_dict, campaign_stats_data)
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                     details_message=f"db_res: {db_res}.")
     except Exception as e:
+        try:
+            alerting_text = f'Failure in updating campaign Status to Central DB {where_dict}'
+            alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
+                                                                  feature_section="DEFAULT")
+        except Exception as ex:
+            logger.error(f'Unable to process telegram alerting, method_name: {method_name}, Exp : {ex}')
+
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"error: {e}.")
 

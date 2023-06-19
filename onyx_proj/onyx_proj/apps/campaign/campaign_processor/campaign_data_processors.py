@@ -78,6 +78,8 @@ from onyx_proj.orm_models.CED_CampaignContentFollowUPSmsMapping_model import CED
 from onyx_proj.orm_models.CED_CampaignFollowUPMapping_model import CED_CampaignFollowUPMapping
 from onyx_proj.orm_models.CED_HIS_CampaignBuilderEmail_model import CED_HIS_CampaignBuilderEmail
 from onyx_proj.orm_models.CED_HIS_CampaignBuilderIVR_model import CED_HIS_CampaignBuilderIVR
+from onyx_proj.common.constants import CampaignTablesStatus
+from onyx_proj.common.utils.telegram_utility import TelegramUtility
 
 logger = logging.getLogger("apps")
 
@@ -250,9 +252,11 @@ def get_filtered_dashboard_tab_data(data) -> json:
 
 
 def update_campaign_status(data) -> json:
+    from onyx_proj.common.decorators import fetch_project_id_from_conf_from_given_identifier
     """
     Function to update campaign status in campaign tables in POST request body
     """
+    method_name = 'update_campaign_status'
     logger.debug(f"request data :: {data}")
     request_body = data.get("body", {})
     cssd_id = request_body.get("campaign_id", None)
@@ -266,6 +270,16 @@ def update_campaign_status(data) -> json:
     if status is None or (status.lower() not in ["error", "success"]):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="status type is not correct.")
+
+    try:
+        if status == CampaignTablesStatus.ERROR.value:
+            segment_id = CEDCampaignSchedulingSegmentDetails().fetch_campaign_segment_unique_id(cssd_id)
+            project_id = fetch_project_id_from_conf_from_given_identifier("SEGMENT", segment_id)
+            alerting_text = f'Hyperion Local Campaing ID : {cssd_id}, Segment ID : {segment_id},  Status : {status}, Error Message : {error_msg}, ERROR: Campaign Needs attention'
+            alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
+                                                                  feature_section="DEFAULT")
+    except Exception as ex:
+        logger.error(f'Unable to process telegram alerting, method_name: {method_name}, Exp : {ex}')
 
     query = add_status_to_query_using_params(cssd_id, status, error_msg)
     logger.debug(f"request data query :: {query}")

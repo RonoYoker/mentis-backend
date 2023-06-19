@@ -5,6 +5,7 @@ import http
 from Crypto.Cipher import AES
 from django.conf import settings
 
+from django.conf import settings
 from onyx_proj.apps.content.content_procesor import content_headers_processor
 from onyx_proj.apps.segments.app_settings import QueryKeys, AsyncTaskRequestKeys, SegmentStatusKeys
 from onyx_proj.models.CED_Segment_model import CEDSegment

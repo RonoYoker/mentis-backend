@@ -23,3 +23,7 @@ class CEDCampaignExecutionProgress:
     def save_or_update_campaign_excution_progress_entity(self, campaign_execution_progress_entity):
         insert(self.engine, campaign_execution_progress_entity)
         return campaign_execution_progress_entity
+
+    def get_campaing_builder_campaign_id(self, campaign_id):
+        result = dict_fetch_one(self.curr, self.table_name, {"CampaignId": campaign_id}, ["CampaignBuilderCampaignId"])
+        return result.get("CampaignBuilderCampaignId", None)
