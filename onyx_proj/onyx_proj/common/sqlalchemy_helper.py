@@ -390,3 +390,24 @@ def save_or_update_merge(engine, entity):
             # entity = result
         dict = create_dict_from_object(upd_entity)
     return entity.__class__(dict)
+
+
+def fetch_count(engine, table, filter_list):
+    """
+        Function to fetch count.
+        parameters:
+            table: table class name
+            filter_list: list of dict of filters, format - [{"column": "col", "value": "val", "op": "=="}]
+        returns: List of class object of table
+    """
+    with Session(engine) as session:
+        session.begin()
+        try:
+            q = session.query(table)
+            for filters in filter_list:
+                q = add_filter(q, filters["value"], getattr(table, filters["column"]), filters["op"])
+            count = q.count()
+            return count
+        except Exception as ex:
+            logging.error(f"error while fetching from table {str(table)}, Error: ", ex)
+            raise ex

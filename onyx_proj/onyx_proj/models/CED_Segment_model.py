@@ -1,5 +1,6 @@
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, fetch_one_row, execute_query,save_or_update_merge
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, fetch_one_row, execute_query, \
+    save_or_update_merge, fetch_count
 from onyx_proj.models.CreditasCampaignEngine import CED_Segment
 
 
@@ -155,3 +156,13 @@ class CEDSegment:
     def get_data_id_by_segment_id(self, segment_id: str):
         base_query = f"SELECT DataId AS data_id FROM CED_Segment WHERE UniqueId = '{segment_id}'"
         return dict_fetch_query_all(self.curr, base_query)
+
+    def get_segments_data_by_title_and_project_id(self, project_id, title):
+        filter_list = [
+            {"column": "project_id", "value": project_id, "op": "=="},
+            {"column": "title", "value": title, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "active", "value": 1, "op": "=="}
+        ]
+        res = fetch_count(self.engine, self.table, filter_list)
+        return res

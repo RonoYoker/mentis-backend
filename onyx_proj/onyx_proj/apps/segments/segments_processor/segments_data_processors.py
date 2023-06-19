@@ -5,6 +5,7 @@ import re
 from datetime import datetime
 from datetime import timedelta
 
+from onyx_proj.apps.segments.segments_processor.segment_helpers import validate_seg_name
 from onyx_proj.common.constants import FIXED_HEADER_MAPPING_COLUMN_DETAILS
 from onyx_proj.models.CED_DataID_Details_model import CEDDataIDDetails
 from onyx_proj.models.CED_FP_HeaderMap_model import CEDFPHeaderMapping
@@ -106,3 +107,26 @@ def get_master_headers_by_data_id(request_body):
             header_dict[new_key] = header_dict.pop(old_key)
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=final_headers_list)
+
+
+def validate_segment_tile(request_body):
+    logger.debug(f"get_master_headers_by_data_id :: request_body: {request_body}")
+
+    project_id = request_body.get("project_id", None)
+    seg_title = request_body.get("title", None)
+    if project_id is None or seg_title is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Missing mandatory params.")
+
+    # Validate title format
+    is_valid = validate_seg_name(seg_title)
+    if is_valid is not None and is_valid.get("result") == TAG_FAILURE:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message=is_valid.get("details_message"))
+
+    segments_data = CEDSegment().get_segments_data_by_title_and_project_id(project_id, seg_title)
+    if segments_data > 0:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Segment title is already used.")
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)

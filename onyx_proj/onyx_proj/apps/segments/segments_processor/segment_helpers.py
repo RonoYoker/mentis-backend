@@ -1,6 +1,7 @@
 import json
 import datetime
 import logging
+import re
 import uuid
 
 from Crypto.Cipher import AES
@@ -8,6 +9,7 @@ import http
 from django.conf import settings
 
 from onyx_proj.apps.segments.app_settings import SegmentStatusKeys
+from onyx_proj.common.constants import TAG_FAILURE, MAX_ALLOWED_SEG_NAME_LENGTH, MIN_ALLOWED_SEG_NAME_LENGTH
 from onyx_proj.models.CED_ActivityLog_model import CEDActivityLog
 from onyx_proj.models.CED_HIS_Segment_model import CEDHISSegment
 from onyx_proj.models.CED_Segment_model import CEDSegment
@@ -117,3 +119,25 @@ def create_entry_segment_history_table_and_activity_log(segment_data: dict, upda
         activity_log_db_resp = CEDActivityLog().save_activity_log(activity_log_entity)
     except Exception as ex:
         logger.error(f"{method_name} :: Error while activity log object entity, error is: {ex}")
+
+
+def validate_seg_name(name):
+    if name is None:
+        return dict(result=TAG_FAILURE, details_message="Name is not provided")
+    if len(name) > MAX_ALLOWED_SEG_NAME_LENGTH or len(name) < MIN_ALLOWED_SEG_NAME_LENGTH:
+        return dict(result=TAG_FAILURE, details_message=
+        "Segment title length should be greater than 4 or length should be less than to 128")
+
+    if is_valid_alpha_numeric_space_under_score(name) is False:
+        return dict(result=TAG_FAILURE, details_message=
+        "Segment title format incorrect, only alphanumeric, space and underscore characters allowed")
+
+
+def is_valid_alpha_numeric_space_under_score(name):
+    if name.strip() == "_":
+        return False
+    regex = '^[a-zA-Z0-9 _]+$'
+    if re.fullmatch(regex, name):
+        return True
+    else:
+        return False
