@@ -1010,6 +1010,8 @@ class ContentFetchModes(Enum):
     SAVE_CAMPAIGN = "SAVE_CAMPAIGN"
     VIEW_CONTENT = "VIEW_CONTENT"
     APPROVAL_PENDING = "APPROVAL_PENDING"
+    VALID_CONTENT = "VALID_CONTENT"
+
 
 class CampaignBuilderStatus(Enum):
     SAVED = "SAVED"
