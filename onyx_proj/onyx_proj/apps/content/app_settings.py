@@ -46,4 +46,9 @@ FETCH_CONTENT_MODE_FILTERS = {
     ContentFetchModes.APPROVAL_PENDING.value: {
         "filters": [{"column": "status", "value": [CampaignContentStatus.APPROVAL_PENDING.value], "op": "in"}]
     },
+    ContentFetchModes.VALID_CONTENT.value: {
+        "filters": [{"column": "is_active", "value": True, "op": "=="},
+                    {"column": "is_deleted", "value": False, "op": "=="},
+                    {"column": "status", "value": [CampaignContentStatus.APPROVED.value], "op": "in"}]
+    }
 }
