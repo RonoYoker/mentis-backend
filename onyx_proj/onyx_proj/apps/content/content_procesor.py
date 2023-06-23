@@ -137,8 +137,8 @@ def fetch_campaign_processor(data) -> dict:
 def get_campaigns(query):
     campaign_builder = CEDCampaignBuilder().execute_fetch_campaigns_list_query(query)
     if not campaign_builder or len(campaign_builder) < 1:
-        return dict(status_code=http.HTTPStatus.OK, result=TAG_FAILURE,
-                    details_message="No campaign found")
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                    details_message="No campaign found",response = [])
 
     for campaign in campaign_builder:
         campaign["start_date_time"] = campaign.get('start_date_time').strftime("%Y-%m-%d %H:%M:%S")
