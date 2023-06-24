@@ -85,7 +85,7 @@ def fetch_campaign_processor(data) -> dict:
     request_body = data.get("body", {})
     content_type = request_body.get("content_type", None)
     content_id = request_body.get("content_id", None)
-    status = "'APPROVED'"
+    status_list = "'APPROVED', 'APPROVAL_PENDING', 'SAVED'"
 
     if content_type not in CHANNELS_LIST:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -96,7 +96,7 @@ def fetch_campaign_processor(data) -> dict:
                     details_message="Either content_type not found or content_id not found.")
 
     if content_type == "SMS":
-        sms_campaign_content = CEDCampaignSMSContent().get_sms_data(content_id, status)
+        sms_campaign_content = CEDCampaignSMSContent().get_sms_data(content_id, status_list)
         query = get_query_for_campaigns(content_id, content_type)
         if sms_campaign_content and len(sms_campaign_content) > 0:
             return get_campaigns(query)
@@ -105,7 +105,7 @@ def fetch_campaign_processor(data) -> dict:
                         details_message="SMS content is not in valid state.")
 
     elif content_type == "EMAIL":
-        email_campaign_content = CEDCampaignEmailContent().get_email_data(content_id, status)
+        email_campaign_content = CEDCampaignEmailContent().get_email_data(content_id, status_list)
         query = get_query_for_campaigns(content_id, content_type)
         if email_campaign_content and len(email_campaign_content) > 0:
             return get_campaigns(query)
@@ -114,7 +114,7 @@ def fetch_campaign_processor(data) -> dict:
                         details_message="EMAIL content is not in valid state.")
 
     elif content_type == "IVR":
-        ivr_campaign_content = CEDCampaignIvrContent().get_ivr_data(content_id, status)
+        ivr_campaign_content = CEDCampaignIvrContent().get_ivr_data(content_id, status_list)
         query = get_query_for_campaigns(content_id, content_type)
         if ivr_campaign_content and len(ivr_campaign_content) > 0:
             return get_campaigns(query)
@@ -123,7 +123,7 @@ def fetch_campaign_processor(data) -> dict:
                         details_message="IVR content is not in valid state.")
 
     elif content_type == "WHATSAPP":
-        whatsapp_campaign_content = CEDCampaignWhatsAppContent().get_whatsapp_data(content_id, status)
+        whatsapp_campaign_content = CEDCampaignWhatsAppContent().get_whatsapp_data(content_id, status_list)
         query = get_query_for_campaigns(content_id, content_type)
         if whatsapp_campaign_content and len(whatsapp_campaign_content) > 0:
             return get_campaigns(query)
