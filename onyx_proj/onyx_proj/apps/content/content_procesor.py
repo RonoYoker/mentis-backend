@@ -21,7 +21,8 @@ from onyx_proj.common.constants import CHANNELS_LIST, TAG_FAILURE, TAG_SUCCESS, 
     CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, Roles, ContentFetchModes
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.common.constants import CHANNELS_LIST, TAG_FAILURE, TAG_SUCCESS, FETCH_CAMPAIGN_QUERY, Roles, \
-    CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, CampaignContentStatus, ContentType, CONTENT_TYPE_LIST
+    CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, CampaignContentStatus, ContentType, \
+    CONTENT_TYPE_LIST
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.models.CED_CampaignEmailContent_model import CEDCampaignEmailContent
 from onyx_proj.models.CED_CampaignIvrContent_model import CEDCampaignIvrContent
@@ -80,6 +81,7 @@ def content_headers_processor(headers_list: list, project_id: str):
 
 @csrf_exempt
 def fetch_campaign_processor(data) -> dict:
+    logger.debug(f"fetch_campaign_processor")
     request_body = data.get("body", {})
     content_type = request_body.get("content_type", None)
     content_id = request_body.get("content_id", None)
@@ -138,7 +140,7 @@ def get_campaigns(query):
     campaign_builder = CEDCampaignBuilder().execute_fetch_campaigns_list_query(query)
     if not campaign_builder or len(campaign_builder) < 1:
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
-                    details_message="No campaign found",response = [])
+                    details_message="No campaign found", response=[])
 
     for campaign in campaign_builder:
         campaign["start_date_time"] = campaign.get('start_date_time').strftime("%Y-%m-%d %H:%M:%S")
@@ -287,7 +289,9 @@ def deactivate_content_and_campaign(request_body, request_headers):
     history_id = uuid.uuid4().hex
     try:
         result = app_settings.CONTENT_TABLE_MAPPING[content_type]().update_content_status(dict(UniqueId=content_id),
-                                                                                          dict(IsActive=active_flag, Status=status, HistoryId=history_id))
+                                                                                          dict(IsActive=active_flag,
+                                                                                               Status=status,
+                                                                                               HistoryId=history_id))
     except Exception as ex:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Exception while updating content status",
@@ -359,6 +363,7 @@ def save_content_history_data(content_type, content_id, user_name):
     else:
         return {"isSaved": True, "status_code": 200}
 
+
 def validate_content_details(campaign_builder_campaign_entity, validate_for_approval: bool):
     """
     Method to validate content associated with campaign builder campaign
@@ -369,15 +374,20 @@ def validate_content_details(campaign_builder_campaign_entity, validate_for_appr
         valid_content_status_list.append(CampaignContentStatus.APPROVAL_PENDING.value)
 
     if campaign_builder_campaign_entity.content_type == ContentType.SMS.value:
-        check_valid_sms_content_for_campaign_creation(campaign_builder_campaign_entity.sms_campaign, valid_content_status_list)
+        check_valid_sms_content_for_campaign_creation(campaign_builder_campaign_entity.sms_campaign,
+                                                      valid_content_status_list)
     elif campaign_builder_campaign_entity.content_type == ContentType.EMAIL.value:
-        check_valid_email_content_for_campaign_creation(campaign_builder_campaign_entity.email_campaign, valid_content_status_list)
+        check_valid_email_content_for_campaign_creation(campaign_builder_campaign_entity.email_campaign,
+                                                        valid_content_status_list)
     elif campaign_builder_campaign_entity.content_type == ContentType.IVR.value:
-        check_valid_ivr_content_for_campaign_creation(campaign_builder_campaign_entity.ivr_campaign, valid_content_status_list)
+        check_valid_ivr_content_for_campaign_creation(campaign_builder_campaign_entity.ivr_campaign,
+                                                      valid_content_status_list)
     elif campaign_builder_campaign_entity.content_type == ContentType.WHATSAPP.value:
-        check_valid_whatsapp_content_for_campaign_creation(campaign_builder_campaign_entity.whatsapp_campaign, valid_content_status_list)
+        check_valid_whatsapp_content_for_campaign_creation(campaign_builder_campaign_entity.whatsapp_campaign,
+                                                           valid_content_status_list)
     else:
         raise BadRequestException(method_name=method_name, reason="Content type is not valid")
+
 
 def check_valid_sms_content_for_campaign_creation(campaign_builder_sms_entity, status_list):
     method_name = "check_valid_sms_content_for_campaign_creation"
@@ -390,37 +400,45 @@ def check_valid_sms_content_for_campaign_creation(campaign_builder_sms_entity, s
 
     sms_content_id = campaign_builder_sms_entity.sms_id
     try:
-        sms_content_entity = CEDCampaignSMSContent().get_sms_content_data_by_unique_id_and_status(sms_content_id, status_list)
+        sms_content_entity = CEDCampaignSMSContent().get_sms_content_data_by_unique_id_and_status(sms_content_id,
+                                                                                                  status_list)
         if not sms_content_entity:
             raise NotFoundException(method_name=method_name, reason="Sms content not found")
         if sms_content_entity.is_contain_url is not None and sms_content_entity.is_contain_url == 1:
             if not campaign_builder_sms_entity.url_id:
                 raise NotFoundException(method_name=method_name, reason="url id not provided")
-            elif len(CEDCampaignContentUrlMapping().get_content_and_url_mapping_data(campaign_builder_sms_entity.sms_id, campaign_builder_sms_entity.url_id, ContentType.SMS.value)) <= 0:
+            elif len(CEDCampaignContentUrlMapping().get_content_and_url_mapping_data(campaign_builder_sms_entity.sms_id,
+                                                                                     campaign_builder_sms_entity.url_id,
+                                                                                     ContentType.SMS.value)) <= 0:
                 # check the query return data
                 raise ValidationFailedException(method_name=method_name, reason="url id invalid")
-        elif (sms_content_entity.is_contain_url is None or sms_content_entity.is_contain_url == 0) and campaign_builder_sms_entity.url_id:
+        elif (
+                sms_content_entity.is_contain_url is None or sms_content_entity.is_contain_url == 0) and campaign_builder_sms_entity.url_id:
             raise ValidationFailedException(method_name=method_name, reason="provided url is not valid")
 
         # Validate content and sender id mapping
-        if len(CEDCampaignContentSenderIdMapping().get_content_and_sender_id_mapping_data(campaign_builder_sms_entity.sms_id, campaign_builder_sms_entity.sender_id, ContentType.SMS.value)) <= 0:
+        if len(CEDCampaignContentSenderIdMapping().get_content_and_sender_id_mapping_data(
+                campaign_builder_sms_entity.sms_id, campaign_builder_sms_entity.sender_id, ContentType.SMS.value)) <= 0:
             raise ValidationFailedException(method_name=method_name, reason="Sender id mapping not found")
 
     except NotFoundException as ex:
         logger.error(f"method_name: {method_name}, error: {ex.reason}")
-        raise NotFoundException(method_name=method_name, reason="error while validating sms content for campaign approval")
+        raise NotFoundException(method_name=method_name,
+                                reason="error while validating sms content for campaign approval")
     except BadRequestException as ex:
         logger.error(f"method_name: {method_name}, error: {ex.reason}")
-        raise NotFoundException(method_name=method_name, reason="error while validating sms content for campaign approval")
+        raise NotFoundException(method_name=method_name,
+                                reason="error while validating sms content for campaign approval")
     except ValidationFailedException as ex:
         logger.error(f"method_name: {method_name}, error: {ex.reason}")
-        raise NotFoundException(method_name=method_name, reason="error while validating sms content for campaign approval")
+        raise NotFoundException(method_name=method_name,
+                                reason="error while validating sms content for campaign approval")
     except Exception as ex:
         logger.error(f"method_name: {method_name}, error: error while validating sms content for campaign, {ex}")
-        raise BadRequestException(method_name=method_name, reason=f"error while validating sms content for campaign approval, {ex}")
+        raise BadRequestException(method_name=method_name,
+                                  reason=f"error while validating sms content for campaign approval, {ex}")
 
     log_exit()
-
 
 
 def check_valid_email_content_for_campaign_creation(campaign_builder_email_entity, status_list):
@@ -434,30 +452,38 @@ def check_valid_email_content_for_campaign_creation(campaign_builder_email_entit
 
     email_content_id = campaign_builder_email_entity.email_id
     try:
-        email_content_entity = CEDCampaignEmailContent().get_email_content_data_by_unique_id_and_status(email_content_id, status_list)
+        email_content_entity = CEDCampaignEmailContent().get_email_content_data_by_unique_id_and_status(
+            email_content_id, status_list)
         if not email_content_entity:
             raise NotFoundException(method_name=method_name, reason="Email content not found")
         if email_content_entity.is_contain_url is not None and email_content_entity.is_contain_url == 1:
             if not campaign_builder_email_entity.url_id:
                 raise NotFoundException(method_name=method_name, reason="url id not provided")
-            elif len(CEDCampaignContentUrlMapping().get_content_and_url_mapping_data(campaign_builder_email_entity.email_id, campaign_builder_email_entity.url_id, ContentType.EMAIL.value)) <= 0:
+            elif len(CEDCampaignContentUrlMapping().get_content_and_url_mapping_data(
+                    campaign_builder_email_entity.email_id, campaign_builder_email_entity.url_id,
+                    ContentType.EMAIL.value)) <= 0:
                 raise ValidationFailedException(method_name=method_name, reason="url id invalid")
         elif email_content_entity.is_contain_url == 0 and campaign_builder_email_entity.url_id:
             raise ValidationFailedException(method_name=method_name, reason="provided url is not valid")
 
     except NotFoundException as ex:
         logger.error(f"method_name: {method_name}, error: {ex.reason}")
-        raise NotFoundException(method_name=method_name, reason="error while validating email content for campaign approval")
+        raise NotFoundException(method_name=method_name,
+                                reason="error while validating email content for campaign approval")
     except BadRequestException as ex:
         logger.error(f"method_name: {method_name}, error: {ex.reason}")
-        raise NotFoundException(method_name=method_name, reason="error while validating email content for campaign approval")
+        raise NotFoundException(method_name=method_name,
+                                reason="error while validating email content for campaign approval")
     except ValidationFailedException as ex:
         logger.error(f"method_name: {method_name}, error: {ex.reason}")
-        raise NotFoundException(method_name=method_name, reason="error while validating email content for campaign approval")
+        raise NotFoundException(method_name=method_name,
+                                reason="error while validating email content for campaign approval")
     except Exception as ex:
         logger.error(f"method_name: {method_name}, error: error while validating email content for campaign, {ex}")
-        raise BadRequestException(method_name=method_name, reason=f"error while validating email content for campaign approval, {ex}")
+        raise BadRequestException(method_name=method_name,
+                                  reason=f"error while validating email content for campaign approval, {ex}")
     log_exit()
+
 
 def check_valid_ivr_content_for_campaign_creation(campaign_builder_ivr_entity, status_list):
     method_name = "check_valid_ivr_content_for_campaign_creation"
@@ -470,7 +496,8 @@ def check_valid_ivr_content_for_campaign_creation(campaign_builder_ivr_entity, s
 
     ivr_content_id = campaign_builder_ivr_entity.ivr_id
     try:
-        ivr_content_entity = CEDCampaignIvrContent().get_ivr_content_data_by_unique_id_and_status(ivr_content_id, status_list)
+        ivr_content_entity = CEDCampaignIvrContent().get_ivr_content_data_by_unique_id_and_status(ivr_content_id,
+                                                                                                  status_list)
         if not ivr_content_entity:
             raise NotFoundException(method_name=method_name, reason="Email content not found")
     except NotFoundException as ex:
@@ -491,6 +518,7 @@ def check_valid_ivr_content_for_campaign_creation(campaign_builder_ivr_entity, s
                                   reason=f"error while validating ivr content for campaign approval, {ex}")
     log_exit()
 
+
 def check_valid_whatsapp_content_for_campaign_creation(campaign_builder_whatsapp_entity, status_list):
     method_name = "check_valid_whatsapp_content_for_campaign_creation"
     log_entry()
@@ -502,30 +530,36 @@ def check_valid_whatsapp_content_for_campaign_creation(campaign_builder_whatsapp
 
     whatsapp_content_id = campaign_builder_whatsapp_entity.whats_app_content_id
     try:
-        whatsapp_content_entity = CEDCampaignWhatsAppContent().get_whatsapp_content_data_by_unique_id_and_status(whatsapp_content_id, status_list)
+        whatsapp_content_entity = CEDCampaignWhatsAppContent().get_whatsapp_content_data_by_unique_id_and_status(
+            whatsapp_content_id, status_list)
 
         if not whatsapp_content_entity:
             raise NotFoundException(method_name=method_name, reason="Whatsapp content not found")
         if whatsapp_content_entity.contain_url is not None and whatsapp_content_entity.contain_url == 1:
             if not campaign_builder_whatsapp_entity.url_id:
                 raise NotFoundException(method_name=method_name, reason="url id not provided")
-            elif len(CEDCampaignContentUrlMapping().get_content_and_url_mapping_data(campaign_builder_whatsapp_entity.whats_app_content_id, campaign_builder_whatsapp_entity.url_id, ContentType.WHATSAPP.value)) <= 0:
+            elif len(CEDCampaignContentUrlMapping().get_content_and_url_mapping_data(
+                    campaign_builder_whatsapp_entity.whats_app_content_id, campaign_builder_whatsapp_entity.url_id,
+                    ContentType.WHATSAPP.value)) <= 0:
                 raise ValidationFailedException(method_name=method_name, reason="url id invalid")
         elif whatsapp_content_entity.contain_url == 0 and campaign_builder_whatsapp_entity.url_id:
             raise ValidationFailedException(method_name=method_name, reason="provided url is not valid")
 
     except NotFoundException as ex:
         logger.error(f"method_name: {method_name}, error: {ex.reason}")
-        raise NotFoundException(method_name=method_name, reason="error while validating whatsapp content for campaign approval")
+        raise NotFoundException(method_name=method_name,
+                                reason="error while validating whatsapp content for campaign approval")
     except BadRequestException as ex:
         logger.error(f"method_name: {method_name}, error: {ex.reason}")
-        raise NotFoundException(method_name=method_name, reason="error while validating whatsapp content for campaign approval")
+        raise NotFoundException(method_name=method_name,
+                                reason="error while validating whatsapp content for campaign approval")
     except ValidationFailedException as ex:
         logger.error(f"method_name: {method_name}, error: {ex.reason}")
-        raise NotFoundException(method_name=method_name, reason="error while validating whatsapp content for campaign approval")
+        raise NotFoundException(method_name=method_name,
+                                reason="error while validating whatsapp content for campaign approval")
     except Exception as ex:
         logger.error(f"method_name: {method_name}, error: error while validating whatsapp content for campaign, {ex}")
-        raise BadRequestException(method_name=method_name, reason=f"error while validating whatsapp content for campaign approval, {ex}")
+        raise BadRequestException(method_name=method_name,
+                                  reason=f"error while validating whatsapp content for campaign approval, {ex}")
 
     log_exit()
-
