@@ -58,10 +58,12 @@ def onyx_common_callback_processor(parent_id: str, url: str):
     for task in tasks_data["result"]:
         if task["Status"] == AsyncJobStatus.TIMEOUT.value:
             response = "Query Timeout"
+        elif task["Status"] == AsyncJobStatus.ERROR.value:
+            response = "Error"
         else:
             response = json.loads(AesEncryptDecrypt(key=settings.AES_ENCRYPTION_KEY["KEY"],
                                                     iv=settings.AES_ENCRYPTION_KEY["IV"],
-                                                    mode=AES.MODE_CBC).decrypt_aes_cbc(task.get("Response", "error")))
+                                                    mode=AES.MODE_CBC).decrypt_aes_cbc(task["Response"]))
         request_node = {
             "response": response,
             "response_format": task["ResponseFormat"], "status": task["Status"],
