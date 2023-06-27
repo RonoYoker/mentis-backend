@@ -1,3 +1,4 @@
+import copy
 import datetime
 from datetime import timedelta
 import http
@@ -1868,6 +1869,7 @@ def save_campaign_details(request_data):
     recurring_detail = body.get("recurring_detail", None)
     campaign_list = body.get("campaign_list", [])
     description = body.get("description", None)
+    is_split = body.get("is_split",False)
     user_session = Session().get_user_session_object()
     user_name = user_session.user.user_name
 
@@ -1917,6 +1919,7 @@ def save_campaign_details(request_data):
     campaign_builder.type = type
     campaign_builder.is_recurring = is_recurring
     campaign_builder.description = description
+    campaign_builder.is_split = is_split
 
     try:
         saved_campaign_builder = save_campaign_builder_details(campaign_builder, campaign_list, unique_id, data_id)
@@ -1925,7 +1928,7 @@ def save_campaign_details(request_data):
                                       reason=saved_campaign_builder.get("details_message"))
         campaign_builder = saved_campaign_builder.get("data")
 
-        saved_cbc_data = validate_and_save_campaign_builder_campaign_details(campaign_builder, campaign_list, segment_id, unique_id)
+        saved_cbc_data = validate_and_save_campaign_builder_campaign_details(campaign_builder, campaign_list, segment_id, unique_id,is_split)
         if saved_cbc_data.get("result") == TAG_FAILURE:
             campaign_builder.status = CampaignBuilderStatus.ERROR.value
             CEDCampaignBuilder().save_or_update_campaign_builder_details(campaign_builder)
@@ -2101,7 +2104,7 @@ def validate_url_mandatory_for_sms(sms_id, url_id):
                                       reason="Urlid is missing")
 
 
-def validate_campaign_builder_campaign_details(campaign_builder, campaign_list, segment_id, campaign_id):
+def validate_campaign_builder_campaign_details(campaign_builder, campaign_list, segment_id, campaign_id,is_split):
     method_name = "validate_campaign_builder_campaign_details"
     logger.debug(f"Trace Entry: {method_name}")
     unique_id = campaign_builder.unique_id
@@ -2111,7 +2114,7 @@ def validate_campaign_builder_campaign_details(campaign_builder, campaign_list, 
     if campaign_builder_details is None or len(campaign_builder_details) == 0:
         return dict(result=TAG_FAILURE, details_message="Campaign builder details are not valid")
 
-    response = validate_schedule(campaign_list, segment_id, unique_id, campaign_id)
+    response = validate_schedule(campaign_list, segment_id, unique_id, campaign_id,is_split)
     if response.get("result") == TAG_FAILURE:
         logger.error(f"{method_name}, validate schedule resp :: {response}  ")
         return dict(result=TAG_FAILURE, details_message=response.get("details_message"))
@@ -2145,9 +2148,40 @@ def validate_campaign_builder_campaign_details(campaign_builder, campaign_list, 
         if type == "SCHEDULED":
             campaign["start_date_time"] = campaign.get("input_start_date_time")
             campaign["end_date_time"] = campaign.get("input_end_date_time")
-        campaign_final_list.append(campaign)
+        split_campaign_list = make_split_cbc_list(campaign,is_split)
+        campaign_final_list.extend(split_campaign_list)
     logger.debug(f"Trace Exit: {method_name}, campaign final list :: {campaign_final_list}")
     return dict(result=TAG_SUCCESS, data=campaign_final_list)
+
+
+def make_split_cbc_list(campaign,is_split):
+    if is_split is False:
+        return [campaign]
+
+    final_cbc_list = []
+    start_date_time = datetime.datetime.strptime(campaign["start_date_time"], "%Y-%m-%d %H:%M:%S")
+    end_date_time = datetime.datetime.strptime(campaign["end_date_time"], "%Y-%m-%d %H:%M:%S")
+
+    if start_date_time.minute != end_date_time.minute:
+        raise ValidationFailedException(reason="Time Difference in Split Campaigns should be in multiple of hours")
+
+    hours = int((int(end_date_time.timestamp()) - int(start_date_time.timestamp()))/(60*60))
+
+    for hour in range(0,hours):
+        camp = copy.deepcopy(campaign)
+        camp["start_date_time"] = start_date_time.strftime("%Y-%m-%d %H:%M:%S")
+        camp["end_date_time"] = (start_date_time+ timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
+        camp["split_details"] = json.dumps({
+            "total_splits": hours,
+            "current_split": hour
+            })
+
+        start_date_time = start_date_time + timedelta(hours=1)
+
+        final_cbc_list.append(camp)
+
+    return final_cbc_list
+
 
 
 def prepare_and_save_campaign_builder_campaign_details(campaign_builder, campaign_final_list, unique_id, campaign_list):
@@ -2181,14 +2215,14 @@ def prepare_and_save_campaign_builder_campaign_details(campaign_builder, campaig
     set_followup_sms_details(campaign_list)
 
 
-def validate_and_save_campaign_builder_campaign_details(campaign_builder, campaign_list, segment_id, campaign_id):
+def validate_and_save_campaign_builder_campaign_details(campaign_builder, campaign_list, segment_id, campaign_id,is_split):
     method_name = "validate_and_save_campaign_builder_campaign_details"
     unique_id = campaign_builder.unique_id
     if unique_id is None:
         return dict(result=TAG_FAILURE, details_message="Campaign builder id is not provided")
     try:
         validate_resp = validate_campaign_builder_campaign_details(campaign_builder, campaign_list, segment_id,
-                                                                   campaign_id)
+                                                                   campaign_id,is_split)
         if validate_resp.get('result') == TAG_FAILURE:
             return dict(result=TAG_FAILURE, details_message=validate_resp.get('details_message'))
         campaign_final_list = validate_resp.get('data')
@@ -2620,7 +2654,7 @@ def validate_campaign_content_mapping(campaign):
         return dict(result=TAG_FAILURE, details_message="Campaign Content type is not valid")
 
 
-def validate_schedule(campaign_list, segment_id, unique_id, campaign_id):
+def validate_schedule(campaign_list, segment_id, unique_id, campaign_id,is_split):
     method_name = "validate_schedule"
     campaign_data = []
     for campaign in campaign_list:
@@ -2628,7 +2662,7 @@ def validate_schedule(campaign_list, segment_id, unique_id, campaign_id):
         start_date_time = campaign.get("input_start_date_time", "")
         end_date_time = campaign.get("input_end_date_time", "")
         campaign_data.append({"contentType": content_type, "startDateTime": start_date_time, "endDateTime": end_date_time, "campaignId": campaign_id})
-    request_data = {"body": {"segmentId": segment_id, "campaigns": campaign_data, }}
+    request_data = {"body": {"segmentId": segment_id, "campaigns": campaign_data, "is_split":is_split }}
     validated = True
     try:
         campaign_validate_response = vaildate_campaign_for_scheduling(request_data)

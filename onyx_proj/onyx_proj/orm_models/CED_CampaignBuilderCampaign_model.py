@@ -15,6 +15,7 @@ class CED_CampaignBuilderCampaign(Base, Orm_helper):
     content_type = Column("ContentType", Integer)
     delay_type = Column("DelayType", String)
     delay_value = Column("DelayValue", String)
+    split_details = Column("SplitDetails", String)
     order_number = Column("OrderNumber", Integer)
     have_next = Column("HaveNext", Boolean)
     is_processed = Column("IsProcessed", Boolean, default=False)

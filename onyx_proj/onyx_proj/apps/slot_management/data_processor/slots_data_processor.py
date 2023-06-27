@@ -1,9 +1,13 @@
+import copy
 import json
 from datetime import datetime,timedelta
 from copy import deepcopy
 import logging
+from math import ceil
+
 from onyx_proj.apps.slot_management.app_settings import SLOT_INTERVAL_MINUTES
 from onyx_proj.common.constants import TAG_SUCCESS, TAG_FAILURE, RateLimitationLevels
+from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
 from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.models.CED_Segment_model import CEDSegment
@@ -19,6 +23,7 @@ def vaildate_campaign_for_scheduling(request_data):
     segment_id = body.get("segmentId", "")
     campaigns_list = body.get("campaigns", [])
     campaign_id = body.get("campaignId")
+    is_split = body.get("is_split",False)
 
     dates_to_validate = set()
     campaigns_date_type_data={}
@@ -74,14 +79,10 @@ def vaildate_campaign_for_scheduling(request_data):
             "end": datetime.strptime(campaign.get("endDateTime"), "%Y-%m-%d %H:%M:%S"),
             "count": segment_count
         }
-        campaigns_date_type_data_project.setdefault(date_channel_key,[]).append(camp_info)
+        camp_info_split = make_split_campaigns(copy.deepcopy(camp_info),is_split)
+        campaigns_date_type_data_project.setdefault(date_channel_key,[]).extend(camp_info_split)
         campaigns_date_type_data_bu = deepcopy(valid_bu_campaigns)
-        camp_info = {
-            "start": datetime.strptime(campaign.get("startDateTime"), "%Y-%m-%d %H:%M:%S"),
-            "end": datetime.strptime(campaign.get("endDateTime"), "%Y-%m-%d %H:%M:%S"),
-            "count": segment_count
-        }
-        campaigns_date_type_data_bu.setdefault(date_channel_key, []).append(camp_info)
+        campaigns_date_type_data_bu.setdefault(date_channel_key, []).extend(camp_info_split)
         slot_limit_per_min_bu = business_unit_threshold[date_channel_key[1]]
         slot_limit_per_min_project = project_threshold[date_channel_key[1]]
         valid_schedule = True
@@ -91,8 +92,8 @@ def vaildate_campaign_for_scheduling(request_data):
             valid_schedule = valid_schedule and validate_campaign_schedule(schedule, slot_limit_per_min_bu,valid_bu_campaigns.get(key,[]))
 
         if valid_schedule is True:
-            valid_bu_campaigns.setdefault(date_channel_key,[]).append(camp_info)
-            valid_project_campaigns.setdefault(date_channel_key,[]).append(camp_info)
+            valid_bu_campaigns.setdefault(date_channel_key,[]).extend(camp_info_split)
+            valid_project_campaigns.setdefault(date_channel_key,[]).extend(camp_info_split)
 
         campaign_validate_resp.append(
             {
@@ -201,6 +202,9 @@ def fetch_valid_bu_campaigns(content_date_keys_to_validate,dates_to_validate,bus
             "end": campaign.get("EndDateTime"),
             "count": int(campaign.get("Records", 0))
         }
+        if campaign.get("is_split",False) is True:
+            split_details = json.loads(campaign["split_details"])
+            campaign["count"] = ceil(campaign["count"]/split_details["total_splits"])
         valid_bu_campaigns.setdefault(key, []).append(campaign)
 
     return valid_bu_campaigns
@@ -235,6 +239,33 @@ def fetch_valid_project_campaigns(content_date_keys_to_validate, dates_to_valida
             "end": campaign.get("EndDateTime"),
             "count": int(campaign.get("Records", 0))
         }
+        if campaign.get("is_split",False) is True:
+            split_details = json.loads(campaign["split_details"])
+            campaign["count"] = ceil(campaign["count"]/split_details["total_splits"])
         valid_project_campaigns.setdefault(key, []).append(campaign)
 
     return valid_project_campaigns
+
+
+
+def make_split_campaigns(camp_info,is_split):
+    if is_split is False:
+        return [camp_info]
+
+    if camp_info["end"].minute != camp_info["start"].minute:
+        raise ValidationFailedException(reason="Time Difference in Split Campaigns should be in multiple of hours")
+
+    hours = int((int(camp_info["end"].timestamp()) - int(camp_info["start"].timestamp()))/(60*60))
+
+    split_campaigns = []
+    for hour in range(0,hours):
+        split_campaigns.append(
+            {
+                "start":camp_info["start"],
+                "end":camp_info["start"] + timedelta(hours =1),
+                "count": ceil(camp_info["count"]/hours)
+            }
+        )
+        camp_info["start"] = camp_info["start"] + timedelta(hours=1)
+
+    return split_campaigns
