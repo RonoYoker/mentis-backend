@@ -61,7 +61,7 @@ def onyx_common_callback_processor(parent_id: str, url: str):
         else:
             response = json.loads(AesEncryptDecrypt(key=settings.AES_ENCRYPTION_KEY["KEY"],
                                                     iv=settings.AES_ENCRYPTION_KEY["IV"],
-                                                    mode=AES.MODE_CBC).decrypt_aes_cbc(task["Response"]))
+                                                    mode=AES.MODE_CBC).decrypt_aes_cbc(task.get("Response", "error")))
         request_node = {
             "response": response,
             "response_format": task["ResponseFormat"], "status": task["Status"],
