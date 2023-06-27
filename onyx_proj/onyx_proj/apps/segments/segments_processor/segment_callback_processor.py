@@ -62,7 +62,8 @@ def process_segment_callback(body):
 
         if bool(error_update_dict):
             try:
-                alerting_text = f'Segment ID : {segment_id}, Segment Error Details: {error_update_dict}, ERROR : Process Segment Async Job Error'
+                segment_name = CEDSegment().get_segment_name_by_id(segment_id=segment_id)
+                alerting_text = f'Segment Name : {segment_name}, Segment ID : {segment_id}, Segment Error Details: {error_update_dict}, ERROR : Process Segment Async Job Error'
                 try:
                     alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                           message_text=alerting_text,
@@ -93,7 +94,8 @@ def process_segment_callback(body):
                 update_dict = dict(UpdationDate=datetime.datetime.utcnow(), Status=AsyncJobStatus.ERROR.value,
                                    RejectionReason="Record Count zero.", Records=segment_count)
                 try:
-                    alerting_text = f'Segment ID : {segment_id}, Segment Error Details: {update_dict}, ERROR : Segment Update Record Count is Zero'
+                    segment_name = CEDSegment().get_segment_name_by_id(segment_id=segment_id)
+                    alerting_text = f'Segment Name : {segment_name}, Segment ID : {segment_id}, Segment Error Details: {update_dict}, ERROR : Segment Update Record Count is Zero'
                     try:
                         alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                               message_text=alerting_text,
@@ -119,8 +121,9 @@ def process_segment_callback(body):
             try:
                 sql_query = segment["SqlQuery"]
             except Exception as ex:
-                alerting_text = f'Segment ID : {segment_id}, ERROR : process_segment_callback :: error thrown while fetching sql_query for given segment_id.'
                 try:
+                    segment_name = CEDSegment().get_segment_name_by_id(segment_id=segment_id)
+                    alerting_text = f'Segment Name : {segment_name}, Segment ID : {segment_id}, ERROR : process_segment_callback :: error thrown while fetching sql_query for given segment_id.'
                     alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                           message_text=alerting_text,
                                                                           feature_section="DEFAULT")
@@ -139,8 +142,9 @@ def process_segment_callback(body):
                 update_dict = dict(UpdationDate=datetime.datetime.utcnow(), Status=SegmentStatusKeys.ERROR.value,
                                    RejectionReason=test_sql_query_response["details_message"],
                                    RefreshDate=datetime.datetime.utcnow())
-                alerting_text = f'Segment ID : {segment_id}, Segment Error Details: {update_dict}'
                 try:
+                    segment_name = CEDSegment().get_segment_name_by_id(segment_id=segment_id)
+                    alerting_text = f'Segment Name : {segment_name}, Segment ID : {segment_id}, Segment Error Details: {update_dict}'
                     alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                           message_text=alerting_text,
                                                                           feature_section="DEFAULT")
@@ -183,8 +187,9 @@ def process_segment_callback(body):
                         details_message=f"Count and headers updated for segment_id: {segment_id}.")
 
     except Exception as e:
-        alerting_text = f'Segment ID : {segment_id}, ERROR : Sprocess_segment_callback :: Error in save custom segment callback flow, Please Reach Out to Tech.'
         try:
+            segment_name = CEDSegment().get_segment_name_by_id(segment_id=segment_id)
+            alerting_text = f'Segment Name : {segment_name}, Segment ID : {segment_id}, ERROR : Sprocess_segment_callback :: Error in save custom segment callback flow, Please Reach Out to Tech.'
             alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                   message_text=alerting_text,
                                                                   feature_section="DEFAULT")
@@ -241,8 +246,9 @@ def process_segment_data_callback(body):
 
         if bool(error_update_dict):
             try:
-                alerting_text = f'Segment ID : {segment_id}, Segment Error Details: {error_update_dict}, ERROR : Process Segment Async Job Error'
                 try:
+                    segment_name = CEDSegment().get_segment_name_by_id(segment_id=segment_id)
+                    alerting_text = f'Segment Name : {segment_name}, Segment ID : {segment_id}, Segment Error Details: {error_update_dict}, ERROR : Process Segment Async Job Error'
                     alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                           message_text=alerting_text,
                                                                           feature_section="DEFAULT")

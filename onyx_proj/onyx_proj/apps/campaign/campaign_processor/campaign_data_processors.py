@@ -274,8 +274,9 @@ def update_campaign_status(data) -> json:
     try:
         if status == CampaignTablesStatus.ERROR.value:
             segment_id = CEDCampaignSchedulingSegmentDetails().fetch_campaign_segment_unique_id(cssd_id)
+            segment_name = CEDSegment().get_segment_name_by_id(segment_id=segment_id)
             project_id = fetch_project_id_from_conf_from_given_identifier("SEGMENT", segment_id)
-            alerting_text = f'Hyperion Local Campaing ID : {cssd_id}, Segment ID : {segment_id},  Status : {status}, Error Message : {error_msg}, ERROR: Campaign Needs attention'
+            alerting_text = f'Hyperion Local Campaing ID : {cssd_id}, Segment Name : {segment_name}, Segment ID : {segment_id},  Status : {status}, Error Message : {error_msg}, ERROR: Campaign Needs attention'
             alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
                                                                   feature_section="DEFAULT")
     except Exception as ex:
