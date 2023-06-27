@@ -51,3 +51,12 @@ class CEDCampaignURLContent:
     def get_project_id_by_content_id(self, content_id: str):
         query = f"SELECT ProjectId AS project_id FROM {self.table_name} WHERE UniqueId = '{content_id}';"
         return dict_fetch_query_all(self.curr, query)
+
+    def bulk_fetch_url_details(self, url_id_list):
+        """
+        Function to fetch multiple url entities by Unique Id list
+        """
+        filter_list = [
+            {"column": "unique_id", "value": url_id_list, "op": "IN"}
+        ]
+        return fetch_rows(self.engine, self.table, filter_list)

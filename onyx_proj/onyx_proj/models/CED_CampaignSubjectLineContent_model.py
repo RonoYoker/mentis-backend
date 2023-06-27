@@ -1,5 +1,6 @@
 import copy
 
+from onyx_proj.common.constants import CampaignContentStatus
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, fetch_one_row, fetch_rows_limited
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignSMSContent, CED_CampaignSubjectLineContent
@@ -63,3 +64,22 @@ class CEDCampaignSubjectLineContent:
 
         res = fetch_one_row(self.engine, self.table, filter_list)
         return res
+
+    def validate_subject_line_status(self, subjectline_list):
+        filter_list = [
+            {"column": "unique_id", "value": subjectline_list, "op": "IN"},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "is_active", "value": 1, "op": "=="},
+            {"column": "status", "value": CampaignContentStatus.APPROVED.value, "op": "=="}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
+
+    def bulk_fetch_subject_line_details(self, subject_line_list):
+        """
+        Function to fetch multiple url entities by Unique Id list
+        """
+        filter_list = [
+            {"column": "unique_id", "value": subject_line_list, "op": "IN"}
+        ]
+        return fetch_rows(self.engine, self.table, filter_list)

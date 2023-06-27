@@ -7,10 +7,15 @@ from django.views.decorators.csrf import csrf_exempt
 
 from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import deactivate_campaign_by_campaign_id
 from onyx_proj.apps.content import app_settings
-from onyx_proj.apps.content.app_settings import FETCH_CONTENT_MODE_FILTERS
+from onyx_proj.apps.content.app_settings import FETCH_CONTENT_MODE_FILTERS, CONTENT_TABLE_MAPPING
 from onyx_proj.common.utils.logging_helpers import log_entry, log_exit
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException, ValidationFailedException, \
     NotFoundException
+from onyx_proj.middlewares.HttpRequestInterceptor import Session
+from onyx_proj.models.CED_ActivityLog_model import CEDActivityLog
+from onyx_proj.models.CED_CampaignBuilderEmail_model import CEDCampaignBuilderEmail
+from onyx_proj.models.CED_CampaignBuilderIVR_model import CEDCampaignBuilderIVR
+from onyx_proj.models.CED_CampaignContentEmailSubjectMapping_model import CEDCampaignContentEmailSubjectMapping
 from onyx_proj.models.CED_CampaignContentSenderIdMapping_model import CEDCampaignContentSenderIdMapping
 from onyx_proj.models.CED_CampaignContentUrlMapping_model import CEDCampaignContentUrlMapping
 from onyx_proj.common.decorators import UserAuth
@@ -18,7 +23,8 @@ from onyx_proj.models.CED_CampaignSubjectLineContent_model import CEDCampaignSub
 from onyx_proj.models.CED_CampaignTagContent_model import CEDCampaignTagContent
 from onyx_proj.models.CED_CampaignURLContent_model import CEDCampaignURLContent
 from onyx_proj.common.constants import CHANNELS_LIST, TAG_FAILURE, TAG_SUCCESS, FETCH_CAMPAIGN_QUERY, \
-    CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, Roles, ContentFetchModes
+    CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, Roles, ContentFetchModes, \
+    CAMPAIGN_CONTENT_MAPPING_TABLE_DICT
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.common.constants import CHANNELS_LIST, TAG_FAILURE, TAG_SUCCESS, FETCH_CAMPAIGN_QUERY, Roles, \
     CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, CampaignContentStatus, ContentType, \
@@ -30,6 +36,9 @@ from onyx_proj.models.CED_CampaignSMSContent_model import CEDCampaignSMSContent
 from onyx_proj.models.CED_CampaignWhatsAppContent_model import CEDCampaignWhatsAppContent
 from onyx_proj.models.CED_MasterHeaderMapping_model import CEDMasterHeaderMapping
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
+from onyx_proj.orm_models.CED_ActivityLog_model import CED_ActivityLog
+from onyx_proj.orm_models.CED_CampaignContentEmailSubjectMapping_model import CED_CampaignContentEmailSubjectMapping
+from onyx_proj.orm_models.CED_CampaignContentUrlMapping_model import CED_CampaignContentUrlMapping
 
 logger = logging.getLogger("apps")
 
@@ -563,3 +572,252 @@ def check_valid_whatsapp_content_for_campaign_creation(campaign_builder_whatsapp
                                   reason=f"error while validating whatsapp content for campaign approval, {ex}")
 
     log_exit()
+
+
+def add_or_remove_url_and_subject_line_from_content(request_body, request_headers):
+    """
+    Function to add or remove url from content.
+    parameters: request data
+    """
+
+    method_name = "add_or_remove_url_and_subject_line_from_content"
+    log_entry(request_body)
+
+    content_id = request_body.get("content_id")
+    content_type = request_body.get("content_type")
+    url_list = request_body.get("url_list")
+    subject_line_list = request_body.get("subject_line_list")
+    add_url_list = None
+    remove_url_list = None
+    add_subject_line_list = None
+    remove_subject_line_list = None
+
+    # Validate content type
+    if content_type.upper() not in ["SMS", "WHATSAPP", "EMAIL"]:
+        logger.error(f"{method_name} :: Invalid content type provided: {content_type}")
+        raise ValidationFailedException(method_name=method_name, reason="Invalid content type")
+
+    # Validate content id and status
+    content_fetch_filters = [{"column": "is_active", "value": True, "op": "=="},
+                    {"column": "is_deleted", "value": False, "op": "=="},
+                    {"column": "unique_id", "value": content_id, "op": "=="}]
+    content_details = CONTENT_TABLE_MAPPING[content_type.upper()]().get_content_data(content_fetch_filters)
+    if content_details is None or len(content_details) <= 0 or content_details[0]["status"] == CampaignContentStatus.DEACTIVATE.value:
+        logger.error(f"{method_name} :: Content is not in valid state")
+        raise ValidationFailedException(method_name=method_name, reason="Content is not in valid state")
+
+    # Check subject line compatibility with content
+    if subject_line_list is not None and len(subject_line_list) > 0 and content_type.upper() != "EMAIL":
+        logger.error(f"{method_name} :: Subject line is only supported with EMAIL")
+        raise ValidationFailedException(method_name=method_name, reason="Subject line is only supported with EMAIL")
+
+    # Check url compatibility with content
+    is_contain_url = "is_contain_url" if content_type.upper() in ("SMS", "EMAIL") else "contain_url"
+    if url_list is not None and len(url_list) > 0 and content_details[0][is_contain_url] == 0:
+        raise ValidationFailedException(method_name=method_name, reason="Content does not support URL")
+
+    # Validate url details
+    try:
+        if url_list is not None and len(url_list) > 0:
+            add_url_list, remove_url_list = validate_url_details_for_content_edit(url_list, content_id, content_type)
+        if subject_line_list is not None and len(subject_line_list) > 0 and content_type.upper() == "EMAIL":
+            add_subject_line_list, remove_subject_line_list = validate_subject_line_details_for_content_edit(subject_line_list, content_id)
+    except ValidationFailedException as ex:
+        logger.error(f"{method_name} :: reason: {ex.reason}")
+        raise ex
+    except Exception as ex:
+        logger.error(f"{method_name} :: Error while validating content and url's, {ex}")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Error while validating content and url's.")
+
+    update_url_mapping(add_url_list, remove_url_list, content_type, content_details[0])
+    if content_type.upper() == "EMAIL" and add_subject_line_list is not None and remove_subject_line_list is not None and len(add_subject_line_list) + len(remove_subject_line_list) > 0:
+        update_subject_line_mapping(add_subject_line_list, remove_subject_line_list, content_details[0])
+
+    log_exit()
+    if content_type.upper() == "EMAIL":
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, urls_added=add_url_list,
+                    urls_removed=remove_url_list, subject_line_added=add_subject_line_list,
+                    subject_line_removed=remove_subject_line_list)
+    else:
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                    urls_added=add_url_list, urls_removed=remove_url_list)
+
+def validate_url_details_for_content_edit(url_list, content_id, content_type):
+    """
+    Function to validate the state of url's to be updated with content
+    param: url_list -> [url_id_1, url_id_2, ...]
+           content_id -> Unique id of the content entity.
+           content_type -> Content type (SMS/IVR/WHATSAPP etc)
+    """
+    method_name = "validate_url_details_for_content_edit"
+    log_entry()
+
+    # Fetch urls mapped with content
+    content_mapped_urls = CEDCampaignContentUrlMapping().fetch_url_id_list_by_content_id(content_id)
+    content_mapped_urls = [content['url_id'] for content in content_mapped_urls]
+
+    add_url_list = [url for url in url_list if url not in content_mapped_urls]
+    remove_url_list = [url for url in content_mapped_urls if url not in url_list]
+
+    if len(add_url_list) > 0:
+        add_url_filter_list = [{"column": "is_active", "value": True, "op": "=="},
+                               {"column": "is_deleted", "value": False, "op": "=="},
+                               {"column": "unique_id", "value": add_url_list, "op": "in"},
+                               {"column": "status", "value": CampaignContentStatus.APPROVED.value, "op": "=="}]
+        add_url_data = CEDCampaignURLContent().get_content_data(add_url_filter_list)
+        if add_url_data is None or len(add_url_data) < len(add_url_list):
+            # Not all urls to be added are valid, raise exception
+            raise ValidationFailedException(method_name=method_name, reason="1 or more url to be added are not in valid state")
+
+    if len(remove_url_list) > 0:
+        # Validate url and content if associated with any campaign
+        campaign_url_mapping = CAMPAIGN_CONTENT_MAPPING_TABLE_DICT[content_type.upper()]().check_campaign_by_content_and_url(content_id, remove_url_list)
+        if campaign_url_mapping is not None and len(campaign_url_mapping) > 0:
+            raise ValidationFailedException(method_name=method_name, reason="Content and url are mapped with existing campaigns")
+
+        # If content is of type SMS, check for follow up sms campaign mapping
+        if content_type == "SMS":
+            follow_up_camp_with_content_and_url = CEDCampaignBuilderIVR().check_content_and_ur_in_follow_up_sms(content_id, remove_url_list)
+            if follow_up_camp_with_content_and_url is not None and len(follow_up_camp_with_content_and_url) > 0:
+                raise ValidationFailedException(method_name=method_name, reason="Content and url mapped with IVR Campaign")
+
+    log_exit()
+    return add_url_list, remove_url_list
+
+
+def validate_subject_line_details_for_content_edit(subject_line_list, content_id):
+    """
+    Function to validate the state of subject line's to be updated with content
+    param: subject_line_list -> [subject_id_1, subject_id_2, ...]
+           content_id -> Unique id of the content entity.
+    """
+    method_name = "validate_subject_line_details_for_content_edit"
+    log_entry()
+
+    # Fetch subject lines mapped with content
+    subject_lines_mapped_to_content = CEDCampaignContentEmailSubjectMapping().get_subject_lines_mapped_with_content(
+        content_id)
+    subject_lines_mapped_to_content = [content['subject_line_id'] for content in subject_lines_mapped_to_content]
+
+    add_subject_line_list = [subject for subject in subject_line_list if subject not in subject_lines_mapped_to_content]
+    remove_subject_line_list = [subject for subject in subject_lines_mapped_to_content if subject not in subject_line_list]
+
+    # Validate subject lines to be added
+    if len(add_subject_line_list) > 0:
+        subject_line_details_db = CEDCampaignSubjectLineContent().validate_subject_line_status(add_subject_line_list)
+        if subject_line_details_db is None or len(subject_line_details_db) != len(add_subject_line_list):
+            raise ValidationFailedException(method_name=method_name,
+                                            reason="Subject line to be added are not in valid state")
+
+    # Validated subject lines to be removed
+    if len(remove_subject_line_list) > 0:
+        # Validate email and subject line mapped with any content
+        campaign_mapped_with_email_and_subject = CEDCampaignBuilderEmail().check_campaign_by_content_and_subjectline(content_id, remove_subject_line_list)
+        if campaign_mapped_with_email_and_subject is not None and len(campaign_mapped_with_email_and_subject) > 0:
+            raise ValidationFailedException(method_name=method_name, reason="Subject lines and content are mapped with existing campaigns")
+
+    log_exit()
+    return add_subject_line_list, remove_subject_line_list
+
+def update_url_mapping(add_url_list, remove_url_list, content_type, content_details):
+    method_name = "update_url_mapping"
+    log_entry()
+
+    user_session = Session().get_user_session_object()
+
+    # fetch url details by url id
+    if (add_url_list is not None or remove_url_list is not None) and len(add_url_list) + len(remove_url_list) > 0:
+        url_details = CEDCampaignURLContent().bulk_fetch_url_details(add_url_list + remove_url_list)
+        if url_details is None or len(url_details) == 0:
+            raise ValidationFailedException(method_name=method_name, reason="URL details not found")
+        url_details = {url["unique_id"]: url for url in url_details}
+
+    if add_url_list is not None and len(add_url_list) > 0:
+        # create url mapping for content in db
+        for url in add_url_list:
+            url_mapping_entity = CED_CampaignContentUrlMapping()
+            url_mapping_entity.url_id = url
+            url_mapping_entity.content_id = content_details["unique_id"]
+            url_mapping_entity.content_type = content_type.upper()
+            url_mapping_entity.unique_id = uuid.uuid4().hex
+            url_mapping_entity.is_active = True
+            url_mapping_entity.is_deleted = False
+            CEDCampaignContentUrlMapping().save_content_url_mapping(url_mapping_entity)
+            create_content_activity_log({"unique_id": uuid.uuid4().hex,
+                                         "data_source": "CONTENT",
+                                         "sub_data_source": f"{content_type.upper()}_CONTENT",
+                                         "data_source_id": content_details["unique_id"],
+                                         "filter_id": content_details["project_id"],
+                                         "comment": f"<strong>URL {url_details[url]['id']}</strong> is added to <strong>{content_type.upper()} {content_details['id']}</strong> by {user_session.user.user_name} ",
+                                         "created_by": user_session.user.user_name,
+                                         "updated_by": user_session.user.user_name,
+                                         })
+
+    if remove_url_list is not None and len(remove_url_list) > 0:
+        # remove url mapping for content in db
+        CEDCampaignContentUrlMapping().delete_content_url_mapping_by_url_list(content_details["unique_id"], remove_url_list)
+        for url in remove_url_list:
+            create_content_activity_log({"unique_id": uuid.uuid4().hex,
+                                         "data_source": "CONTENT",
+                                         "sub_data_source": f"{content_type.upper()}_CONTENT",
+                                         "data_source_id": content_details["unique_id"],
+                                         "filter_id": content_details["project_id"],
+                                         "comment": f"<strong>URL {url_details[url]['id']}</strong> is removed from <strong>{content_type.upper()} {content_details['id']}</strong> by {user_session.user.user_name} ",
+                                         "created_by": user_session.user.user_name,
+                                         "updated_by": user_session.user.user_name,
+                                         })
+    log_exit()
+
+def update_subject_line_mapping(add_subject_line_list, remove_subject_line_list, content_details):
+    method_name = "update_subject_line_mapping"
+    log_entry()
+
+    user_session = Session().get_user_session_object()
+
+    # fetch subject line details by subject line id
+    if (add_subject_line_list is not None or remove_subject_line_list is not None) and len(add_subject_line_list) + len(remove_subject_line_list) > 0:
+        subject_line_details = CEDCampaignSubjectLineContent().bulk_fetch_subject_line_details(add_subject_line_list + remove_subject_line_list)
+        if subject_line_details is None or len(subject_line_details) == 0:
+            raise ValidationFailedException(method_name=method_name, reason="Subject line details not found")
+        subject_line_details = {subject_line["unique_id"]: subject_line for subject_line in subject_line_details}
+
+    if add_subject_line_list is not None and len(add_subject_line_list) > 0:
+        # Create subject line mapping for content
+        for subject_line in add_subject_line_list:
+            content_subject_line_mapping_entity = CED_CampaignContentEmailSubjectMapping()
+            content_subject_line_mapping_entity.content_id = content_details["unique_id"]
+            content_subject_line_mapping_entity.subject_line_id = subject_line
+            content_subject_line_mapping_entity.content_type = "EMAIL"
+            content_subject_line_mapping_entity.unique_id = uuid.uuid4().hex
+            content_subject_line_mapping_entity.is_active = True
+            content_subject_line_mapping_entity.is_deleted = False
+            CEDCampaignContentEmailSubjectMapping().save_subject_line(content_subject_line_mapping_entity)
+            create_content_activity_log({"unique_id": uuid.uuid4().hex,
+                                         "data_source": "CONTENT",
+                                         "sub_data_source": "EMAIL_CONTENT",
+                                         "data_source_id": content_details["unique_id"],
+                                         "filter_id": content_details["project_id"],
+                                         "comment": f"<strong>Subject line {subject_line_details[subject_line]['id']}</strong> is added to <strong>EMAIL {content_details['id']}</strong> by {user_session.user.user_name} ",
+                                         "created_by": user_session.user.user_name,
+                                         "updated_by": user_session.user.user_name,
+                                         })
+
+    if remove_subject_line_list is not None and len(remove_subject_line_list) > 0:
+        # Remove subject line mapping for content
+        CEDCampaignContentEmailSubjectMapping().delete_content_subject_line_mapping(content_details["unique_id"], remove_subject_line_list)
+        for subject_line in remove_subject_line_list:
+            create_content_activity_log({"unique_id": uuid.uuid4().hex,
+                                         "data_source": "CONTENT",
+                                         "sub_data_source": "EMAIL_CONTENT",
+                                         "data_source_id": content_details["unique_id"],
+                                         "filter_id": content_details["project_id"],
+                                         "comment": f"<strong>Subject Line {subject_line_details[subject_line]['id']}</strong> is added to <strong>EMAIL {content_details['id']}</strong> by {user_session.user.user_name} ",
+                                         "created_by": user_session.user.user_name,
+                                         "updated_by": user_session.user.user_name,
+                                         })
+    log_exit()
+
+def create_content_activity_log(activity_log_dict):
+    activity_log_entity = CED_ActivityLog(activity_log_dict)
+    CEDActivityLog().save_activity_log(activity_log_entity)

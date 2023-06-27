@@ -10,7 +10,7 @@ class CED_CampaignContentEmailSubjectMapping(Base, Orm_helper):
     subject_line_id = Column("SubjectLineId", String, ForeignKey("CED_CampaignSubjectLineContent.UniqueId"))
     is_active = Column("IsActive", Boolean)
     is_deleted = Column("IsDeleted", Boolean)
-    creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
+    creation_date = Column("CreationDate", DateTime, default=datetime.utcnow())
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
 

@@ -35,3 +35,14 @@ class CEDCampaignBuilderIVR:
         ]
         res = update(self.engine, self.table, filter_list, update_dict)
         return res
+
+    def check_content_and_ur_in_follow_up_sms(self, sms_id, url_id_list):
+        if len(url_id_list) > 1:
+            url_id_list = tuple(url_id_list)
+            operator = "IN"
+        else:
+            url_id_list = "'" + url_id_list[0] + "'"
+            operator = "="
+        query = f"SELECT cb.MappingId FROM {self.table_name} cb JOIN CED_CampaignContentFollowUPSmsMapping fs ON" \
+                f" cb.IvrId = fs.ContentId WHERE fs.SmsId = '{sms_id}' AND fs.UrlId {operator} {url_id_list}"
+        return query_executor(self.curr, query)

@@ -52,3 +52,16 @@ class CEDCampaignContentUrlMapping:
         ]
         result = fetch_rows(self.engine, self.table, filter_list)
         return result
+
+    def fetch_url_id_list_by_content_id(self, content_id):
+        filter_list = [{"column": "content_id", "value": content_id, "op": "=="}]
+        return fetch_columns(self.engine, self.table, ["url_id"], filter_list)
+
+    def save_content_url_mapping(self, content_url_mapping_entity):
+        insert(self.engine, content_url_mapping_entity)
+        return content_url_mapping_entity
+
+    def delete_content_url_mapping_by_url_list(self, content_id, url_id_list):
+        filter_list = [{"column": "content_id", "value": content_id, "op": "=="},
+                       {"column": "url_id", "value": url_id_list, "op": "IN"}]
+        return delete(self.engine, self.table, filter_list)

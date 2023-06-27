@@ -35,3 +35,23 @@ class CEDCampaignBuilderEmail:
         ]
         res = update(self.engine, self.table, filter_list, update_dict)
         return res
+
+    def check_campaign_by_content_and_url(self, content_id, url_id_list, filters=[]):
+        filter_list = [
+            {"column": "email_id", "value": content_id, "op": "=="},
+            {"column": "url_id", "value": url_id_list, "op": "IN"},
+        ]
+        if filters and len(filters) > 0:
+            filter_list.extend(filters)
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
+
+    def check_campaign_by_content_and_subjectline(self, content_id, subjectline_id_list, filters=[]):
+        filter_list = [
+            {"column": "email_id", "value": content_id, "op": "=="},
+            {"column": "subject_line_id", "value": subjectline_id_list, "op": "IN"},
+        ]
+        if filters and len(filters) > 0:
+            filter_list.extend(filters)
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res

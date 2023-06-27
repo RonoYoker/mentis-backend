@@ -34,3 +34,13 @@ class CEDCampaignBuilderSMS:
     def save_or_update_sms_campaign_details(self, sms_campaign_entity):
         res = save_or_update_merge(self.engine, sms_campaign_entity)
         return res
+
+    def check_campaign_by_content_and_url(self, content_id, url_id_list, filters=[]):
+        filter_list = [
+            {"column": "sms_id", "value": content_id, "op": "=="},
+            {"column": "url_id", "value": url_id_list, "op": "in"},
+        ]
+        if filters and len(filters) > 0:
+            filter_list.extend(filters)
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res

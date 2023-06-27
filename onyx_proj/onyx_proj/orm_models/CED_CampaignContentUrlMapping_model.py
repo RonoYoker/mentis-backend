@@ -12,7 +12,7 @@ class CED_CampaignContentUrlMapping(Base, Orm_helper):
     url_id = Column("UrlId", String,ForeignKey("CED_CampaignUrlContent.UniqueId"))
     is_active = Column("IsActive", Boolean)
     is_deleted = Column("IsDeleted", Boolean)
-    creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
+    creation_date = Column("CreationDate", DateTime, default=datetime.utcnow())
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
 
