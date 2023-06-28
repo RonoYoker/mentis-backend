@@ -94,7 +94,7 @@ def fetch_campaign_processor(data) -> dict:
     request_body = data.get("body", {})
     content_type = request_body.get("content_type", None)
     content_id = request_body.get("content_id", None)
-    status_list = "'APPROVED', 'APPROVAL_PENDING', 'SAVED'"
+    status_list = "'APPROVED', 'APPROVAL_PENDING', 'SAVED','DIS_APPROVED'"
 
     if content_type not in CHANNELS_LIST:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
