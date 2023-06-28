@@ -418,6 +418,7 @@ def update_segment_count_and_status_for_campaign(request_data):
     segment_count = data.get("segment_count")
     status = data.get("status")
     is_test = data.get("is_test", False)
+    trigger_count = data.get("trigger_count")
     curr_date_time = datetime.datetime.utcnow()
     resp = {
         "upd_segment_table": False,
@@ -435,6 +436,9 @@ def update_segment_count_and_status_for_campaign(request_data):
         logger.debug(f"API Resp ::{resp}")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Mandatory Data Missing")
+
+    if trigger_count is None:
+        trigger_count = segment_count
 
     if is_test is False:
         segment_unique_id = CEDCampaignSchedulingSegmentDetails().fetch_campaign_segment_unique_id(campaign_id)
@@ -456,10 +460,10 @@ def update_segment_count_and_status_for_campaign(request_data):
 
         if is_test is False:
             upd_resp = CEDCampaignSchedulingSegmentDetails().update_segment_record_count(campaign_id=campaign_id,
-                                                                                         segment_count=segment_count)
+                                                                                         segment_count=trigger_count)
         else:
             upd_resp = CEDCampaignSchedulingSegmentDetailsTest().update_segment_record_count(campaign_id=campaign_id,
-                                                                                             segment_count=segment_count)
+                                                                                             segment_count=trigger_count)
 
         if upd_resp is not None and upd_resp.get("row_count", 0) > 0:
             resp["upd_sched_table"] = True
