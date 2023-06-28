@@ -57,7 +57,7 @@ def validate_project_details_json(project_details_json):
     else:
         fp_file_data_json = project_details_json["projectDetail"]
 
-    if not fp_file_data_json.get("testCampaign", None):
+    if fp_file_data_json.get("testCampaign", None) is None:
         logger.error(f"{method_name} :: TestCampaign field not found in the input data, hence, validation failed.")
         return dict(success=False,
                     details_message=f"TestCampaign field not found in the input data, hence, validation failed for campaign_builder_campaign_id: {project_details_json['campaignBuilderCampaignId']}")

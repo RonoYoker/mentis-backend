@@ -12,6 +12,7 @@ from django.conf import settings
 import requests
 from django.template.loader import render_to_string
 
+from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT
 from onyx_proj.apps.slot_management.data_processor.slots_data_processor import vaildate_campaign_for_scheduling
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.common.utils.logging_helpers import log_entry, log_exit
@@ -998,7 +999,7 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
             # Evaluate the segment and proceed for Campaign approval
             segment_refresh_for_campaign_approval.apply_async(args=(campaign_builder_id, segment_entity.unique_id),
                                                               queue="celery_campaign_approval")
-            # trigger_update_segment_count_for_campaign_approval(campaign_builder_id, segment_entity.unique_id)
+            # trigger_update_segment_count_for_campaign_approval(campaign_builder_id, segment_entity.unique_id, 0)
 
         elif input_status == CampaignStatus.DIS_APPROVED.value:
             # validate campaign builder campaign for campaign builder id
@@ -1367,6 +1368,8 @@ def trigger_lambda_function_for_campaign_scheduling(campaign_segment_details, pr
     project_details_var = "projectDetail" if backwords_compatible else "project_details"
     cbc_var = "campaignBuilderCampaignId" if backwords_compatible else "campaign_builder_campaign_id"
     pulish_data_var = "publishData" if backwords_compatible else "publish_data"
+    segment_type_var = "segmentType" if backwords_compatible else "segment_type"
+    project_details_object_var = "project_details_object"
 
     campaign_scheduling_segment_entity = generate_campaign_scheduling_segment_entity_for_camp_scheduling(
         campaign_segment_details)
@@ -1377,10 +1380,22 @@ def trigger_lambda_function_for_campaign_scheduling(campaign_segment_details, pr
         file_type_var: "Upload",
         file_status_var: "Upload",
         project_type_var: "AUTO_SCHEDULE_CAMPAIGN",
-        file_id_var: campaign_scheduling_segment_entity.unique_id
+        file_id_var: campaign_scheduling_segment_entity.unique_id,
+        segment_type_var: campaign_scheduling_segment_entity.segment_type,
     }
 
     set_follow_up_sms_template_details(campaign_scheduling_segment_entity)
+
+    project_id = campaign_scheduling_segment_entity.project_id
+
+    # validate project id
+    project_entity = CEDProjects().get_project_entity_by_unique_id(project_id)
+    if project_entity is None:
+        raise NotFoundException(method_name=method_name, reason="Project entity not found")
+
+    validation_conf = json.loads(project_entity.validation_config)
+
+    CAMPAIGN_APPROVAL_VIA_ONYX_LOCAL = validation_conf.get("CAMPAIGN_APPROVAL_VIA_ONYX_LOCAL", False)
 
     # create a list of Attributes to be added to dictionary of scheduling segment data apart from table attributes
     attrs_list = ["campaign_sms_content_entity", "campaign_email_content_entity", "campaign_ivr_content_entity",
@@ -1392,20 +1407,41 @@ def trigger_lambda_function_for_campaign_scheduling(campaign_segment_details, pr
     project_details_map = update_process_file_data_map(project_details_map)
     process_file_data_dict[project_details_var] = project_details_map
     process_file_data_dict[cbc_var] = campaign_scheduling_segment_entity.campaign_id
-    # create request map
-    req_map = {
-        pulish_data_var: json.dumps(process_file_data_dict, default=datetime_converter)
-    }
 
-    # call local to push data to sns to be processed
-    logger.debug(f"method_name: {method_name}, request_created: {req_map}")
-    request_response = RequestClient.post_local_api_request(req_map, project_name,
-                                                            LOCAL_CAMPAIGN_SCHEDULING_DATA_PACKET_HANDLER,
-                                                            send_dict=True)
-    logger.debug(f"method_name: {method_name}, request response: {request_response}")
-    if request_response is None:
-        raise BadRequestException(method_name=method_name,
-                                  reason="Error while calling hyperion local to publish data to SNS")
+    if not CAMPAIGN_APPROVAL_VIA_ONYX_LOCAL:
+        # create request map
+        req_map = {
+            pulish_data_var: json.dumps(process_file_data_dict, default=datetime_converter)
+        }
+        # call local to push data to sns to be processed
+        logger.debug(f"method_name: {method_name}, request_created: {req_map}")
+        request_response = RequestClient.post_local_api_request(req_map, project_name,
+                                                                LOCAL_CAMPAIGN_SCHEDULING_DATA_PACKET_HANDLER,
+                                                                send_dict=True)
+        logger.debug(f"method_name: {method_name}, request response: {request_response}")
+        if request_response is None:
+            raise BadRequestException(method_name=method_name,
+                                      reason="Error while calling hyperion local to publish data to SNS")
+
+    if CAMPAIGN_APPROVAL_VIA_ONYX_LOCAL:
+        # create request map
+        req_map = {
+            project_details_object_var: json.dumps(process_file_data_dict, default=datetime_converter)
+        }
+        logger.debug(f"method_name: {method_name}, request_created: {req_map}")
+        # call local API to populate data or the given test_campaign in local db tables
+        rest_object = RequestClient()
+        request_response = rest_object.post_onyx_local_api_request(req_map, settings.ONYX_LOCAL_DOMAIN[project_id],
+                                                                   FILE_DATA_API_ENDPOINT)
+        logger.debug(f"{method_name} :: local api request_response: {request_response}")
+        # from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import create_campaign_details_in_local_db
+        # request_response = create_campaign_details_in_local_db(json.dumps(request_body, default=str))
+
+        logger.info(f"{method_name} :: request response status_code for local api: {request_response['status_code']}")
+
+        if request_response is None or request_response.get("success", False) is False:
+            raise BadRequestException(method_name=method_name,
+                                      reason="Error while calling hyperion local to publish data to SNS")
 
     log_exit()
 
@@ -2784,8 +2820,8 @@ def create_campaign_details_in_local_db(request: dict):
     method_name = "create_campaign_details_in_local_db"
     logger.debug(f"{method_name} :: request: {request}")
     project_details_object = json.loads(request["project_details_object"])
-    segment_data = request["segment_data"]
-    user_data = request["user_data"]
+    segment_data = request.get("segment_data")
+    user_data = request.get("user_data")
     # validation checks for project_details_json data structure
     validation_response = validate_project_details_json(project_details_object)
     if validation_response["success"] is False:
@@ -2806,18 +2842,25 @@ def create_campaign_details_in_local_db(request: dict):
     fp_file_data_entity.file_status = "FILE_IMPORT_UPLOADED"
     fp_file_data_entity.file_type = project_details_object["fileType"]
     fp_file_data_entity.unique_id = uuid.uuid4().hex
-    fp_file_data_entity.row_count = 1
-    fp_file_data_entity.success_row_count = 1
     fp_file_data_entity.error_row_count = 0
     fp_file_data_entity.skipped_row_count = 0
     fp_file_data_entity.other_row_count = 0
-    fp_file_data_entity.splitted_batch_number = 1
-    fp_file_data_entity.splitted_file_number = 1
     fp_file_data_entity.process_result_json = None
     fp_file_data_entity.to_notification_email = None
     fp_file_data_entity.error_message = None
     fp_file_data_entity.campaign_builder_campaign_id = project_details_object["campaignBuilderCampaignId"]
-    fp_file_data_entity.test_campaign = 1
+    fp_file_data_entity.test_campaign = fp_project_details_json["testCampaign"]
+
+    if not fp_project_details_json.get("testCampaign"):
+        fp_file_data_entity.row_count = fp_project_details_json["records"]
+        fp_file_data_entity.success_row_count = 0
+        fp_file_data_entity.splitted_batch_number = 0
+        fp_file_data_entity.splitted_file_number = 0
+    elif fp_project_details_json.get("testCampaign"):
+        fp_file_data_entity.row_count = 1
+        fp_file_data_entity.success_row_count = 1
+        fp_file_data_entity.splitted_batch_number = 1
+        fp_file_data_entity.splitted_file_number = 1
 
     # save entity to CED_FP_FileData
     fp_file_data_entity_final = save_or_update_fp_file_data(fp_file_data_entity)
@@ -2839,7 +2882,7 @@ def create_campaign_details_in_local_db(request: dict):
     ccd_entity.segment_type = project_details_object["segmentType"]
     ccd_entity.file_name = fp_project_details_json["fileName"]
     ccd_entity.campaign_uuid = project_details_object["campaignBuilderCampaignId"]
-    ccd_entity.test_campaign = 1
+    ccd_entity.test_campaign = fp_project_details_json["testCampaign"]
     ccd_entity.template_id = content_data.get("template_id")
     ccd_entity.campaign_deactivation_date_time = None
     ccd_entity.template_content = content_data.get("template_content")
@@ -2853,34 +2896,35 @@ def create_campaign_details_in_local_db(request: dict):
     # save entity to CED_CampaignCreationDetails table
     save_or_update_ccd(ccd_entity)
 
-    # decrypt extra data and send cached data packet to Segment_Evaluator via SNS packet to avoid executing query
-    # TODO: create this function generic for normal campaigns as well
-    # create SNS packet and push it to Campaign Segment Evaluator via SNS
-    campaign_packet = dict(
-                campaign_builder_campaign_id=project_details_object["campaignBuilderCampaignId"],
-                campaign_name=fp_project_details_json["campaignTitle"],
-                record_count=fp_project_details_json["records"],
-                query=segment_data["sql_query"],
-                startDate=datetime.datetime.utcnow(),
-                endDate=datetime.datetime.utcnow() + timedelta(minutes=10),
-                contentType=fp_project_details_json["channel"],
-                campaign_schedule_segment_details_id=fp_project_details_json["id"],
-                is_test=True,
-                user_data=user_data,
-                file_id=fp_file_data_entity_final.id
-            )
-    if request.get("cached_test_campaign_data", None):
-        campaign_packet["cached_segment_data"] = request["cached_test_campaign_data"]
-    campaign_segment_eval_packet = dict(campaigns=[campaign_packet])
+    if fp_project_details_json.get("testCampaign"):
+        # decrypt extra data and send cached data packet to Segment_Evaluator via SNS packet to avoid executing query
+        # TODO: create this function generic for normal campaigns as well
+        # create SNS packet and push it to Campaign Segment Evaluator via SNS
+        campaign_packet = dict(
+                    campaign_builder_campaign_id=project_details_object["campaignBuilderCampaignId"],
+                    campaign_name=fp_project_details_json["campaignTitle"],
+                    record_count=fp_project_details_json["records"],
+                    query=segment_data["sql_query"],
+                    startDate=datetime.datetime.utcnow(),
+                    endDate=datetime.datetime.utcnow() + timedelta(minutes=10),
+                    contentType=fp_project_details_json["channel"],
+                    campaign_schedule_segment_details_id=fp_project_details_json["id"],
+                    is_test=True,
+                    user_data=user_data,
+                    file_id=fp_file_data_entity_final.id
+                )
+        if request.get("cached_test_campaign_data", None):
+            campaign_packet["cached_segment_data"] = request["cached_test_campaign_data"]
+        campaign_segment_eval_packet = dict(campaigns=[campaign_packet])
 
-    from onyx_proj.common.utils.sns_helper import SnsHelper
-    sns_response = SnsHelper().publish_data_to_topic(settings.SNS_SEGMENT_EVALUATOR,
-                                                     {"default": json.dumps(campaign_segment_eval_packet, default=str)})
-    if sns_response is False:
-        logger.error(
-            f"{method_name} :: Error: Unable to push packet in SNS for campaign_id: {fp_project_details_json['id']}"
-            f"and sns_topic: {settings.SNS_SEGMENT_EVALUATOR}")
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="SNS push failure!")
+        from onyx_proj.common.utils.sns_helper import SnsHelper
+        sns_response = SnsHelper().publish_data_to_topic(settings.SNS_SEGMENT_EVALUATOR,
+                                                         {"default": json.dumps(campaign_segment_eval_packet, default=str)})
+        if sns_response is False:
+            logger.error(
+                f"{method_name} :: Error: Unable to push packet in SNS for campaign_id: {fp_project_details_json['id']}"
+                f"and sns_topic: {settings.SNS_SEGMENT_EVALUATOR}")
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="SNS push failure!")
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
