@@ -812,7 +812,7 @@ def update_subject_line_mapping(add_subject_line_list, remove_subject_line_list,
                                          "sub_data_source": "EMAIL_CONTENT",
                                          "data_source_id": content_details["unique_id"],
                                          "filter_id": content_details["project_id"],
-                                         "comment": f"<strong>Subject Line {subject_line_details[subject_line]['id']}</strong> is added to <strong>EMAIL {content_details['id']}</strong> by {user_session.user.user_name} ",
+                                         "comment": f"<strong>Subject Line {subject_line_details[subject_line]['id']}</strong> is removed from <strong>EMAIL {content_details['id']}</strong> by {user_session.user.user_name} ",
                                          "created_by": user_session.user.user_name,
                                          "updated_by": user_session.user.user_name,
                                          })
