@@ -62,7 +62,7 @@ def get_segment_list(request: dict, session_id=None):
 
     columns_list = ["id", "include_all", "unique_id", "title", "data_id", "project_id", "type", "created_by",
                     "approved_by", "description", "creation_date", "records", "refresh_date", "status",
-                    "segment_builder_id", "rejection_reason", "sql_query"]
+                    "segment_builder_id", "rejection_reason", "sql_query", "active"]
     data = CEDSegment().get_segment_listing_data(filter_list, columns_list)
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=data)
