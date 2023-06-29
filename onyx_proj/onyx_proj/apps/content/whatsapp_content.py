@@ -145,7 +145,7 @@ class WhatsAppContent(Content):
             raise BadRequestException(method_name=method_name, reason="Strength is not provided")
 
         self.validate_description(content_data.get('description'))
-        self.validate_content_title(content_data.get('title'))
+        # self.validate_content_title(content_data.get('title'))
         self.validate_project_id(content_data.get('project_id'))
         self.validate_tag(content_data.get('tag_mapping'), content_data.get('project_id'))
         self.validate_variables(content_data)
