@@ -106,7 +106,7 @@ class Content(ABC):
                                                   reason="Variable list cannot hold more than one url")
 
                 elif master_id != DYNAMIC_VARIABLE_URL_NAME:
-                    if not any(mh.get('UniqueId') == master_id for mh in self.master_id_details) and not any(
+                    if not any(mh.get('unique_id') == master_id for mh in self.master_id_details) and not any(
                             fh.get('uniqueId') == master_id for fh in self.fixed_header_details):
                         raise BadRequestException(method_name=method_name,
                                                   reason="Variable data is not valid")
