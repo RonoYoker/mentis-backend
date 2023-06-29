@@ -1909,7 +1909,7 @@ def save_campaign_details(request_data):
     recurring_detail = body.get("recurring_detail", None)
     campaign_list = body.get("campaign_list", [])
     description = body.get("description", None)
-    is_split = body.get("is_split",False)
+    is_split = body.get("is_split", False)
     user_session = Session().get_user_session_object()
     user_name = user_session.user.user_name
 
@@ -1968,7 +1968,7 @@ def save_campaign_details(request_data):
                                       reason=saved_campaign_builder.get("details_message"))
         campaign_builder = saved_campaign_builder.get("data")
 
-        saved_cbc_data = validate_and_save_campaign_builder_campaign_details(campaign_builder, campaign_list, segment_id, unique_id,is_split)
+        saved_cbc_data = validate_and_save_campaign_builder_campaign_details(campaign_builder, campaign_list, segment_id, unique_id, is_split)
         if saved_cbc_data.get("result") == TAG_FAILURE:
             campaign_builder.status = CampaignBuilderStatus.ERROR.value
             CEDCampaignBuilder().save_or_update_campaign_builder_details(campaign_builder)
@@ -2813,8 +2813,6 @@ def prepare_and_check_headers_compatibility(content_id_map, segment_id):
 
     logger.debug(f"Trace Exit: {method_name}")
     return request_list
-
-
 
 
 def create_campaign_details_in_local_db(request: dict):

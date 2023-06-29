@@ -1,6 +1,6 @@
 import logging
-from sqlalchemy import inspect,column
-from sqlalchemy.orm import Session, joinedload ,load_only
+from sqlalchemy import inspect, column
+from sqlalchemy.orm import Session, joinedload, load_only
 from onyx_proj.common.utils.sql_alchemy_engine import SqlAlchemyEngine
 from onyx_proj.models.CreditasCampaignEngine import CEDTeam, CED_Projects, CEDTeamProjectMapping, CED_User
 
@@ -30,26 +30,6 @@ def insert(engine, entity):
         else:
             session.commit()
 
-
-def save_or_update_merge(engine, entity):
-    """
-        Function to insert a single row into table.
-        parameters:
-            table: Table class object
-            entity: table entity to insert
-        returns:
-    """
-    table = entity.__class__
-    class_object = table(entity._asdict())
-    with Session(engine) as session:
-        session.begin()
-        try:
-            session.merge(class_object)
-        except Exception as ex:
-            session.rollback()
-            logging.error(f"error while inserting in table, Error: ", ex)
-        else:
-            session.commit()
 
 def update(engine, table, filter_list, update_dict):
     """
@@ -101,7 +81,7 @@ def delete(engine, table, filter_list):
             session.commit()
 
 
-def fetch_one_row(engine, table, filter_list,return_type = 'entity'):
+def fetch_one_row(engine, table, filter_list, return_type='entity'):
     """
         Function to fetch a single row from table.
         parameters:
@@ -123,7 +103,7 @@ def fetch_one_row(engine, table, filter_list,return_type = 'entity'):
         return None
 
 
-def fetch_rows(engine, table, filter_list,projections=[],return_type = 'dict'):
+def fetch_rows(engine, table, filter_list, projections=[], return_type='dict'):
     """
         Function to fetch multiple rows from table.
         parameters:
@@ -148,7 +128,7 @@ def fetch_rows(engine, table, filter_list,projections=[],return_type = 'dict'):
             raise ex
 
 
-def fetch_columns(engine, table, column_list, filter_list={}):
+def fetch_columns(engine, table, column_list, filter_list=[]):
     """
         Function to fetch specific columns from table.
         parameters:
@@ -302,7 +282,7 @@ def save(engine, table, entity):
             session.commit()
 
 
-def fetch_rows_limited(engine,table,filter_list,columns=[],relationships=[],limit=None):
+def fetch_rows_limited(engine, table, filter_list, columns=[], relationships=[], limit=None):
     """
         Function to fetch multiple rows from table.
         parameters:
@@ -319,22 +299,22 @@ def fetch_rows_limited(engine,table,filter_list,columns=[],relationships=[],limi
             q = session.query(table)
             for filters in filter_list:
                 q = add_filter(q, filters["value"], getattr(table, filters["column"]), filters["op"])
-            q = add_columns_projections(q,columns)
-            q = add_relationshsip_projections(q,relationships)
+            q = add_columns_projections(q, columns)
+            q = add_relationshsip_projections(q, relationships)
             entity = q.limit(limit).all() if limit is not None else q.all()
             return entity
         except Exception as ex:
-            logging.error(f"error while fetching from table {str(table)}, Error: ", ex)
+            logging.error(f"error while fetching from table, Error: ", ex)
 
 
-def add_columns_projections(q,columns=[]):
+def add_columns_projections(q, columns=[]):
     if len(columns) == 0:
         return q
     q = q.options(load_only(*columns))
     return q
 
 
-def add_relationshsip_projections(q,relationships=[]):
+def add_relationshsip_projections(q, relationships=[]):
     if len(relationships) == 0:
         return q
     for relationship in relationships:

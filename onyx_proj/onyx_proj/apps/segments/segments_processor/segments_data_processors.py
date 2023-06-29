@@ -18,21 +18,22 @@ from onyx_proj.models.CED_UserSession_model import CEDUserSession
 logger = logging.getLogger("apps")
 
 
-def get_segment_list(request, session_id=None):
-    start_time = request.get("start_time")
-    end_time = request.get("end_time")
-    tab_name = request.get("tab_name")
-    project_id = request.get("project_id")
+def get_segment_list(request: dict, session_id=None):
+    method_name = "get_segment_list"
+    logger.debug(f"{method_name} :: request: {request}, session_id: {session_id}")
+
+    start_time = request["start_time"]
+    end_time = request["end_time"]
+    tab_name = request["tab_name"]
+    project_id = request["project_id"]
 
     end_date = datetime.strptime(end_time, SEGMENT_END_DATE_FORMAT)
     end_date_delta = end_date + timedelta(days=1)
     end_date_time = end_date_delta.strftime(SEGMENT_END_DATE_FORMAT)
 
-    if validate_inputs(start_time, end_time, tab_name, project_id) is False:
+    if start_time is None or end_time is None or tab_name is None or project_id is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Invalid Input")
-
-    logger.debug(f"start_time:{start_time} end_time:{end_time} tab_name:{tab_name} project_id:{project_id}")
+                    details_message="Invalid request parameters!")
 
     if tab_name.lower() == SegmentList.ALL.value.lower():
         filter_list = [
@@ -57,17 +58,14 @@ def get_segment_list(request, session_id=None):
             {"column": "project_id", "value": project_id, "op": "=="}
         ]
     else:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="Invalid Tab")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="Invalid Tab!")
 
-    data = CEDSegment().get_segment_query(filter_list)
+    columns_list = ["id", "include_all", "unique_id", "title", "data_id", "project_id", "type", "created_by",
+                    "approved_by", "description", "creation_date", "records", "refresh_date", "status",
+                    "segment_builder_id", "rejection_reason", "sql_query"]
+    data = CEDSegment().get_segment_listing_data(filter_list, columns_list)
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=data)
-
-
-def validate_inputs(start_time, end_time, tab_name, project_id):
-    if start_time is None or end_time is None or tab_name is None or project_id is None:
-        return False
-    return True
 
 
 def get_master_headers_by_data_id(request_body):

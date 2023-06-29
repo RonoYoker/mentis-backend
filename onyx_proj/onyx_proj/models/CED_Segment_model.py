@@ -1,6 +1,6 @@
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, fetch_one_row, execute_query, \
-    save_or_update_merge, fetch_count
+    save_or_update_merge, fetch_count, fetch_columns, fetch_rows_limited
 from onyx_proj.models.CreditasCampaignEngine import CED_Segment
 
 
@@ -97,16 +97,20 @@ class CEDSegment:
         res = fetch_rows(self.engine, self.table, filter_list)
         return res
 
-    def get_segment_query(self, filter_list):
-        res = fetch_rows(self.engine, self.table, filter_list)
+    def get_segment_listing_data(self, filter_list: list, columns_list: list = None):
+        if columns_list is None:
+            res = fetch_rows(self.engine, self.table, filter_list)
+        else:
+            res = fetch_rows_limited(self.engine, self.table, filter_list=filter_list, columns=columns_list, relationships=["tag_mapping.tag"])
+            res = [entity._asdict(fetch_loaded_only=True) for entity in res]
         return res
 
     def check_segment_type_by_unique_id(self, unique_id):
         query = f"""SELECT Type FROM CED_Segment WHERE UniqueId = '{unique_id}'"""
         return dict_fetch_query_all(self.curr, query)
 
-    def save_segment(self,segment_entity):
-        return save_or_update_merge(self.engine,segment_entity)
+    def save_segment(self, segment_entity):
+        return save_or_update_merge(self.engine, segment_entity)
 
     def get_segment_data_by_title(self, title):
         filter_list = [
@@ -149,8 +153,9 @@ class CEDSegment:
         res = fetch_rows(self.engine, self.table, filter_list)
         return res
 
-    def update_segment_mapping_id(self, segment_id,campaign_builder_campaign_id):
-        result = update_rows(self.curr, self.table_name, {"MappingId": campaign_builder_campaign_id}, {"UniqueId": segment_id})
+    def update_segment_mapping_id(self, segment_id, campaign_builder_campaign_id):
+        result = update_rows(self.curr, self.table_name, {"MappingId": campaign_builder_campaign_id},
+                             {"UniqueId": segment_id})
         return result
 
     def get_data_id_by_segment_id(self, segment_id: str):
