@@ -1913,6 +1913,7 @@ def save_campaign_details(request_data):
     user_session = Session().get_user_session_object()
     user_name = user_session.user.user_name
 
+
     if name is None or segment_id is None or start_date_time is None or end_date_time is None\
             or priority is None or type is None or len(campaign_list) == 0:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -1928,6 +1929,9 @@ def save_campaign_details(request_data):
     if data_id is None or project_id is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="DataId/ProjectId is not present")
+
+    if is_split and project_id in settings.SPLIT_CAMPAIGN_DISABLED:
+        raise ValidationFailedException(reason="Split Campaign not enabled for this project")
 
     data_entity = CEDDataIDDetails().fetch_data_id_details(data_id)
     project_entity = CEDProjects().get_active_project_id_entity_alchemy(project_id)

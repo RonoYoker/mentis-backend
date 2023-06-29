@@ -153,3 +153,13 @@ TEST_CAMPAIGN_ENABLED = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenf
                          "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                          "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                          "ablhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd"]
+
+
+SPLIT_CAMPAIGN_DISABLED = ["ibldcuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                              "iblccuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj","iblocljlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                              "iblcrdjlsdsmablpx55clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj","iblaocjlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                              "iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj","prlhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausbrd",
+                              "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd", "vstaocnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nauspr",
+                              "hdbhwnjlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj", "yblclejlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                              "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd","yblccujlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                              "yblacqjlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj","ablhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd"]
