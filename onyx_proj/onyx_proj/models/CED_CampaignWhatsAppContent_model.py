@@ -2,7 +2,8 @@ import copy
 
 from onyx_proj.common.constants import ContentFetchModes
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, fetch_one_row, fetch_rows_limited
+from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, fetch_one_row, fetch_rows_limited, \
+    save_or_update_merge, update
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignWhatsAppContent
 
 
@@ -77,4 +78,32 @@ class CEDCampaignWhatsAppContent:
             filter_list.append({"column": "status", "value": status_list, "op": "IN"})
 
         res = fetch_one_row(self.engine, self.table, filter_list)
+        return res
+
+    def get_whatsapp_content_data_by_name_and_status(self, title, status_list):
+        filter_list = [
+            {"column": "title", "value": title, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "is_active", "value": 1, "op": "=="},
+            # {"column": "status", "value": status_list, "op": "IN"}
+        ]
+
+        if len(status_list) > 0:
+            filter_list.append({"column": "status", "value": status_list, "op": "IN"})
+
+        res = fetch_one_row(self.engine, self.table, filter_list)
+        return res
+
+    def save_or_update_campaign_whatsapp_content_details(self, wa_content):
+        try:
+            res = save_or_update_merge(self.engine, wa_content)
+        except Exception as ex:
+            return dict(status=False, response=str(ex))
+        return dict(status=True, response=res)
+
+    def update_campaign_whatsapp_content_history(self, unique_id, update_dict):
+        filter_list = [
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        ]
+        res = update(self.engine, self.table, filter_list, update_dict)
         return res

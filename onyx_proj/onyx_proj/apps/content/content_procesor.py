@@ -818,6 +818,32 @@ def update_subject_line_mapping(add_subject_line_list, remove_subject_line_list,
                                          })
     log_exit()
 
+
 def create_content_activity_log(activity_log_dict):
     activity_log_entity = CED_ActivityLog(activity_log_dict)
     CEDActivityLog().save_activity_log(activity_log_entity)
+
+
+def save_content_data(content_data):
+    logger.debug(f"save_content_data :: content_data: {content_data}")
+
+    content_type = content_data.get("content_type", None)
+    project_id = content_data.get("project_id", None)
+
+    if content_type is None or project_id is None:
+        logger.error(f"get_content_data :: invalid request, request_data: {content_data}.")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid Request! Missing project_id/content_type")
+
+    master_id_details = CEDMasterHeaderMapping().get_master_header_mappings_by_project_id(project_id)
+    fixed_header_details = FIXED_HEADER_MAPPING_COLUMN_DETAILS
+
+    content_obj = app_settings.CONTENT_CLASS_MAPPING[f"{content_type}"](master_id_details, fixed_header_details)
+    data = content_obj.prepare_and_save_content_data(content_data)
+
+    if data.get("result") == TAG_FAILURE:
+        return dict(status_code=data.get('status_code'), result=TAG_FAILURE,
+                    details_message=data.get('details_message'))
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=data.get('data'))
+
+

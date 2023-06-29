@@ -8,8 +8,9 @@ class CED_EntityTagMapping(Base, Orm_helper):
     entity_sub_type = Column("EntitySubType", String)
     active = Column("IsActive",Boolean, default=True)
     is_deleted = Column("IsDeleted", Boolean, default=False)
-    creation_date = Column("CreationDate", TIMESTAMP)
-    updation_date = Column("UpdationDate", TIMESTAMP)
+    creation_date = Column("CreationDate", DateTime, default=datetime.utcnow())
+    updation_date = Column("UpdationDate", TIMESTAMP,
+                           server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     entity_type = Column("EntityType", String)
     entity_id = Column("EntityId", String, ForeignKey("CED_Segment.UniqueId"),
                        ForeignKey("CED_CampaignSMSContent.UniqueId"),

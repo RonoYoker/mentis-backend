@@ -52,6 +52,18 @@ class CEDCampaignURLContent:
         query = f"SELECT ProjectId AS project_id FROM {self.table_name} WHERE UniqueId = '{content_id}';"
         return dict_fetch_query_all(self.curr, query)
 
+    def get_content_list_by_project_id_status(self, project_id, status=None):
+        if status is None:
+            status = ['APPROVAL_PENDING', 'APPROVED']
+        filter_list = [
+            {"column": "project_id", "value": project_id, "op": "=="},
+            {"column": "is_active", "value": 1, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "status", "value": status, "op": "in"}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
+
     def bulk_fetch_url_details(self, url_id_list):
         """
         Function to fetch multiple url entities by Unique Id list

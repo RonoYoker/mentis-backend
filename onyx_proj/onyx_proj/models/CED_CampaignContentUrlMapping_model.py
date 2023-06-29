@@ -33,25 +33,22 @@ class CEDCampaignContentUrlMapping:
             return dict(status=False, response=str(ex))
         return dict(status=True, response=res)
 
-    def get_url_content_by_mapping_id(self, mapping_id):
-        filter_list = [
-            {"column": "unique_id", "value": mapping_id, "op": "=="},
-            {"column": "is_deleted", "value": 0, "op": "=="},
-            {"column": "is_active", "value": 1, "op": "=="},
-            {"column": "status", "value": status_list, "op": "IN"}
-        ]
-        res = fetch_one_row(self.engine, self.table, filter_list)
-        return res
+    def save_or_update_content_url_mapping_details(self, url_mapping):
+        try:
+            res = save_or_update_merge(self.engine, url_mapping)
+        except Exception as ex:
+            return dict(status=False, response=str(ex))
+        return dict(status=True, response=res)
 
-    def fetch_url_details_list_by_content_and_url_id(self, content_id, url_id):
+    def delete_content_url_mapping(self, content_id):
         filter_list = [
-            {"column": "content_id", "value": content_id, "op": "=="},
-            {"column": "is_deleted", "value": 0, "op": "=="},
-            {"column": "is_active", "value": 1, "op": "=="},
-            {"column": "url_id", "value": url_id, "op": "=="}
+            {"op": "==", "column": "content_id", "value": content_id}
         ]
-        result = fetch_rows(self.engine, self.table, filter_list)
-        return result
+        try:
+            result = delete(self.engine, self.table, filter_list)
+        except Exception as ex:
+            return dict(status=False, message=str(ex))
+        return dict(status=True, result=result)
 
     def fetch_url_id_list_by_content_id(self, content_id):
         filter_list = [{"column": "content_id", "value": content_id, "op": "=="}]

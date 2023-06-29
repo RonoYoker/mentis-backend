@@ -17,8 +17,9 @@ class CED_CampaignWhatsAppContent(Base, Orm_helper):
     rejection_reason = Column("RejectionReason", String)
     is_deleted = Column("IsDeleted", Boolean, default=False)
     vendor_mapping_enabled = Column("IsVendorMappingEnabled", Integer, default=0)
+    vendor_template_id = Column("VendorTemplateId", Integer)
     error_message = Column("ErrorMessage", String)
-    creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
+    creation_date = Column("CreationDate", DateTime, default=datetime.utcnow())
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     history_id = Column("HistoryId", String)

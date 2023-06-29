@@ -18,7 +18,7 @@ class CED_CampaignContentVariableMapping(Base, Orm_helper):
     is_deleted = Column("IsDeleted", Boolean, default=False)
     updation_date = Column("UpdationDate", DateTime,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
-    creation_date = Column("CreationDate", DateTime, default="CURRENT_TIMESTAMP")
+    creation_date = Column("CreationDate", DateTime, default=datetime.utcnow())
 
     master_header = relationship("CED_MasterHeaderMapping")
 

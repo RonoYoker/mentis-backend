@@ -41,3 +41,13 @@ class CEDCampaignTagContent:
 
     def get_content_data_by_content_id(self, content_id):
         return dict_fetch_all(self.curr, self.table_name, {"UniqueId": content_id})
+
+    def get_tag_ids_by_project_id(self, project_id):
+        filter_list = [
+            {"column": "project_id", "value": project_id, "op": "=="},
+            {"column": "is_active", "value": 1, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "status", "value": ['APPROVAL_PENDING', 'APPROVED'], "op": "in"}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res

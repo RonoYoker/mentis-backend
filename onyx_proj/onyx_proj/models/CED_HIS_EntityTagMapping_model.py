@@ -1,5 +1,5 @@
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, bulk_insert
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, bulk_insert, save_or_update_merge
 from onyx_proj.models.CreditasCampaignEngine import CED_HIS_EntityTagMapping
 
 
@@ -17,3 +17,7 @@ class CED_HISEntityTagMapping:
         except Exception as ex:
             return dict(status=False, message=str(ex))
         return dict(status=True, response=response)
+
+    def save_or_update_his_entity_tag_mapping(self, his_entity_tag_mapping):
+        res = save_or_update_merge(self.engine, his_entity_tag_mapping)
+        return res

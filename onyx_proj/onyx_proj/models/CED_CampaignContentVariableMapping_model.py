@@ -1,6 +1,6 @@
 from onyx_proj.common.constants import ContentType
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, save_or_update_merge, delete
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignContentVariableMapping
 
 
@@ -48,3 +48,20 @@ class CEDCampaignContentVariableMapping:
         except Exception as ex:
             return dict(status=False, response=str(ex))
         return dict(status=True, response=res)
+
+    def save_or_update_content_var_mapping_details(self, var_mapping):
+        try:
+            res = save_or_update_merge(self.engine, var_mapping)
+        except Exception as ex:
+            return dict(status=False, response=str(ex))
+        return dict(status=True, response=res)
+
+    def delete_content_var_mapping(self, content_id):
+        filter_list = [
+            {"op": "==", "column": "content_id", "value": content_id}
+        ]
+        try:
+            result = delete(self.engine, self.table, filter_list)
+        except Exception as ex:
+            return dict(status=False, message=str(ex))
+        return dict(status=True, result=result)

@@ -1,3 +1,4 @@
+from onyx_proj.apps.content.whatsapp_content import WhatsAppContent
 from onyx_proj.common.constants import ContentFetchModes, CampaignContentStatus
 from onyx_proj.models.CED_CampaignEmailContent_model import CEDCampaignEmailContent
 from onyx_proj.models.CED_CampaignIvrContent_model import CEDCampaignIvrContent
@@ -32,6 +33,10 @@ HIS_CONTENT_TABLE_MAPPING = {
     "URL": CED_HISCampaignURLContent,
     "TAG": CED_HISCampaignContentTag,
     "SUBJECTLINE": CED_HISCampaignSubjectLineContent
+}
+
+CONTENT_CLASS_MAPPING = {
+    "WHATSAPP": WhatsAppContent
 }
 
 FETCH_CONTENT_MODE_FILTERS = {
