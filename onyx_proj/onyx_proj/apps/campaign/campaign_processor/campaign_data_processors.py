@@ -2875,8 +2875,6 @@ def create_campaign_details_in_local_db(request: dict):
     ccd_entity = CED_CampaignCreationDetails()
     ccd_entity.records = fp_project_details_json["records"]
     ccd_entity.channel = fp_project_details_json["channel"]
-    ccd_entity.schedule_date = fp_project_details_json["scheduleDate"]
-    ccd_entity.schedule_time = datetime.datetime.utcnow().time()
     ccd_entity.campaign_id = fp_project_details_json["id"]
     ccd_entity.unique_id = uuid.uuid4().hex
     ccd_entity.campaign_service_vendor = fp_project_details_json["campaignServiceVendor"]
@@ -2895,12 +2893,28 @@ def create_campaign_details_in_local_db(request: dict):
     ccd_entity.creation_date = datetime.datetime.utcnow()
     ccd_entity.project_id = fp_project_details_json["projectId"]
     ccd_entity.long_url = content_data["long_url"]
-    ccd_entity.end_time = fp_project_details_json["scheduleEndDateTime"]
     ccd_entity.data_id = fp_project_details_json["dataId"]
     ccd_entity.file_id = fp_file_data_entity_final.id
 
-    # save entity to CED_CampaignCreationDetails table
-    save_or_update_ccd(ccd_entity)
+    try:
+        if not fp_project_details_json.get("testCampaign"):
+            logger.debug(f"{method_name} :: cbc entity: {fp_project_details_json['campaignBuilderCampaignEntity']}")
+            schedule_date_time = fp_project_details_json["campaignBuilderCampaignEntity"]["startDateTime"]
+            ccd_entity.schedule_date = datetime.datetime.strptime(schedule_date_time, "%Y-%m-%dT%H:%M:%S.%f").date()
+            ccd_entity.schedule_time = datetime.datetime.strptime(schedule_date_time, "%Y-%m-%dT%H:%M:%S.%f").time()
+            ccd_entity.end_time = fp_project_details_json["campaignBuilderCampaignEntity"]["endDateTime"]
+        elif fp_project_details_json.get("testCampaign"):
+            ccd_entity.schedule_date = fp_project_details_json["scheduleDate"]
+            ccd_entity.schedule_time = datetime.datetime.utcnow().time()
+            ccd_entity.end_time = fp_project_details_json["scheduleEndDateTime"]
+
+        # save entity to CED_CampaignCreationDetails table
+        save_or_update_ccd(ccd_entity)
+    except Exception as e:
+        logger.error(
+            f"{method_name} :: Error: Unable to update camp creation detail, Exception: {str(e)}")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message=f"Unable to save camp creation detail, campaign_id: {fp_project_details_json['id']} and testcamp: {fp_project_details_json.get('testCampaign')}")
 
     if fp_project_details_json.get("testCampaign"):
         # decrypt extra data and send cached data packet to Segment_Evaluator via SNS packet to avoid executing query
