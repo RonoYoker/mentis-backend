@@ -1,5 +1,5 @@
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, save_or_update, insert
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, save_or_update, insert, update
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignExecutionProgress
 
 
@@ -27,3 +27,13 @@ class CEDCampaignExecutionProgress:
     def get_campaing_builder_campaign_id(self, campaign_id):
         result = dict_fetch_one(self.curr, self.table_name, {"CampaignId": campaign_id}, ["CampaignBuilderCampaignId"])
         return result.get("CampaignBuilderCampaignId", None)
+
+    def update_campaign_status_by_cbc_id(self, cbc_id, status, error_reason=None):
+        filter_list = [
+            {"column": "campaign_builder_id", "value": cbc_id, "op": "=="}
+        ]
+        update_dict = {"status": status}
+        if error_reason is not None:
+            update_dict["error_message"] = error_reason
+        return update(self.engine, self.table, filter_list, update_dict)
+

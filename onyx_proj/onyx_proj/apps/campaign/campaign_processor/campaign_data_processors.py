@@ -1441,11 +1441,17 @@ def trigger_lambda_function_for_campaign_scheduling(campaign_segment_details, pr
         # from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import create_campaign_details_in_local_db
         # request_response = create_campaign_details_in_local_db(json.dumps(request_body, default=str))
 
-        logger.info(f"{method_name} :: request response status_code for local api: {request_response['status_code']}")
-
         if request_response is None or request_response.get("success", False) is False:
+            # mark error in CED_CampaignExecutionProgress
+            error_message = None if request_response is None else request_response.get("details_message", None)
+            CEDCampaignExecutionProgress().update_campaign_status_by_cbc_id(campaign_scheduling_segment_entity.campaign_id,
+                                                                            CampaignExecutionProgressStatus.ERROR.value, error_message)
             raise BadRequestException(method_name=method_name,
                                       reason="Error while calling hyperion local to publish data to SNS")
+
+        # if successfully created entry in local tables then update the CED_CampaignExecutionProgress as scheduled
+        CEDCampaignExecutionProgress().update_campaign_status_by_cbc_id(campaign_scheduling_segment_entity.campaign_id,
+                                                                        CampaignExecutionProgressStatus.SCHEDULED.value)
 
     log_exit()
 
