@@ -91,7 +91,7 @@ def get_campaign_content_data_by_channel(details_dict: dict):
                                    url_mapping=details_dict["campaignEmailContentEntity"].get("urlMapping", []))
         long_url = get_long_url_by_url_id(long_url_fetch_dict)
         return dict(template_id=details_dict["campaignEmailContentEntity"]["id"], long_url=long_url,
-                    template_content=details_dict["campaignEmailContentEntity"]["contentText"])
+                    template_content=details_dict["campaignSubjectLineContentEntity"]["contentText"])
     elif channel.lower() == "ivr":
         # long_url = None if len(details_dict["campaignIvrContentEntity"].get("urlMapping", [])) == 0 else details_dict["campaignIvrContentEntity"]["urlMapping"][0]["url"]["contentText"]
         return dict(template_id=details_dict["campaignIvrContentEntity"]["id"], long_url=None,
