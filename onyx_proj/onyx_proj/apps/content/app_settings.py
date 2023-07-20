@@ -1,7 +1,9 @@
+from onyx_proj.apps.content.media_content import Media
 from onyx_proj.apps.content.whatsapp_content import WhatsAppContent
 from onyx_proj.common.constants import ContentFetchModes, CampaignContentStatus
 from onyx_proj.models.CED_CampaignEmailContent_model import CEDCampaignEmailContent
 from onyx_proj.models.CED_CampaignIvrContent_model import CEDCampaignIvrContent
+from onyx_proj.models.CED_CampaignMediaContent_model import CEDCampaignMediaContent
 from onyx_proj.models.CED_CampaignSMSContent_model import CEDCampaignSMSContent
 from onyx_proj.models.CED_CampaignSubjectLineContent_model import CEDCampaignSubjectLineContent
 from onyx_proj.models.CED_CampaignTagContent_model import CEDCampaignTagContent
@@ -14,6 +16,12 @@ from onyx_proj.models.CED_HIS_CampaignSMSContent_model import CED_HISCampaignSMS
 from onyx_proj.models.CED_HIS_CampaignSubjectLineContent_model import CED_HISCampaignSubjectLineContent
 from onyx_proj.models.CED_HIS_CampaignUrlContent_model import CED_HISCampaignURLContent
 from onyx_proj.models.CED_HIS_CampaignWhatsAppContent_model import CED_HISCampaignWhatsAppContent
+from onyx_proj.orm_models.CED_CampaignEmailContent_model import CED_CampaignEmailContent
+from onyx_proj.orm_models.CED_CampaignIvrContent_model import CED_CampaignIvrContent
+from onyx_proj.orm_models.CED_CampaignMediaContent_model import CED_CampaignMediaContent
+from onyx_proj.orm_models.CED_CampaignSMSContent_model import CED_CampaignSMSContent
+from onyx_proj.orm_models.CED_CampaignSubjectLineContent_model import CED_CampaignSubjectLineContent
+from onyx_proj.orm_models.CED_CampaignWhatsAppContent_model import CED_CampaignWhatsAppContent
 
 CONTENT_TABLE_MAPPING = {
     "SMS": CEDCampaignSMSContent,
@@ -22,7 +30,8 @@ CONTENT_TABLE_MAPPING = {
     "WHATSAPP": CEDCampaignWhatsAppContent,
     "URL": CEDCampaignURLContent,
     "TAG": CEDCampaignTagContent,
-    "SUBJECTLINE": CEDCampaignSubjectLineContent
+    "SUBJECTLINE": CEDCampaignSubjectLineContent,
+    "MEDIA": CEDCampaignMediaContent
 }
 
 HIS_CONTENT_TABLE_MAPPING = {
@@ -36,8 +45,21 @@ HIS_CONTENT_TABLE_MAPPING = {
 }
 
 CONTENT_CLASS_MAPPING = {
-    "WHATSAPP": WhatsAppContent
+    "WHATSAPP": WhatsAppContent,
+    "MEDIA": Media
 }
+
+CONTENT_MODEL_MAPPING = {
+    "SMS": CED_CampaignSMSContent,
+    "EMAIL": CED_CampaignEmailContent,
+    "IVR": CED_CampaignIvrContent,
+    "WHATSAPP": CED_CampaignWhatsAppContent,
+    "SUBJECTLINE": CED_CampaignSubjectLineContent,
+    "MEDIA": CED_CampaignMediaContent
+}
+
+MEDIA_FORMAT_SUPPORTED = ["image/png", "image/jpg", "image/jpeg"]
+MEDIA_SIZE_SUPPORTED = 5000000
 
 FETCH_CONTENT_MODE_FILTERS = {
     ContentFetchModes.SAVE_CAMPAIGN.value: {

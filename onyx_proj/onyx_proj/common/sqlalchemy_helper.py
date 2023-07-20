@@ -185,6 +185,9 @@ def add_filter(query, value, column, operator):
     elif operator.lower() == "in":
         # Value should be list of elements
         return query.filter(column.in_(value))
+    elif operator.lower() == "not in":
+        # Value should be list of elements
+        return query.filter(column.not_in(value))
     elif operator.lower() == "between":
         # Value should be a list of two elements
         return query.filter(column.between(value[0], value[1]))

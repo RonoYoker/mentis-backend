@@ -85,7 +85,7 @@ def get_user_data(request_data):
             for key, value in permission.items():
                 user_permission_id_list.append(value)
 
-        permission_details = CEDRolePermission().get_permission_data_by_permission_id_tuple(tuple(user_permission_id_list))
+        permission_details = CEDRolePermission().get_permission_data_by_permission_id_tuple(user_permission_id_list)
 
         if not permission_details or len(permission_details) == 0:
             user_data["permissions"] = []

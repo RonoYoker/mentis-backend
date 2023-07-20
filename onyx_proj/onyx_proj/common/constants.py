@@ -724,6 +724,7 @@ class ContentType(Enum):
     IVR = "IVR"
     EMAIL = "EMAIL"
     WHATSAPP = "WHATSAPP"
+    MEDIA = "MEDIA"
 
 
 class CampaignSchedulingSegmentStatus(Enum):
@@ -779,6 +780,7 @@ class SubDataSource(Enum):
     USER_ROLE = "USER_ROLE"
     USER = "USER"
     WHATSAPP_CONTENT = "WHATSAPP_CONTENT"
+    MEDIA = "MEDIA"
 
 
 SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
@@ -810,6 +812,7 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     'extra': 'extra',
     'vendor_mapping_enabled': 'isVendorMappingEnabled',
     'is_contain_url': 'containsURL',
+    'is_contain_media': 'containsMedia',
     'contain_url': 'containsURL',
     'rejection_reason': 'rejectionReason',
     'vendor_template_id': 'vendorTemplateId',
@@ -830,12 +833,16 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     'name': 'name',
     'short_name': 'shortName',
     'url_mapping': 'urlMapping',
+    'media_mapping': 'mediaMapping',
     'content_id': 'contentId',
     'content_type': 'contentType',
     'url_id': 'urlId',
+    'media_id': 'mediaId',
     'url': 'url',
+    'media': 'media',
     'is_static': 'staticURL',
     'url_types': 'urlType',
+    'media_type': 'mediaType',
     'domain_type': 'domainType',
     'number_of_days': 'numberOfDays',
     'url_expiry_type': 'urlExpiryType',
@@ -1078,3 +1085,11 @@ CAMPAIGN_CONTENT_MAPPING_TABLE_DICT = {
     "IVR": CEDCampaignBuilderIVR,
     "SUBJECTLINE": CEDCampaignBuilderEmail
 }
+
+
+class MediaType(Enum):
+    STATIC_IMAGE = "STATIC_IMAGE"
+
+
+MIN_ALLOWED_REJECTION_REASON_LENGTH = 0
+MAX_ALLOWED_REJECTION_REASON_LENGTH = 512

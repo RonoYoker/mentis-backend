@@ -5,7 +5,7 @@ from onyx_proj.orm_models.CED_HIS_CampaignContentUrlMapping_model import CED_HIS
 class CED_HISCampaignContentUrlMapping:
     def __init__(self):
         self.database = "default"
-        self.table_name = "CED_HIS_CampaignWhatsAppContent"
+        self.table_name = "CED_HIS_CampaignContentUrlMapping"
         self.curr = mysql_connect(self.database)
         self.table = CED_HIS_CampaignContentUrlMapping
         self.engine = sql_alchemy_connect(self.database)

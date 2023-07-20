@@ -13,6 +13,7 @@ class CED_HIS_CampaignWhatsAppContent(Base, Orm_helper):
     approved_by = Column("ApprovedBy", String)
     status = Column("Status", String)
     is_contain_url = Column("IsContainUrl", Boolean, default=False)
+    is_contain_media = Column("IsContainMedia", Boolean, default=False)
     language_name = Column("LanguageName", String)
     is_active = Column("IsActive", Boolean, default=True)
     rejection_reason = Column("RejectionReason", String)

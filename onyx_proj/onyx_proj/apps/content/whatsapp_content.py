@@ -10,20 +10,24 @@ from onyx_proj.common.logging_helper import log_entry
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException, InternalServerError
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.models.CED_ActivityLog_model import CEDActivityLog
+from onyx_proj.models.CED_CampaignContentMediaMapping_model import CEDCampaignContentMediaMapping
 from onyx_proj.models.CED_CampaignContentUrlMapping_model import CEDCampaignContentUrlMapping
 from onyx_proj.models.CED_CampaignContentVariableMapping_model import CEDCampaignContentVariableMapping
 from onyx_proj.models.CED_CampaignWhatsAppContent_model import CEDCampaignWhatsAppContent
 from onyx_proj.models.CED_EntityTagMapping import CEDEntityTagMapping
+from onyx_proj.models.CED_HIS_CampaignContentMediaMapping_model import CED_HISCampaignContentMediaMapping
 from onyx_proj.models.CED_HIS_CampaignContentUrlMapping_model import CED_HISCampaignContentUrlMapping
 from onyx_proj.models.CED_HIS_CampaignContentVariableMapping_model import CED_HIS_CampaignContentVariableMapping, \
     CED_HISCampaignContentVariableMapping
 from onyx_proj.models.CED_HIS_CampaignWhatsAppContent_model import CED_HISCampaignWhatsAppContent
 from onyx_proj.models.CED_HIS_EntityTagMapping_model import CED_HISEntityTagMapping
 from onyx_proj.orm_models.CED_ActivityLog_model import CED_ActivityLog
+from onyx_proj.orm_models.CED_CampaignContentMediaMapping_model import CED_CampaignContentMediaMapping
 from onyx_proj.orm_models.CED_CampaignContentUrlMapping_model import CED_CampaignContentUrlMapping
 from onyx_proj.orm_models.CED_CampaignContentVariableMapping_model import CED_CampaignContentVariableMapping
 from onyx_proj.orm_models.CED_CampaignWhatsAppContent_model import CED_CampaignWhatsAppContent
 from onyx_proj.orm_models.CED_EntityTagMapping_model import CED_EntityTagMapping
+from onyx_proj.orm_models.CED_HIS_CampaignContentMediaMapping_model import CED_HIS_CampaignContentMediaMapping
 from onyx_proj.orm_models.CED_HIS_CampaignContentUrlMapping_model import CED_HIS_CampaignContentUrlMapping
 from onyx_proj.orm_models.CED_HIS_CampaignWhatsAppContent_model import CED_HIS_CampaignWhatsAppContent
 from onyx_proj.orm_models.CED_HIS_EntityTagMapping_model import CED_HIS_EntityTagMapping
@@ -47,6 +51,7 @@ class WhatsAppContent(Content):
         project_id = content_data.get('project_id')
         strength = content_data.get('strength')
         contain_url = content_data.get('contain_url', False)
+        is_contain_media = content_data.get('is_contain_media', False)
         vendor_mapping_enabled = content_data.get('vendor_mapping_enabled')
         language_name = content_data.get('language_name', CampaignContentLanguage.ENGLISH.value)
         extra = content_data.get('extra')
@@ -56,10 +61,10 @@ class WhatsAppContent(Content):
         variables = content_data.get('variables')
         url_mapping = content_data.get('url_mapping')
         tag_mapping = content_data.get('tag_mapping')
+        media_mapping = content_data.get('media_mapping')
 
         user_session = Session().get_user_session_object()
         user_name = user_session.user.user_name
-
         try:
             self.validate(content_data)
         except BadRequestException as ex:
@@ -84,6 +89,7 @@ class WhatsAppContent(Content):
         wa_content.strength = strength
         wa_content.status = CampaignContentStatus.SAVED.value
         wa_content.contain_url = contain_url
+        wa_content.is_contain_media = is_contain_media
         wa_content.language_name = language_name
         wa_content.created_by = user_name
         wa_content.vendor_mapping_enabled = vendor_mapping_enabled
@@ -97,7 +103,7 @@ class WhatsAppContent(Content):
                 raise BadRequestException(method_name=method_name,
                                           reason=wa_content_resp.get("details_message"))
             wa_content = wa_content_resp.get("data")
-            self.save_whatsapp_content_associated_mappings(wa_content, variables, url_mapping, tag_mapping, unique_id)
+            self.save_whatsapp_content_associated_mappings(wa_content, variables, url_mapping, tag_mapping, media_mapping, unique_id)
         except BadRequestException as ex:
             logger.error(f"Error while prepare and saving campaign whatsapp content BadRequestException ::{ex.reason}")
             wa_content.status = CampaignContentStatus.ERROR.value
@@ -150,8 +156,10 @@ class WhatsAppContent(Content):
         self.validate_tag(content_data.get('tag_mapping'), content_data.get('project_id'))
         self.validate_variables(content_data)
 
-        if content_data.get('contain_url') is None or content_data.get('contain_url', False) == True:
+        if content_data.get('contain_url', False):
             self.validate_content_url_mapping(content_data.get('url_mapping'), content_data.get('project_id'))
+        if content_data.get('contain_media', False):
+            self.validate_content_media_mapping(content_data.get('media_mapping'), content_data.get('project_id'))
 
     def validate_content_edit_config(self, unique_id):
         wa_content_entity_db = CEDCampaignWhatsAppContent().get_whatsapp_content_data_by_unique_id_and_status(unique_id, [])
@@ -235,7 +243,7 @@ class WhatsAppContent(Content):
             logger.error(f"Error while prepare and saving campaign whatsapp content history data ::{e}")
             raise e
 
-    def save_whatsapp_content_associated_mappings(self, wa_content, variables, url_mapping, tag_mapping, unique_id):
+    def save_whatsapp_content_associated_mappings(self, wa_content, variables, url_mapping, tag_mapping, media_mapping, unique_id):
         method_name = "save_whatsapp_content_associated_mappings"
 
         if variables is None or tag_mapping is None:
@@ -244,13 +252,16 @@ class WhatsAppContent(Content):
         if unique_id is not None:
             CEDCampaignContentVariableMapping().delete_content_var_mapping(unique_id)
             CEDCampaignContentUrlMapping().delete_content_url_mapping(unique_id)
+            CEDCampaignContentMediaMapping().delete_content_media_mapping(unique_id)
             CEDEntityTagMapping().delete_content_tag_mapping(unique_id, DataSource.CONTENT.value,
                                                              ContentType.WHATSAPP.value)
 
         if wa_content.contain_url:
             self.save_whatsapp_content_url_mapping_and_history(wa_content, url_mapping)
+        if wa_content.is_contain_media:
+            self.save_whatsapp_content_media_mapping_and_history(wa_content, media_mapping)
         self.save_whatsapp_content_variable_and_history(wa_content, variables)
-        self.save_whatsapp_content_tag_mapping_and_history(wa_content, tag_mapping)
+        self.save_content_tag_mapping_and_history(wa_content, tag_mapping, ContentType.WHATSAPP.value)
 
     def save_whatsapp_content_variable_and_history(self, wa_content, variables):
         method_name = "save_whatsapp_content_variable_and_history"
@@ -326,38 +337,42 @@ class WhatsAppContent(Content):
             logger.error(f"Error while Prepare and save content url mapping  data ::{e}")
             raise e
 
-    def save_whatsapp_content_tag_mapping_and_history(self, wa_content, tag_mapping):
-        method_name = "save_whatsapp_content_tag_mapping_and_history"
-        if tag_mapping is None:
+    def save_whatsapp_content_media_mapping_and_history(self, wa_content, media_mapping):
+        method_name = "save_whatsapp_content_media_mapping_and_history"
+        if media_mapping is None:
             raise BadRequestException(method_name=method_name,
-                                      reason="Tag mapping not found")
+                                      reason="Media mapping not found")
         try:
-            for tags in tag_mapping:
-                # Prepare and save content tag mapping
-                tag_mapping_detail = CED_EntityTagMapping(tags)
-                tag_mapping_detail.entity_id = wa_content.unique_id
-                tag_mapping_detail.unique_id = uuid.uuid4().hex
-                tag_mapping_detail.entity_type = DataSource.CONTENT.value
-                tag_mapping_detail.entity_sub_type = ContentType.WHATSAPP.value
-                resp = CEDEntityTagMapping().save_or_update_content_tag_mapping_details(tag_mapping_detail)
+            for media_map in media_mapping:
+                # Prepare and save content media mapping
+                media_mapping_detail = CED_CampaignContentMediaMapping(media_map)
+                media_mapping_detail.content_id = wa_content.unique_id
+                media_mapping_detail.unique_id = uuid.uuid4().hex
+                media_mapping_detail.content_type = ContentType.WHATSAPP.value
+                resp = CEDCampaignContentMediaMapping().save_or_update_content_media_mapping_details(media_mapping_detail)
                 if not resp.get('status'):
+                    logger.debug(
+                        f"Method {method_name},Unable to save campaign content media mapping details. Reason :: {resp.get('response')}")
                     raise InternalServerError(method_name=method_name,
-                                              reason="Unable to save campaign content tag mapping details")
+                                              reason="Unable to save campaign content media mapping details")
+                media_mapping_detail = resp.get('response')
 
                 # Prepare and Save history data
-                his_entity_tag_mapping = CED_HIS_EntityTagMapping(tag_mapping_detail._asdict())
-                his_entity_tag_mapping.unique_id = uuid.uuid4().hex
-                his_entity_tag_mapping.tag_mapping_id = tag_mapping_detail.unique_id
-                his_entity_tag_mapping.entity_id = wa_content.history_id
-                his_entity_tag_mapping.entity_type = DataSource.CONTENT.value
-                his_entity_tag_mapping.entity_sub_type = ContentType.WHATSAPP.value
-                CED_HISEntityTagMapping().save_or_update_his_entity_tag_mapping(his_entity_tag_mapping)
+                his_content_media_mapping = CED_HIS_CampaignContentMediaMapping(media_mapping_detail._asdict())
+                his_content_media_mapping.id = None
+                his_content_media_mapping.unique_id = uuid.uuid4().hex
+                his_content_media_mapping.media_mapping_id = media_mapping_detail.unique_id
+                his_content_media_mapping.content_id = wa_content.history_id
+                his_content_media_mapping.media_id = media_mapping_detail.media_id
+                CED_HISCampaignContentMediaMapping().save_or_update_his_camp_content_media_mapping(his_content_media_mapping)
+                media_mapping_detail.history_id = his_content_media_mapping.unique_id
+                resp = CEDCampaignContentMediaMapping().save_or_update_content_media_mapping_details(media_mapping_detail)
+                if not resp.get('status'):
+                    raise InternalServerError(method_name=method_name,
+                                              reason="Unable to save campaign content media mapping history id")
         except InternalServerError as ey:
-            logger.error(f"Error while Prepare and save content tag mapping  data InternalServerError ::{ey.reason}")
+            logger.error(f"Error while Prepare and save content media mapping  data InternalServerError ::{ey.reason}")
             raise ey
         except Exception as e:
-            logger.error(f"Error while Prepare and save content tag mapping  data ::{e}")
+            logger.error(f"Error while Prepare and save content media mapping  data ::{e}")
             raise e
-
-
-

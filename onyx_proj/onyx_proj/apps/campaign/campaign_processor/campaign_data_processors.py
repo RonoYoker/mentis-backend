@@ -34,6 +34,7 @@ from onyx_proj.models.CED_ActivityLog_model import CEDActivityLog
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
 from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
 from onyx_proj.models.CED_CampaignContentFollowUPSmsMapping_model import CEDCampaignContentFollowUPSmsMapping
+from onyx_proj.models.CED_CampaignContentMediaMapping_model import CEDCampaignContentMediaMapping
 from onyx_proj.models.CED_CampaignContentSenderIdMapping_model import CEDCampaignContentSenderIdMapping
 from onyx_proj.models.CED_CampaignContentUrlMapping_model import CEDCampaignContentUrlMapping
 from onyx_proj.models.CED_CampaignContentVariableMapping_model import CEDCampaignContentVariableMapping
@@ -2435,6 +2436,7 @@ def prepare_and_save_campaign_builder_whatsapp(campaign, campaign_entity, user_n
     whatsapp_campaign_entity.mapping_id = campaign_entity.unique_id
     whatsapp_campaign_entity.whats_app_content_id = whatsapp_campaign.get("whats_app_content_id")
     whatsapp_campaign_entity.url_id = whatsapp_campaign.get("url_id")
+    whatsapp_campaign_entity.media_id = whatsapp_campaign.get("media_id")
     try:
         CEDCampaignBuilderWhatsApp().save_or_update_sms_campaign_details(whatsapp_campaign_entity)
         return whatsapp_campaign_entity
@@ -2662,7 +2664,19 @@ def validate_content_status(campaign):
                 else:
                     if db_res.get("response") is None or len(db_res.get("response")) == 0:
                         return dict(result=TAG_FAILURE, details_message="Url Mapping not found")
-        return dict(result=TAG_SUCCESS, details_message="Whatsapp Url and Sender mapping found")
+        if campaign_whatsapp_content[0].get("is_contain_media") is not None and campaign_whatsapp_content[0].get("is_contain_media") == 1:
+            media_id = whatsapp_campaign.get("media_id")
+            if media_id is None:
+                return dict(result=TAG_FAILURE, details_message="Media Id is missing")
+            else:
+                db_res = CEDCampaignContentMediaMapping().get_content_and_media_mapping_data(whatsapp_content_id, media_id,
+                                                                  CampaignBuilderCampaignContentType.WHATSAPP.value)
+                if not db_res.get("status"):
+                    return dict(result=TAG_FAILURE, details_message="Not able to fetch content media mapping")
+                else:
+                    if db_res.get("response") is None or len(db_res.get("response")) == 0:
+                        return dict(result=TAG_FAILURE, details_message="Media Mapping not found")
+        return dict(result=TAG_SUCCESS, details_message="Whatsapp associated mapping found")
 
     else:
         return dict(result=TAG_FAILURE, details_message="Campaign Content type is not valid")

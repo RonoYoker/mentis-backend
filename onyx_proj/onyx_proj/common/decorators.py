@@ -10,7 +10,6 @@ from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.common.utils.RSA_encryption import RsaEncrypt
 from django.http import HttpResponse
 from onyx_proj.common.utils.datautils import nested_path_get
-from onyx_proj.apps.content import app_settings
 from onyx_proj.exceptions.permission_validation_exception import MethodPermissionValidationException, \
     UnauthorizedException, ValidationFailedException
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
@@ -137,6 +136,7 @@ def parse_args(conf, *args, **kwargs):
 
 
 def fetch_project_id_from_conf(conf, *args, **kwargs):
+    from onyx_proj.apps.content import app_settings
     from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
     from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
     from onyx_proj.models.CED_Segment_model import CEDSegment
@@ -163,6 +163,8 @@ def fetch_project_id_from_conf_from_given_identifier(identifier_type, identifier
     from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
     from onyx_proj.models.CED_Segment_model import CEDSegment
     from onyx_proj.models.CED_CampaignExecutionProgress_model import CEDCampaignExecutionProgress
+    from onyx_proj.apps.content import app_settings
+
     try:
         if identifier_type == "PROJECT":
             project_id = identifier_id

@@ -17,7 +17,7 @@ class CED_EntityTagMapping(Base, Orm_helper):
                        ForeignKey("CED_CampaignIvrContent.UniqueId"),
                        ForeignKey("CED_CampaignUrlContent.UniqueId"), ForeignKey("CED_CampaignWhatsAppContent.UniqueId"),
                        ForeignKey("CED_CampaignEmailContent.UniqueId"),
-                       ForeignKey("CED_CampaignSubjectLineContent.UniqueId"))
+                       ForeignKey("CED_CampaignSubjectLineContent.UniqueId"),ForeignKey("CED_CampaignMediaContent.UniqueId"))
     tag_id = Column("TagId", String, ForeignKey("CED_CampaignContentTag.UniqueId"))
     tag = relationship("CED_CampaignContentTag")
 

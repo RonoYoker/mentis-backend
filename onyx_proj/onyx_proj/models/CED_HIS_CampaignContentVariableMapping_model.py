@@ -6,7 +6,7 @@ from onyx_proj.orm_models.CED_HIS_CampaignContentVariableMapping_model import CE
 class CED_HISCampaignContentVariableMapping:
     def __init__(self):
         self.database = "default"
-        self.table_name = "CED_HIS_CampaignWhatsAppContent"
+        self.table_name = "CED_HIS_CampaignContentVariableMapping"
         self.curr = mysql_connect(self.database)
         self.table = CED_HIS_CampaignContentVariableMapping
         self.engine = sql_alchemy_connect(self.database)

@@ -8,6 +8,7 @@ class CED_HIS_CampaignBuilderWhatsApp(Base, Orm_helper):
     whats_app_content_id = Column("WhatsAppContentId", String)
     campaign_builder_whatsapp_entity_id = Column("CampaignBuilderWhatsAppEntityId", String)
     url_id = Column("UrlId", String)
+    media_id = Column("MediaId", String)
     mapping_id = Column("MappingId", String, unique=True)
     created_by = Column("CreatedBy", String)
     comment = Column("Comment", String)
