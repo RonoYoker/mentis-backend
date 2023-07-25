@@ -317,7 +317,12 @@ def get_filtered_recurring_date_time(data):
         recurring_schedule = generate_schedule(sched_data,start_time,end_time,execution_config_id)
     else:
         if is_segment_attr_split is False and is_auto_time_split is False:
-            validate_multi_slots(slots=multi_slot)
+            slot_per_config = {}
+            for slot in multi_slot:
+                slot_per_config.setdefault(slot.get("execution_config_id",""),[])
+                slot_per_config[slot.get("execution_config_id","")].append(slot)
+            for ex_conf_id, slot_conf in slot_per_config.items():
+                validate_multi_slots(slots=slot_conf)
         for slot in multi_slot:
             start_time = slot.get('start_time')
             end_time = slot.get('end_time')
