@@ -114,7 +114,7 @@ FROM
   JOIN CED_CampaignBuilderCampaign cbc ON cbc.UniqueId = cssd.CampaignId 
   JOIN CED_CampaignBuilder cb ON cb.UniqueId = cbc.CampaignBuilderId 
   JOIN CED_Segment s ON s.UniqueId = cb.SegmentId
-  LEFT JOIN CED_Segment subs ON s.UniqueId = cbc.SegmentId
+  LEFT JOIN CED_Segment subs ON subs.UniqueId = cbc.SegmentId
 WHERE 
   cep.TestCampaign = 0 
   AND cb.Type != "SIMPLE"
@@ -466,7 +466,7 @@ FROM
     CED_Segment s ON s.UniqueId = cb.SegmentId
             JOIN
     CED_CampaignSchedulingSegmentDetails cssd ON cssd.CampaignId = cep.CampaignBuilderCampaignId
-    LEFT JOIN CED_Segment subs ON s.UniqueId = cbc.SegmentId
+    LEFT JOIN CED_Segment subs ON subs.UniqueId = cbc.SegmentId
 """
 
 TAG_TEST_CAMPAIGN_QUERY_ALIAS_PATTERNS = ["as mobile", "as email"]
