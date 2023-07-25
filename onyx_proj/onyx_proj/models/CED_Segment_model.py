@@ -88,13 +88,13 @@ class CEDSegment:
     def execute_customised_query(self, query):
         return dict_fetch_query_all(self.curr, query)
 
-    def get_segment_data(self, segment_id):
+    def get_segment_data(self, segment_id,return_type = "dict"):
         filter_list = [
             {"column": "unique_id", "value": segment_id, "op": "=="},
             {"column": "is_deleted", "value": 0, "op": "=="},
             {"column": "active", "value": 1, "op": "=="}
         ]
-        res = fetch_rows(self.engine, self.table, filter_list)
+        res = fetch_rows(self.engine, self.table, filter_list,return_type=return_type)
         return res
 
     def get_segment_listing_data(self, filter_list: list, columns_list: list = None):

@@ -43,13 +43,14 @@ def fetch_test_campaign_data(request_data) -> json:
     session_id = headers.get("X-AuthToken", None)
     segment_id = body.get("segment_id", None)
     campaign_id = body.get("campaign_id", None)
+    campaign_builder_campaign_id = body.get("campaign_builder_campaign_id")
     project_name = body.get("project_name", None)
 
     if not project_name or not session_id:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Missing project_name/auth-token in request.")
 
-    if not segment_id and not campaign_id:
+    if not segment_id and not campaign_id and not campaign_builder_campaign_id:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Missing segment_id/campaign_id in request.")
 
@@ -71,6 +72,24 @@ def fetch_test_campaign_data(request_data) -> json:
                         details_message=f"Segment data not found for {campaign_id}.")
         else:
             segment_id = segment_id[0][0]
+        segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))
+        if len(segment_data) == 0 or segment_data is None:
+            return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                        details_message=f"Segment data not found for {campaign_id}.")
+        else:
+            segment_data = segment_data[0]
+    elif campaign_builder_campaign_id is not None:
+        cbc_list = CEDCampaignBuilderCampaign().get_derived_seg_query_by_cbc_id(campaign_builder_campaign_id)
+        if len(cbc_list) !=1 or cbc_list is None:
+            return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                        details_message=f"Segment data not found for campaign_builder_campaign_id::{campaign_builder_campaign_id}.")
+        else:
+            segment_id = cbc_list[0].segment_id
+        if segment_id is None:
+            campaign_id = cbc_list[0].campaign_builder_id
+            request_data["body"].pop("campaign_builder_campaign_id",None)
+            request_data["body"]["campaign_id"] = campaign_id
+            return fetch_test_campaign_data(request_data)
         segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))
         if len(segment_data) == 0 or segment_data is None:
             return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
@@ -123,6 +142,7 @@ def fetch_test_campaign_data(request_data) -> json:
 
         update_dict = dict(DataRefreshStartDate=datetime.datetime.utcnow())
         db_resp = CEDSegment().update_segment(dict(UniqueId=segment_data.get("UniqueId")), update_dict)
+
 
         return dict(status_code=200, result=TAG_SUCCESS,
                     details_message="Segment data being processed, please return after 5 minutes.")

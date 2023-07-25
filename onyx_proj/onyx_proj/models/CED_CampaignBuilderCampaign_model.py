@@ -1,7 +1,8 @@
 from onyx_proj.common.constants import Roles
 from onyx_proj.common.decorators import UserAuth
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, save_or_update, update, execute_query
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, save_or_update, update, \
+    execute_query, fetch_rows_limited
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilderCampaign
 from onyx_proj.common.sqlalchemy_helper import save_or_update, sql_alchemy_connect, update, fetch_rows, \
     save_or_update_merge
@@ -24,18 +25,18 @@ class CEDCampaignBuilderCampaign:
 
     def get_campaigns_segment_info_by_dates(self,dates,project_id):
         date_string = ",".join([f'"{date}"' for date in dates])
-        query = """Select cbc.ContentType as ContentType, cbc.UniqueId as UniqueId, s.Records as Records, 
+        query = """Select cbc.ContentType as ContentType, cbc.UniqueId as UniqueId, s.Records as Records, sub_seg.Records as sub_seg_records ,
         cbc.StartDateTime as StartDateTime, cbc.EndDateTime as EndDateTime, cb.IsSplit as is_split , cbc.SplitDetails as split_details from CED_CampaignBuilderCampaign cbc join 
-        CED_CampaignBuilder cb on cb.UniqueId = cbc.CampaignBuilderId join CED_Segment s on cb.SegmentId = s.UniqueId 
+        CED_CampaignBuilder cb on cb.UniqueId = cbc.CampaignBuilderId join CED_Segment s on cb.SegmentId = s.UniqueId left join CED_Segment sub_seg on sub_seg.UniqueId = cbc.SegmentId
         where s.ProjectId = '%s' and Date(cbc.StartDateTime) in (%s) and  cbc.IsActive = 1 and cbc.IsDeleted = 0 and 
         cb.IsActive = 1 and cb.IsDeleted = 0""" % (project_id, date_string)
         return dict_fetch_query_all(self.curr, query)
 
     def get_campaigns_segment_info_by_dates_campaignId(self, dates, project_id, campaign_id):
         date_string = ",".join([f'"{date}"' for date in dates])
-        query = """Select cbc.ContentType as ContentType, cbc.UniqueId as UniqueId, s.Records as Records, 
+        query = """Select cbc.ContentType as ContentType, cbc.UniqueId as UniqueId, s.Records as Records, sub_seg.Records as sub_seg_records ,
         cbc.StartDateTime as StartDateTime, cbc.EndDateTime as EndDateTime, cb.IsSplit as is_split , cbc.SplitDetails as split_details  from CED_CampaignBuilderCampaign cbc join 
-        CED_CampaignBuilder cb on cb.UniqueId = cbc.CampaignBuilderId join CED_Segment s on cb.SegmentId = s.UniqueId 
+        CED_CampaignBuilder cb on cb.UniqueId = cbc.CampaignBuilderId join CED_Segment s on cb.SegmentId = s.UniqueId left join CED_Segment sub_seg on sub_seg.UniqueId = cbc.SegmentId
         where s.ProjectId = '%s' and Date(cbc.StartDateTime) in (%s) and cbc.CampaignBuilderId != '%s' and 
         cbc.IsActive = 1 and cbc.IsDeleted = 0 and cb.IsActive = 1 and cb.IsDeleted = 0 """ % (project_id, date_string, campaign_id)
         return dict_fetch_query_all(self.curr, query)
@@ -44,14 +45,14 @@ class CEDCampaignBuilderCampaign:
         if dates is None or bu_unique_id is None:
             return None
         date_string = ",".join([f'"{date}"' for date in dates])
-        query = """Select cbc.ContentType as ContentType, cbc.UniqueId as UniqueId, s.Records as Records, cbc.StartDateTime as StartDateTime, cbc.EndDateTime as EndDateTime , cb.IsSplit as is_split , cbc.SplitDetails as split_details from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb on cb.UniqueId = cbc.CampaignBuilderId join CED_Segment s on cb.SegmentId = s.UniqueId join CED_Projects p on p.UniqueId = s.ProjectId join CED_BusinessUnit bu on bu.UniqueId = p.BusinessUnitId where bu.UniqueId = '%s' and Date(cbc.StartDateTime) in (%s) and cbc.IsActive = 1 and cbc.IsDeleted = 0 and cb.IsActive = 1 and cb.IsDeleted = 0""" % (bu_unique_id,date_string)
+        query = """Select cbc.ContentType as ContentType, cbc.UniqueId as UniqueId, s.Records as Records, cbc.StartDateTime as StartDateTime, cbc.EndDateTime as EndDateTime , cb.IsSplit as is_split , cbc.SplitDetails as split_details , sub_seg.Records as sub_seg_records from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb on cb.UniqueId = cbc.CampaignBuilderId join CED_Segment s on cb.SegmentId = s.UniqueId join CED_Projects p on p.UniqueId = s.ProjectId join CED_BusinessUnit bu on bu.UniqueId = p.BusinessUnitId left join CED_Segment sub_seg on sub_seg.UniqueId = cbc.SegmentId where bu.UniqueId = '%s' and Date(cbc.StartDateTime) in (%s) and cbc.IsActive = 1 and cbc.IsDeleted = 0 and cb.IsActive = 1 and cb.IsDeleted = 0""" % (bu_unique_id,date_string)
         return dict_fetch_query_all(self.curr,query)
 
     def get_campaigns_segment_info_by_dates_business_unit_id_campaignId(self,dates,bu_unique_id,campaign_id):
         if dates is None or bu_unique_id is None or campaign_id is None:
             return None
         date_string = ",".join([f'"{date}"' for date in dates])
-        query = """Select cbc.ContentType as ContentType, cbc.UniqueId as UniqueId, s.Records as Records, cbc.StartDateTime as StartDateTime, cbc.EndDateTime as EndDateTime , cb.IsSplit as is_split , cbc.SplitDetails as split_details from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb on cb.UniqueId = cbc.CampaignBuilderId join CED_Segment s on cb.SegmentId = s.UniqueId join CED_Projects p on p.UniqueId = s.ProjectId join CED_BusinessUnit bu on bu.UniqueId = p.BusinessUnitId where bu.UniqueId = '%s' and Date(cbc.StartDateTime) in (%s) and cbc.CampaignBuilderId != '%s' and cbc.IsActive = 1 and cbc.IsDeleted = 0 and cb.IsActive = 1 and cb.IsDeleted = 0""" % (bu_unique_id,date_string,campaign_id)
+        query = """Select cbc.ContentType as ContentType, cbc.UniqueId as UniqueId, s.Records as Records, cbc.StartDateTime as StartDateTime, cbc.EndDateTime as EndDateTime , cb.IsSplit as is_split , cbc.SplitDetails as split_details , sub_seg.Records as sub_seg_records from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb on cb.UniqueId = cbc.CampaignBuilderId join CED_Segment s on cb.SegmentId = s.UniqueId join CED_Projects p on p.UniqueId = s.ProjectId join CED_BusinessUnit bu on bu.UniqueId = p.BusinessUnitId left join CED_Segment sub_seg on sub_seg.UniqueId = cbc.SegmentId where bu.UniqueId = '%s' and Date(cbc.StartDateTime) in (%s) and cbc.CampaignBuilderId != '%s' and cbc.IsActive = 1 and cbc.IsDeleted = 0 and cb.IsActive = 1 and cb.IsDeleted = 0""" % (bu_unique_id,date_string,campaign_id)
         return dict_fetch_query_all(self.curr,query)
 
     @UserAuth.user_validation(permissions=[Roles.MAKER.value], identifier_conf={
@@ -60,10 +61,12 @@ class CEDCampaignBuilderCampaign:
         "param_instance_type": "str",
         "entity_type": "CAMPAIGNBUILDER"
     })
-    def maker_validate_campaign_builder_campaign(self, campaign_builder_id, test_camp_status, user_name):
+    def maker_validate_campaign_builder_campaign(self, campaign_builder_id, test_camp_status, user_name,execution_config_id):
+        filters = {"CampaignBuilderId": campaign_builder_id}
+        if execution_config_id is not None:
+            filters.update({"ExecutionConfigId": execution_config_id})
         result = update_rows(self.curr, self.table_name, {"TestCampignState": test_camp_status,
-                                                          "MakerValidator": user_name},
-                             {"CampaignBuilderId": campaign_builder_id})
+                                                          "MakerValidator": user_name},filters)
         return True if result.get("row_count", 0) > 0 else False
 
     @UserAuth.user_validation(permissions=[Roles.APPROVER.value], identifier_conf={
@@ -79,16 +82,20 @@ class CEDCampaignBuilderCampaign:
         return True if result.get("row_count", 0) > 0 else False
 
     def get_cb_id_is_rec_by_cbc_id(self, cbc_id):
-        query = f"""SELECT cb.UniqueId, cb.IsRecurring, cb.CreatedBy, cbc.MakerValidator FROM CED_CampaignBuilder cb 
+        query = f"""SELECT cb.UniqueId, cb.IsRecurring, cb.CreatedBy, cbc.MakerValidator , cbc.ExecutionConfigId FROM CED_CampaignBuilder cb 
         JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId WHERE cbc.UniqueId = '{cbc_id}'"""
         resp = dict_fetch_query_all(self.curr, query)
         if resp is None:
             return None
         return resp
 
-    def get_camp_status_by_cb_id(self, cb_id):  ##DONE
-        query = f"""SELECT DISTINCT(TestCampignState) as camp_status FROM CED_CampaignBuilderCampaign WHERE 
-        CampaignBuilderId =  '{cb_id}'"""
+    def get_camp_status_by_cb_id(self, cb_id,execution_config_id):  ##DONE
+        if execution_config_id is None:
+            query = f"""SELECT DISTINCT(TestCampignState) as camp_status FROM CED_CampaignBuilderCampaign WHERE 
+            CampaignBuilderId =  '{cb_id}'"""
+        else:
+            query = f"""SELECT DISTINCT(TestCampignState) as camp_status FROM CED_CampaignBuilderCampaign WHERE 
+            CampaignBuilderId =  '{cb_id}' and ExecutionConfigId = '{execution_config_id}'"""
         resp = dict_fetch_query_all(self.curr, query)
         if resp is None:
             return None
@@ -216,3 +223,12 @@ class CEDCampaignBuilderCampaign:
         }]
         res = fetch_rows(self.engine, self.table, filter_list)
         return res
+
+    def get_derived_seg_query_by_cbc_id(self,unique_id):
+        filter_list = [
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        ]
+        res = fetch_rows_limited(self.engine, self.table, filter_list=filter_list, columns=["segment_id","campaign_builder_id"],
+                                 relationships=[])
+        return res
+

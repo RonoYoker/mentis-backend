@@ -480,9 +480,9 @@ class SegmentQueryBuilder:
         domain = settings.ONYX_LOCAL_DOMAIN.get(self.project_id)
         if domain is None:
             raise ValidationFailedException(method_name="", reason="Local Project not configured for this Project")
-        decrypted_data_resp = RequestClient.post_onyx_local_api_request_rsa(self.project_entity["bank_name"], data_list,
+        encrypted_data_resp = RequestClient.post_onyx_local_api_request_rsa(self.project_entity["bank_name"], data_list,
                                                                             domain, GET_ENCRYPTED_DATA)
-        if decrypted_data_resp["success"] != True:
+        if encrypted_data_resp["success"] != True:
             raise ValidationFailedException(method_name="", reason="Unable to Decrypt Data")
-        decrypted_data = decrypted_data_resp["data"]["data"]
-        return decrypted_data
+        encrypted_data = encrypted_data_resp["data"]["data"]
+        return encrypted_data

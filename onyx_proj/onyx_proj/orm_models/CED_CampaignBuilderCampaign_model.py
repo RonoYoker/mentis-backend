@@ -11,7 +11,10 @@ class CED_CampaignBuilderCampaign(Base, Orm_helper):
                          ForeignKey("CED_CampaignBuilderIVR.UniqueId"), ForeignKey("CED_CampaignBuilderSMS.UniqueId"),
                          ForeignKey("CED_CampaignBuilderWhatsApp.UniqueId")
                          )
+    segment_id = Column("SegmentId",String)
+    filter_json = Column("FilterJson",String)
     vendor_config_id = Column("VendorConfigId", String)
+    execution_config_id = Column("ExecutionConfigId", String)
     content_type = Column("ContentType", Integer)
     delay_type = Column("DelayType", String)
     delay_value = Column("DelayValue", String)

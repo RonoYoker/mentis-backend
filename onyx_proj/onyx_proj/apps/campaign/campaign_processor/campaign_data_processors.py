@@ -243,6 +243,8 @@ def get_filtered_dashboard_tab_data(data) -> json:
             camp_data["status"] = DashboardTab.DISPATCHED.value
         elif camp_data.get('is_active') == 0 and filter_type != DashboardTab.EXECUTED.value:
             camp_data["status"] = DashboardTab.DEACTIVATED.value
+        if camp_data["sub_segment_count"] is not None:
+            camp_data["segment_count"] = camp_data["sub_segment_count"]
         camp_data.pop('scheduling_status')
         camp_data.pop('is_active')
         if camp_data.get('status') == DashboardTab.SCHEDULED.value and filter_type == DashboardTab.SCHEDULED.value:
@@ -304,18 +306,23 @@ def get_filtered_recurring_date_time(data):
         "number_of_days": data["body"].get('number_of_days'),
     }
     multi_slot = data["body"].get("multi_slot",[])
+    is_segment_attr_split = data["body"].get("is_segment_attr_split",False)
+    is_auto_time_split = data["body"].get("is_auto_time_split",False)
 
     recurring_schedule = []
     if len(multi_slot) == 0:
         start_time = data["body"].get('start_time')
         end_time = data["body"].get('end_time')
-        recurring_schedule = generate_schedule(sched_data,start_time,end_time)
+        execution_config_id = data["body"].get('execution_config_id')
+        recurring_schedule = generate_schedule(sched_data,start_time,end_time,execution_config_id)
     else:
-        validate_multi_slots(slots=multi_slot)
+        if is_segment_attr_split is False and is_auto_time_split is False:
+            validate_multi_slots(slots=multi_slot)
         for slot in multi_slot:
             start_time = slot.get('start_time')
             end_time = slot.get('end_time')
-            recurring_schedule.extend(generate_schedule(sched_data,start_time,end_time))
+            execution_config_id = slot.get('execution_config_id')
+            recurring_schedule.extend(generate_schedule(sched_data,start_time,end_time,execution_config_id))
 
     if len(recurring_schedule) == 0:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -325,7 +332,7 @@ def get_filtered_recurring_date_time(data):
                 data=recurring_schedule)
 
 
-def generate_schedule(sched_data,start_time,end_time):
+def generate_schedule(sched_data,start_time,end_time,execution_config_id):
     start_date = sched_data.get('start_date')
     campaign_type = sched_data.get('campaign_type')
     end_date = sched_data.get('end_date')
@@ -368,10 +375,10 @@ def generate_schedule(sched_data,start_time,end_time):
         if combined < curr_datetime_60_mints:
             pass
         else:
-            recurring_date_time.append({"date": date, "start_time": start_time, "end_time": end_time})
+            recurring_date_time.append({"date": date, "start_time": start_time, "end_time": end_time,"execution_config_id":execution_config_id})
 
-    if dates is None:
-        return []
+    if len(recurring_date_time) == 0:
+        raise BadRequestException(reason="Unable to make schedule . Invalid start/end time is configured")
 
     return recurring_date_time
 
@@ -527,13 +534,14 @@ def validate_campaign(request_data):
     cb_id = resp[0].get("UniqueId")
     created_by = resp[0].get("CreatedBy")
     maker_validator = resp[0].get("MakerValidator", None)
+    execution_config_id = resp[0].get("ExecutionConfigId")
     if resp[0].get("IsRecurring") == True:
-        camp_status = CEDCampaignBuilderCampaign().get_camp_status_by_cb_id(cb_id)
+        camp_status = CEDCampaignBuilderCampaign().get_camp_status_by_cb_id(cb_id,execution_config_id)
         logger.info(f"method name: {method_name}, camp_status: {camp_status}")
         if camp_status[0].get("camp_status") == TestCampStatus.NOT_DONE.value:
             update_resp = CEDCampaignBuilderCampaign().maker_validate_campaign_builder_campaign(cb_id,
                                                                                                 TestCampStatus.MAKER_VALIDATED.value,
-                                                                                                user_name)
+                                                                                                user_name,execution_config_id)
             if update_resp is True:
                 data['validated'] = True
                 return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
@@ -2177,6 +2185,7 @@ def validate_campaign_builder_campaign_details(campaign_builder, campaign_list, 
 
     campaign_final_list = []
     order_number = 0
+    recurring_detail = campaign_builder.recurring_detail
     for campaign in campaign_list:
         if campaign is None:
             logger.error(f"{method_name}, campaign :: {campaign}  ")
@@ -2199,14 +2208,19 @@ def validate_campaign_builder_campaign_details(campaign_builder, campaign_list, 
         if type == "SCHEDULED":
             campaign["start_date_time"] = campaign.get("input_start_date_time")
             campaign["end_date_time"] = campaign.get("input_end_date_time")
-        split_campaign_list = make_split_cbc_list(campaign,is_split)
+        split_campaign_list = make_split_cbc_list(campaign,is_split,recurring_detail)
         campaign_final_list.extend(split_campaign_list)
     logger.debug(f"Trace Exit: {method_name}, campaign final list :: {campaign_final_list}")
     return dict(result=TAG_SUCCESS, data=campaign_final_list)
 
 
-def make_split_cbc_list(campaign,is_split):
-    if is_split is False:
+def make_split_cbc_list(campaign,is_split,recurring_detail):
+    recurring_detail = json.loads(recurring_detail)
+    if is_split is True and not recurring_detail.get("is_auto_time_split",False) and not recurring_detail.get("is_segment_attr_split",False):
+        raise ValidationFailedException(reason="Invalid Split Details Present")
+    if is_split is True and recurring_detail.get("is_auto_time_split", False):
+        pass
+    else:
         return [campaign]
 
     final_cbc_list = []
@@ -2725,7 +2739,8 @@ def validate_schedule(campaign_list, segment_id, unique_id, campaign_id,is_split
         content_type = campaign.get("content_type", "")
         start_date_time = campaign.get("input_start_date_time", "")
         end_date_time = campaign.get("input_end_date_time", "")
-        campaign_data.append({"contentType": content_type, "startDateTime": start_date_time, "endDateTime": end_date_time, "campaignId": campaign_id})
+        sub_segment_id = campaign.get("segment_id")
+        campaign_data.append({"contentType": content_type, "startDateTime": start_date_time, "endDateTime": end_date_time, "campaignId": campaign_id,"segment_id":sub_segment_id})
     request_data = {"body": {"segmentId": segment_id, "campaigns": campaign_data, "is_split":is_split }}
     validated = True
     try:

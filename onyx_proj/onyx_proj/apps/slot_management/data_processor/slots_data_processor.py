@@ -72,14 +72,20 @@ def vaildate_campaign_for_scheduling(request_data):
     for campaign in campaigns_list:
         camp_date = datetime.strptime(campaign.get("startDateTime"),"%Y-%m-%d %H:%M:%S").date()
         camp_type = campaign.get("contentType","")
+        sub_segment_id = campaign.get("segment_id")
         date_channel_key = (camp_date,camp_type)
         campaigns_date_type_data_project = deepcopy(valid_project_campaigns)
+        sub_segment_count = segment_count
+        if sub_segment_id is not None:
+            sub_segment_count = CEDSegment().get_segment_count_by_unique_id(sub_segment_id)
+            if sub_segment_count == 0:
+                sub_segment_count = segment_count
         camp_info = {
             "start": datetime.strptime(campaign.get("startDateTime"), "%Y-%m-%d %H:%M:%S"),
             "end": datetime.strptime(campaign.get("endDateTime"), "%Y-%m-%d %H:%M:%S"),
-            "count": segment_count
+            "count": sub_segment_count
         }
-        camp_info_split = make_split_campaigns(copy.deepcopy(camp_info),is_split)
+        camp_info_split = make_split_campaigns(copy.deepcopy(camp_info),is_split,sub_segment_id)
         campaigns_date_type_data_project.setdefault(date_channel_key,[]).extend(camp_info_split)
         campaigns_date_type_data_bu = deepcopy(valid_bu_campaigns)
         campaigns_date_type_data_bu.setdefault(date_channel_key, []).extend(camp_info_split)
@@ -197,10 +203,11 @@ def fetch_valid_bu_campaigns(content_date_keys_to_validate,dates_to_validate,bus
             continue
         if campaign.get("StartDateTime") is None or campaign.get("EndDateTime") is None:
             continue
+        count = campaign.get("sub_seg_records") if campaign.get("sub_seg_records") is not None else campaign.get("Records",0)
         campaign = {
             "start": campaign.get("StartDateTime"),
             "end": campaign.get("EndDateTime"),
-            "count": int(campaign.get("Records", 0))
+            "count": int(count)
         }
         if campaign.get("is_split",False) is True:
             split_details = json.loads(campaign["split_details"])
@@ -234,10 +241,11 @@ def fetch_valid_project_campaigns(content_date_keys_to_validate, dates_to_valida
             continue
         if campaign.get("StartDateTime") is None or campaign.get("EndDateTime") is None:
             continue
+        count = campaign.get("sub_seg_records") if campaign.get("sub_seg_records") is not None else campaign.get("Records",0)
         campaign = {
             "start": campaign.get("StartDateTime"),
             "end": campaign.get("EndDateTime"),
-            "count": int(campaign.get("Records", 0))
+            "count": int(count)
         }
         if campaign.get("is_split",False) is True:
             split_details = json.loads(campaign["split_details"])
@@ -248,8 +256,8 @@ def fetch_valid_project_campaigns(content_date_keys_to_validate, dates_to_valida
 
 
 
-def make_split_campaigns(camp_info,is_split):
-    if is_split is False:
+def make_split_campaigns(camp_info,is_split,sub_segment_id):
+    if is_split is False or sub_segment_id is not None:
         return [camp_info]
 
     if camp_info["end"].minute != camp_info["start"].minute:

@@ -12,6 +12,7 @@ from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilde
 from onyx_proj.apps.campaign.test_campaign.app_settings import CAMPAIGN_BUILDER_CAMPAIGN_VALID_STATUS, \
     SEGMENT_STATUS_FOR_TEST_CAMPAIGN
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
+from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.orm_models.CED_Projects_model import CED_Projects
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetailsTest_model import CEDCampaignSchedulingSegmentDetailsTest
 
@@ -94,6 +95,10 @@ def validate_test_campaign_data(data_dict: dict):
         logger.error(f"{method_name} :: segment entity is not valid for campaign_id: {campaign_builder_campaign_id}")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, success=TAG_FAILURE,
                     details_message="Invalid segment entity for the given campaign_id")
+    segment_id = campaign_builder_campaign_object.get("segment_id")
+    if segment_id is not None:
+        segment_data = CEDSegment().get_segment_data(segment_id=segment_id)
+        campaign_builder_campaign_object["campaign_builder_data"]["segment_data"] = segment_data[0]
 
     return dict(success=TAG_SUCCESS, data=campaign_builder_campaign_object)
 

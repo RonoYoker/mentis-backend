@@ -13,7 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 from onyx_proj.apps.segments.segments_processor.segment_processor import deactivate_segment_by_segment_id
 from onyx_proj.apps.segments.segments_processor.segment_processor import update_segment_count, trigger_update_segment_count
 from onyx_proj.apps.segments.segments_processor.segments_data_processors import get_segment_list, \
-    get_master_headers_by_data_id, validate_segment_tile
+    get_master_headers_by_data_id, validate_segment_tile, save_or_update_subsegment, get_segment_headers
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import custom_segment_processor, \
     fetch_headers_list, update_custom_segment_process, custom_segment_count, non_custom_segment_count
 from onyx_proj.apps.segments.segments_processor.temp import update_content_and_segment_tags
@@ -222,6 +222,27 @@ def get_master_mapping_by_data_id(request):
     data = get_master_headers_by_data_id(request_body)
     status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
+
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def save_sub_segment(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    data = save_or_update_subsegment(request_body)
+    status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def get_headers_for_segment(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    segment_id = request_body.get("segment_id")
+    data = get_segment_headers(segment_id)
+    status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
 
 
 @csrf_exempt

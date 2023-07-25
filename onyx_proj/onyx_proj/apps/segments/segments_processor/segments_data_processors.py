@@ -1,19 +1,37 @@
 import copy
 import http
+import json
 import logging
 import re
+import uuid
 from datetime import datetime
 from datetime import timedelta
 
+from django.conf import settings
+
+from onyx_proj.apps.segments.custom_segments.custom_segment_processor import generate_queries_for_async_task, \
+    hyperion_local_async_rest_call
 from onyx_proj.apps.segments.segments_processor.segment_helpers import validate_seg_name
-from onyx_proj.common.constants import FIXED_HEADER_MAPPING_COLUMN_DETAILS
+from onyx_proj.common.constants import FIXED_HEADER_MAPPING_COLUMN_DETAILS, FileDataFieldType, ContentDataType, \
+    SqlQueryFilterOperators, DynamicDateQueryOperator, GET_ENCRYPTED_DATA, CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, \
+    SegmentType
+from onyx_proj.common.request_helper import RequestClient
+from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt,AES
+from onyx_proj.exceptions.permission_validation_exception import BadRequestException, ValidationFailedException, \
+    InternalServerError
+from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.models.CED_DataID_Details_model import CEDDataIDDetails
 from onyx_proj.models.CED_FP_HeaderMap_model import CEDFPHeaderMapping
 from onyx_proj.models.CED_MasterHeaderMapping_model import CEDMasterHeaderMapping
 from onyx_proj.common.constants import SegmentList, TAG_SUCCESS, TAG_FAILURE, SEGMENT_END_DATE_FORMAT
-from onyx_proj.apps.segments.app_settings import SegmentStatusKeys
+from onyx_proj.apps.segments.app_settings import SegmentStatusKeys, AsyncTaskSourceKeys, AsyncTaskRequestKeys, \
+    AsyncTaskCallbackKeys, FIXED_SEGMENT_LISTING_FILTERS
+from onyx_proj.models.CED_Segment_Filter_model import CEDSegmentFilter
 from onyx_proj.models.CED_Segment_model import CEDSegment
+from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
+from onyx_proj.orm_models.CED_Segment_Filter_model import CED_Segment_Filter
+from onyx_proj.orm_models.CED_Segment_model import CED_Segment
 
 logger = logging.getLogger("apps")
 
@@ -63,6 +81,7 @@ def get_segment_list(request: dict, session_id=None):
     columns_list = ["id", "include_all", "unique_id", "title", "data_id", "project_id", "type", "created_by",
                     "approved_by", "description", "creation_date", "records", "refresh_date", "status",
                     "segment_builder_id", "rejection_reason", "sql_query", "active"]
+    filter_list = filter_list + FIXED_SEGMENT_LISTING_FILTERS
     data = CEDSegment().get_segment_listing_data(filter_list, columns_list)
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=data)
@@ -128,3 +147,309 @@ def validate_segment_tile(request_body):
                     details_message="Segment title is already used.")
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
+
+def save_or_update_subsegment(request_body):
+    logger.debug(f"get_master_headers_by_data_id :: request_body: {request_body}")
+
+    sub_segment = CED_Segment()
+
+    segment_id = request_body.get("segment_id")
+    filters = request_body.get("filters")
+    sub_segment_id = request_body.get("sub_segment_id")
+
+    if sub_segment_id is not None:
+        sub_segment_res = CEDSegment().get_segment_data(segment_id=sub_segment_id,return_type='entity')
+        if len(sub_segment_res)!=1:
+            raise BadRequestException(reason="Invalid SubSegment Id present")
+        sub_segment = sub_segment_res[0]
+    else:
+        sub_segment_id = uuid.uuid4().hex
+        sub_segment.unique_id = sub_segment_id
+
+    if segment_id is None:
+        raise BadRequestException(reason="Segment Id not provided")
+
+    segment = CEDSegment().get_segment_data(segment_id=segment_id,return_type='entity')
+
+    if len(segment) != 1:
+        raise BadRequestException(reason="Invalid Segment Id")
+    segment = segment[0]
+
+    project_list = CEDProjects().get_active_project_id_entity_alchemy(segment.project_id)
+    if project_list is None or len(project_list) != 1:
+        raise ValidationFailedException(reason="Invalid ProjectId")
+    project_entity = project_list[0]
+
+    extra_data = json.loads(AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
+                                 iv=settings.SEGMENT_AES_KEYS["AES_IV"],
+                                 mode=AES.MODE_CBC).decrypt_aes_cbc(segment.extra))
+
+    headers_list = extra_data.get("headers_list", [])
+    validate_filters(filters,headers_list)
+
+    derived_query_data = make_derived_query(segment.sql_query,filters,headers_list,segment.project_id)
+    derived_query = derived_query_data["derived_query"]
+    save_segment_filters(sub_segment_id,filters)
+
+    sub_segment.sql_query = derived_query
+    sub_segment.campaign_sql_query = derived_query
+    sub_segment.data_image_sql_query = derived_query
+    sub_segment.email_campaign_sql_query = derived_query
+    sub_segment.project_id = segment.project_id
+    sub_segment.data_id = segment.data_id
+    sub_segment.active = True
+    sub_segment.title = f"{segment.title}_{sub_segment_id}"
+    sub_segment.include_all = False
+    sub_segment.created_by = Session().get_user_session_object().user.user_name
+    sub_segment.status = "DRAFTED"
+    sub_segment.description = segment.description
+    sub_segment.creation_date = datetime.utcnow()
+    sub_segment.updation_date = datetime.utcnow()
+    sub_segment.parent_id = segment_id
+    sub_segment.type = SegmentType.DERIVED.value
+
+    CEDSegment().save_segment(sub_segment)
+    request_body = dict(
+        source=AsyncTaskSourceKeys.ONYX_CENTRAL.value,
+        request_type=AsyncTaskRequestKeys.ONYX_CUSTOM_SEGMENT_CREATION.value,
+        request_id=sub_segment_id,
+        project_id=segment.project_id,
+        callback=dict(callback_key=AsyncTaskCallbackKeys.ONYX_SAVE_CUSTOM_SEGMENT.value),
+        queries=generate_queries_for_async_task(derived_query),
+        project_name=project_entity["name"]
+    )
+
+    validation_response = hyperion_local_async_rest_call(CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, request_body)
+    if validation_response.get("result", TAG_FAILURE) == TAG_SUCCESS:
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                    details_message="Segment creation under process.", sub_segment_id=sub_segment_id,filter_values=derived_query_data["filter_values"])
+    else:
+        return validation_response
+
+
+
+
+def validate_filters(filters,headers):
+
+    if filters is None or len(filters) == 0:
+        raise ValidationFailedException(reason="Filters are missing")
+
+    master_header_ids = [header["uniqueId"] for header in headers]
+
+    for filter in filters:
+        if "operator" not in filter  or "master_id" not in filter:
+            raise ValidationFailedException(reason="Invalid Filters Present in Request")
+        if filter["master_id"] not in master_header_ids:
+            raise ValidationFailedException(reason="Invalid Filters Present in Request")
+
+
+def make_derived_query(query,filters,headers_list,project_id):
+
+    select_fields = ",".join(set([header["headerName"] for header in headers_list]))
+    where_fields = generate_where_stmt(filters,headers_list,project_id)
+    derived_query = f"SELECT {select_fields} FROM ( {query} ) derived_table WHERE {where_fields['query_str']}"
+    return {"derived_query":derived_query , "filter_values": where_fields["filter_values"]}
+
+
+def generate_where_stmt(filters,headers_list,project_id):
+    filter_values = []
+    for filter in filters:
+        filter_query = get_filter_query(filter,headers_list,project_id)
+        filter_values.append(f"{filter_query}")
+    query_str = " AND ".join(filter_values)
+    return {"query_str":query_str,"filter_values":filter_values}
+
+def get_filter_query(filter,headers_list,project_id):
+    master_header_map = {
+            header["uniqueId"]: {
+                "unique_id": header["uniqueId"],
+                "column_name": header["columnName"],
+                "mapping_type": header["mappingType"],
+                "content_type": header["contentType"],
+                "header_name": header["headerName"],
+                "file_data_field_type":header["fileDataFieldType"],
+                "encrypted":header.get("Encrypted",False)
+            } for header in headers_list}
+
+    filter_data_type = FileDataFieldType[master_header_map.get(filter["master_id"])["file_data_field_type"]]
+    content_type = ContentDataType[master_header_map.get(filter["master_id"])["content_type"]]
+    is_encrypted = master_header_map[filter["master_id"]].get("encrypted",False)
+    header_name = master_header_map[filter["master_id"]]["header_name"]
+    if filter_data_type is None:
+        raise ValidationFailedException(reason="Invalid Header Present in Filters")
+    operator = SqlQueryFilterOperators[filter["operator"]]
+    filter_placeholder = "{0} {1} {2}"
+    values_dict = {}
+    values_dict.update({} if filter.get("min_value") is None else {
+        "min_value": format_value_acc_to_data_type(filter_data_type, content_type, filter["min_value"],is_encrypted,project_id)})
+    values_dict.update({} if filter.get("max_value") is None else {
+        "max_value": format_value_acc_to_data_type(filter_data_type, content_type, filter["max_value"],is_encrypted,project_id)})
+    values_dict.update({} if filter.get("value") is None else {
+        "value": format_value_acc_to_data_type(filter_data_type, content_type, filter["value"],is_encrypted,project_id)})
+
+    if operator == SqlQueryFilterOperators.BETWEEN:
+        if values_dict.get("min_value") is None or values_dict.get("max_value") is None:
+            raise ValidationFailedException(reason="Incomplete values for BETWEEN Operator")
+        if is_encrypted:
+            raise ValidationFailedException(reason="Encrypted Header cannot be used with BETWEEN Operator ")
+        formatted_value = operator.value.format(**values_dict)
+        query_str = filter_placeholder.format(header_name,formatted_value,"")
+
+    elif operator == SqlQueryFilterOperators.EQ:
+        if values_dict.get("value") is None:
+            raise ValidationFailedException(reason="Incomplete values for EQ Operator")
+        if values_dict["value"].lower() == "null":
+            query_str = filter_placeholder.format(header_name,SqlQueryFilterOperators.IS.value,values_dict["value"])
+        else:
+            if filter_data_type == FileDataFieldType.DATE and filter.get("dt_operator") is not None:
+                query_str = get_relative_date_query(filter,header_name,master_header_map,project_id)
+            else:
+                query_str = filter_placeholder.format(header_name,operator.value,values_dict["value"])
+
+    elif operator == SqlQueryFilterOperators.NEQ:
+        if values_dict.get("value") is None:
+            raise ValidationFailedException(reason="Incomplete values for NEQ Operator")
+        if values_dict["value"].lower() == "null":
+            query_str = filter_placeholder.format(header_name,SqlQueryFilterOperators.IS_NOT.value,values_dict["value"])
+        else:
+            if filter_data_type == FileDataFieldType.DATE and filter.get("dt_operator") is not None:
+                query_str = get_relative_date_query(filter,header_name,master_header_map,project_id)
+            else:
+                query_str = filter_placeholder.format(header_name,operator.value,values_dict["value"])
+
+    elif operator in [SqlQueryFilterOperators.GT, SqlQueryFilterOperators.GTE, SqlQueryFilterOperators.LT,
+                    SqlQueryFilterOperators.LTE]:
+        if values_dict.get("value") is None:
+            raise ValidationFailedException(reason="Incomplete values for GT/GTE/LT/LTE Operator")
+        if is_encrypted:
+            raise ValidationFailedException(reason="Encrypted Header cannot be used with GT/GTE/LT/LTE Operator ")
+        if filter_data_type == FileDataFieldType.DATE and filter.get("dt_operator") is not None:
+            query_str = get_relative_date_query(filter, header_name,master_header_map,project_id)
+        else:
+            query_str = filter_placeholder.format(header_name, operator.value, values_dict["value"])
+
+    elif operator in [SqlQueryFilterOperators.LIKE, SqlQueryFilterOperators.RLIKE, SqlQueryFilterOperators.LLIKE,
+                    SqlQueryFilterOperators.NOT_LIKE, SqlQueryFilterOperators.NOT_LLIKE,
+                    SqlQueryFilterOperators.NOT_RLIKE]:
+        if values_dict.get("value") is None:
+            raise ValidationFailedException(reason="Incomplete values for Like Operators")
+        if is_encrypted:
+            raise ValidationFailedException(reason="Encrypted Header cannot be used with Like Operator ")
+        formatted_value = operator.value.format(**values_dict)
+        query_str = filter_placeholder.format(header_name,formatted_value,"")
+
+    elif operator in [SqlQueryFilterOperators.ISB,SqlQueryFilterOperators.INB]:
+        if is_encrypted:
+            raise ValidationFailedException(reason="Encrypted Header cannot be used with null checks")
+        query_str = filter_placeholder.format(header_name,operator.value,"")
+
+    elif operator in [SqlQueryFilterOperators.INN,SqlQueryFilterOperators.ISN,SqlQueryFilterOperators.GTECD]:
+        query_str = filter_placeholder.format(header_name,operator.value,"")
+
+    else:
+        raise ValidationFailedException(reason="Invalid Operator Used")
+
+    return query_str
+
+def format_value_acc_to_data_type(field_type,content_type,value,is_encrypted,project_id):
+    formatted_value = ""
+
+    if str(value).lower() =="null":
+        return "null"
+    if value is not None and is_encrypted is True:
+        resp = encrypt_pi_data([value],project_id)
+        enc_val = resp[0]
+        return f"'{enc_val}'"
+    elif content_type == ContentDataType.INTEGER:
+        formatted_value = f"{value}"
+        if field_type == FileDataFieldType.DATE:
+            formatted_value = f"'{value}'"
+    elif content_type == ContentDataType.BOOLEAN:
+        formatted_value = f"{1 if value.lower() == 'true' else 0}"
+    elif content_type == ContentDataType.TEXT:
+        formatted_value = f"'{value}'"
+    else:
+        raise ValidationFailedException(reason=f"Invalid ContentDataType ::{content_type}")
+    return formatted_value
+
+def get_relative_date_query(filter,column_name,master_header_mapping,project_id):
+    query_str = "{0} {1} {2}"
+    formatted_value = ""
+    values_dict = {"value":filter.get("value"),"column":column_name}
+
+    dt_operator = DynamicDateQueryOperator[filter.get('dt_operator')]
+    operator = SqlQueryFilterOperators[filter.get('operator')]
+
+    if dt_operator == DynamicDateQueryOperator.DTREL:
+        formatted_value = dt_operator.value.format(**values_dict)
+        query_str = query_str.format(column_name,operator.value,formatted_value)
+    elif dt_operator == DynamicDateQueryOperator.EQDAY:
+        formatted_value = dt_operator.value.format(**values_dict)
+        query_str = query_str.format(formatted_value,operator.value,values_dict["value"])
+    elif dt_operator == DynamicDateQueryOperator.ABS:
+        master_mapping = master_header_mapping[filter["master_id"]]
+        formatted_value = format_value_acc_to_data_type(master_mapping["file_data_field_type"],ContentDataType.TEXT,filter["value"],False,project_id)
+        query_str = query_str.format(column_name,operator.value,formatted_value)
+    else:
+        raise ValidationFailedException(reason="Invalid Dynamic Date Operator")
+
+    return query_str
+
+
+def encrypt_pi_data(data_list,project_id):
+    domain = settings.ONYX_LOCAL_DOMAIN.get(project_id)
+    project_data = CEDProjects().get_project_data_by_project_id(project_id=project_id)
+    project_data = project_data[0]
+    if domain is None:
+        raise ValidationFailedException(method_name="", reason="Local Project not configured for this Project")
+    encrypted_data_resp = RequestClient.post_onyx_local_api_request_rsa(project_data["BankName"], data_list,
+                                                                        domain, GET_ENCRYPTED_DATA)
+    if encrypted_data_resp["success"] != True:
+        raise ValidationFailedException(method_name="", reason="Unable to Decrypt Data")
+    encrypted_data = encrypted_data_resp["data"]["data"]
+    return encrypted_data
+
+
+def save_segment_filters(unique_id,filters):
+
+    del_resp = CEDSegmentFilter().delete_segment_filters(unique_id)
+    if del_resp["status"] is False:
+        raise InternalServerError(reason="Unable to delete segment filters")
+    segment_filter_list = []
+    for filter in filters:
+        filter_body = dict(unique_id=uuid.uuid4().hex,segment_id=unique_id, master_id=filter["master_id"],
+                           operator=filter["operator"], dt_operator=filter.get("dt_operator"),
+                           min_value=filter.get("min_value"), max_value=filter.get("max_value"),value=filter.get("value"))
+
+        filter_entity = CED_Segment_Filter(filter_body)
+        segment_filter_list.append(filter_entity)
+
+    save_resp = CEDSegmentFilter().save_segment_filters(segment_filter_list)
+    if not save_resp.get("status"):
+        raise InternalServerError(reason="unable to save Segment Filters")
+
+def get_segment_headers(segment_id):
+
+    segment = CEDSegment().get_segment_data(segment_id=segment_id, return_type='entity')
+
+    if len(segment) != 1:
+        raise BadRequestException(reason="Invalid Segment Id")
+    segment = segment[0]
+    extra_data = json.loads(AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
+                                              iv=settings.SEGMENT_AES_KEYS["AES_IV"],
+                                              mode=AES.MODE_CBC).decrypt_aes_cbc(segment.extra))
+
+    headers_list = extra_data.get("headers_list", [])
+
+    res = [
+        {
+            "unique_id": header["uniqueId"],
+            "column_name": header["columnName"],
+            "mapping_type": header["mappingType"],
+            "content_type": header["contentType"],
+            "header_name": header["headerName"],
+            "file_data_field_type": header["fileDataFieldType"],
+            "encrypted": header.get("Encrypted", False)
+        } for header in headers_list
+    ]
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=res)

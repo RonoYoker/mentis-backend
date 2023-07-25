@@ -90,9 +90,11 @@ SELECT
   cb.UniqueId as campaign_builder_unique_id,
   cbc.UniqueId as campaign_builder_campaign_unique_id, 
   cbc.ContentType as channel, 
+  cbc.FilterJson as filter_json,
   cssd.Id as campaign_instance_id, 
   cb.SegmentName as segment_title,
-  cb.Type as campaign_type, 
+  cb.Type as campaign_type,
+  subs.Records as sub_segment_count, 
   IF(
     cep.Status = "SCHEDULED", "0", cssd.Records
   ) AS segment_count, 
@@ -112,6 +114,7 @@ FROM
   JOIN CED_CampaignBuilderCampaign cbc ON cbc.UniqueId = cssd.CampaignId 
   JOIN CED_CampaignBuilder cb ON cb.UniqueId = cbc.CampaignBuilderId 
   JOIN CED_Segment s ON s.UniqueId = cb.SegmentId
+  LEFT JOIN CED_Segment subs ON s.UniqueId = cbc.SegmentId
 WHERE 
   cep.TestCampaign = 0 
   AND cb.Type != "SIMPLE"
@@ -395,6 +398,7 @@ STATS_VIEW_BASE_QUERY = """SELECT
     cep.EndDateTime AS CompletionDate,
     cbc.StartDateTime AS ScheduleStartDate,
     cbc.EndDateTime AS ScheduleEndDate,
+    cbc.FilterJson as filter_json,
     IF(cbc.ContentType = 'SMS',
         (SELECT 
                 csc.Id
@@ -450,7 +454,8 @@ STATS_VIEW_BASE_QUERY = """SELECT
     cep.TestCampaign AS TestCampaign,
     cep.Status AS Status,
     cep.Extra AS Extra,
-    cep.UpdationDate AS LastRefreshTime
+    cep.UpdationDate AS LastRefreshTime,
+    subs.Records as sub_segment_count, 
 FROM
     CED_CampaignExecutionProgress cep
         JOIN
@@ -460,7 +465,8 @@ FROM
         JOIN
     CED_Segment s ON s.UniqueId = cb.SegmentId
             JOIN
-    CED_CampaignSchedulingSegmentDetails cssd ON cssd.CampaignId = cep.CampaignBuilderCampaignId 
+    CED_CampaignSchedulingSegmentDetails cssd ON cssd.CampaignId = cep.CampaignBuilderCampaignId
+    LEFT JOIN CED_Segment subs ON s.UniqueId = cbc.SegmentId
 """
 
 TAG_TEST_CAMPAIGN_QUERY_ALIAS_PATTERNS = ["as mobile", "as email"]
@@ -491,6 +497,7 @@ STATS_VIEW_BASE_QUERY_FOR_ADMINS = """SELECT
     cep.EndDateTime AS completion_date,
     cbc.StartDateTime AS schedule_start_date,
     cbc.EndDateTime AS schedule_end_date,
+    cbc.FilterJson as filter_json,
     IF(cbc.ContentType = 'SMS',
         (SELECT 
                 csc.Id
@@ -900,7 +907,10 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     'header_name': 'headerName',
     'file_data_field_type': 'fileDataFieldType',
     'split_details': 'SplitDetails',
-    'encrypted': 'encrypted'
+    'encrypted': 'encrypted',
+    'filter_json': 'FilterJson',
+    'parent_id': 'ParentId',
+    'execution_config_id': 'ExecutionConfigId'
 }
 
 CAMPAIGN_APPROVAL_STATUS_SUBJECT_MAPPING = {
@@ -1093,3 +1103,8 @@ class MediaType(Enum):
 
 MIN_ALLOWED_REJECTION_REASON_LENGTH = 0
 MAX_ALLOWED_REJECTION_REASON_LENGTH = 512
+
+class SegmentType(Enum):
+    DERIVED = "derived"
+    CUSTOM = "custom"
+

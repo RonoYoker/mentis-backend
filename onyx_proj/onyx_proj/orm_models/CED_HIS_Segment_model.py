@@ -27,6 +27,8 @@ class CED_HIS_Segment(Base, Orm_helper):
     segment_id = Column("SegmentId", String)
     refresh_date = Column("RefreshDate", TIMESTAMP)
     comment = Column("Comment", String)
+    parent_id = Column("ParentId",String)
+
 
 
     def __init__(self, data={}):

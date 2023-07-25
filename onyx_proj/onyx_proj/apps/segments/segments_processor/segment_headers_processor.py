@@ -1,10 +1,13 @@
 import http
+import uuid
+
 from django.conf import settings
 from Crypto.Cipher import AES
 
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import hyperion_local_rest_call
 from onyx_proj.apps.segments.segment_query_builder.segment_query_builder_processor import SegmentQueryBuilder
 from onyx_proj.common.constants import *
+from onyx_proj.exceptions.permission_validation_exception import InternalServerError
 from onyx_proj.models.CED_CampaignEmailContent_model import *
 from onyx_proj.models.CED_CampaignIvrContent_model import *
 from onyx_proj.models.CED_CampaignSMSContent_model import *
@@ -13,10 +16,12 @@ from onyx_proj.models.CED_CampaignURLContent_model import *
 from onyx_proj.models.CED_CampaignWhatsAppContent_model import *
 from onyx_proj.models.CED_FP_HeaderMap_model import *
 from onyx_proj.models.CED_MasterHeaderMapping_model import *
+from onyx_proj.models.CED_Segment_Filter_model import CEDSegmentFilter
 from onyx_proj.models.CED_Segment_model import *
 from onyx_proj.models.CED_Projects import *
 from onyx_proj.models.CED_CampaignContentVariableMapping_model import *
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
+from onyx_proj.orm_models.CED_Segment_Filter_model import CED_Segment_Filter
 
 logger = logging.getLogger("apps")
 
