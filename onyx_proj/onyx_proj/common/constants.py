@@ -455,7 +455,7 @@ STATS_VIEW_BASE_QUERY = """SELECT
     cep.Status AS Status,
     cep.Extra AS Extra,
     cep.UpdationDate AS LastRefreshTime,
-    subs.Records as sub_segment_count, 
+    subs.Records as sub_segment_count 
 FROM
     CED_CampaignExecutionProgress cep
         JOIN
