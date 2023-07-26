@@ -49,5 +49,5 @@ COUNTS_THRESHOLD_MINUTES = 15
 DATA_THRESHOLD_MINUTES = 30
 
 FIXED_SEGMENT_LISTING_FILTERS = [
-    {"column": "type", "value": SegmentType.DERIVED.value, "op": "!="}
+    {"column": "parent_id", "value": None, "op": "=="}
 ]
