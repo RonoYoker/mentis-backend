@@ -2220,6 +2220,8 @@ def validate_campaign_builder_campaign_details(campaign_builder, campaign_list, 
 
 
 def make_split_cbc_list(campaign,is_split,recurring_detail):
+    if recurring_detail is None:
+        return [campaign]
     recurring_detail = json.loads(recurring_detail)
     if is_split is True and not recurring_detail.get("is_auto_time_split",False) and not recurring_detail.get("is_segment_attr_split",False):
         raise ValidationFailedException(reason="Invalid Split Details Present")
