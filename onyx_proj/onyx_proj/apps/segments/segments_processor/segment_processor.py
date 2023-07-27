@@ -64,8 +64,11 @@ def trigger_update_segment_count(data):
     else:
         segment_data = segment_data[0]
 
-    if segment_data.get("Status") == "DRAFTED" or \
-            segment_data.get("CountRefreshStartDate", None) > segment_data.get("CountRefreshEndDate", None):
+    if segment_data.get("Status") == "DRAFTED":
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                    details_message=f"Segment {segment_data.get('Title')} already being processed.")
+
+    if segment_data.get("CountRefreshStartDate", None) > segment_data.get("CountRefreshEndDate", None):
         # check if restart needed or request is stuck
         reset_flag = check_restart_flag(segment_data.get("CountRefreshStartDate"))
         if not reset_flag:
