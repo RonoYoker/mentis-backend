@@ -1108,3 +1108,21 @@ class SegmentType(Enum):
     DERIVED = "derived"
     CUSTOM = "custom"
 
+
+
+NEW_RELIC_API_QUERY_URL = "https://insights-api.newrelic.com/v1/accounts/3392835/query"
+NEW_RELIC_QUERY_KEY = "NRIQ-gvelulcdXqD3Jnkx_4lEaWt5tMqLojd6"
+
+PROJECT_SLOTS_NR_QUERY = """SELECT SUM(records) FROM USED_SLOTS WHERE project_name = '{project_name}' and channel = '{channel}' FACET project_name, channel SINCE {since} UNTIL {until} TIMESERIES 15 minutes"""
+BANK_SLOTS_NR_QUERY = """SELECT SUM(records) FROM USED_SLOTS WHERE bank_name = '{bank_name}' and channel = '{channel}' FACET bank_name, channel SINCE {since} UNTIL {until} TIMESERIES 15 minutes"""
+CAMPAIGN_SLOTS_NR_QUERY = """SELECT SUM(records) FROM USED_SLOTS WHERE numeric(campaign_id) = {campaign_id} FACET campaign_id SINCE {since} UNTIL {until} TIMESERIES 15 minutes"""
+
+
+class SlotsMode(Enum):
+    PROJECT_SLOTS = "PROJECT_SLOTS"
+    CAMPAIGN_SLOTS = "CAMPAIGN_SLOTS"
+
+
+class CampaignDetailMode(Enum):
+    COUNT = "COUNT"
+

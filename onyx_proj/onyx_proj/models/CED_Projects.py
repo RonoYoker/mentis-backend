@@ -28,7 +28,7 @@ class CEDProjects:
         return dict_fetch_query_all(self.curr, query)
 
     def get_project_bu_limits_by_project_id(self,unique_id):
-        baseQuery = f""" SELECT bu.UniqueId as business_unit_id, bu.CampaignThreshold as bu_limit, p.CampaignThreshold as project_limit FROM CED_BusinessUnit bu JOIN CED_Projects p on p.BusinessUnitId = bu.UniqueId WHERE p.UniqueId = '{unique_id}' GROUP BY bu.UniqueId """
+        baseQuery = f""" SELECT bu.UniqueId as business_unit_id, bu.CampaignThreshold as bu_limit, p.CampaignThreshold as project_limit, bu.Name as business_name, p.Name as project_name FROM CED_BusinessUnit bu JOIN CED_Projects p on p.BusinessUnitId = bu.UniqueId WHERE p.UniqueId = '{unique_id}' GROUP BY bu.UniqueId """
         return fetch_one(self.curr, baseQuery)
 
     def get_vendor_config_by_project_id(self, project_id: str) -> list:

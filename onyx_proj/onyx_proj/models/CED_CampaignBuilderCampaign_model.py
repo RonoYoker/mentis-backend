@@ -232,3 +232,21 @@ class CEDCampaignBuilderCampaign:
                                  relationships=[])
         return res
 
+    def fetch_camp_name_and_records_by_time(self, project_id, channel, start_date_time, end_date_time):
+        query = f"Select cb.Name, s.Records from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb" \
+                f" on cb.UniqueId = cbc.CampaignBuilderId join CED_Segment s on cb.SegmentId = s.UniqueId join" \
+                f" CED_Projects p on p.UniqueId = s.ProjectId where p.UniqueId = '{project_id}' and '{start_date_time}'" \
+                f" BETWEEN cbc.StartDateTime and cbc.EndDateTime and '{end_date_time}' BETWEEN cbc.StartDateTime and" \
+                f" cbc.EndDateTime and cbc.ContentType = '{channel}' and cbc.IsActive = 1 and cbc.IsDeleted = 0 and" \
+                f" cb.IsActive = 1 and cb.IsDeleted = 0 ORDER BY Records DESC"
+        res = execute_query(self.engine, query)
+        return res
+
+    def fetch_camp_count_by_project_id(self, project_id, filter_date):
+        query = f"Select count(cbc.id) as count , cbc.ContentType as content_type from CED_CampaignBuilderCampaign" \
+                f" cbc join CED_CampaignBuilder cb on cb.UniqueId = cbc.CampaignBuilderId join CED_Segment s on" \
+                f" cb.SegmentId = s.UniqueId join CED_Projects p on p.UniqueId = s.ProjectId where p.UniqueId =" \
+                f" '{project_id}' and Date(cbc.StartDateTime) = '{filter_date}' and cbc.IsActive = 1 and " \
+                f"cbc.IsDeleted = 0 and cb.IsActive = 1 and cb.IsDeleted = 0 group by cbc.ContentType"
+        res = execute_query(self.engine, query)
+        return res

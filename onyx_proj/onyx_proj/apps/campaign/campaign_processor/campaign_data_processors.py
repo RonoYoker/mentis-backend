@@ -2990,3 +2990,46 @@ def create_campaign_details_in_local_db(request: dict):
                         details_message="SNS push failure!")
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
+
+
+def get_camps_detail_between_time(request_body):
+    logger.debug(f"get_camps_detail_between_time :: request_body: {request_body}")
+
+    project_id = request_body.get("project_id", None)
+    start_date_time = request_body.get("start_date_time", None)
+    end_date_time = request_body.get("end_date_time", None)
+    channel = request_body.get("channel", None)
+
+    if project_id is None or start_date_time is None or end_date_time is None or channel is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="Invalid Input")
+
+    campaign_data = CEDCampaignBuilderCampaign().fetch_camp_name_and_records_by_time(project_id, channel,
+                                                                                     start_date_time, end_date_time)
+
+    if len(campaign_data) == 0 or campaign_data is None:
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message="Campaign data not found for the given parameters.")
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=campaign_data)
+
+
+def get_camps_detail(request_body):
+    logger.debug(f"get_camps_detail :: request_body: {request_body}")
+
+    project_id = request_body.get("project_id", None)
+    filter_date = request_body.get("filter_date", None)
+    mode = request_body.get("mode", None)
+
+    if project_id is None or filter_date is None or mode is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="Invalid Input")
+
+    campaign_data = None
+
+    if mode == CampaignDetailMode.COUNT.value:
+        campaign_data = CEDCampaignBuilderCampaign().fetch_camp_count_by_project_id(project_id, filter_date)
+
+    if len(campaign_data) == 0 or campaign_data is None:
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message="Campaign data not found for the given parameters.")
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=campaign_data)

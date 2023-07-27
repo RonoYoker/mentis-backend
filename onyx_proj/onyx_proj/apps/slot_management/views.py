@@ -17,4 +17,15 @@ def check_availability(request):
     return HttpResponse(json.dumps(response, default=str), status=status_code)
 
 
+@csrf_exempt
+def get_used_slots_detail(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    data = dict(body=request_body, headers=request_headers)
+    # get used slots details
+    response = fetch_used_slots_detail(data)
+    status_code = response.pop("status_code", 500)
+    return HttpResponse(json.dumps(response, default=str), status=status_code)
+
+
 

@@ -1,4 +1,5 @@
 import copy
+import http
 import json
 from datetime import datetime,timedelta
 from copy import deepcopy
@@ -6,8 +7,11 @@ import logging
 from math import ceil
 
 from onyx_proj.apps.slot_management.app_settings import SLOT_INTERVAL_MINUTES
-from onyx_proj.common.constants import TAG_SUCCESS, TAG_FAILURE, RateLimitationLevels
-from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException
+from onyx_proj.common.constants import TAG_SUCCESS, TAG_FAILURE, RateLimitationLevels, CHANNELS_LIST, \
+    PROJECT_SLOTS_NR_QUERY, SlotsMode, CAMPAIGN_SLOTS_NR_QUERY, BANK_SLOTS_NR_QUERY
+from onyx_proj.common.utils.newrelic_helpers import get_data_from_newrelic_by_query
+from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException, InternalServerError, \
+    BadRequestException, NotFoundException
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
 from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.models.CED_Segment_model import CEDSegment
@@ -118,7 +122,7 @@ def vaildate_campaign_for_scheduling(request_data):
 
 def validate_schedule(schedule,slot_limit_per_min):
     if len(schedule) == 0:
-        return {"success": True, "campaigns_remaining": {}}
+        return {"success": True, "campaigns_remaining": {}, "slots_seg_count": None}
 
     slot_limit = slot_limit_per_min * SLOT_INTERVAL_MINUTES
     curr_segments_map = {}
@@ -159,7 +163,8 @@ def validate_schedule(schedule,slot_limit_per_min):
         for keys in keys_remove:
             ordered_list.remove(keys)
 
-    resp = {"success": True if len(ordered_list) == 0 else False ,"campaigns_remaining":curr_segments_map}
+    resp = {"success": True if len(ordered_list) == 0 else False, "campaigns_remaining": curr_segments_map,
+            "slots_seg_count": filled_segment_count}
     return resp
 
 def validate_campaign_schedule(new_schedule, slot_limit_per_min,old_schedule):
@@ -277,3 +282,287 @@ def make_split_campaigns(camp_info,is_split,sub_segment_id):
         camp_info["start"] = camp_info["start"] + timedelta(hours=1)
 
     return split_campaigns
+
+
+def fetch_used_slots_detail(request_data):
+    body = request_data.get("body", {})
+    data = body.get("data", {})
+    mode = body.get("mode", "")
+
+    slots_plot = []
+    try:
+        if mode == SlotsMode.PROJECT_SLOTS.value:
+            slots_plot = get_project_slots(data)
+        elif mode == SlotsMode.CAMPAIGN_SLOTS.value:
+            slots_plot = get_campaign_slots(data)
+    except BadRequestException as bde:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message=bde.reason)
+    except InternalServerError as ise:
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message=ise.reason)
+    except NotFoundException as nfe:
+        return dict(status_code=http.HTTPStatus.NOT_FOUND, result=TAG_FAILURE,
+                    details_message=nfe.reason)
+    except Exception as e:
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message=str(e))
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=slots_plot)
+
+
+def get_project_slots(data):
+    method_name = "get_booked_project_slots"
+    project_id = data.get('project_id')
+    channel = data.get('channel')
+    start_date_time = data.get('start_date_time')
+    end_date_time = data.get('end_date_time')
+    nr_slots_data = None
+    nr_proj_slots_data = None
+
+    resp = {}
+
+    if project_id is None or channel is None or start_date_time is None or end_date_time is None:
+        raise BadRequestException(method_name=method_name, reason="Missing mandate params")
+
+    since_timestamp = int(datetime.strptime(start_date_time, "%Y-%m-%d %H:%M:%S").timestamp())
+    until_timestamp = int(datetime.strptime(end_date_time, "%Y-%m-%d %H:%M:%S").timestamp())
+    start_date_time = datetime.strptime(start_date_time, "%Y-%m-%d %H:%M:%S")
+    end_date_time = datetime.strptime(end_date_time, "%Y-%m-%d %H:%M:%S")
+
+    project_data = CEDProjects().get_project_bu_limits_by_project_id(project_id)
+    if project_data is None:
+        raise NotFoundException(method_name=method_name, reason="No project data found for given project id")
+
+    project_threshold = json.loads(project_data.get("project_limit", None))
+    business_unit_threshold = json.loads(project_data.get("bu_limit", None))
+    slot_limit_per_min_bu = business_unit_threshold[channel]
+    slot_limit_per_min_project = project_threshold[channel]
+
+    project_camps = fetch_project_campaigns(project_id, start_date_time)
+    bu_camps = fetch_bu_campaigns(project_data.get("business_unit_id"), start_date_time)
+
+    if project_camps is None or bu_camps is None:
+        raise NotFoundException(method_name=method_name, reason="No slots data found for given project id")
+
+    resp['threshold_limit'] = {
+        "bank_limit": slot_limit_per_min_bu * 15,
+        "project_limit": slot_limit_per_min_project * 15
+    }
+
+    proj_query = PROJECT_SLOTS_NR_QUERY.format(project_name=project_data.get('project_name'), channel=channel,
+                                          since=since_timestamp, until=until_timestamp)
+
+    bank_query = BANK_SLOTS_NR_QUERY.format(bank_name=project_data.get('business_name'), channel=channel,
+                                          since=since_timestamp, until=until_timestamp)
+
+    project_slots = validate_schedule(project_camps.get(channel, {}), slot_limit_per_min_project)
+    bu_slots = validate_schedule(bu_camps.get(channel, {}), slot_limit_per_min_bu)
+
+    if project_slots.get('slots_seg_count') is not None and bu_slots.get('slots_seg_count') is not None:
+        project_slots_seg_count = project_slots['slots_seg_count']
+        bu_slots_seg_count = bu_slots['slots_seg_count']
+    else:
+        raise InternalServerError(method_name=method_name, reason="Slots are conflicting it might effect campaigns")
+
+    nr_proj_resp = get_data_from_newrelic_by_query(proj_query)
+    nr_bank_resp = get_data_from_newrelic_by_query(bank_query)
+
+    if not nr_proj_resp['success'] or not nr_bank_resp['success']:
+        raise InternalServerError(method_name=method_name, reason=nr_proj_resp.get('details_message')
+                                                                  + nr_bank_resp.get('details_message'))
+    if nr_proj_resp['success'] and nr_bank_resp['success']:
+        nr_proj_slots_data = nr_proj_resp['data']
+        nr_slots_data = nr_bank_resp['data']
+    if nr_slots_data is None or nr_proj_slots_data is None:
+        raise InternalServerError(method_name=method_name, reason=nr_proj_resp.get('details_message')
+                                                                  + nr_bank_resp.get('details_message'))
+
+    executed_project_slots = parse_nr_data_for_plotting_slots(SlotsMode.PROJECT_SLOTS.value, channel,
+                                                              nr_proj_slots_data, nr_slots_data)
+    booked_project_slots = parse_db_data_for_plotting_slots(project_data, channel, start_date_time, end_date_time,
+                                                            project_slots_seg_count, bu_slots_seg_count)
+
+    resp['booked_slot'] = booked_project_slots
+    resp['executed_slot'] = executed_project_slots
+
+    return resp
+
+
+def fetch_project_campaigns(project_id, date):
+
+    project_level_campaigns = CEDCampaignBuilderCampaign().get_campaigns_segment_info_by_dates(
+        [date.date()], project_id)
+    if project_level_campaigns is None:
+        return None
+
+    valid_project_campaigns = {}
+
+    for campaign in project_level_campaigns:
+        try:
+            camp_type = campaign.get("ContentType")
+        except:
+            continue
+        if campaign.get("StartDateTime") is None or campaign.get("EndDateTime") is None:
+            continue
+        campaign = {
+            "start": campaign.get("StartDateTime"),
+            "end": campaign.get("EndDateTime"),
+            "count": int(campaign.get("Records", 0))
+        }
+        if campaign.get("is_split", False) is True:
+            split_details = json.loads(campaign["split_details"])
+            campaign["count"] = ceil(campaign["count"] / split_details["total_splits"])
+        valid_project_campaigns.setdefault(camp_type, []).append(campaign)
+
+    return valid_project_campaigns
+
+
+def fetch_bu_campaigns(business_unit_id, date):
+
+    bu_level_campaigns = CEDCampaignBuilderCampaign().get_campaigns_segment_info_by_dates_business_unit_id(
+        [date.date()], business_unit_id)
+    if bu_level_campaigns is None:
+        return None
+
+    valid_bu_campaigns = {}
+    for campaign in bu_level_campaigns:
+        try:
+            camp_type = campaign.get("ContentType")
+        except:
+            continue
+        if campaign.get("StartDateTime") is None or campaign.get("EndDateTime") is None:
+            continue
+        campaign = {
+            "start": campaign.get("StartDateTime"),
+            "end": campaign.get("EndDateTime"),
+            "count": int(campaign.get("Records", 0))
+        }
+        if campaign.get("is_split", False) is True:
+            split_details = json.loads(campaign["split_details"])
+            campaign["count"] = ceil(campaign["count"]/split_details["total_splits"])
+        valid_bu_campaigns.setdefault(camp_type, []).append(campaign)
+
+    return valid_bu_campaigns
+
+
+def get_campaign_slots(data):
+    method_name = "get_executed_project_slots"
+    campaign_id = data.get('campaign_id')
+    start_date_time = data.get('start_date_time')
+    end_date_time = data.get('end_date_time')
+    nr_slots_data = None
+
+    resp = {}
+
+    if campaign_id is None or start_date_time is None or end_date_time is None:
+        raise BadRequestException(method_name=method_name, reason="Missing mandate params")
+
+    since_timestamp = int(datetime.strptime(start_date_time, "%Y-%m-%d %H:%M:%S").timestamp())
+    until_timestamp = int(datetime.strptime(end_date_time, "%Y-%m-%d %H:%M:%S").timestamp())
+
+    query = CAMPAIGN_SLOTS_NR_QUERY.format(campaign_id=campaign_id, since=since_timestamp, until=until_timestamp)
+    nr_resp = get_data_from_newrelic_by_query(query)
+
+    if not nr_resp['success']:
+        raise InternalServerError(method_name=method_name, reason=nr_resp.get('details_message'))
+    if nr_resp['success']:
+        nr_slots_data = nr_resp['data']
+    if nr_slots_data is None:
+        raise InternalServerError(method_name=method_name, reason=nr_resp.get('details_message'))
+
+    executed_campaign_slots = parse_nr_data_for_plotting_slots(SlotsMode.CAMPAIGN_SLOTS.value, None, None,
+                                                               nr_slots_data)
+
+    resp['slot'] = executed_campaign_slots
+
+    return resp
+
+
+def parse_nr_data_for_plotting_slots(mode, channel, nr_proj_slots_data, nr_slots_data):
+    executed_project_slots = []
+    if mode == SlotsMode.CAMPAIGN_SLOTS.value:
+        for facets in nr_slots_data["facets"]:
+            for time_series_detail in facets["timeSeries"]:
+                total_records = 0
+                start_date_time = datetime.fromtimestamp(int(time_series_detail["beginTimeSeconds"])).strftime("%Y-%m-%d %H:%M:%S")
+                end_date_time = datetime.fromtimestamp(int(time_series_detail["endTimeSeconds"])).strftime("%Y-%m-%d %H:%M:%S")
+                for results in time_series_detail["results"]:
+                    total_records += results["sum"]
+                executed_project_slots.append({
+                    "start_date_time": start_date_time,
+                    "end_date_time": end_date_time,
+                    "plots": [{
+                        "campaign_id": facets["name"],
+                        "val": [{
+                            "records": int(total_records)
+                        }]
+                    }]
+                })
+    elif mode == SlotsMode.PROJECT_SLOTS.value:
+        for proj_facets, bank_facets in zip(nr_proj_slots_data["facets"], nr_slots_data["facets"]):
+            for proj_detail, bank_detail in zip(proj_facets["timeSeries"], bank_facets["timeSeries"]):
+                total_records = 0
+                proj_records = 0
+                start_date_time = datetime.fromtimestamp(int(proj_detail["beginTimeSeconds"])).strftime(
+                    "%Y-%m-%d %H:%M:%S")
+                end_date_time = datetime.fromtimestamp(int(proj_detail["endTimeSeconds"])).strftime(
+                    "%Y-%m-%d %H:%M:%S")
+                for bank_results in bank_detail["results"]:
+                    total_records += bank_results["sum"]
+                for proj_results in proj_detail["results"]:
+                    proj_records += proj_results["sum"]
+                executed_project_slots.append({
+                    "start_date_time": start_date_time,
+                    "end_date_time": end_date_time,
+                    "plots": [{
+                        "project_name": proj_facets["name"][0],
+                        "channel": channel,
+                        "val": [{
+                            "records": int(proj_records)
+                        }]
+                    },
+                        {
+                            "bank_name": bank_facets["name"][0],
+                            "channel": channel,
+                            "val": [{
+                                "records": int(total_records)
+                            }]
+                        }
+                    ]
+                })
+    return executed_project_slots
+
+
+def parse_db_data_for_plotting_slots(project_data, channel, start_date_time, end_date_time, project_slots_seg_count, bu_slots_seg_count):
+    booked_project_slots = []
+    min_time = start_date_time
+    max_time = end_date_time
+    total_slot_count = int((max_time - min_time) / timedelta(minutes=SLOT_INTERVAL_MINUTES))
+    for slot_index in range(0, total_slot_count, 1):
+        slot_start_time = min_time + timedelta(minutes=SLOT_INTERVAL_MINUTES * (slot_index))
+        slot_end_time = min_time + timedelta(minutes=SLOT_INTERVAL_MINUTES * (slot_index + 1))
+        slot_key_pair = (slot_start_time, slot_end_time)
+        booked_project_slots.append({
+            "start_date_time": slot_key_pair[0].strftime("%Y-%m-%d %H:%M:%S"),
+            "end_date_time": slot_key_pair[1].strftime("%Y-%m-%d %H:%M:%S"),
+            "plots": [{
+                "project_name": project_data.get('project_name'),
+                "channel": channel,
+                "val": [{
+                    "records": int(project_slots_seg_count.get(slot_key_pair)) if project_slots_seg_count.get(
+                        slot_key_pair) is not None else 0
+                }]
+            },
+                {
+                    "bank_name": project_data.get('business_name'),
+                    "channel": channel,
+                    "val": [{
+                        "records": int(bu_slots_seg_count.get(slot_key_pair)) if bu_slots_seg_count.get(
+                            slot_key_pair) is not None else 0
+                    }]
+                }
+            ]
+        })
+
+    return booked_project_slots

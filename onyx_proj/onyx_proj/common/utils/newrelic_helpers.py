@@ -6,11 +6,18 @@ NewRelic Reserve Words::
     or, second, seconds, select, since, timeseries, until, week, weeks, where, with
 
 """
+import json
 import logging
 import sys
 import functools
+import urllib
 
+import requests
 from django.conf import settings
+
+from onyx_proj.common.constants import NEW_RELIC_API_QUERY_URL, NEW_RELIC_QUERY_KEY
+from onyx_proj.common.logging_helper import log_error
+from onyx_proj.exceptions.permission_validation_exception import InternalServerError, BadRequestException
 
 try:
     import newrelic.agent
@@ -239,3 +246,24 @@ def add_function_to_newrelic_traces(func):
         return result
 
     return _wrapper
+
+
+def get_data_from_newrelic_by_query(query):
+    method_name = "get_data_from_newrelic_by_query"
+    if query is None or query == "":
+        raise BadRequestException(method_name=method_name, reason="Query is empty")
+    url = NEW_RELIC_API_QUERY_URL
+
+    payload = {"nrql": query}
+    headers = {"X-Query-Key": NEW_RELIC_QUERY_KEY}
+
+    try:
+        resp = requests.request("GET", url, headers=headers, params=payload)
+        if resp.status_code != 200:
+            response = {"success": False, "details_message": "invalid status code"}
+        else:
+            response = {"success": True, "data": json.loads(resp.text)}
+    except Exception as e:
+        log_error(e)
+        response = {"success": False, "details_message": e}
+    return response
