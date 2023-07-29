@@ -16,7 +16,7 @@ from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 logger = logging.getLogger("celery_master")
 
 
-@task(soft_time_limit=720)
+@task(soft_time_limit=1500)
 def query_executor(task_id: str):
     """
     task that executes queries in async flow
