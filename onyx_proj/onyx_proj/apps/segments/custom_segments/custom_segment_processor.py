@@ -117,7 +117,7 @@ def custom_segment_processor(request_data) -> json:
         request_id=segment_id,
         project_id=project_id,
         callback=dict(callback_key=AsyncTaskCallbackKeys.ONYX_SAVE_CUSTOM_SEGMENT.value),
-        queries=generate_queries_for_async_task(sql_query),
+        queries=generate_queries_for_async_task(sql_query, project_id),
         project_name=project_name
     )
 
@@ -289,7 +289,7 @@ def update_custom_segment_process(data) -> dict:
         request_id=segment_id,
         project_id=project_id,
         callback=dict(callback_key=AsyncTaskCallbackKeys.ONYX_EDIT_CUSTOM_SEGMENT.value),
-        queries=generate_queries_for_async_task(sql_query),
+        queries=generate_queries_for_async_task(sql_query, project_id),
         project_name=project_name
     )
 
@@ -532,12 +532,14 @@ def non_custom_segment_count(request_data) -> json:
     return dict(status_code=200, result=TAG_SUCCESS, data={"count": total_records})
 
 
-def generate_queries_for_async_task(sql_query: str):
+def generate_queries_for_async_task(sql_query: str, project_id):
     """
     util to create two queries, one to fetch headers and the other to fetch count for the segment
     """
     count_sql_query = f"SELECT COUNT(*) AS row_count FROM ({sql_query}) derived_table"
     limit_sql_query = f"{sql_query} ORDER BY AccountNumber DESC LIMIT 50"
+    if project_id in settings.USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN:
+        limit_sql_query = f"{sql_query} LIMIT 50"
     return [dict(query=count_sql_query, response_format="json", query_key=QueryKeys.SEGMENT_COUNT.value),
             dict(query=limit_sql_query, response_format="json", query_key=QueryKeys.SEGMENT_HEADERS_AND_DATA.value)]
 

@@ -215,7 +215,7 @@ def save_or_update_subsegment(request_body):
         request_id=sub_segment_id,
         project_id=segment.project_id,
         callback=dict(callback_key=AsyncTaskCallbackKeys.ONYX_SAVE_CUSTOM_SEGMENT.value),
-        queries=generate_queries_for_async_task(derived_query),
+        queries=generate_queries_for_async_task(derived_query, segment.project_id),
         project_name=project_entity["name"]
     )
 

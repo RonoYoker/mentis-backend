@@ -3,6 +3,7 @@ import http
 import logging
 import uuid
 from onyx_proj.common.utils.telegram_utility import TelegramUtility
+from django.conf import settings
 
 from onyx_proj.common.constants import SEGMENT_REFRESH_VALIDATION_DURATION_MINUTES, \
     ASYNC_SEGMENT_QUERY_EXECUTION_WAITING_MINUTES, CampaignStatus, DataSource, SubDataSource
@@ -90,6 +91,13 @@ def trigger_update_segment_count(data):
                  query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
             dict(query=count_sql_query, response_format="json", query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)
         ]
+
+        if segment_data.get("ProjectId") in settings.USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN:
+            queries_data = [
+                dict(query=sql_query + " LIMIT 50", response_format="json",
+                     query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
+                dict(query=count_sql_query, response_format="json", query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)
+            ]
 
         request_body = dict(
             source=AsyncTaskSourceKeys.ONYX_CENTRAL.value,

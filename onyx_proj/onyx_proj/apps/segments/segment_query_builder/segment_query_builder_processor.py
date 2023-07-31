@@ -430,7 +430,7 @@ class SegmentQueryBuilder:
             request_id=unique_id,
             project_id=self.project_id,
             callback=dict(callback_key=AsyncTaskCallbackKeys.ONYX_SAVE_CUSTOM_SEGMENT.value),
-            queries=generate_queries_for_async_task(sql_query),
+            queries=generate_queries_for_async_task(sql_query, self.project_id),
             project_name=self.project_entity["name"]
         )
 

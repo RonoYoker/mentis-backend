@@ -103,6 +103,12 @@ def get_sample_data_by_unique_id(request_data: dict):
                         dict(query=count_sql_query, response_format="json",
                              query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)]
 
+        if segment_data.get("ProjectId") in settings.USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN:
+            queries_data = [dict(query=sql_query + " LIMIT 50", response_format="json",
+                                 query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
+                            dict(query=count_sql_query, response_format="json",
+                                 query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)]
+
         request_body = dict(
             source=AsyncTaskSourceKeys.ONYX_CENTRAL.value,
             request_type=AsyncTaskRequestKeys.ONYX_SAMPLE_SEGMENT_DATA_FETCH.value,
