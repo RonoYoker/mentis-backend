@@ -2,7 +2,7 @@ import copy
 
 from onyx_proj.common.constants import CampaignContentStatus
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, fetch_one_row, fetch_rows_limited, \
+from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, fetch_rows_limited, \
     fetch_columns, save_or_update, delete
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignContentEmailSubjectMapping
 

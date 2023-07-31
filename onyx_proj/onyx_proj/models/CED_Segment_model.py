@@ -131,8 +131,10 @@ class CEDSegment:
             {"column": "is_deleted", "value": 0, "op": "=="},
             {"column": "active", "value": 1, "op": "=="}
         ]
-        res = fetch_one_row(self.engine, self.table, filter_list)
-        return res
+        res = fetch_rows_limited(self.engine, self.table, filter_list, columns=[], relationships=[])
+        if res is None or len(res) <= 0:
+            return None
+        return res[0]
 
     def get_segment_name_by_id(self, segment_id):
         query = f"SELECT Title from {self.table_name} WHERE Uniqueid = '{segment_id}' and IsActive = 1 and IsDeleted = 0"

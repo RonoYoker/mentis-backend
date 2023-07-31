@@ -1,7 +1,7 @@
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.orm_models.CED_CampaignSchedulingSegmentDetailsTEST_model import CED_CampaignSchedulingSegmentDetailsTEST
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, save_or_update, fetch_one_row, \
-    execute_query
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, save_or_update, \
+    execute_query, fetch_rows_limited
 
 
 class CEDCampaignSchedulingSegmentDetailsTest:
@@ -18,7 +18,10 @@ class CEDCampaignSchedulingSegmentDetailsTest:
 
     def fetch_scheduling_segment_entity(self, unique_id):
         filter_list = [{"column": "unique_id", "value": unique_id, "op": "=="}]
-        return fetch_one_row(self.engine, self.table, filter_list)
+        res = fetch_rows_limited(self.engine, self.table, filter_list)
+        if res is None or len(res) <= 0:
+            return None
+        return res[0]
 
     def fetch_campaign_segment_unique_id(self, campaign_id: int):
         row = dict_fetch_one(self.curr, self.table_name, {"Id": campaign_id}, ["SegmentId"])

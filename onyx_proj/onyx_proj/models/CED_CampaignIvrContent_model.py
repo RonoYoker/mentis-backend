@@ -1,7 +1,7 @@
 import copy
 
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, fetch_one_row, fetch_rows_limited
+from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, fetch_rows_limited
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignIvrContent
 
 
@@ -53,15 +53,6 @@ class CEDCampaignIvrContent:
     def get_content_data_by_content_id(self, content_id):
         return dict_fetch_all(self.curr, self.table_name, {"UniqueId": content_id})
 
-    def get_ivr_content(self, unique_id):
-        filter_list = [
-            {"column": "unique_id", "value": unique_id, "op": "=="},
-            {"column": "is_active", "value": unique_id, "op": "1"},
-            {"column": "is_deleted", "value": unique_id, "op": "0"}
-        ]
-        res = fetch_one_row(self.engine, self.table, filter_list)
-        return res
-
     def get_ivr_content_data_by_unique_id_and_status(self, ivr_id, status_list):
         filter_list = [
             {"column": "unique_id", "value": ivr_id, "op": "=="},
@@ -73,5 +64,8 @@ class CEDCampaignIvrContent:
         if len(status_list) > 0:
             filter_list.append({"column": "status", "value": status_list, "op": "IN"})
 
-        res = fetch_one_row(self.engine, self.table, filter_list)
-        return res
+        res = fetch_rows_limited(self.engine, self.table, filter_list, [], ["follow_up_sms_list", "tag_mapping.tag",
+                                                                            "variables"])
+        if res is None or len(res) <= 0:
+            return None
+        return res[0]

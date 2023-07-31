@@ -1,5 +1,6 @@
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, fetch_rows, update
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, fetch_rows, update, \
+    fetch_rows_limited
 from onyx_proj.models.CreditasCampaignEngine import *
 from onyx_proj.common.sqlalchemy_helper import SqlAlchemyEngine
 
@@ -41,11 +42,15 @@ class CEDUserSession:
                               select_args=["UserUId as user_id", "ProjectId as project_id"])
 
     def get_session_obj_from_session_id(self,session_id: str):
-
-        return fetch_one_row(self.engine, self.alch_class,[
-                                {"op": "==", "column": "session_id", "value": session_id},
-                                { "op": "==" , "column":"expired" , "value":0}
-                              ])
+        filter_list = [
+                        {"op": "==", "column": "session_id", "value": session_id},
+                        {"op": "==", "column": "expired", "value": 0}
+                      ]
+        res = fetch_rows_limited(self.engine, self.alch_class, filter_list, columns=[],
+                           relationships=["user.user_project_mapping_list.roles.roles_permissions_mapping_list.permission"])
+        if res is None or len(res) <= 0:
+            return None
+        return res[0]
 
     def get_session_data_from_session_id(self,session_id: str):
         filter_list = [{"op": "==", "column": "session_id", "value": session_id},

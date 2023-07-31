@@ -10,7 +10,7 @@ class CED_UserSession(Base, Orm_helper):
     expired = Column("Expired", Boolean)
     project_id = Column("ProjectId", String)
 
-    user = relationship("CED_User",back_populates=False,viewonly=True)
+    user = relationship("CED_User",back_populates=False, lazy="joined")
 
 
     def __init__(self, data={}):
