@@ -67,11 +67,8 @@ class CEDCampaignSMSContent:
         if len(status_list) > 0:
             filter_list.append({"column": "status", "value": status_list, "op": "IN"})
 
-        res = fetch_rows_limited(self.engine, self.table, filter_list, [], ["variables", "tag_mapping", "url_mapping.url",
-                                                                            "sender_id_mapping.sender_id"])
-        if res is None or len(res) <= 0:
-            return None
-        return res[0]
+        res = fetch_one_row(self.engine, self.table, filter_list)
+        return res
 
     def get_sms_content_by_unique_id(self,sms_id, status_list):
         filter_list = [

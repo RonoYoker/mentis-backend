@@ -1507,7 +1507,7 @@ def generate_campaign_scheduling_segment_entity_for_camp_scheduling(scheduling_s
     # fetch campaign builder campaign using campaign id
     campaign_builder_campaign = CEDCampaignBuilderCampaign().fetch_entity_by_unique_id(
         scheduling_segment_details.campaign_id)
-    campaign_builder_campaign_dict = campaign_builder_campaign._asdict(fetch_loaded_only=True)
+    campaign_builder_campaign_dict = campaign_builder_campaign._asdict()
 
     if campaign_builder_campaign_dict.get('ivr_campaign', None) is not None and campaign_builder_campaign_dict[
         'ivr_campaign'].get('follow_up_sms_list', None) is not None:
@@ -1569,7 +1569,7 @@ def prepare_sms_related_data(cbc_entity, campaign_segment_entity, is_test=False)
         # campaign_sms_content_entity.sender_id_mapping = CEDCampaignContentSenderIdMapping().fetch_sender_details_list_by_content_and_sender_id(cbc_entity.sms_campaign[0].sms_id, cbc_entity.sms_campaign[0].sender_id)
         raise NotFoundException(method_name=method_name, reason="Sender id mapping for SMS campaign not found")
 
-    campaign_sms_content_entity_dict = campaign_sms_content_entity._asdict(fetch_loaded_only=True)
+    campaign_sms_content_entity_dict = campaign_sms_content_entity._asdict()
 
     for url_mapping in campaign_sms_content_entity_dict['url_mapping']:
         if url_mapping is not None and url_mapping.get('url', None) is not None:
@@ -1600,7 +1600,7 @@ def prepare_email_related_data(cbc_entity, campaign_segment_entity, is_test=Fals
     if not campaign_email_content_entity:
         raise NotFoundException(method_name=method_name, reason="Campaign Email Content entity not found")
 
-    campaign_email_content_entity_dict = campaign_email_content_entity._asdict(["url_mapping"], fetch_loaded_only=True)
+    campaign_email_content_entity_dict = campaign_email_content_entity._asdict(["url_mapping"])
 
     # Set the url mapping
     if cbc_entity.email_campaign.url_id and (
@@ -1612,7 +1612,7 @@ def prepare_email_related_data(cbc_entity, campaign_segment_entity, is_test=Fals
         cbc_entity.email_campaign.subject_line_id, status_list)
     if not campaign_subjectline_content_entity:
         raise NotFoundException(method_name=method_name, reason="Campaign SubjectLine Content entity not found")
-    campaign_subjectline_content_entity = campaign_subjectline_content_entity._asdict(fetch_loaded_only=True)
+    campaign_subjectline_content_entity = campaign_subjectline_content_entity._asdict()
 
     # removing excess content data
     campaign_email_content_entity_dict['content_text'] = ""
@@ -1648,7 +1648,7 @@ def prepare_ivr_related_data(cbc_entity, campaign_segment_entity, is_test=False)
     if not campaign_ivr_content_entity:
         raise NotFoundException(method_name=method_name, reason="Campaign IVR Content entity not found")
 
-    campaign_ivr_content_entity_dict = campaign_ivr_content_entity._asdict(fetch_loaded_only=True)
+    campaign_ivr_content_entity_dict = campaign_ivr_content_entity._asdict()
 
     # Fetch urlId, SmsId, SenderId, VendorConfigId from CED_CampaignFollowUPMapping table
     for follow_up_sms in campaign_ivr_content_entity_dict['follow_up_sms_list']:
@@ -1700,7 +1700,7 @@ def prepare_whatsapp_related_data(cbc_entity, campaign_segment_entity, is_test=F
             campaign_whatsapp_content_entity.url_mapping) <= 0):
         raise NotFoundException(method_name=method_name, reason="Url id mapping for WHATSAPP campaign not found")
 
-    campaign_whatsapp_content_entity_dict = campaign_whatsapp_content_entity._asdict(["url_mapping"], fetch_loaded_only=True)
+    campaign_whatsapp_content_entity_dict = campaign_whatsapp_content_entity._asdict(["url_mapping"])
 
     for url_mapping in campaign_whatsapp_content_entity_dict['url_mapping']:
         if url_mapping is not None and url_mapping.get('url', None) is not None and len(url_mapping.get('url')) > 0:
@@ -1725,7 +1725,7 @@ def prepare_and_save_campaign_builder_history_data(campaign_builder_entity):
         campaign_builder_entity.id = CEDCampaignBuilder().get_campaign_builder_id_by_unique_id(
             campaign_builder_entity.unique_id)
     try:
-        history_campaign_builder_entity = CED_HIS_CampaignBuilder(campaign_builder_entity._asdict(fetch_loaded_only=True))
+        history_campaign_builder_entity = CED_HIS_CampaignBuilder(campaign_builder_entity._asdict())
         history_campaign_builder_entity.end_date_time = campaign_builder_entity.end_date_time
         history_campaign_builder_entity.id = None
         history_campaign_builder_entity.campaign_builder_id = campaign_builder_entity.unique_id

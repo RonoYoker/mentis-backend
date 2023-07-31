@@ -8,7 +8,7 @@ class CED_RolePermissionMapping(Base, Orm_helper):
     permission_id = Column("PermissionId", String,ForeignKey("CED_RolePermission.UniqueId"))
     is_active = Column("IsActive",Boolean,default=1)
     is_deleted = Column("IsDeleted", Boolean,default=0)
-    permission = relationship("CED_RolePermission", lazy="joined")
+    permission = relationship("CED_RolePermission")
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)

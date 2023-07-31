@@ -3,7 +3,7 @@ from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, 
     save_or_update_merge, bulk_insert
 from onyx_proj.models.CreditasCampaignEngine import CED_ActivityLog
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, execute_query, insert, save
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, fetch_one_row, execute_query, insert, save
 from onyx_proj.models.CreditasCampaignEngine import CED_Segment, CED_ActivityLog
 
 

@@ -1,6 +1,5 @@
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, fetch_columns, \
-    fetch_rows_limited
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, fetch_rows,fetch_columns
 from onyx_proj.models.CreditasCampaignEngine import CED_DataID_Details
 
 
@@ -51,7 +50,5 @@ class CEDDataIDDetails:
             {"column": "is_deleted", "value": 0, "op": "=="},
             {"column": "is_active", "value": 1, "op": "=="}
         ]
-        res = fetch_rows_limited(self.engine, self.table, filter_list)
-        if res is None or len(res) <= 0:
-            return None
-        return res[0]
+        res = fetch_one_row(self.engine, self.table, filter_list)
+        return res

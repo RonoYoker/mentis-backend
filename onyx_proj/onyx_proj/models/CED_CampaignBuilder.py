@@ -2,9 +2,8 @@ from django.conf import settings
 
 from onyx_proj.common.constants import CampaignStatus
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, save_or_update_merge, \
-    fetch_rows_limited
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, update, execute_query, fetch_rows
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, save_or_update_merge, fetch_one_row
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, update, execute_query, fetch_rows
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilder
 from onyx_proj.common.sqlalchemy_helper import save_or_update, sql_alchemy_connect, fetch_rows, update
 
@@ -86,11 +85,7 @@ class CEDCampaignBuilder:
         filter_list = [
                 {"column": "unique_id", "value": unique_id, "op": "=="}
             ]
-        res = fetch_rows_limited(self.engine, self.table, filter_list, columns=[], relationships=["campaign_list.sms_campaign", "campaign_list.ivr_campaign",
-                                                                                                  "campaign_list.email_campaign", "campaign_list.whatsapp_campaign", "segment_data"])
-        if res is None or len(res) <= 0:
-            return None
-        return res[0]
+        return fetch_one_row(self.engine, self.table, filter_list)
 
     def update_campaign_builder_status(self, unique_id, status, approved_by=None, **kwargs):
         filter = [

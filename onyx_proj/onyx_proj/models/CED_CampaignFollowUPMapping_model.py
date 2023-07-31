@@ -16,10 +16,8 @@ class CEDCampaignFollowUPMapping:
             {"column": "ivr_follow_up_sms_mapping_id", "value": mapping_id, "op": "=="},
             {"column": "campaign_builder_campaign_id", "value": cbc_id, "op": "=="}
         ]
-        res = fetch_rows_limited(self.engine, self.table, filter_list)
-        if res is None or len(res) <= 0:
-            return None
-        return res[0]
+        res = fetch_one_row(self.engine, self.table, filter_list)
+        return res
 
     def get_segment_data_by_unique_id(self, segment_id):
         filter_list = [

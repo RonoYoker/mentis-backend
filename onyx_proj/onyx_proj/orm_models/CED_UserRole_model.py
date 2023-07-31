@@ -12,7 +12,7 @@ class CED_UserRole(Base, Orm_helper):
     history_id = Column("HistoryId", String)
     creation_date = Column("CreationDate", DateTime, default=datetime.utcnow())
 
-    roles_permissions_mapping_list = relationship("CED_RolePermissionMapping", lazy="joined")
+    roles_permissions_mapping_list = relationship("CED_RolePermissionMapping")
 
 
     def __init__(self, data={}):

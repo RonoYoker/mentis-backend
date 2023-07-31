@@ -55,7 +55,7 @@ def validate_test_campaign_data(data_dict: dict):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, success=TAG_FAILURE, details_message="Invalid campaign_id")
 
     # convert entity object to dictionary
-    campaign_builder_campaign_object = campaign_builder_campaign_entity._asdict(fetch_loaded_only=True)
+    campaign_builder_campaign_object = campaign_builder_campaign_entity._asdict()
 
     if campaign_builder_campaign_object["content_type"] not in CHANNELS_LIST or \
             campaign_builder_campaign_object["is_active"] is False or \
@@ -73,7 +73,7 @@ def validate_test_campaign_data(data_dict: dict):
             f"{method_name} :: campaign_builder entity not found for campaign_id: {campaign_builder_campaign_id}")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, success=TAG_FAILURE, details_message="Invalid campaign_id")
 
-    campaign_builder_object = campaign_builder_entity._asdict(fetch_loaded_only=True)
+    campaign_builder_object = campaign_builder_entity._asdict()
     campaign_builder_object.pop("campaign_list", None)
     campaign_builder_campaign_object["campaign_builder_data"] = campaign_builder_object
 
@@ -201,7 +201,7 @@ def generate_campaign_scheduling_segment_entity_details_test_entity(campaign_tes
 
     # fetch campaign builder campaign using campaign id
     campaign_builder_campaign = CEDCampaignBuilderCampaign().fetch_entity_by_unique_id(campaign_test_segment_details.campaign_id)
-    campaign_builder_campaign_dict = campaign_builder_campaign._asdict(fetch_loaded_only=True)
+    campaign_builder_campaign_dict = campaign_builder_campaign._asdict()
 
     if campaign_builder_campaign_dict.get('ivr_campaign', None) is not None and campaign_builder_campaign_dict['ivr_campaign'].get('follow_up_sms_list', None) is not None:
         campaign_builder_campaign_dict['ivr_campaign']['follow_up_sms_list'] = []
