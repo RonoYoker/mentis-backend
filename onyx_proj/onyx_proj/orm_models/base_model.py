@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 
 from sqlalchemy import inspect, TIMESTAMP, text,  Column, Integer, String, ForeignKey, DateTime, \
@@ -30,7 +31,7 @@ class Orm_helper():
             if getattr(self, key) is None:
                 data.update({key: None})
             elif isinstance(getattr(self, key), list):
-                data.update({key: [obj._asdict() for obj in getattr(self, key)]})
+                data.update({key: [obj._asdict(extra_attrs, fetch_loaded_only) for obj in getattr(self, key)]})
             else:
-                data.update({key: getattr(self, key)._asdict()})
+                data.update({key: getattr(self, key)._asdict(extra_attrs, fetch_loaded_only)})
         return data

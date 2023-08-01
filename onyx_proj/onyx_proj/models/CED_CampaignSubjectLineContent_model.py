@@ -2,7 +2,7 @@ import copy
 
 from onyx_proj.common.constants import CampaignContentStatus
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, fetch_one_row, fetch_rows_limited
+from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, fetch_rows_limited
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignSMSContent, CED_CampaignSubjectLineContent
 
 
@@ -62,8 +62,10 @@ class CEDCampaignSubjectLineContent:
         if len(status_list) > 0:
             filter_list.append({"column": "status", "value": status_list, "op": "IN"})
 
-        res = fetch_one_row(self.engine, self.table, filter_list)
-        return res
+        res = fetch_rows_limited(self.engine, self.table, filter_list, [], ["variables", "tag_mapping"])
+        if res is None or len(res) <= 0:
+            return None
+        return res[0]
 
     def validate_subject_line_status(self, subjectline_list):
         filter_list = [

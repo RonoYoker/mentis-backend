@@ -77,22 +77,11 @@ class CEDCampaignWhatsAppContent:
         if len(status_list) > 0:
             filter_list.append({"column": "status", "value": status_list, "op": "IN"})
 
-        res = fetch_one_row(self.engine, self.table, filter_list)
-        return res
-
-    def get_whatsapp_content_data_by_name_and_status(self, title, status_list):
-        filter_list = [
-            {"column": "title", "value": title, "op": "=="},
-            {"column": "is_deleted", "value": 0, "op": "=="},
-            {"column": "is_active", "value": 1, "op": "=="},
-            # {"column": "status", "value": status_list, "op": "IN"}
-        ]
-
-        if len(status_list) > 0:
-            filter_list.append({"column": "status", "value": status_list, "op": "IN"})
-
-        res = fetch_one_row(self.engine, self.table, filter_list)
-        return res
+        res = fetch_rows_limited(self.engine, self.table, filter_list, [], ["variables", "tag_mapping.tag", "url_mapping.url.variables", "url_mapping.url.tag_mapping.tag",
+                                                                            "media_mapping.media.tag_mapping.tag"])
+        if res is None or len(res) <= 0:
+            return None
+        return res[0]
 
     def save_or_update_campaign_whatsapp_content_details(self, wa_content):
         try:

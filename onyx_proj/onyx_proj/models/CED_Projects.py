@@ -43,7 +43,10 @@ class CEDProjects:
             {"column": "deleted", "value": "0", "op": "=="},
             {"column": "active", "value": "1", "op": "=="}
         ]
-        return fetch_one_row(self.engine, self.table, filter_list)
+        res =  fetch_rows_limited(self.engine, self.table, filter_list)
+        if res is None or len(res) <= 0:
+            return None
+        return res[0]
 
     def get_all_project_entity_with_active_check(self, active_check=False):
         if active_check:

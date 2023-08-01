@@ -89,18 +89,19 @@ def fetch_one_row(engine, table, filter_list, return_type='entity'):
             filter_list: list of dict of filters, format - [{"column": "col", "value": "val", "op": "=="}]
         returns: Class object of table
     """
-    session = Session(engine)
-    try:
-        q = session.query(table)
-        for filters in filter_list:
-            q = add_filter(q, filters["value"], getattr(table, filters["column"]), filters["op"])
-        result = q.first()
-        if return_type == "dict":
-            result = result._asdict()
-        return result
-    except Exception as ex:
-        logging.error(f"error while fetching from table {str(table)}, Error: ", ex)
-        return None
+    with Session(engine) as session:
+        session.begin()
+        try:
+            q = session.query(table)
+            for filters in filter_list:
+                q = add_filter(q, filters["value"], getattr(table, filters["column"]), filters["op"])
+            result = q.first()
+            if return_type == "dict":
+                result = result._asdict()
+            return result
+        except Exception as ex:
+            logging.error(f"error while fetching from table {str(table)}, Error: ", ex)
+            return None
 
 
 def fetch_rows(engine, table, filter_list, projections=[], return_type='dict'):
@@ -137,17 +138,18 @@ def fetch_columns(engine, table, column_list, filter_list=[]):
             filter_list: List of dict of filters, format - [{"column": "col", "value": "val", "op": "=="}]
         returns: List of dict of result
     """
-    session = Session(engine)
-    try:
-        columns = [getattr(table, column) for column in column_list]
-        q = session.query().with_entities(*columns)
-        for filters in filter_list:
-            q = add_filter(q, filters["value"], getattr(table, filters["column"]), filters["op"])
-        entities = q.all()
-        result = [x._asdict() for x in entities]
-        return result
-    except Exception as ex:
-        logging.error(f"error while fetching from table {str(table)}, Error: ", ex)
+    with Session(engine) as session:
+        session.begin()
+        try:
+            columns = [getattr(table, column) for column in column_list]
+            q = session.query().with_entities(*columns)
+            for filters in filter_list:
+                q = add_filter(q, filters["value"], getattr(table, filters["column"]), filters["op"])
+            entities = q.all()
+            result = [x._asdict() for x in entities]
+            return result
+        except Exception as ex:
+            logging.error(f"error while fetching from table {str(table)}, Error: ", ex)
 
 
 def execute_query(engine, query: str):

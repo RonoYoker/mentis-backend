@@ -185,7 +185,10 @@ class CEDCampaignBuilderCampaign:
         filter_list = [{"column": "unique_id", "value": unique_id, "op": "=="}]
         if status is not None:
             filter_list.append({"column": "status", "value": status, "op": "in"})
-        return fetch_one_row(self.engine, self.table, filter_list)
+        res = fetch_rows_limited(self.engine, self.table, filter_list, columns=[], relationships=["sms_campaign", "email_campaign", "ivr_campaign.follow_up_sms_list", "whatsapp_campaign"])
+        if res is None or len(res) <= 0:
+            return None
+        return res[0]
 
     def save_or_update_cbc(self, cbc_entity):
         save_or_update(self.engine,self.table, cbc_entity)

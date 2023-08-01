@@ -26,7 +26,7 @@ class CED_User(Base, Orm_helper):
     employee_code = Column("EmployeeCode", String)
     expiry_time = Column("ExpiryTime", DateTime)
     history_id = Column("HistoryId", String)
-    user_project_mapping_list = relationship("CED_UserProjectRoleMapping")
+    user_project_mapping_list = relationship("CED_UserProjectRoleMapping", lazy="joined")
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)

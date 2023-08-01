@@ -1,5 +1,5 @@
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, fetch_one_row
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, fetch_one_row, fetch_rows_limited
 from onyx_proj.models.CreditasCampaignEngine import CED_SegmentQueryBuilder
 
 
@@ -24,4 +24,7 @@ class CEDSegmentQueryBuilder:
             {"column": "unique_id", "value": unique_id, "op": "=="},
             {"column": "is_active", "value": "1", "op": "=="}
         ]
-        return fetch_one_row(self.engine, self.table, filter_list)
+        res = fetch_rows(self.engine, self.table, filter_list, return_type="entity")
+        if res is None or len(res) <= 0:
+            return None
+        return res[0]

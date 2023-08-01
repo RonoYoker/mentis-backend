@@ -24,8 +24,10 @@ class CEDCampaignMediaContent:
         if len(not_status_list) > 0:
             filter_list.append({"column": "status", "value": not_status_list, "op": "NOT IN"})
 
-        res = fetch_one_row(self.engine, self.table, filter_list)
-        return res
+        res = fetch_rows(self.engine, self.table, filter_list, return_type="entity")
+        if res is None or len(res) <= 0:
+            return None
+        return res[0]
 
     def save_or_update_campaign_media_content_details(self, content_entity):
         try:

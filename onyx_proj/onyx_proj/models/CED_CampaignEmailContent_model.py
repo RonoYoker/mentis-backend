@@ -1,7 +1,7 @@
 import copy
 
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, fetch_one_row, fetch_rows_limited
+from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, fetch_rows_limited
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignEmailContent
 
 
@@ -64,8 +64,14 @@ class CEDCampaignEmailContent:
         if len(status_list) > 0:
             filter_list.append({"column": "status", "value": status_list, "op": "IN"})
 
-        res = fetch_one_row(self.engine, self.table, filter_list)
-        return res
+        res = fetch_rows_limited(self.engine, self.table, filter_list, ["id", "unique_id", "title", "strength",
+                                            "project_id", "is_deleted", "history_id", "extra", "vendor_template_id",
+                                            "created_by", "approved_by", "status", "is_contain_url","language_name",
+                                            "is_active", "rejection_reason", "creation_date", "updation_date"],
+                                 ["variables", "url_mapping.url.variables", "subject_mapping.subject_line"])
+        if res is None or len(res) <= 0:
+            return None
+        return res[0]
 
     def get_email_content_by_unqiue_id_and_status(self, email_id, status_list):
         filter_list = [
