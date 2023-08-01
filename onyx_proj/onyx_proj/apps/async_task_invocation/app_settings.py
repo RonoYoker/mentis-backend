@@ -20,7 +20,9 @@ ASYNC_QUERY_EXECUTOR_CALLBACK_KEY_PROCESSOR_MAPPING = {
     AsyncTaskCallbackKeys.ONYX_GET_SAMPLE_DATA.value: "onyx_update_segment_data_callback_processor",
     AsyncTaskCallbackKeys.ONYX_GET_TEST_CAMPAIGN_DATA.value: "onyx_update_segment_data_callback_processor",
     AsyncTaskCallbackKeys.ONYX_GET_SEGMENT_REFRESH_COUNT.value: "onyx_update_segment_data_callback_processor",
-    AsyncTaskCallbackKeys.ONYX_EDIT_CUSTOM_SEGMENT.value: "onyx_update_custom_segment_callback_processor"
+    AsyncTaskCallbackKeys.ONYX_EDIT_CUSTOM_SEGMENT.value: "onyx_update_custom_segment_callback_processor",
+    AsyncTaskCallbackKeys.HYPERION_CAMPAIGN_QUERY_EXECUTION.value: "hyperion_campaign_query_execution_callback_processor"
+
 }
 
 FETCH_TASK_DATA_QUERY = """SELECT 
@@ -38,5 +40,6 @@ ASYNC_TASK_CALLBACK_PATH = {
     AsyncTaskCallbackKeys.ONYX_GET_SAMPLE_DATA.value: "/segments/update_segment_data/",
     AsyncTaskCallbackKeys.ONYX_EDIT_CUSTOM_SEGMENT.value: "/segments/update_custom_segment_callback/",
     AsyncTaskCallbackKeys.ONYX_GET_SEGMENT_REFRESH_COUNT.value: "/segments/update_segment_data/",
-    AsyncTaskCallbackKeys.ONYX_GET_TEST_CAMPAIGN_DATA.value: "/segments/update_segment_data/"
+    AsyncTaskCallbackKeys.ONYX_GET_TEST_CAMPAIGN_DATA.value: "/segments/update_segment_data/",
+    AsyncTaskCallbackKeys.HYPERION_CAMPAIGN_QUERY_EXECUTION.value: "/campaign/update_campaign_query_execution_callback_data/"
 }

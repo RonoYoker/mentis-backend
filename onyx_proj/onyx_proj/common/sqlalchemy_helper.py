@@ -396,3 +396,17 @@ def fetch_count(engine, table, filter_list):
         except Exception as ex:
             logging.error(f"error while fetching from table {str(table)}, Error: ", ex)
             raise ex
+
+
+def execute_update_query(engine, query):
+    try:
+        with engine.connect() as cursor:
+            resp = cursor.execute(query)
+            return {'success': True, 'last_row_id': resp.lastrowid, 'row_count': resp.rowcount}
+    except Exception as e:
+        logging.error({
+            "error": e,
+            "message": "error occurred while inserting data into mysql table",
+            "logkey": "mysql_helper"
+        })
+        return {'success': False, 'exception': e}

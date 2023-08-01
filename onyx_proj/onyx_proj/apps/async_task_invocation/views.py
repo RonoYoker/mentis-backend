@@ -18,3 +18,4 @@ def invoke_async_query_execution(request):
     encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(
         json.dumps(response, default=str))
     return HttpResponse(encrypted_data, status=status_code, content_type="application/json")
+

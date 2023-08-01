@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 from celery import task
@@ -12,8 +13,11 @@ from onyx_proj.apps.async_task_invocation.app_settings import ASYNC_QUERY_EXECUT
     FETCH_TASK_DATA_QUERY, ASYNC_TASK_CALLBACK_PATH
 from onyx_proj.apps.async_task_invocation.async_tasks_callback_processor import *
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
+from onyx_proj.common.utils.s3_utils import S3Helper
 
 logger = logging.getLogger("celery_master")
+
+TMP_PATH = "/tmp/"
 
 
 @task(soft_time_limit=1500)
@@ -89,17 +93,34 @@ def query_executor(task_id: str):
                 else:
                     logger.error(f"query_executor:: Unable to save query response for task_id: {task_data['TaskId']}.")
             elif task_data["ResponseFormat"] == "s3":
-                # to be added
-                pass
+                # if response format is s3 encrypt data and place data in s3 bucket
+                s3_upload_encrypted_data = AesEncryptDecrypt(key=settings.AES_ENCRYPTION_KEY["KEY"],
+                                                             iv=settings.AES_ENCRYPTION_KEY["IV"],
+                                                             mode=AES.MODE_CBC).encrypt_aes_cbc(json.dumps(query_response.get("result", ""), default=str))
+                file_key = task_id+".txt"
+                # write encrypted file to tmp path in os
+                with open(TMP_PATH+file_key, "w", encoding="utf8") as file_writer:
+                    file_writer.write(s3_upload_encrypted_data)
+                try:
+                    logger.info(f"query_executor :: Saving encrypted query data to s3 for task_id: {task_id}")
+                    S3Helper().upload_file_to_s3_bucket(settings.QUERY_EXECUTION_JOB_BUCKET, file_key)
+                    s3_url = S3Helper().get_s3_url(settings.QUERY_EXECUTION_JOB_BUCKET, file_key)
+                    response_dict = dict(s3_url=s3_url, bucket_name=settings.QUERY_EXECUTION_JOB_BUCKET, file_key=file_key)
+                    CEDQueryExecutionJob().update_query_response(json.dumps(response_dict), task_id)
+                except Exception as e:
+                    logger.error(f"query_executor :: Upload task failed for task_id: {task_id}, Error: {str(e)}")
+                    task_data["Status"] = AsyncJobStatus.ERROR.value
+                finally:
+                    os.remove(TMP_PATH+file_key)
 
             # update status to SUCCESS for the task
-            db_resp = CEDQueryExecutionJob().update_task_status(AsyncJobStatus.SUCCESS.value, task_id)
+            db_resp = CEDQueryExecutionJob().update_task_status(task_data["Status"], task_id)
             if db_resp.get("exception", None) is None and db_resp.get("row_count", 0) > 0:
                 logger.info(f"query_executor :: Updated status to {AsyncJobStatus.SUCCESS.value} for task_id: {task_data['TaskId']}.")
             else:
                 logger.error(f"query_executor :: Unable to update status for task_id: {task_data['TaskId']}.")
-        # invoke async task
 
+        # invoke async task
         callback_resolver.apply_async(kwargs={"parent_id": task_data["ParentId"]}, queue="celery_callback_resolver")
     except SoftTimeLimitExceeded:
         # if timeout is exceeded mark task as TIMEOUT
@@ -186,11 +207,5 @@ def uuid_processor(uuid_data):
     push_custom_parameters_to_newrelic({"stage": "UUID_ASYNC_COMPLETED"})
     return
 
-
-####### temp functionm #########
-@task
-def update_segment_data_encrypted(segment_data):
-    from onyx_proj.models.CED_Segment_model import CEDSegment
-    CEDSegment().update_segment(dict(UniqueId=segment_data["UniqueId"]), dict(Extra=segment_data["Extra"]))
 
 

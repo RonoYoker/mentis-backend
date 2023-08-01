@@ -8,7 +8,8 @@ from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.common.decorators import UserAuth
 from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import fetch_test_campaign_data, \
     fetch_test_campaign_validation_status, fetch_test_campaign_validation_status_local
-from onyx_proj.apps.campaign.campaign_processor.campaign_content_processor import fetch_vendor_config_data
+from onyx_proj.apps.campaign.campaign_processor.campaign_content_processor import fetch_vendor_config_data, \
+    update_campaign_segment_data
 from onyx_proj.apps.campaign.campaign_monitoring.campaign_stats_processor import get_filtered_campaign_stats, \
     update_campaign_stats_to_central_db, get_filtered_campaign_stats_v2
 
@@ -350,3 +351,11 @@ def get_campaigns_detail(request):
     response = get_camps_detail(request_body)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+def update_campaign_query_execution_callback_data(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    data = update_campaign_segment_data(request_body)
+    status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")

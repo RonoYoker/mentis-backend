@@ -203,3 +203,5 @@ class CEDCampaignBuilder:
         res = fetch_rows(self.engine, self.table, filter_list)
         return res
 
+    def update_campaign_builder(self, where_dict: dict, update_dict: dict):
+        return update_row(cursor=self.curr, table=self.table_name, q_data=where_dict, u_data=update_dict)

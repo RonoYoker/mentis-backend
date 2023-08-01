@@ -2,7 +2,7 @@ from onyx_proj.common.constants import Roles
 from onyx_proj.common.decorators import UserAuth
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, save_or_update, update, \
-    execute_query, fetch_rows_limited
+    execute_query, fetch_rows_limited, execute_update_query
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilderCampaign
 from onyx_proj.common.sqlalchemy_helper import save_or_update, sql_alchemy_connect, update, fetch_rows, \
     save_or_update_merge
@@ -253,3 +253,56 @@ class CEDCampaignBuilderCampaign:
                 f"cbc.IsDeleted = 0 and cb.IsActive = 1 and cb.IsDeleted = 0 group by cbc.ContentType"
         res = execute_query(self.engine, query)
         return res
+
+    def get_is_split_flag_by_cbc_id(self, cbc_id: str):
+        query = f"""
+        SELECT 
+            cb.isSplit AS SplitFlag
+        FROM
+            CED_CampaignBuilder cb
+                JOIN
+            CED_CampaignBuilderCampaign cbc ON cbc.CampaignBuilderId = cb.UniqueId
+        WHERE
+            cbc.UniqueId = '{cbc_id}';
+        """
+        resp = dict_fetch_query_all(self.curr, query)
+        return resp
+
+    def update_campaign_builder_campaign_instance(self, update_dict: dict, where_dict: dict):
+        resp = update_rows(self.curr, self.table_name, update_dict, where_dict)
+        return True if resp.get("row_count", 0) > 0 else False
+
+    def get_all_cbc_ids_for_split_campaign(self, cbc_id: str):
+        query= f"""
+        SELECT 
+            UniqueId AS UniqueId
+        FROM
+            CED_CampaignBuilderCampaign cbc
+        WHERE
+            cbc.CampaignBuilderId = (SELECT 
+                    CampaignBuilderId
+                FROM
+                    CED_CampaignBuilderCampaign
+                WHERE
+                    UniqueId = '{cbc_id}')
+            AND cbc.StartDateTime > NOW();
+        """
+        resp = dict_fetch_query_all(self.curr, query)
+        return resp
+
+    def bulk_update_segment_data_for_cbc_ids(self, cbc_ids: str, segment_data: dict):
+        query = f"""UPDATE CED_CampaignBuilderCampaign SET S3Path = '{segment_data["S3Path"]}', S3DataRefreshEndDate = '{segment_data["S3DataRefreshEndDate"]}', S3DataRefreshStatus = '{segment_data["S3DataRefreshStatus"]}' WHERE UniqueId IN (%s);""" % cbc_ids
+        return execute_update_query(self.engine, query)
+
+    def get_recurring_details_json(self, cbc_id: str):
+        query= f"""
+        SELECT 
+            RecurringDetail
+        FROM
+            CED_CampaignBuilder cb
+                JOIN
+            CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId
+        WHERE
+            cbc.UniqueId = '{cbc_id}'"""
+        resp = dict_fetch_query_all(self.curr, query)
+        return resp
