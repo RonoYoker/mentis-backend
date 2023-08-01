@@ -2000,16 +2000,19 @@ def save_campaign_details(request_data):
                                       reason=saved_cbc_data.get("details_message"))
     except BadRequestException as ex:
         logger.error(f"Error while prepare and saving campaign builder details BadRequestException ::{ex}")
+        campaign_builder.is_active = False
         campaign_builder.status = CampaignBuilderStatus.ERROR.value
         campaign_builder.error_msg = ex.reason
         status_code = http.HTTPStatus.BAD_REQUEST
     except InternalServerError as ey:
         logger.error(f"Error while prepare and saving campaign builder details InternalServerError ::{ey}")
+        campaign_builder.is_active = False
         campaign_builder.status = CampaignBuilderStatus.ERROR.value
         campaign_builder.error_msg = ey.reason
         status_code = http.HTTPStatus.INTERNAL_SERVER_ERROR
     except NotFoundException as ez:
         logger.error(f"Error while prepare and saving campaign builder details NotFoundException ::{ez}")
+        campaign_builder.is_active = False
         campaign_builder.status = CampaignBuilderStatus.ERROR.value
         campaign_builder.error_msg = ez.reason
         status_code = http.HTTPStatus.NOT_FOUND
@@ -2018,6 +2021,7 @@ def save_campaign_details(request_data):
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno)
         logger.error(f"Error while prepare and saving campaign builder details Exception ::{e}")
+        campaign_builder.is_active = False
         campaign_builder.status = CampaignBuilderStatus.ERROR.value
         campaign_builder.error_msg = str(e)
         status_code = http.HTTPStatus.INTERNAL_SERVER_ERROR
