@@ -46,4 +46,6 @@ SEGMENT_AES_KEYS = INFRA_CONF["SEGMENT_AES_KEYS"]
 AWS_REGION = "ap-south-1"
 AWS_ACCOUNTID = INFRA_CONF["AWS_ACCOUNTID"]
 SNS_SEGMENT_EVALUATOR = "TEST_HYP_DK_Campaign_Segment_Evaluator"
+QUERY_EXECUTION_JOB_BUCKET = "abl-uat-async-query-execution-response"
+
 
