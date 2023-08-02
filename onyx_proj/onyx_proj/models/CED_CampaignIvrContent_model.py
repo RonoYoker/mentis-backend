@@ -65,7 +65,7 @@ class CEDCampaignIvrContent:
             filter_list.append({"column": "status", "value": status_list, "op": "IN"})
 
         res = fetch_rows_limited(self.engine, self.table, filter_list, [], ["follow_up_sms_list", "tag_mapping.tag",
-                                                                            "variables"])
+                                                                            "variables.master_header"])
         if res is None or len(res) <= 0:
             return None
         return res[0]

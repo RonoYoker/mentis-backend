@@ -77,7 +77,7 @@ class CEDCampaignWhatsAppContent:
         if len(status_list) > 0:
             filter_list.append({"column": "status", "value": status_list, "op": "IN"})
 
-        res = fetch_rows_limited(self.engine, self.table, filter_list, [], ["variables", "tag_mapping.tag", "url_mapping.url.variables", "url_mapping.url.tag_mapping.tag",
+        res = fetch_rows_limited(self.engine, self.table, filter_list, [], ["variables.master_header", "tag_mapping.tag", "url_mapping.url.variables", "url_mapping.url.tag_mapping.tag",
                                                                             "media_mapping.media.tag_mapping.tag"])
         if res is None or len(res) <= 0:
             return None
