@@ -441,6 +441,16 @@ def update_segment_count_and_status_for_campaign(request_data):
 
     if segment_count == 0:
         message = "segment count is empty"
+        try:
+            if status.find("ERROR") != -1:
+                from onyx_proj.common.decorators import fetch_project_id_from_conf_from_given_identifier
+                project_id = fetch_project_id_from_conf_from_given_identifier("CAMPAIGNID", campaign_id)
+                alerting_text = f'Hyperion Local Campaing ID : {campaign_id}, Status : {status}, ERROR: Campaign Needs attention'
+                alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
+                                                                      feature_section="DEFAULT")
+        except Exception as ex:
+            logger.error(f'Unable to send telegram Request, {ex}')
+
         CEDCampaignExecutionProgress().update_campaign_status(status, campaign_id, message)
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="segment count is empty")

@@ -177,6 +177,9 @@ def fetch_project_id_from_conf_from_given_identifier(identifier_type, identifier
         elif identifier_type == "CONTENT":
             content_type = args[0].get("content_type")
             project_id = app_settings.CONTENT_TABLE_MAPPING[f"{content_type}"]().get_project_id_by_content_id(identifier_id)
+        elif identifier_type == "CAMPAIGNID":
+            cbc_id = CEDCampaignExecutionProgress().get_campaing_builder_campaign_id(identifier_id)
+            project_id = CEDCampaignBuilderCampaign().get_project_id_from_campaign_builder_campaign_id(cbc_id)
         else:
             raise MethodPermissionValidationException
         return project_id
