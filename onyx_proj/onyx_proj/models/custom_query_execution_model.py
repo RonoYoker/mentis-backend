@@ -17,3 +17,6 @@ class CustomQueryExecution:
         # query = query.replace("%", "%%")
         return fetch_all_without_args(self.curr, query)
 
+    def execute_output_file_query(self, query: str):
+        logger.debug(f"CustomQueryExecution :: query: {query}")
+        return execute_output_file_query(self.curr, query)

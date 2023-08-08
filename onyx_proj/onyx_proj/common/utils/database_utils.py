@@ -50,6 +50,18 @@ def fetch_all_without_args(engine, query):
         return {"error": True, "exception": e}
 
 
+def execute_output_file_query(engine, query):
+    try:
+        with engine.connect() as cursor:
+            resp = cursor.execute(text(query))
+            return {"error": False, "result": resp}
+    except Exception as e:
+        logging.error({
+            'error': 'mysql thrown exception while fetching dict one.', 'exception': e.__cause__, 'logkey': 'mysql_helper'
+        })
+        return {"error": True, "exception": e}
+
+
 def insert_multiple_rows(engine, table_name, data_dict):
     placeholder = ', '.join(['%s'] * len(data_dict["columns"]))
     columns = ', '.join(data_dict["columns"])

@@ -49,8 +49,9 @@ def query_executor(task_id: str):
         db_config = json.loads(project_level_data["result"][0]["ProjectConfig"])
         db_reader_config_key = db_config["database_config"]["reader_conf_key"]
 
+        processed_query = task_data["Query"] + " LIMIT 1" if task_data["ResponseFormat"] == "s3_output" else task_data["Query"]
         init_time = time.time()
-        query_response = CustomQueryExecution(db_conf_key=db_reader_config_key).execute_query(task_data["Query"])
+        query_response = CustomQueryExecution(db_conf_key=db_reader_config_key).execute_query(processed_query)
         query_execution_time = time.time() - init_time
         logger.info(f"query_executor :: Time taken to execute query for task_id: {task_id} is {query_execution_time}.")
         task_data["QueryExecutionTime"] = query_execution_time
@@ -73,45 +74,65 @@ def query_executor(task_id: str):
                 logger.error(f"query_executor :: Unable to update status for task_id: {task_data['TaskId']}.")
                 return
         else:
-            task_data["Status"] = AsyncJobStatus.SUCCESS.value
-            logger.info(f"query_executor :: Query response for the task_id: {task_id} is {query_response}.")
+            if task_data["ResponseFormat"] in ["s3", "json"]:
+                task_data["Status"] = AsyncJobStatus.SUCCESS.value
+                logger.info(f"query_executor :: Query response for the task_id: {task_id} is {query_response}.")
 
-            push_custom_parameters_to_newrelic(
-                dict(project_id=task_data["ProjectId"], source=task_data["Client"], request_id=task_data["RequestId"],
-                     request_type=task_data["RequestType"], query=task_data["Query"],
-                     query_execution_time=task_data["QueryExecutionTime"],
-                     status=task_data["Status"]))
+                push_custom_parameters_to_newrelic(
+                    dict(project_id=task_data["ProjectId"], source=task_data["Client"], request_id=task_data["RequestId"],
+                         request_type=task_data["RequestType"], query=task_data["Query"],
+                         query_execution_time=task_data["QueryExecutionTime"],
+                         status=task_data["Status"]))
 
-            # check response format and store data if need be in the database
-            if task_data["ResponseFormat"] == "json":
-                db_resp = CEDQueryExecutionJob().update_query_response(
-                    AesEncryptDecrypt(key=settings.AES_ENCRYPTION_KEY["KEY"],
-                                      iv=settings.AES_ENCRYPTION_KEY["IV"],
-                                      mode=AES.MODE_CBC).encrypt_aes_cbc(json.dumps(query_response.get("result", ""), default=str)), task_id)
-                if db_resp.get("exception", None) is None and db_resp.get("row_count", 0) > 0:
-                    logger.info(f"query_executor :: Saved query response for task_id: {task_data['TaskId']}.")
-                else:
-                    logger.error(f"query_executor:: Unable to save query response for task_id: {task_data['TaskId']}.")
-            elif task_data["ResponseFormat"] == "s3":
-                # if response format is s3 encrypt data and place data in s3 bucket
-                s3_upload_encrypted_data = AesEncryptDecrypt(key=settings.AES_ENCRYPTION_KEY["KEY"],
-                                                             iv=settings.AES_ENCRYPTION_KEY["IV"],
-                                                             mode=AES.MODE_CBC).encrypt_aes_cbc(json.dumps(query_response.get("result", ""), default=str))
-                file_key = task_id+".txt"
-                # write encrypted file to tmp path in os
-                with open(TMP_PATH+file_key, "w", encoding="utf8") as file_writer:
-                    file_writer.write(s3_upload_encrypted_data)
-                try:
-                    logger.info(f"query_executor :: Saving encrypted query data to s3 for task_id: {task_id}")
-                    S3Helper().upload_file_to_s3_bucket(settings.QUERY_EXECUTION_JOB_BUCKET, file_key)
-                    s3_url = S3Helper().get_s3_url(settings.QUERY_EXECUTION_JOB_BUCKET, file_key)
-                    response_dict = dict(s3_url=s3_url, bucket_name=settings.QUERY_EXECUTION_JOB_BUCKET, file_key=file_key)
-                    CEDQueryExecutionJob().update_query_response(json.dumps(response_dict), task_id)
-                except Exception as e:
-                    logger.error(f"query_executor :: Upload task failed for task_id: {task_id}, Error: {str(e)}")
+                # check response format and store data if need be in the database
+                if task_data["ResponseFormat"] == "json":
+                    db_resp = CEDQueryExecutionJob().update_query_response(
+                        AesEncryptDecrypt(key=settings.AES_ENCRYPTION_KEY["KEY"],
+                                          iv=settings.AES_ENCRYPTION_KEY["IV"],
+                                          mode=AES.MODE_CBC).encrypt_aes_cbc(json.dumps(query_response.get("result", ""), default=str)), task_id)
+                    if db_resp.get("exception", None) is None and db_resp.get("row_count", 0) > 0:
+                        logger.info(f"query_executor :: Saved query response for task_id: {task_data['TaskId']}.")
+                    else:
+                        logger.error(f"query_executor:: Unable to save query response for task_id: {task_data['TaskId']}.")
+                elif task_data["ResponseFormat"] == "s3":
+                    # if response format is s3 encrypt data and place data in s3 bucket
+                    s3_upload_encrypted_data = AesEncryptDecrypt(key=settings.AES_ENCRYPTION_KEY["KEY"],
+                                                                 iv=settings.AES_ENCRYPTION_KEY["IV"],
+                                                                 mode=AES.MODE_CBC).encrypt_aes_cbc(json.dumps(query_response.get("result", ""), default=str))
+                    file_key = task_id+".txt"
+                    # write encrypted file to tmp path in os
+                    with open(TMP_PATH+file_key, "w", encoding="utf8") as file_writer:
+                        file_writer.write(s3_upload_encrypted_data)
+                    try:
+                        logger.info(f"query_executor :: Saving encrypted query data to s3 for task_id: {task_id}")
+                        S3Helper().upload_file_to_s3_bucket(settings.QUERY_EXECUTION_JOB_BUCKET, file_key)
+                        s3_url = S3Helper().get_s3_url(settings.QUERY_EXECUTION_JOB_BUCKET, file_key)
+                        response_dict = dict(s3_url=s3_url, bucket_name=settings.QUERY_EXECUTION_JOB_BUCKET, file_key=file_key)
+                        CEDQueryExecutionJob().update_query_response(json.dumps(response_dict), task_id)
+                    except Exception as e:
+                        logger.error(f"query_executor :: Upload task failed for task_id: {task_id}, Error: {str(e)}")
+                        task_data["Status"] = AsyncJobStatus.ERROR.value
+                    finally:
+                        os.remove(TMP_PATH+file_key)
+            elif task_data["ResponseFormat"] == "s3_output":
+                headers_list = [*query_response.get("result", [])[0]]
+                headers_placeholder = ", ".join("'"+header+"'" for header in headers_list)
+                file_name = f"{task_id}"
+                output_query = f"""SELECT {headers_placeholder} UNION ALL {task_data["Query"]} INTO OUTFILE S3 's3://{settings.QUERY_EXECUTION_JOB_BUCKET}/{file_name}' FIELDS TERMINATED BY "|" LINES TERMINATED BY "\\n\" MANIFEST ON OVERWRITE ON"""
+                init_time = time.time()
+                output_query_response = CustomQueryExecution().execute_output_file_query(output_query)
+                query_execution_time = time.time() - init_time
+                logger.info(
+                    f"query_executor :: Time taken to execute output query for task_id: {task_id} is {query_execution_time}.")
+                if output_query_response.get("error", False) is True:
+                    logger.error(f"query_executor :: Query response is error for the task_id: {task_id}. Exception is {output_query_response.get('exception', None)}")
                     task_data["Status"] = AsyncJobStatus.ERROR.value
-                finally:
-                    os.remove(TMP_PATH+file_key)
+                else:
+                    task_data["Status"] = AsyncJobStatus.SUCCESS.value
+                    s3_url = S3Helper().get_s3_url(settings.QUERY_EXECUTION_JOB_BUCKET, file_name)
+                    response_dict = dict(s3_url=s3_url, bucket_name=settings.QUERY_EXECUTION_JOB_BUCKET,
+                                         file_key=file_name)
+                    CEDQueryExecutionJob().update_query_response(json.dumps(response_dict), task_id)
 
             # update status to SUCCESS for the task
             db_resp = CEDQueryExecutionJob().update_task_status(task_data["Status"], task_id)
@@ -207,5 +228,11 @@ def uuid_processor(uuid_data):
     push_custom_parameters_to_newrelic({"stage": "UUID_ASYNC_COMPLETED"})
     return
 
+
+####### temp functionm #########
+@task
+def update_segment_data_encrypted(segment_data):
+    from onyx_proj.models.CED_Segment_model import CEDSegment
+    CEDSegment().update_segment(dict(UniqueId=segment_data["UniqueId"]), dict(Extra=segment_data["Extra"]))
 
 

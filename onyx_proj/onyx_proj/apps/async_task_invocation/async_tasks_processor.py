@@ -3,6 +3,7 @@ import logging
 import json
 import uuid
 
+from onyx_proj.apps.segments.app_settings import AsyncTaskRequestKeys
 from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS
 from onyx_proj.models.CED_QueryExecution import CEDQueryExecution
 from onyx_proj.models.CED_QueryExecutionJob import CEDQueryExecutionJob
@@ -15,6 +16,7 @@ logger = logging.getLogger("apps")
 
 class AsyncQueryExecution:
     def __init__(self, **kwargs):
+        self.request_type = None
         self.valid_payload = False
         self.parse_payload(kwargs["data"])
         self.unique_id = self.generate_id()
@@ -29,6 +31,8 @@ class AsyncQueryExecution:
         if data.get("project_id", None) is None or len(data.get("queries", [])) == 0 or \
                 data.get("callback", None) is None:
             self.valid_payload = False
+
+        self.request_type = data.get("request_type", None)
 
         for query_data in data["queries"]:
             for key, val in query_data.items():
@@ -107,9 +111,10 @@ class AsyncQueryExecution:
             return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
                         details_message=f"Unable to update task status at Onyx Local, request_id: {data.get('request_id')}")
 
+        queue_name = self.get_queue_name()
         for task in tasks_data["result"]:
             # invoke task and update table
-            query_executor.apply_async(kwargs={"task_id": task["TaskId"]}, queue="celery_query_executor")
+            query_executor.apply_async(kwargs={"task_id": task["TaskId"]}, queue=queue_name)
             # query_executor(task["TaskId"])
 
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
@@ -137,3 +142,9 @@ class AsyncQueryExecution:
     @staticmethod
     def generate_id():
         return uuid.uuid4().hex
+
+    def get_queue_name(self):
+        if self.request_type == AsyncTaskRequestKeys.HYPERION_CAMPAIGN_QUERY_EXECUTION_FLOW.value:
+            return "celery_campaign_query_executor"
+        else:
+            return "celery_query_executor"
