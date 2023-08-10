@@ -328,7 +328,6 @@ def get_project_slots(data):
     since_timestamp = int(datetime.strptime(start_date_time, "%Y-%m-%d %H:%M:%S").timestamp())
     until_timestamp = int(datetime.strptime(end_date_time, "%Y-%m-%d %H:%M:%S").timestamp())
     start_date_time = datetime.strptime(start_date_time, "%Y-%m-%d %H:%M:%S")
-    end_date_time = datetime.strptime(end_date_time, "%Y-%m-%d %H:%M:%S")
 
     project_data = CEDProjects().get_project_bu_limits_by_project_id(project_id)
     if project_data is None:
@@ -339,10 +338,9 @@ def get_project_slots(data):
     slot_limit_per_min_bu = business_unit_threshold[channel]
     slot_limit_per_min_project = project_threshold[channel]
 
-    project_camps = fetch_project_campaigns(project_id, start_date_time)
     bu_camps = fetch_bu_campaigns(project_data.get("business_unit_id"), start_date_time)
 
-    if project_camps is None or bu_camps is None:
+    if bu_camps is None:
         raise NotFoundException(method_name=method_name, reason="No slots data found for given project id")
 
     resp['threshold_limit'] = {
@@ -356,12 +354,11 @@ def get_project_slots(data):
     bank_query = BANK_SLOTS_NR_QUERY.format(bank_name=project_data.get('business_name'), channel=channel,
                                           since=since_timestamp, until=until_timestamp)
 
-    project_slots = validate_schedule(project_camps.get(channel, {}), slot_limit_per_min_project)
-    bu_slots = validate_schedule(bu_camps.get(channel, {}), slot_limit_per_min_bu)
+    bu_slots = get_schedule_bu_proj_slot(bu_camps.get(channel, {}), project_data.get('business_unit_id'),
+                                         slot_limit_per_min_bu, channel)
 
-    if project_slots.get('slots_seg_count') is not None and bu_slots.get('slots_seg_count') is not None:
-        project_slots_seg_count = project_slots['slots_seg_count']
-        bu_slots_seg_count = bu_slots['slots_seg_count']
+    if bu_slots.get('slots_seg_count') is not None:
+        slots_seg_count = bu_slots['slots_seg_count']
     else:
         raise InternalServerError(method_name=method_name, reason="Slots are conflicting it might effect campaigns")
 
@@ -380,8 +377,7 @@ def get_project_slots(data):
 
     executed_project_slots = parse_nr_data_for_plotting_slots(SlotsMode.PROJECT_SLOTS.value, channel,
                                                               nr_proj_slots_data, nr_slots_data)
-    booked_project_slots = parse_db_data_for_plotting_slots(project_data, channel, start_date_time, end_date_time,
-                                                            project_slots_seg_count, bu_slots_seg_count)
+    booked_project_slots = parse_db_data_for_plotting_slots(project_data, channel, slots_seg_count)
 
     resp['booked_slot'] = booked_project_slots
     resp['executed_slot'] = executed_project_slots
@@ -389,33 +385,84 @@ def get_project_slots(data):
     return resp
 
 
-def fetch_project_campaigns(project_id, date):
+def get_schedule_bu_proj_slot(schedule, bu_id, slot_limit_per_min, channel):
+    method_name = "get_schedule_bu_proj_slot"
+    if len(schedule) == 0:
+        return {"success": True, "slots_seg_count": None}
 
-    project_level_campaigns = CEDCampaignBuilderCampaign().get_campaigns_segment_info_by_dates(
-        [date.date()], project_id)
-    if project_level_campaigns is None:
-        return None
+    proj_limit = {}
+    filled_segment_count = {}
 
-    valid_project_campaigns = {}
+    bu_projects_limit = CEDProjects().get_project_bu_limits_by_bu_id(bu_id)
 
-    for campaign in project_level_campaigns:
-        try:
-            camp_type = campaign.get("ContentType")
-        except:
-            continue
-        if campaign.get("StartDateTime") is None or campaign.get("EndDateTime") is None:
-            continue
-        campaign = {
-            "start": campaign.get("StartDateTime"),
-            "end": campaign.get("EndDateTime"),
-            "count": int(campaign.get("Records", 0))
-        }
-        if campaign.get("is_split", False) is True:
-            split_details = json.loads(campaign["split_details"])
-            campaign["count"] = ceil(campaign["count"] / split_details["total_splits"])
-        valid_project_campaigns.setdefault(camp_type, []).append(campaign)
+    if not bu_projects_limit or len(bu_projects_limit) < 1:
+        raise InternalServerError(method_name=method_name, reason="Unable to fetch bank and project limits")
 
-    return valid_project_campaigns
+    for bu_project_limit in bu_projects_limit:
+        proj_limit[bu_project_limit["project_name"]] = json.loads(bu_project_limit["project_limit"])
+
+    for proj_name, limit in proj_limit.items():
+        limit["SMS"] = limit["SMS"] * 15
+        limit["EMAIL"] = limit["EMAIL"] * 15
+        limit["IVR"] = limit["IVR"] * 15
+        limit["WHATSAPP"] = limit["WHATSAPP"] * 15
+
+    slot_limit = slot_limit_per_min * SLOT_INTERVAL_MINUTES
+
+    curr_segments = sorted(schedule, key=lambda x: (x["end"], x["start"]), reverse=True)
+    max_time = curr_segments[0]["end"]
+    min_time = curr_segments[0]["start"]
+    for segment in curr_segments:
+        max_time = max(max_time, segment["end"])
+        min_time = min(min_time, segment["start"])
+    total_slot_count = int((max_time - min_time) / timedelta(minutes=SLOT_INTERVAL_MINUTES))
+    for slot_index in range(0, total_slot_count, 1):
+        slot_start_time = min_time + timedelta(minutes=SLOT_INTERVAL_MINUTES * slot_index)
+        slot_end_time = min_time + timedelta(minutes=SLOT_INTERVAL_MINUTES * (slot_index + 1))
+        slot_key_pair = (slot_start_time, slot_end_time)
+        filled_segment_count[slot_key_pair] = []
+        for curr_camp_data in curr_segments:
+            if slot_limit <= 0:
+                break
+            if proj_limit[curr_camp_data['proj_name']][channel] <= 0:
+                continue
+            if curr_camp_data['start'] >= slot_end_time or curr_camp_data['end'] <= slot_start_time:
+                continue
+            used_limit = min(curr_camp_data['count'], slot_limit)
+            used_limit = min(used_limit, proj_limit[curr_camp_data['proj_name']][channel])
+            if used_limit > 0:
+                plot_dict = {
+                    "campaign_id": curr_camp_data['camp_id'],
+                    "project_name": curr_camp_data['proj_name'],
+                    "count": used_limit
+                }
+                filled_segment_count[slot_key_pair].append(plot_dict)
+                slot_limit -= used_limit
+                curr_camp_data['count'] -= used_limit
+                proj_limit[curr_camp_data['proj_name']][channel] -= used_limit
+
+    for slot_index in range(0, total_slot_count, 1):
+        slot_start_time = min_time + timedelta(minutes=SLOT_INTERVAL_MINUTES * slot_index)
+        slot_end_time = min_time + timedelta(minutes=SLOT_INTERVAL_MINUTES * (slot_index + 1))
+        slot_key_pair = (slot_start_time, slot_end_time)
+        for curr_camp_data in curr_segments:
+            if curr_camp_data['end'] == slot_end_time and curr_camp_data.get('count') > 0:
+                campaign_flag = False
+                for plot in filled_segment_count[slot_key_pair]:
+                    if plot['campaign_id'] == curr_camp_data['camp_id']:
+                        plot['count'] += curr_camp_data['count']
+                        curr_camp_data['count'] = 0
+                        campaign_flag = True
+                if not campaign_flag:
+                    plot_dict = {
+                        "campaign_id": curr_camp_data['camp_id'],
+                        "project_name": curr_camp_data['proj_name'],
+                        "count": curr_camp_data.get('count')
+                    }
+                    filled_segment_count[slot_key_pair].append(plot_dict)
+                    curr_camp_data['count'] = 0
+
+    return {"success": True, "slots_seg_count": filled_segment_count}
 
 
 def fetch_bu_campaigns(business_unit_id, date):
@@ -436,7 +483,10 @@ def fetch_bu_campaigns(business_unit_id, date):
         campaign = {
             "start": campaign.get("StartDateTime"),
             "end": campaign.get("EndDateTime"),
-            "count": int(campaign.get("Records", 0))
+            "count": int(campaign.get("Records", 0)),
+            "proj_name": campaign.get("project_name"),
+            "camp_id": campaign.get("campaign_builder_id"),
+            "bu_name": campaign.get("bu_name")
         }
         if campaign.get("is_split", False) is True:
             split_details = json.loads(campaign["split_details"])
@@ -534,33 +584,33 @@ def parse_nr_data_for_plotting_slots(mode, channel, nr_proj_slots_data, nr_slots
     return executed_project_slots
 
 
-def parse_db_data_for_plotting_slots(project_data, channel, start_date_time, end_date_time, project_slots_seg_count, bu_slots_seg_count):
+def parse_db_data_for_plotting_slots(project_data, channel, slots_seg_count):
     booked_project_slots = []
-    min_time = start_date_time
-    max_time = end_date_time
-    total_slot_count = int((max_time - min_time) / timedelta(minutes=SLOT_INTERVAL_MINUTES))
-    for slot_index in range(0, total_slot_count, 1):
-        slot_start_time = min_time + timedelta(minutes=SLOT_INTERVAL_MINUTES * (slot_index))
-        slot_end_time = min_time + timedelta(minutes=SLOT_INTERVAL_MINUTES * (slot_index + 1))
-        slot_key_pair = (slot_start_time, slot_end_time)
+    for slots_time, slots_detail in slots_seg_count.items():
+        proj_plot_val = []
+        bu_plot_val = []
+        for slot_detail in slots_detail:
+            if slot_detail.get('project_name') == project_data.get('project_name'):
+                proj_plot_val.append({
+                    "campaign_id": slot_detail.get('campaign_id'),
+                    "records": slot_detail.get('count')
+                })
+            bu_plot_val.append({
+                "campaign_id": slot_detail.get('campaign_id'),
+                "records": slot_detail.get('count')
+            })
         booked_project_slots.append({
-            "start_date_time": slot_key_pair[0].strftime("%Y-%m-%d %H:%M:%S"),
-            "end_date_time": slot_key_pair[1].strftime("%Y-%m-%d %H:%M:%S"),
+            "start_date_time": slots_time[0].strftime("%Y-%m-%d %H:%M:%S"),
+            "end_date_time": slots_time[1].strftime("%Y-%m-%d %H:%M:%S"),
             "plots": [{
                 "project_name": project_data.get('project_name'),
                 "channel": channel,
-                "val": [{
-                    "records": int(project_slots_seg_count.get(slot_key_pair)) if project_slots_seg_count.get(
-                        slot_key_pair) is not None else 0
-                }]
+                "val": proj_plot_val if len(proj_plot_val) > 0 else [{"records": 0}]
             },
                 {
                     "bank_name": project_data.get('business_name'),
                     "channel": channel,
-                    "val": [{
-                        "records": int(bu_slots_seg_count.get(slot_key_pair)) if bu_slots_seg_count.get(
-                            slot_key_pair) is not None else 0
-                    }]
+                    "val": bu_plot_val if len(bu_plot_val) > 0 else [{"records": 0}]
                 }
             ]
         })
