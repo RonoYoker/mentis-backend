@@ -402,10 +402,10 @@ def get_schedule_bu_proj_slot(schedule, bu_id, slot_limit_per_min, channel):
         proj_limit[bu_project_limit["project_name"]] = json.loads(bu_project_limit["project_limit"])
 
     for proj_name, limit in proj_limit.items():
-        limit["SMS"] = limit["SMS"] * 15
-        limit["EMAIL"] = limit["EMAIL"] * 15
-        limit["IVR"] = limit["IVR"] * 15
-        limit["WHATSAPP"] = limit["WHATSAPP"] * 15
+        limit["SMS"] = limit["SMS"] * SLOT_INTERVAL_MINUTES
+        limit["EMAIL"] = limit["EMAIL"] * SLOT_INTERVAL_MINUTES
+        limit["IVR"] = limit["IVR"] * SLOT_INTERVAL_MINUTES
+        limit["WHATSAPP"] = limit["WHATSAPP"] * SLOT_INTERVAL_MINUTES
 
     slot_limit = slot_limit_per_min * SLOT_INTERVAL_MINUTES
 
@@ -421,15 +421,16 @@ def get_schedule_bu_proj_slot(schedule, bu_id, slot_limit_per_min, channel):
         slot_end_time = min_time + timedelta(minutes=SLOT_INTERVAL_MINUTES * (slot_index + 1))
         slot_key_pair = (slot_start_time, slot_end_time)
         filled_segment_count[slot_key_pair] = []
+        temp_proj_limit = deepcopy(proj_limit)
         for curr_camp_data in curr_segments:
             if slot_limit <= 0:
                 break
-            if proj_limit[curr_camp_data['proj_name']][channel] <= 0:
+            if temp_proj_limit[curr_camp_data['proj_name']][channel] <= 0:
                 continue
             if curr_camp_data['start'] >= slot_end_time or curr_camp_data['end'] <= slot_start_time:
                 continue
             used_limit = min(curr_camp_data['count'], slot_limit)
-            used_limit = min(used_limit, proj_limit[curr_camp_data['proj_name']][channel])
+            used_limit = min(used_limit, temp_proj_limit[curr_camp_data['proj_name']][channel])
             if used_limit > 0:
                 plot_dict = {
                     "campaign_id": curr_camp_data['camp_id'],
@@ -439,7 +440,7 @@ def get_schedule_bu_proj_slot(schedule, bu_id, slot_limit_per_min, channel):
                 filled_segment_count[slot_key_pair].append(plot_dict)
                 slot_limit -= used_limit
                 curr_camp_data['count'] -= used_limit
-                proj_limit[curr_camp_data['proj_name']][channel] -= used_limit
+                temp_proj_limit[curr_camp_data['proj_name']][channel] -= used_limit
 
     for slot_index in range(0, total_slot_count, 1):
         slot_start_time = min_time + timedelta(minutes=SLOT_INTERVAL_MINUTES * slot_index)
