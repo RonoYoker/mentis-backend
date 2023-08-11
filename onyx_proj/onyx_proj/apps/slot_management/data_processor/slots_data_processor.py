@@ -422,14 +422,15 @@ def get_schedule_bu_proj_slot(schedule, bu_id, slot_limit_per_min, channel):
         slot_key_pair = (slot_start_time, slot_end_time)
         filled_segment_count[slot_key_pair] = []
         temp_proj_limit = deepcopy(proj_limit)
+        temp_slot_limit = deepcopy(slot_limit)
         for curr_camp_data in curr_segments:
-            if slot_limit <= 0:
+            if temp_slot_limit <= 0:
                 break
             if temp_proj_limit[curr_camp_data['proj_name']][channel] <= 0:
                 continue
             if curr_camp_data['start'] >= slot_end_time or curr_camp_data['end'] <= slot_start_time:
                 continue
-            used_limit = min(curr_camp_data['count'], slot_limit)
+            used_limit = min(curr_camp_data['count'], temp_slot_limit)
             used_limit = min(used_limit, temp_proj_limit[curr_camp_data['proj_name']][channel])
             if used_limit > 0:
                 plot_dict = {
@@ -438,7 +439,7 @@ def get_schedule_bu_proj_slot(schedule, bu_id, slot_limit_per_min, channel):
                     "count": used_limit
                 }
                 filled_segment_count[slot_key_pair].append(plot_dict)
-                slot_limit -= used_limit
+                temp_slot_limit -= used_limit
                 curr_camp_data['count'] -= used_limit
                 temp_proj_limit[curr_camp_data['proj_name']][channel] -= used_limit
 
