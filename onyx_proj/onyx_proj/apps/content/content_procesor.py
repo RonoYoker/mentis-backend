@@ -957,7 +957,7 @@ def migrate_project_headers(old_project_id,new_project_id):
         val_placeholders = ",".join(["%s"]*len(columns))
         values = []
         for header in headers_to_be_created:
-            values.append([header[col] for col in columns])
+            values.append([header.get(col,None) for col in columns])
         query = " Insert into CED_MasterHeaderMapping (%s) values (%s)"%(columns_placeholder,val_placeholders)
         resp = CustomQueryExecution().execute_write_query(query, values)
         if resp["success"] is False:
