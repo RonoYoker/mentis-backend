@@ -8,7 +8,7 @@ from onyx_proj.apps.content.base import Content
 from onyx_proj.common.constants import Roles
 from onyx_proj.apps.content.content_procesor import fetch_campaign_processor, get_content_list, get_content_data, \
     deactivate_content_and_campaign, get_content_list_v2, add_or_remove_url_and_subject_line_from_content, \
-    save_content_data
+    save_content_data, migrate_content_across_projects_with_headers_processing
 from onyx_proj.common.decorators import UserAuth
 
 
@@ -114,5 +114,15 @@ def save_content(request):
 def content_action(request):
     request_body = json.loads(request.body.decode("utf-8"))
     response = Content().update_content_stage(request_body)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def migrate_content_across_projects(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    response = migrate_content_across_projects_with_headers_processing(request_body)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")

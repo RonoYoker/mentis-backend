@@ -113,6 +113,22 @@ def execute_delete(engine, query, params):
         })
         return {'success': False, 'exception': e}
 
+def execute_write(engine, query, params):
+    try:
+        with engine.connect() as cursor:
+            if params is None:
+                resp = cursor.execute(query)
+            else:
+                resp = cursor.execute(query,params)
+
+            return {'success': True, 'row_count': resp.rowcount}
+    except Exception as e:
+        logging.error({
+            "error": e,
+            "message": "error occurred while inserting data into mysql table",
+            "logkey": "mysql_helper"
+        })
+        return {'success': False, 'exception': e}
 
 def get_current_datetime():
     return time.strftime('%Y-%m-%d %H:%M:%S')

@@ -24,7 +24,7 @@ from onyx_proj.models.CED_CampaignTagContent_model import CEDCampaignTagContent
 from onyx_proj.models.CED_CampaignURLContent_model import CEDCampaignURLContent
 from onyx_proj.common.constants import CHANNELS_LIST, TAG_FAILURE, TAG_SUCCESS, FETCH_CAMPAIGN_QUERY, \
     CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, Roles, ContentFetchModes, \
-    CAMPAIGN_CONTENT_MAPPING_TABLE_DICT
+    CAMPAIGN_CONTENT_MAPPING_TABLE_DICT, FETCH_RELATED_CONTENT_IDS, INSERT_CONTENT_PROJECT_MIGRATION
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.common.constants import CHANNELS_LIST, TAG_FAILURE, TAG_SUCCESS, FETCH_CAMPAIGN_QUERY, Roles, \
     CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, CampaignContentStatus, ContentType, \
@@ -36,6 +36,7 @@ from onyx_proj.models.CED_CampaignSMSContent_model import CEDCampaignSMSContent
 from onyx_proj.models.CED_CampaignWhatsAppContent_model import CEDCampaignWhatsAppContent
 from onyx_proj.models.CED_MasterHeaderMapping_model import CEDMasterHeaderMapping
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
+from onyx_proj.models.custom_query_execution_model import CustomQueryExecution
 from onyx_proj.orm_models.CED_ActivityLog_model import CED_ActivityLog
 from onyx_proj.orm_models.CED_CampaignContentEmailSubjectMapping_model import CED_CampaignContentEmailSubjectMapping
 from onyx_proj.orm_models.CED_CampaignContentUrlMapping_model import CED_CampaignContentUrlMapping
@@ -847,3 +848,413 @@ def save_content_data(content_data):
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=data.get('data'))
 
 
+def migrate_content_across_projects_with_headers_processing(request_data):
+    old_project_id = request_data.get("old_project_id")
+    new_project_id = request_data.get("new_project_id")
+    content_type = request_data.get("content_type")
+    content_ids = request_data.get("content_ids",[])
+
+    if old_project_id is None or new_project_id is None or content_type is None or \
+        content_type not in ["SMS", "EMAIL", "WHATSAPP","SUBJECTLINE","MEDIA","URL","TAG"] or content_ids is None or len(content_ids) == 0:
+        raise ValidationFailedException(reason="Invalid Data")
+
+    headers_mapping = migrate_project_headers(old_project_id,new_project_id)
+
+    if content_type == "SMS":
+        process_sms_content(old_project_id,new_project_id,content_ids,headers_mapping)
+    elif content_type == "EMAIL":
+        process_email_content(old_project_id,new_project_id,content_ids,headers_mapping)
+    elif content_type == "WHATSAPP":
+        process_whatsapp_content(old_project_id,new_project_id,content_ids,headers_mapping)
+    elif content_type == "SUBJECTLINE":
+        process_subjectline_content(old_project_id,new_project_id,content_ids,headers_mapping)
+    elif content_type == "MEDIA":
+        process_media_content(old_project_id,new_project_id,content_ids,headers_mapping)
+    elif content_type == "URL":
+        process_url_content(old_project_id,new_project_id,content_ids,headers_mapping)
+    elif content_type == "TAG":
+        process_tags_content(old_project_id,new_project_id,content_ids,headers_mapping)
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
+
+
+def migrate_project_headers(old_project_id,new_project_id):
+    PI_HEADERS = ["fullname","firstname","lastname","name","pincode","state","mobile"]
+
+    query = "Select * from CED_MasterHeaderMapping where ProjectId = '%s'"
+
+    old_project_headers = CustomQueryExecution().execute_query(copy.deepcopy(query)%old_project_id)
+    if old_project_headers["error"] is True:
+        raise ValidationFailedException(reason="Unable to fetch old project headers")
+    old_project_headers = old_project_headers["result"]
+    fixed_headers_pi = [{
+        "HeaderName":header["headerName"],
+        "UniqueId":header["uniqueId"],
+        "IsActive":header["active"],
+        "ColumnName":header["columnName"],
+        "FileDataFieldType":header["fileDataFieldType"],
+        "Comment":header["comment"],
+        "MappingType":header["mappingType"],
+        "ContentType":header["contentType"],
+        "Status":header["status"]
+    } for header in copy.deepcopy(FIXED_HEADER_MAPPING_COLUMN_DETAILS) if header["headerName"].lower() in PI_HEADERS]
+    old_project_headers = old_project_headers + fixed_headers_pi
+
+    new_project_headers = CustomQueryExecution().execute_query(copy.deepcopy(query) % new_project_id)
+    if new_project_headers["error"] is True:
+        raise ValidationFailedException(reason="Unable to fetch old project headers")
+    new_project_headers = new_project_headers["result"]
+
+    new_header_mapping = {header["HeaderName"].lower():header for header in new_project_headers}
+    headers_to_be_created = []
+    old_new_project_headers_mapping = {}
+
+    for old_header in old_project_headers:
+        if old_header["HeaderName"].lower() in PI_HEADERS:
+            if f"en{old_header['HeaderName'].lower()}" in new_header_mapping:
+                old_new_project_headers_mapping[old_header["UniqueId"]] = {
+                    "header_name": new_header_mapping[f"en{old_header['HeaderName'].lower()}"]["HeaderName"],
+                    "id": new_header_mapping[f"en{old_header['HeaderName'].lower()}"]["UniqueId"]
+                }
+            else:
+                header_name = f"En{old_header['HeaderName']}"
+                master_id = uuid.uuid4().hex
+                header = copy.deepcopy(old_header)
+                header.pop("Id",None)
+                header["HeaderName"] = header_name
+                header["ColumnName"] = header_name
+                header["HeaderName"] = header_name
+                header["ProjectId"] = new_project_id
+                header["ContentType"] = "TEXT"
+                header["Encrypted"] = 1
+                header["UniqueId"] = master_id
+                headers_to_be_created.append(header)
+                old_new_project_headers_mapping[old_header["UniqueId"]]={
+                    "header_name": header_name,
+                    "id": master_id
+                }
+        else:
+            if old_header['HeaderName'].lower() in new_header_mapping:
+                old_new_project_headers_mapping[old_header["UniqueId"]] = {
+                    "header_name": new_header_mapping[old_header['HeaderName'].lower()]["HeaderName"],
+                    "id": new_header_mapping[old_header['HeaderName'].lower()]["UniqueId"]
+                }
+            else:
+                header_name = old_header['HeaderName']
+                master_id = uuid.uuid4().hex
+                header = copy.deepcopy(old_header)
+                header.pop("Id",None)
+                header["ProjectId"] = new_project_id
+                header["UniqueId"] = master_id
+                headers_to_be_created.append(header)
+                old_new_project_headers_mapping[old_header["UniqueId"]]={
+                    "header_name": header_name,
+                    "id": master_id
+                }
+
+    if len(headers_to_be_created) > 0:
+        columns = list(headers_to_be_created[0].keys())
+        columns_placeholder = ",".join(columns)
+        val_placeholders = ",".join(["%s"]*len(columns))
+        values = []
+        for header in headers_to_be_created:
+            values.append([header[col] for col in columns])
+        query = " Insert into CED_MasterHeaderMapping (%s) values (%s)"%(columns_placeholder,val_placeholders)
+        resp = CustomQueryExecution().execute_write_query(query, values)
+        if resp["success"] is False:
+            raise ValidationFailedException(reason="Unable to insert data in HeadersMapping Table")
+
+    return old_new_project_headers_mapping
+
+def process_sms_content(old_project,new_project,old_content_ids,headers_mapping):
+    if len(old_content_ids) == 0:
+        return
+
+    already_processed_ids = get_already_processed_content("SMS",old_content_ids,old_project,new_project)
+
+    to_process_ids = [idx for idx in old_content_ids if idx not in already_processed_ids and idx is not None]
+    if len(to_process_ids) == 0:
+        return
+
+    sms_content_ids_mapping = {idx: new_project[:10] + idx[10:] for idx in to_process_ids}
+    data = fetch_relevant_content_ids(old_content_ids,"SMS")
+
+    url_ids = list(set([node["url_id"] for node in data]))
+    sender_ids = list(set([node["sender_id"] for node in data]))
+    tag_ids = list(set([node["tag_id"] for node in data]))
+    var_ids = list(set([node["var_id"] for node in data]))
+
+    process_url_content(old_project,new_project,url_ids,headers_mapping)
+    process_senderid_content(old_project,new_project,sender_ids,headers_mapping)
+    process_tags_content(old_project,new_project,tag_ids,headers_mapping)
+    process_content_variables(old_project,new_project,var_ids,headers_mapping)
+
+
+    update_data_in_content_table(new_project,old_project,to_process_ids,"CED_CampaignSMSContent")
+    update_data_in_content_table(new_project,old_project,to_process_ids,"CED_CampaignContentUrlMapping")
+    update_data_in_content_table(new_project,old_project,to_process_ids,"CED_CampaignContentSenderIdMapping")
+    update_data_in_content_table(new_project,old_project,to_process_ids,"CED_EntityTagMapping")
+
+    add_processed_content_list("SMS",sms_content_ids_mapping,old_project,new_project)
+
+
+def process_url_content(old_project,new_project,content_ids,headers_mapping):
+    if len(content_ids) == 0:
+        return
+    already_processed_ids = get_already_processed_content("URL", content_ids, old_project, new_project)
+
+    to_process_ids = [idx for idx in content_ids if idx not in already_processed_ids and idx is not None]
+    if len(to_process_ids) == 0:
+        return
+
+    content_ids_mapping = {idx: new_project[:10] + idx[10:] for idx in to_process_ids}
+    data = fetch_relevant_content_ids(content_ids, "URL")
+
+
+    tag_ids = list(set([node["tag_id"] for node in data]))
+    var_ids = list(set([node["var_id"] for node in data]))
+
+
+    process_tags_content(old_project, new_project, tag_ids,headers_mapping)
+    process_content_variables(old_project,new_project,var_ids,headers_mapping)
+
+
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignUrlContent")
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_EntityTagMapping")
+
+    add_processed_content_list("URL", content_ids_mapping, old_project, new_project)
+
+
+def process_senderid_content(old_project,new_project,content_ids,headers_mapping):
+    if len(content_ids) == 0:
+        return
+    already_processed_ids = get_already_processed_content("SENDERID", content_ids, old_project, new_project)
+
+    to_process_ids = [idx for idx in content_ids if idx not in already_processed_ids and idx is not None]
+    if len(to_process_ids) == 0:
+        return
+
+    content_ids_mapping = {idx: new_project[:10] + idx[10:] for idx in to_process_ids}
+
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignSenderIdContent")
+
+    add_processed_content_list("SENDERID", content_ids_mapping, old_project, new_project)
+
+
+def process_tags_content(old_project,new_project,content_ids,headers_mapping):
+    if len(content_ids) == 0:
+        return
+    already_processed_ids = get_already_processed_content("TAG", content_ids, old_project, new_project)
+
+    to_process_ids = [idx for idx in content_ids if idx not in already_processed_ids and idx is not None]
+    if len(to_process_ids) == 0:
+        return
+
+    content_ids_mapping = {idx: new_project[:10] + idx[10:] for idx in to_process_ids}
+
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignContentTag")
+
+    add_processed_content_list("TAG", content_ids_mapping, old_project, new_project)
+
+
+def process_email_content(old_project,new_project,content_ids,headers_mapping):
+    if len(content_ids) == 0:
+        return
+    already_processed_ids = get_already_processed_content("EMAIL", content_ids, old_project, new_project)
+
+    to_process_ids = [idx for idx in content_ids if idx not in already_processed_ids and idx is not None]
+    if len(to_process_ids) == 0:
+        return
+
+    sms_content_ids_mapping = {idx: new_project[:10] + idx[10:] for idx in to_process_ids}
+    data = fetch_relevant_content_ids(content_ids, "EMAIL")
+
+    url_ids = list(set([node["url_id"] for node in data]))
+    subject_ids = list(set([node["subject_id"] for node in data]))
+    tag_ids = list(set([node["tag_id"] for node in data]))
+    var_ids = list(set([node["var_id"] for node in data]))
+
+    process_url_content(old_project, new_project, url_ids,headers_mapping)
+    process_subjectline_content(old_project, new_project, subject_ids,headers_mapping)
+    process_tags_content(old_project, new_project, tag_ids,headers_mapping)
+    process_content_variables(old_project, new_project, var_ids,headers_mapping)
+
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignEmailContent")
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignContentUrlMapping")
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignContentEmailSubjectMapping")
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_EntityTagMapping")
+
+    add_processed_content_list("EMAIL", sms_content_ids_mapping, old_project, new_project)
+
+def process_whatsapp_content(old_project,new_project,content_ids,headers_mapping):
+    if len(content_ids) == 0:
+        return
+    already_processed_ids = get_already_processed_content("WHATSAPP", content_ids, old_project, new_project)
+
+    to_process_ids = [idx for idx in content_ids if idx not in already_processed_ids and idx is not None]
+    if len(to_process_ids) == 0:
+        return
+
+    sms_content_ids_mapping = {idx: new_project[:10] + idx[10:] for idx in to_process_ids}
+    data = fetch_relevant_content_ids(content_ids, "WHATSAPP")
+
+    url_ids = list(set([node["url_id"] for node in data]))
+    media_ids = list(set([node["media_id"] for node in data]))
+    tag_ids = list(set([node["tag_id"] for node in data]))
+    var_ids = list(set([node["var_id"] for node in data]))
+
+    process_url_content(old_project, new_project, url_ids,headers_mapping)
+    process_media_content(old_project, new_project, media_ids,headers_mapping)
+    process_tags_content(old_project, new_project, tag_ids,headers_mapping)
+    process_content_variables(old_project, new_project, var_ids,headers_mapping)
+
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignWhatsAppContent")
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignContentUrlMapping")
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignContentMediaMapping")
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_EntityTagMapping")
+
+    add_processed_content_list("WHATSAPP", sms_content_ids_mapping, old_project, new_project)
+
+
+def process_subjectline_content(old_project,new_project,content_ids,headers_mapping):
+    if len(content_ids) == 0:
+        return
+    already_processed_ids = get_already_processed_content("SUBJECTLINE", content_ids, old_project, new_project)
+
+    to_process_ids = [idx for idx in content_ids if idx not in already_processed_ids and idx is not None]
+    if len(to_process_ids) == 0:
+        return
+
+    sms_content_ids_mapping = {idx: new_project[:10] + idx[10:] for idx in to_process_ids}
+    data = fetch_relevant_content_ids(content_ids, "SUBJECTLINE")
+
+    tag_ids = list(set([node["tag_id"] for node in data]))
+    var_ids = list(set([node["var_id"] for node in data]))
+
+    process_tags_content(old_project, new_project, tag_ids,headers_mapping)
+    process_content_variables(old_project, new_project, var_ids,headers_mapping)
+
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignSubjectLineContent")
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_EntityTagMapping")
+
+    add_processed_content_list("SUBJECTLINE", sms_content_ids_mapping, old_project, new_project)
+
+def process_media_content(old_project,new_project,content_ids,headers_mapping):
+    if len(content_ids) == 0:
+        return
+    already_processed_ids = get_already_processed_content("MEDIA", content_ids, old_project, new_project)
+
+    to_process_ids = [idx for idx in content_ids if idx not in already_processed_ids and idx is not None]
+    if len(to_process_ids) == 0:
+        return
+
+    sms_content_ids_mapping = {idx: new_project[:10] + idx[10:] for idx in to_process_ids}
+    data = fetch_relevant_content_ids(content_ids, "MEDIA")
+
+    tag_ids = list(set([node["tag_id"] for node in data]))
+
+    process_tags_content(old_project, new_project, tag_ids,headers_mapping)
+
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignMediaContent")
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_EntityTagMapping")
+
+    add_processed_content_list("MEDIA", sms_content_ids_mapping, old_project, new_project)
+
+def process_content_variables(old_project,new_project,content_ids,headers_mapping):
+    if len(content_ids) == 0:
+        return
+    already_processed_ids = get_already_processed_content("CONTENTVARIABLE", content_ids, old_project, new_project)
+
+    to_process_ids = [idx for idx in content_ids if idx not in already_processed_ids and idx is not None]
+    if len(to_process_ids) == 0:
+        return
+    sms_content_ids_mapping = {idx: new_project[:10] + idx[10:] for idx in to_process_ids}
+
+
+    ids_placeholder = ",".join([f"'{idx}'" for idx in to_process_ids])
+    query = f"Select * from CED_CampaignContentVariableMapping where UniqueId in ({ids_placeholder})"
+    resp = CustomQueryExecution().execute_query(query)
+    if resp["error"] is True:
+        raise ValidationFailedException(reason="Unable to fetch content related data")
+
+    variables_to_be_created = []
+
+
+    variable_mappings = resp["result"]
+
+    for variable in variable_mappings:
+        variable.pop("Id",None)
+        variable["UniqueId"] = new_project[:10] + variable["UniqueId"][10:]
+        variable["ContentId"] = new_project[:10] + variable["ContentId"][10:]
+        variable["MasterId"] = headers_mapping[variable["MasterId"]]["id"] if variable["MasterId"]  in headers_mapping else variable["MasterId"]
+        variable["ColumnName"] = headers_mapping[variable["MasterId"]]["header_name"] if variable["MasterId"]  in headers_mapping else variable["ColumnName"]
+        variables_to_be_created.append(variable )
+
+
+    if len(variables_to_be_created) > 0:
+        columns = list(variables_to_be_created[0].keys())
+        columns_placeholder = ",".join(columns)
+        val_placeholders = ",".join(["%s"]*len(columns))
+        values = []
+        for header in variables_to_be_created:
+            values.append([header[col] for col in columns])
+        query = " Insert into CED_CampaignContentVariableMapping (%s) values (%s)"%(columns_placeholder,val_placeholders)
+        resp = CustomQueryExecution().execute_write_query(query, values)
+        if resp["success"] is False:
+            raise ValidationFailedException(reason="Unable to insert data in CED_CampaignContentVariableMapping Table")
+
+
+
+    add_processed_content_list("CONTENTVARIABLE", sms_content_ids_mapping, old_project, new_project)
+
+
+
+
+
+
+def get_already_processed_content(content_type,old_content_ids,old_project,new_project):
+    content_ids_str = ",".join([f"'{idx}'" for idx in old_content_ids])
+    query = f"Select OldContentId from CED_ContentMigration where ContentType = '{content_type}' and OldProjectId = '{old_project}' and NewProjectId = '{new_project}' and OldContentId in ({content_ids_str})"
+    resp = CustomQueryExecution().execute_query(query)
+    if resp["error"] is True:
+        raise ValidationFailedException(reason="Unable to fetch content related data")
+    return[row["OldContentId"] for row in resp["result"]]
+
+def add_processed_content_list(content_type,content_ids_mapping,old_project,new_project):
+    values_placeholder = '%s'
+    values = [(key,value) for key,value in content_ids_mapping.items()]
+    query = f"Insert into CED_ContentMigration (OldContentId,NewProjectId,OldProjectId,ContentType,NewContentId) values ({values_placeholder},'{new_project}','{old_project}','{content_type}',{values_placeholder})"
+    resp = CustomQueryExecution().execute_write_query(query,values)
+    if resp["success"] is False:
+        raise ValidationFailedException(reason="Unable to insert data in Migration Table")
+
+def update_data_in_content_table(new_project_id,old_project_id,content_ids,table):
+    if len(content_ids) == 0:
+        return
+    already_processed_ids = get_already_processed_content(table, content_ids, old_project_id, new_project_id)
+
+    to_process_ids = [idx for idx in content_ids if idx not in already_processed_ids and idx is not None]
+    sms_content_ids_mapping = {idx: new_project_id[:10] + idx[10:] for idx in to_process_ids}
+
+    if len(to_process_ids) == 0:
+        return
+
+    kwargs = {
+        "ids": ",".join([f"'{idx}'" for idx in content_ids]),
+        "project_prefix": new_project_id[:10],
+        "new_project_id":new_project_id
+    }
+    query = INSERT_CONTENT_PROJECT_MIGRATION[table].format(**kwargs)
+    resp = CustomQueryExecution().execute_write_query(query)
+    if resp["success"] is False:
+        raise ValidationFailedException(reason=f"Unable to run insert query for table {table} query {query}")
+    add_processed_content_list(table, sms_content_ids_mapping, old_project_id, new_project_id)
+
+
+def fetch_relevant_content_ids(content_ids_list,content_type):
+    ids_str = ",".join([f"'{idx}'" for idx in content_ids_list])
+    query = FETCH_RELATED_CONTENT_IDS[content_type].format(ids=ids_str)
+
+    resp = CustomQueryExecution().execute_query(query)
+    if resp["error"] is True:
+        raise ValidationFailedException(reason="Unable to fetch content related data")
+    return resp["result"]

@@ -20,3 +20,8 @@ class CustomQueryExecution:
     def execute_output_file_query(self, query: str):
         logger.debug(f"CustomQueryExecution :: query: {query}")
         return execute_output_file_query(self.curr, query)
+
+    def execute_write_query(self, query: str,args = None):
+        logger.debug(f"CustomQueryExecution :: query: {query}")
+        # query = query.replace("%", "%%")
+        return execute_write(self.curr, query,args)
