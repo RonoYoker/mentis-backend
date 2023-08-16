@@ -58,10 +58,7 @@ def update_campaign_stats_to_central_db(data):
     update_status = campaign_stats_data.get("Status", None)
     if update_status in CAMPAIGN_STATUS_FOR_ALERTING:
         try:
-            cbc_ids = ",".join([f"'{cbc_id}'" for cbc_id in [campaign_builder_campaign_id]])
-            campaign_details = CEDCampaignBuilderCampaign().get_campaign_data_by_cbc_id(campaign_builder_campaign_ids=cbc_ids)
-            campaign_name = campaign_details[0].get("campaign_name", "Unknown Campaign Name")
-            alerting_text = f'Campaign Name : {campaign_name}, Campaing ID : {campaign_id}, {campaign_stats_data}, ERROR: Campaign Needs attention'
+            alerting_text = f'Campaign Instance ID : {campaign_id}, {campaign_stats_data}, ERROR: Campaign Needs attention'
             alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
                                                                   feature_section="DEFAULT")
         except Exception as ex:
