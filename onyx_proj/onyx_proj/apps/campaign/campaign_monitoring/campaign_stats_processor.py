@@ -59,8 +59,8 @@ def update_campaign_stats_to_central_db(data):
     if update_status in CAMPAIGN_STATUS_FOR_ALERTING:
         try:
             alerting_text = f'Campaign Instance ID : {campaign_id}, {update_status}, ERROR: Campaign Needs attention'
-            alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
-                                                                  feature_section="DEFAULT")
+            # alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
+            #                                                       feature_section="DEFAULT")
         except Exception as ex:
             logger.error(f'Unable to process telegram alerting, method_name: {method_name}, Exp : {ex}')
 
