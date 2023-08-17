@@ -58,7 +58,7 @@ def update_campaign_stats_to_central_db(data):
     update_status = campaign_stats_data.get("Status", None)
     if update_status in CAMPAIGN_STATUS_FOR_ALERTING:
         try:
-            alerting_text = f'Campaign Instance ID : {campaign_id}, {campaign_stats_data}, ERROR: Campaign Needs attention'
+            alerting_text = f'Campaign Instance ID : {campaign_id}, {update_status}, ERROR: Campaign Needs attention'
             alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
                                                                   feature_section="DEFAULT")
         except Exception as ex:
