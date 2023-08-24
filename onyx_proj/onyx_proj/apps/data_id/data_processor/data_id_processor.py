@@ -14,14 +14,6 @@ def fetch_data_id_details(request):
     # Fetch project is
     project_id = request.get("project_id")
 
-    try:
-        alerting_text = f'Entered Into Project {project_id}, LOGGING : Entered API {method_name}.'
-        alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
-                                                              feature_section="DEFAULT")
-        logger.info(f'Telegram Alert Triggered Response : {alert_resp}, method_name : {method_name}')
-    except Exception as ex:
-        logger.error(f'Unable to process telegram alerting, method_name: {method_name}, Exp : {ex}')
-
     if project_id is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid Input")
