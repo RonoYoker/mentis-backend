@@ -22,11 +22,11 @@ class CEDSegment:
         base_query = """SELECT seg.ApprovedBy as approved_by, seg.CreatedBy as created_by, seg.CreationDate as 
         creation_date, seg.DataId as data_id, seg.everScheduled as ever_scheduled, seg.Id as id, seg.IncludeAll as 
         include_all, seg.MappingId as mapping_id, seg.Records as records, seg.ProjectId as project_id, seg.Records as 
-        records, seg.RefreshDate as refresh_date, seg.Status as status, seg.Title as title, seg.UniqueId as 
-        unique_id, seg.Type as type, seg.UpdationDate as updation_date, cct.UniqueId as tag_id, cct.Name as tag_name, 
-        cct.ShortName as short_name from CED_Segment seg LEFT JOIN CED_EntityTagMapping ctm on seg.UniqueId = 
-        ctm.EntityId LEFT JOIN CED_CampaignContentTag cct on ctm.TagId = cct.UniqueId where %s order by 
-        seg.CreationDate""" % filter
+        records, seg.RefreshDate as refresh_date, seg.Status as status, seg.CountRefreshEndDate as count_refresh_date, 
+        seg.Title as title, seg.UniqueId as unique_id, seg.Type as type, seg.UpdationDate as updation_date, 
+        cct.UniqueId as tag_id, cct.Name as tag_name, cct.ShortName as short_name from CED_Segment seg LEFT JOIN 
+        CED_EntityTagMapping ctm on seg.UniqueId = ctm.EntityId LEFT JOIN CED_CampaignContentTag cct on 
+        ctm.TagId = cct.UniqueId where %s order by seg.CreationDate""" % filter
         return dict_fetch_query_all(self.curr, base_query)
 
     def get_headers_for_custom_segment(self, params_dict: dict, headers_list=["Extra", "Type"]) -> list:

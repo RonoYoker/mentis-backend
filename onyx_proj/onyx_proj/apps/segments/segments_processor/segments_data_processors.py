@@ -26,10 +26,12 @@ from onyx_proj.models.CED_MasterHeaderMapping_model import CEDMasterHeaderMappin
 from onyx_proj.common.constants import SegmentList, TAG_SUCCESS, TAG_FAILURE, SEGMENT_END_DATE_FORMAT
 from onyx_proj.apps.segments.app_settings import SegmentStatusKeys, AsyncTaskSourceKeys, AsyncTaskRequestKeys, \
     AsyncTaskCallbackKeys, FIXED_SEGMENT_LISTING_FILTERS
+from onyx_proj.models.CED_Segment_Filter_Value_model import CEDSegmentFilterValue
 from onyx_proj.models.CED_Segment_Filter_model import CEDSegmentFilter
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
+from onyx_proj.orm_models.CED_Segment_Filter_Value_model import CED_Segment_Filter_Value
 from onyx_proj.orm_models.CED_Segment_Filter_model import CED_Segment_Filter
 from onyx_proj.orm_models.CED_Segment_model import CED_Segment
 
@@ -346,6 +348,32 @@ def get_filter_query(filter,headers_list,project_id):
     elif operator in [SqlQueryFilterOperators.INN,SqlQueryFilterOperators.ISN,SqlQueryFilterOperators.GTECD]:
         query_str = filter_placeholder.format(header_name,operator.value,"")
 
+    elif operator == SqlQueryFilterOperators.IN:
+        filter_placeholder = "{0} {1} ({2})"
+        if filter.get("in_values") is None or len(filter.get("in_values")) < 1:
+            raise ValidationFailedException(reason="Incomplete values for IN Operator")
+        if content_type.name in [FileDataFieldType.DATE.name, FileDataFieldType.BOOLEAN.name]:
+            raise ValidationFailedException(reason="IN operator is not allowed for DATE/BOOLEAN ContentType")
+        values_list = []
+        for values in filter.get("in_values"):
+            values_list.append(format_value_acc_to_data_type(filter_data_type, content_type, values["value"], is_encrypted, project_id))
+
+        in_value = ",".join([f'{value}' for value in values_list])
+        query_str = filter_placeholder.format(header_name, operator.value, in_value)
+
+    elif operator == SqlQueryFilterOperators.NOT_IN:
+        filter_placeholder = "{0} {1} ({2})"
+        if filter.get("in_values") is None or len(filter.get("in_values")) < 1:
+            raise ValidationFailedException(reason="Incomplete values for NOT_IN Operator")
+        if content_type.name in [FileDataFieldType.DATE.name, FileDataFieldType.BOOLEAN.name]:
+            raise ValidationFailedException(reason="NOT IN operator is not allowed for DATE/BOOLEAN ContentType")
+        values_list = []
+        for values in filter.get("in_values"):
+            values_list.append(format_value_acc_to_data_type(filter_data_type, content_type, values["value"], is_encrypted, project_id))
+
+        in_value = ",".join([f'{value}' for value in values_list])
+        query_str = filter_placeholder.format(header_name, operator.value, in_value)
+
     else:
         raise ValidationFailedException(reason="Invalid Operator Used")
 
@@ -417,9 +445,13 @@ def save_segment_filters(unique_id,filters):
         raise InternalServerError(reason="Unable to delete segment filters")
     segment_filter_list = []
     for filter in filters:
-        filter_body = dict(unique_id=uuid.uuid4().hex,segment_id=unique_id, master_id=filter["master_id"],
+        seg_filter_id = uuid.uuid4().hex
+        filter_body = dict(unique_id=seg_filter_id,segment_id=unique_id, master_id=filter["master_id"],
                            operator=filter["operator"], dt_operator=filter.get("dt_operator"),
                            min_value=filter.get("min_value"), max_value=filter.get("max_value"),value=filter.get("value"))
+
+        if filter.get('operator') in [SqlQueryFilterOperators.IN.name, SqlQueryFilterOperators.NOT_IN.name]:
+            save_segment_filter_values(seg_filter_id, filter.get('in_values'), unique_id)
 
         filter_entity = CED_Segment_Filter(filter_body)
         segment_filter_list.append(filter_entity)
@@ -427,6 +459,20 @@ def save_segment_filters(unique_id,filters):
     save_resp = CEDSegmentFilter().save_segment_filters(segment_filter_list)
     if not save_resp.get("status"):
         raise InternalServerError(reason="unable to save Segment Filters")
+
+
+def save_segment_filter_values(unique_id, filters, seg_id):
+
+    CEDSegmentFilterValue().delete_segment_filter_values(seg_id)
+    segment_filter_value_list = []
+    for filter in filters:
+        filter_body = dict(unique_id=uuid.uuid4().hex, filter_id=unique_id, value=filter.get("value"))
+        filter_value_entity = CED_Segment_Filter_Value(filter_body)
+        segment_filter_value_list.append(filter_value_entity)
+
+    save_resp = CEDSegmentFilterValue().save_segment_filter_values(segment_filter_value_list)
+    if not save_resp.get("status"):
+        raise InternalServerError(reason="unable to save Segment Filter values")
 
 def get_segment_headers(segment_id):
 

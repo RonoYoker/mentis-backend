@@ -1006,6 +1006,8 @@ class SqlQueryFilterOperators(Enum):
     ISB = "= ''"
     GTECD = ">= CURRENT_DATE"
     BETWEEN = "BETWEEN {min_value} AND {max_value}"
+    IN = "IN"
+    NOT_IN = "NOT IN"
 
 class DynamicDateQueryOperator(Enum):
     DTREL = " DATE_ADD(CURRENT_DATE,INTERVAL {value} DAY)"

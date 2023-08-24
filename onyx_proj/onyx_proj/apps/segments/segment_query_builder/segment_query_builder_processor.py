@@ -8,6 +8,7 @@ from django.conf import settings
 from onyx_proj.apps.segments.app_settings import AsyncTaskSourceKeys, AsyncTaskRequestKeys, AsyncTaskCallbackKeys
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import generate_queries_for_async_task, \
     hyperion_local_async_rest_call
+from onyx_proj.apps.segments.segments_processor.segments_data_processors import save_segment_filter_values
 from onyx_proj.common.constants import TAG_SUCCESS, TAG_FAILURE, FIXED_HEADER_MAPPING_COLUMN_DETAILS, \
     SELECT_PLACEHOLDERS, JOIN_CONDITION_PLACEHOLDER, SqlQueryType, SqlQueryFilterOperators, FileDataFieldType, \
     ContentDataType, DynamicDateQueryOperator, CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, GET_ENCRYPTED_DATA
@@ -161,7 +162,6 @@ class SegmentQueryBuilder:
         segment_entity.title = request["title"]
         segment_entity.include_all = False
         segment_entity.created_by = Session().get_user_session_object().user.user_name
-        # segment_entity.created_by = "ritik_saini"
         segment_entity.sql_query = self.generate_sql_query(request.get("filters",[]),SqlQueryType.SQL)
         segment_entity.campaign_sql_query = self.generate_sql_query(request.get("filters",[]),SqlQueryType.CAMPAIGN_SQL_QUERY)
         segment_entity.data_image_sql_query = self.generate_sql_query(request.get("filters",[]),SqlQueryType.DATA_IMAGE_SQL)
@@ -315,6 +315,34 @@ class SegmentQueryBuilder:
         elif operator in [SqlQueryFilterOperators.INN,SqlQueryFilterOperators.ISN,SqlQueryFilterOperators.GTECD]:
             query_str = filter_placeholder.format(column_name,operator.value,"")
 
+        elif operator == SqlQueryFilterOperators.IN:
+            filter_placeholder = "{0} {1} ({2})"
+            if filter.get("in_values") is None or len(filter.get("in_values")) < 1:
+                raise ValidationFailedException(reason="Incomplete values for IN Operator")
+            if content_type.name in [FileDataFieldType.DATE.name, FileDataFieldType.BOOLEAN.name]:
+                raise ValidationFailedException(reason="IN operator is not allowed for DATE/BOOLEAN ContentType")
+            values_list = []
+            for values in filter.get("in_values"):
+                values_list.append(
+                    self.format_value_acc_to_data_type(filter_data_type, content_type, values["value"], is_encrypted))
+
+            in_value = ",".join([f'{value}' for value in values_list])
+            query_str = filter_placeholder.format(column_name, operator.value, in_value)
+
+        elif operator == SqlQueryFilterOperators.NOT_IN:
+            filter_placeholder = "{0} {1} ({2})"
+            if filter.get("in_values") is None or len(filter.get("in_values")) < 1:
+                raise ValidationFailedException(reason="Incomplete values for NOT_IN Operator")
+            if content_type.name in [FileDataFieldType.DATE.name, FileDataFieldType.BOOLEAN.name]:
+                raise ValidationFailedException(reason="NOT IN operator is not allowed for DATE/BOOLEAN ContentType")
+            values_list = []
+            for values in filter.get("in_values"):
+                values_list.append(
+                    self.format_value_acc_to_data_type(filter_data_type, content_type, values["value"], is_encrypted))
+
+            in_value = ",".join([f'{value}' for value in values_list])
+            query_str = filter_placeholder.format(column_name, operator.value, in_value)
+
         else:
             raise ValidationFailedException(reason="Invalid Operator Used")
 
@@ -393,7 +421,8 @@ class SegmentQueryBuilder:
         segment_filter_list = []
         history_segment_filter_list = []
         for filter in filters:
-            filter_body = dict(unique_id=uuid.uuid4().hex,segment_id=unique_id, master_id=filter["master_id"],
+            seg_filter_id = uuid.uuid4().hex
+            filter_body = dict(unique_id=seg_filter_id,segment_id=unique_id, master_id=filter["master_id"],
                                segment_filter_id=self.segment_builder_id, file_header_id=filter["file_header_id"],
                                operator=filter["operator"], dt_operator=filter.get("dt_operator"),
                                min_value=filter.get("min_value"), max_value=filter.get("max_value"),value=filter.get("value"))
@@ -406,6 +435,9 @@ class SegmentQueryBuilder:
             history_filter_entity = CED_HIS_Segment_Filter(history_filter_body)
             segment_filter_list.append(filter_entity)
             history_segment_filter_list.append(history_filter_entity)
+
+            if filter.get('operator') in [SqlQueryFilterOperators.IN.name, SqlQueryFilterOperators.NOT_IN.name]:
+                save_segment_filter_values(seg_filter_id, filter.get('in_values'), unique_id)
 
         save_resp = CEDSegmentFilter().save_segment_filters(segment_filter_list)
         if not save_resp.get("status"):
