@@ -1,5 +1,6 @@
 from .base import *
 from ..common.secret_manager import fetch_secrets_from_secret_manager
+from onyx_proj.apps.otp.app_settings import OtpAppName
 
 DEBUG = True
 
@@ -163,3 +164,24 @@ SPLIT_CAMPAIGN_DISABLED = ["ibldcuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndme
                               "hdbhwnjlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj", "yblclejlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                               "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd","yblccujlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                               "yblacqjlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj","ablhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd"]
+
+OTP_APP_USER_MAPPING = {
+    OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value: {
+        "divyansh_jain": {
+            "display_name": "Divyansh Jain",
+            "mobile_number": 8929294241
+        },
+        "ritik_saini": {
+            "display_name": "Ritik Saini",
+            "mobile_number": 9871880272
+        },
+        "sanjeev_juyal": {
+            "display_name": "Divyansh Jain",
+            "mobile_number": 8929294241
+        },
+        "devesh_satija": {
+            "display_name": "Devesh Satija",
+            "mobile_number": 9953095877
+        }
+    }
+}

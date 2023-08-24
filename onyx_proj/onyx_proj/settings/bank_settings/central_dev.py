@@ -1,3 +1,5 @@
+from onyx_proj.apps.otp.app_settings import OtpAppName
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
@@ -78,6 +80,7 @@ VENDOR_CONFIG = {
     }
 }
 
+DEFAULT_ENCRYPTION_SECRET_KEY = "C23D2$2F38YU@YYDEV"
 
 ONYX_LOCAL_DOMAIN = {
     "vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj": "http://m-prod-onyxlocal-elb-1286808968.ap-south-1.elb.amazonaws.com",
@@ -94,3 +97,23 @@ ONYX_LOCAL_DOMAIN = {
     "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd": "http://m-prod-onyxlocal-elb-263941227.ap-south-1.elb.amazonaws.com",
 }
 
+OTP_APP_USER_MAPPING = {
+    OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value:  {
+        "divyansh_jain": {
+            "display_name": "Divyansh Jain",
+            "mobile_number": 8929294241
+        },
+        "ritik_saini": {
+            "display_name": "Ritik Saini",
+            "mobile_number": 9871880272
+        },
+        "sanjeev_juyal": {
+            "display_name": "Divyansh Jain",
+            "mobile_number": 8929294241
+        },
+        "devesh_satija": {
+            "display_name": "Devesh Satija",
+            "mobile_number": 9953095877
+        }
+    }
+}

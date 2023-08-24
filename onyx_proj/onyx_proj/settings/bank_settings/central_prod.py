@@ -1,3 +1,4 @@
+from onyx_proj.apps.otp.app_settings import OtpAppName
 from onyx_proj.common.secret_manager import fetch_secrets_from_secret_manager
 
 DEBUG = True
@@ -188,3 +189,24 @@ SPLIT_CAMPAIGN_DISABLED = [   "hdbethjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapra
                               "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd",
                               "aiahwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                           ]
+
+OTP_APP_USER_MAPPING = {
+    OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value: {
+        "arsheen_gujral": {
+            "display_name": "Arsheen Gujral",
+            "mobile_number": 9990701692
+        },
+        "Abhishek Gupta": {
+            "display_name": "Abhishek Gupta",
+            "mobile_number": 9999913305
+        },
+        "devesh_satija": {
+            "display_name": "Devesh Satija",
+            "mobile_number": 9953095877
+        },
+        "ankur_srivastava": {
+            "display_name": "Ankur Srivastava",
+            "mobile_number": 7048909209
+        }
+    }
+}

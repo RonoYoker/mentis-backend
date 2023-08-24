@@ -14,12 +14,14 @@ from django.template.loader import render_to_string
 from Crypto.Cipher import AES
 
 from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT
+from onyx_proj.apps.otp.app_settings import OtpAppName
+from onyx_proj.apps.otp.otp_processor import check_otp_status
 from onyx_proj.apps.slot_management.data_processor.slots_data_processor import vaildate_campaign_for_scheduling
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.common.utils.logging_helpers import log_entry, log_exit
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException, ValidationFailedException, \
-    NotFoundException, InternalServerError
+    NotFoundException, InternalServerError, OtpRequiredException
 from onyx_proj.common.decorators import UserAuth
 from onyx_proj.common.sqlalchemy_helper import create_dict_from_object
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
@@ -954,6 +956,8 @@ def approval_action_on_campaign_builder_by_unique_id(request_data):
         logger.error(f"method_name: {method_name}, error: {ex.reason}")
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
                     details_message=ex.reason)
+    except OtpRequiredException as ex:
+        raise OtpRequiredException(data=ex.data)
     except Exception as ex:
         logger.error(f"method_name: {method_name}, error: {ex}")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -994,6 +998,13 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
                 if cbc.test_campign_state != TestCampStatus.VALIDATED.value:
                     raise ValidationFailedException(method_name=method_name,
                                                     reason="Please validate the test campaign.")
+
+            recurring_detail = campaign_builder_entity_db.recurring_detail
+            if recurring_detail is not None and len(recurring_detail) > 0:
+                recurring_detail = json.loads(recurring_detail)
+                is_instant = recurring_detail.get("is_instant", False)
+                if is_instant:
+                    check_otp_status(campaign_builder_id, OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value)
 
             # check campaign starts atleast 30 minutes before campaign schedule time
             validate_campaign_builder_campaign_for_scheduled_time(campaign_builder_entity_db)
@@ -1057,11 +1068,14 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
     except ValidationFailedException as ex:
         logger.error(f"method_name: {method_name}, error: {ex.reason}")
         raise ValidationFailedException(method_name=method_name, reason=ex.reason)
+    except OtpRequiredException as ex:
+        raise OtpRequiredException(data=ex.data)
     except Exception as ex:
         logger.error(f"method_name: {method_name}, error: error while updating campaign builder status, {ex}")
         raise BadRequestException(method_name=method_name, reason="error while updating campaign builder status")
 
     log_exit()
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, details_message="")
 
 
 def validate_campaign_builder_for_campaign_id(campaign_builder_entity):

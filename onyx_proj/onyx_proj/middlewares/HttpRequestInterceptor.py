@@ -1,8 +1,9 @@
 import logging
 
-from onyx_proj.common.constants import TAG_FAILURE
+from onyx_proj.common.constants import TAG_FAILURE, TAG_GENERATE_OTP
 from onyx_proj.exceptions.permission_validation_exception import MethodPermissionValidationException, \
-    UnauthorizedException, ValidationFailedException, BadRequestException, NotFoundException, InternalServerError
+    UnauthorizedException, ValidationFailedException, BadRequestException, NotFoundException, InternalServerError, \
+    OtpRequiredException
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from django.http import HttpResponse
 import http
@@ -80,6 +81,11 @@ class HttpRequestInterceptor:
             return HttpResponse(json.dumps(response),
                                 content_type="application/json",
                                 status=http.HTTPStatus.INTERNAL_SERVER_ERROR)
+        elif isinstance(exception, OtpRequiredException):
+            response = dict(result=TAG_GENERATE_OTP, data=exception.data, details_message="please generate and validate otp first")
+            return HttpResponse(json.dumps(response),
+                                content_type="application/json",
+                                status=http.HTTPStatus.OK)
 
 
 
