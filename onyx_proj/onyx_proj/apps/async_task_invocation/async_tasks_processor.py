@@ -10,6 +10,7 @@ from onyx_proj.models.CED_QueryExecutionJob import CEDQueryExecutionJob
 from onyx_proj.apps.async_task_invocation.app_settings import AsyncJobStatus
 from onyx_proj.celery_app.tasks import query_executor
 from onyx_proj.common.utils.telegram_utility import TelegramUtility
+from django.conf import settings
 
 logger = logging.getLogger("apps")
 
@@ -51,7 +52,7 @@ class AsyncQueryExecution:
             try:
                 alerting_text = f'Payload Data {data}, ERROR : Validation failed for the request. Please check all request parameters'
                 alert_resp = TelegramUtility().process_telegram_alert(project_id=data["project_id"], message_text=alerting_text,
-                                                                      feature_section="DEFAULT")
+                                                                      feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get("QUERY_EXECUTER", "DEFAULT"))
                 logger.info(f'Telegram Alert Triggered Response : {alert_resp}, method_name : {method_name}')
             except Exception as ex:
                 logger.error(f'Unable to process telegram alerting, method_name: {method_name}, Exp : {ex}')
@@ -80,7 +81,7 @@ class AsyncQueryExecution:
                     alerting_text = f'Payload Data {data}, ERROR : MySQL insertion error at LEVEL: CHILD CREATION.'
                     alert_resp = TelegramUtility().process_telegram_alert(project_id=data["project_id"],
                                                                           message_text=alerting_text,
-                                                                          feature_section="DEFAULT")
+                                                                          feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get("QUERY_EXECUTER", "DEFAULT"))
                     logger.info(f'Telegram Alert Triggered Response : {alert_resp}, method_name : {method_name}')
                 except Exception as ex:
                     logger.error(f'Unable to process telegram alerting, method_name: {method_name}, Exp : {ex}')
@@ -103,7 +104,7 @@ class AsyncQueryExecution:
                 alerting_text = f'Payload Data {data}, ERROR : Unable to update task status at Onyx Local, request_id: {data.get("request_id")}, Reach out to tech.'
                 alert_resp = TelegramUtility().process_telegram_alert(project_id=data["project_id"],
                                                                       message_text=alerting_text,
-                                                                      feature_section="DEFAULT")
+                                                                      feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get("QUERY_EXECUTER", "DEFAULT"))
                 logger.info(f'Telegram Alert Triggered Response : {alert_resp}, method_name : {method_name}')
             except Exception as ex:
                 logger.error(f'Unable to process telegram alerting, method_name: {method_name}, Exp : {ex}')

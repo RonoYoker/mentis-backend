@@ -78,6 +78,22 @@ def insert_multiple_rows(engine, table_name, data_dict):
         })
         return {'success': False, 'exception': e}
 
+def insert_multiple_rows_db_utils(engine, table_name, data_dict):
+    placeholder = ', '.join(['%s'] * len(data_dict["columns"]))
+    columns = ', '.join(data_dict["columns"])
+    query = "INSERT into %s ( %s ) VALUES ( %s )" % (table_name, columns, placeholder)
+    try:
+        with engine.connect() as cursor:
+            resp = cursor.execute(query, data_dict["values"])
+            return {'success': True, 'last_row_id': resp.lastrowid, 'row_count': resp.rowcount}
+    except Exception as e:
+        logging.error({
+            "error": e,
+            "message": "error occurred while inserting data into mysql table",
+            "logkey": "mysql_helper"
+        })
+        return {'success': False, 'exception': e}
+
 
 def get_insert_query(table_name, data_dict):
     placeholders = ', '.join(['%s'] * len(data_dict))

@@ -371,7 +371,7 @@ def hyperion_local_async_rest_call(url: str, request_body):
             alerting_text = f'Payload Data {request_response}, ERROR : Unable to update task status at Onyx Local, Reach out to tech.'
             alert_resp = TelegramUtility().process_telegram_alert(project_id=request_body["project_id"],
                                                                   message_text=alerting_text,
-                                                                  feature_section="DEFAULT")
+                                                                  feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get("CAMPAIGN", "DEFAULT"))
             logger.info(f'Telegram Alert Triggered Response : {alert_resp}, method_name : {method_name}')
         except Exception as ex:
             logger.error(f'Unable to process telegram alerting, method_name: {method_name}, Exp : {ex}')

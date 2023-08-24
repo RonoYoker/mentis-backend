@@ -10,6 +10,7 @@ from onyx_proj.models.CED_User_model import CEDUser
 from onyx_proj.common.utils.telegram_utility import TelegramUtility
 from onyx_proj.common.decorators import fetch_project_id_from_conf_from_given_identifier
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
+from django.conf import settings
 
 logger = logging.getLogger("apps")
 
@@ -59,8 +60,8 @@ def update_campaign_stats_to_central_db(data):
     if update_status in CAMPAIGN_STATUS_FOR_ALERTING:
         try:
             alerting_text = f'Campaign Instance ID : {campaign_id}, {update_status}, ERROR: Campaign Needs attention'
-            # alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
-            #                                                       feature_section="DEFAULT")
+            alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
+                                                                  feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get("CAMPAIGN", "DEFAULT"))
         except Exception as ex:
             logger.error(f'Unable to process telegram alerting, method_name: {method_name}, Exp : {ex}')
 
@@ -73,7 +74,7 @@ def update_campaign_stats_to_central_db(data):
         try:
             alerting_text = f'Failure in updating campaign Status to Central DB {where_dict}'
             alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
-                                                                  feature_section="DEFAULT")
+                                                                  feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get("CAMPAIGN", "DEFAULT"))
         except Exception as ex:
             logger.error(f'Unable to process telegram alerting, method_name: {method_name}, Exp : {ex}')
 

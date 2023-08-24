@@ -63,11 +63,11 @@ def process_segment_callback(body):
         if bool(error_update_dict):
             try:
                 segment_name = CEDSegment().get_segment_name_by_id(segment_id=segment_id)
-                alerting_text = f'Segment Name : {segment_name}, Segment ID : {segment_id}, Segment Error Details: {error_update_dict}, ERROR : Process Segment Async Job Error'
+                alerting_text = f'Segment Name : {segment_name}, Segment ID : {segment_id}, Segment Error Status: {error_update_dict.get("Status")}, Error Update Time : {error_update_dict.get("UpdationDate")}, ERROR : Process Segment Async Job Error'
                 try:
                     alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                           message_text=alerting_text,
-                                                                          feature_section="DEFAULT")
+                                                                          feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get("SEGMENT", "DEFAULT"))
                     logger.info(f"process_segment_callback :: Alert Triggered Response: {alert_resp}")
                 except Exception as ex1:
                     logger.error(f"process_segment_callback :: Unable to process project alerting, Exp: {ex1}")
@@ -99,7 +99,7 @@ def process_segment_callback(body):
                     try:
                         alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                               message_text=alerting_text,
-                                                                              feature_section="DEFAULT")
+                                                                              feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get("SEGMENT", "DEFAULT"))
                         logger.info(f"process_segment_callback :: Alert Triggered Response: {alert_resp}")
                     except Exception as ex1:
                         logger.error(f"process_segment_callback :: Unable to process project alerting, Exp: {ex1}")
@@ -126,7 +126,7 @@ def process_segment_callback(body):
                     alerting_text = f'Segment Name : {segment_name}, Segment ID : {segment_id}, ERROR : process_segment_callback :: error thrown while fetching sql_query for given segment_id.'
                     alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                           message_text=alerting_text,
-                                                                          feature_section="DEFAULT")
+                                                                          feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get("SEGMENT", "DEFAULT"))
                     logger.info(f"process_segment_callback :: Alert Triggered Response: {alert_resp}")
                 except Exception as ex1:
                     logger.error(f"process_segment_callback :: Unable to process project alerting, Exp: {ex1}")
@@ -150,7 +150,7 @@ def process_segment_callback(body):
                     alerting_text = f'Segment Name : {segment_name}, Segment ID : {segment_id}, Segment Error Details: {update_dict}'
                     alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                           message_text=alerting_text,
-                                                                          feature_section="DEFAULT")
+                                                                          feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get("SEGMENT", "DEFAULT"))
                     logger.info(f"process_segment_callback :: Alert Triggered Response: {alert_resp}")
                 except Exception as ex:
                     logger.error(f"process_segment_callback :: Unable to process project alerting, Exp: {ex}")
@@ -208,10 +208,10 @@ def process_segment_callback(body):
     except Exception as e:
         try:
             segment_name = CEDSegment().get_segment_name_by_id(segment_id=segment_id)
-            alerting_text = f'Segment Name : {segment_name}, Segment ID : {segment_id}, ERROR : Sprocess_segment_callback :: Error in save custom segment callback flow, Please Reach Out to Tech.'
+            alerting_text = f'Segment Name : {segment_name}, Segment ID : {segment_id}, ERROR : process_segment_callback :: Error in save custom segment callback flow, Please Reach Out to Tech.'
             alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                   message_text=alerting_text,
-                                                                  feature_section="DEFAULT")
+                                                                  feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get("SEGMENT", "DEFAULT"))
             logger.info(f"process_segment_callback :: Alert Triggered Response: {alert_resp}")
         except Exception as ex:
             logger.error(f"process_segment_callback :: Unable to process project alerting, Exp: {ex}")
@@ -267,10 +267,10 @@ def process_segment_data_callback(body):
             try:
                 try:
                     segment_name = CEDSegment().get_segment_name_by_id(segment_id=segment_id)
-                    alerting_text = f'Segment Name : {segment_name}, Segment ID : {segment_id}, Segment Error Details: {error_update_dict}, ERROR : Process Segment Async Job Error'
+                    alerting_text = f'Segment Name : {segment_name}, Segment ID : {segment_id}, Segment Error Status: {error_update_dict.get("Status")}, Error Update Time : {error_update_dict.get("UpdationDate")}, ERROR : Process Segment Async Job Error'
                     alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                           message_text=alerting_text,
-                                                                          feature_section="DEFAULT")
+                                                                          feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get("SEGMENT", "DEFAULT"))
                     logger.info(f"process_segment_callback :: Alert Triggered Response: {alert_resp}")
                 except Exception as ex1:
                     logger.error(f"process_segment_callback :: Unable to process project alerting, Exp: {ex1}")

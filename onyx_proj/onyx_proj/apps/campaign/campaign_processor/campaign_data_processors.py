@@ -285,7 +285,7 @@ def update_campaign_status(data) -> json:
             project_id = fetch_project_id_from_conf_from_given_identifier("SEGMENT", segment_id)
             alerting_text = f'Hyperion Local Campaing ID : {cssd_id}, Segment Name : {segment_name}, Segment ID : {segment_id},  Status : {status}, Error Message : {error_msg}, ERROR: Campaign Needs attention'
             alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
-                                                                  feature_section="DEFAULT")
+                                                                  feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get("CAMPAIGN", "DEFAULT"))
     except Exception as ex:
         logger.error(f'Unable to process telegram alerting, method_name: {method_name}, Exp : {ex}')
 
@@ -449,7 +449,7 @@ def update_segment_count_and_status_for_campaign(request_data):
                 project_id = fetch_project_id_from_conf_from_given_identifier("CAMPAIGNID", campaign_id)
                 alerting_text = f'Hyperion Local Campaing ID : {campaign_id}, Status : {status}, ERROR: Campaign Needs attention'
                 alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
-                                                                      feature_section="DEFAULT")
+                                                                      feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get("CAMPAIGN", "DEFAULT"))
         except Exception as ex:
             logger.error(f'Unable to send telegram Request, {ex}')
 
@@ -647,7 +647,6 @@ def filter_list(request, session_id):
                     details_message="Invalid Tab")
 
     data = CEDCampaignBuilder().get_campaign_list(filters)
-    logger.debug(f"data :: {data}")
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                 data=data)
