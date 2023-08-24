@@ -35,15 +35,16 @@ def check_headers_compatibility_with_content_template(request_data) -> json:
                         "isCompatible": True/False (bool)
                     })
     """
+    method_name = "check_headers_compatibility_with_content_template"
+    logger.debug(f"{method_name} :: request_data: {request_data}")
 
     segment_id = request_data.get("segment_id", None)
     content_id = request_data.get("content_id", None)
     template_type = request_data.get("template_type", None)
-    logger.debug(f"segment_id :: {segment_id}, content_id :: {content_id}, template_type :: {template_type}")
 
     if content_id is None or segment_id is None or template_type is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Invalid Request! Missing segment_id/content_id/template_type")
+                    details_message="Invalid Request! Missing parameters in request payload.")
 
     if template_type not in COMMUNICATION_SOURCE_LIST:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -146,7 +147,17 @@ def check_headers_compatibility_with_content_template(request_data) -> json:
                         details_message=f"Headers list empty for the given segment_id: {segment_id}.")
 
     flag = all(x in headers_list for x in columns_list)
-    if flag is False:
+
+    # adding condition to check if Email/EnEmail present in campaigns with Email as communication source, same for Mobile/EnMobile
+    headers_list_lc = [ele.lower() for ele in headers_list]
+    if template_type in ["SMS", "IVR", "WHATSAPP"]:
+        mandatory_fields_flag = True if "mobile" in headers_list_lc or "enmobile" in headers_list_lc else False
+    elif template_type in ["EMAIL", "SUBJECT"]:
+        mandatory_fields_flag = True if "email" in headers_list_lc or "enemail" in headers_list_lc else False
+    else:
+        mandatory_fields_flag = True
+
+    if flag is False or mandatory_fields_flag is False:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Segment compatibility failure.")
     else:

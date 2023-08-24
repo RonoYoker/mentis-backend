@@ -136,7 +136,10 @@ def process_segment_callback(body):
                     f"error_message: {str(ex)}")
                 return
 
-            test_sql_query_response = generate_test_query(sql_query, headers)
+            if project_id in settings.USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN and project_id in settings.TEST_CAMPAIGN_ENABLED:
+                test_sql_query_response = {"result": TAG_SUCCESS, "skip_test_query_creation": True}
+            else:
+                test_sql_query_response = generate_test_query(sql_query, headers)
 
             if test_sql_query_response.get("result") == TAG_FAILURE and segment.get("SegmentBuilderId") is None:
                 update_dict = dict(UpdationDate=datetime.datetime.utcnow(), Status=SegmentStatusKeys.ERROR.value,
@@ -158,7 +161,7 @@ def process_segment_callback(body):
                     return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                                 details_message="Exception during update query execution.",
                                 ex=str(ex))
-            else:
+            elif test_sql_query_response["result"] == TAG_SUCCESS and test_sql_query_response.get("skip_test_query_creation", False) is False:
                 test_query = segment.get("TestCampaignSqlQuery") if segment.get("SegmentBuilderId") is not None else \
                     test_sql_query_response["query"]
                 update_dict = dict(TestCampaignSqlQuery=test_query, Records=segment_count,
@@ -171,7 +174,23 @@ def process_segment_callback(body):
                                    DataRefreshEndDate=datetime.datetime.utcnow(),
                                    CountRefreshStartDate=datetime.datetime.utcnow(),
                                    CountRefreshEndDate=datetime.datetime.utcnow())
-
+                try:
+                    db_resp = CEDSegment().update_segment(dict(UniqueId=segment_id), update_dict)
+                except Exception as ex:
+                    return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                                details_message="Exception during update query execution.",
+                                ex=str(ex))
+            else:
+                update_dict = dict(TestCampaignSqlQuery=None, Records=segment_count,
+                                   Extra=AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
+                                                           iv=settings.SEGMENT_AES_KEYS["AES_IV"],
+                                                           mode=AES.MODE_CBC).encrypt_aes_cbc(json.dumps(extra_data)),
+                                   UpdationDate=datetime.datetime.utcnow(), RefreshDate=datetime.datetime.utcnow(),
+                                   Status=SegmentStatusKeys.SAVED.value,
+                                   DataRefreshStartDate=datetime.datetime.utcnow(),
+                                   DataRefreshEndDate=datetime.datetime.utcnow(),
+                                   CountRefreshStartDate=datetime.datetime.utcnow(),
+                                   CountRefreshEndDate=datetime.datetime.utcnow())
                 try:
                     db_resp = CEDSegment().update_segment(dict(UniqueId=segment_id), update_dict)
                 except Exception as ex:
