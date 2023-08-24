@@ -67,6 +67,8 @@ SAMPLE_DATA_ASYNC_EXECUTION_API_PATH = "local/async_task_invocation/async_query_
 
 DEACTIVATE_CAMPAIGNS_FROM_CREATION_DETAILS = "hyperioncampaigntooldashboard/deactivate/localdb/campaignFromCreationdetails"
 
+LAMBDA_PUSH_PACKET_API_PATH = "hyperioncampaigntooldashboard/fileprocess/localdb/triggerlambdaForSegmentProcessing"
+
 MAILER_UTILITY_URL = "https://2poqg6bgm5.execute-api.ap-south-1.amazonaws.com/prod/sendemail"
 
 REFRESH_COUNT_LOCAL_API_PATH = "hyperioncampaigntooldashboard/segment/localdb/triggerlambdaForSegmentRefreshCount"
@@ -124,6 +126,9 @@ WHERE
 """
 
 MIN_REFRESH_COUNT_DELAY = 15
+
+MIN_INSTANT_CAMPAIGN_SAVE_TIME_BUFFER_IN_MINUTES = -5
+MIN_INSTANT_CAMPAIGN_APPROVAL_TIME_BUFFER_IN_MINUTES = -10
 
 MAX_CAMPAIGN_STATS_DURATION_DAYS = 7
 

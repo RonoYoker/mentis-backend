@@ -28,6 +28,7 @@ def vaildate_campaign_for_scheduling(request_data):
     campaigns_list = body.get("campaigns", [])
     campaign_id = body.get("campaignId")
     is_split = body.get("is_split",False)
+    is_instant = body.get("is_instant",False)
 
     dates_to_validate = set()
     campaigns_date_type_data={}
@@ -73,6 +74,7 @@ def vaildate_campaign_for_scheduling(request_data):
 
 
     campaign_validate_resp = []
+    affected_campaigns = []
     for campaign in campaigns_list:
         camp_date = datetime.strptime(campaign.get("startDateTime"),"%Y-%m-%d %H:%M:%S").date()
         camp_type = campaign.get("contentType","")
@@ -105,6 +107,15 @@ def vaildate_campaign_for_scheduling(request_data):
             valid_bu_campaigns.setdefault(date_channel_key,[]).extend(camp_info_split)
             valid_project_campaigns.setdefault(date_channel_key,[]).extend(camp_info_split)
 
+
+        if is_instant is True and valid_schedule is False:
+            valid_schedule = True
+            campaign_data = CEDCampaignBuilderCampaign().fetch_camp_name_and_records_by_time(project_id, camp_type,
+                                                                                             camp_info["start"],
+                                                                                             camp_info["end"]
+                                                                                             )
+            if campaign_data is not None:
+                affected_campaigns.extend(campaign_data)
         campaign_validate_resp.append(
             {
                 "content_type":camp_type,
@@ -115,9 +126,22 @@ def vaildate_campaign_for_scheduling(request_data):
                 "day_of_week": camp_info["start"].strftime("%A")
             }
         )
+    filtered_campaigns = []
+    filtered_campaigns_ids = []
+    for campaign in affected_campaigns:
+        if campaign["Id"] in filtered_campaigns_ids:
+            continue
+        filtered_campaigns.append(campaign)
+        filtered_campaigns_ids.append(campaign["Id"])
 
+    warning_data = None
+    if len(filtered_campaigns) > 0 :
+        warning_data = {
+            "mssg": "Some campaigns might get throttled after this campaign is Aligned !",
+            "data":filtered_campaigns
+        }
 
-    return dict(status_code=200, result=TAG_SUCCESS, response=campaign_validate_resp)
+    return dict(status_code=200, result=TAG_SUCCESS, response=campaign_validate_resp, warning_data=warning_data)
 
 
 def validate_schedule(schedule,slot_limit_per_min):

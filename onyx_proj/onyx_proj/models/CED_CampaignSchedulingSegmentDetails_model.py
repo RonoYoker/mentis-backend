@@ -1,3 +1,5 @@
+import datetime
+
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, save_or_update, \
     execute_query, fetch_rows_limited
@@ -41,3 +43,7 @@ class CEDCampaignSchedulingSegmentDetails:
         if res is None or len(res) <= 0:
             return None
         return res[0]
+
+    def update_scheduling_status(self,id,status):
+        return update_row(self.curr, self.table_name,{"Id":id} , {"SchedulingStatus": status,"SchedulingTime":datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+

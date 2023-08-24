@@ -3,10 +3,14 @@ import http
 import logging
 import datetime
 
+from django.conf import settings
 from onyx_proj.apps.async_task_invocation.app_settings import AsyncJobStatus
 from onyx_proj.apps.segments.app_settings import QueryKeys
+from onyx_proj.common.request_helper import RequestClient
+from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException
+from onyx_proj.models.CED_CampaignSchedulingSegmentDetails_model import CEDCampaignSchedulingSegmentDetails
 from onyx_proj.models.CED_Projects import CEDProjects
-from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS
+from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, LAMBDA_PUSH_PACKET_API_PATH
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
 
 logger = logging.getLogger("apps")
@@ -73,8 +77,67 @@ def update_campaign_segment_data(request_data) -> json:
                     details_message="Invalid CampaignBuilderCampaignId.")
     else:
         is_split_flag = is_split_flag_db_resp[0]["SplitFlag"]
+        camp_name = is_split_flag_db_resp[0]["Name"]
+    is_instant = False
+    if QueryKeys.SEGMENT_DATA.value in task_data:
+        task_data = task_data[QueryKeys.SEGMENT_DATA.value]
+    elif QueryKeys.SEGMENT_DATA_INSTANT.value in task_data:
+        task_data = task_data[QueryKeys.SEGMENT_DATA_INSTANT.value]
+        is_instant = True
+    else:
+        raise ValidationFailedException(reason="Invalid Query Key Present")
 
-    task_data = task_data[QueryKeys.SEGMENT_DATA.value]
+    if is_instant:
+        cbc_ids_str = f"'{campaign_builder_campaign_id}'"
+        cbc_resp = CEDCampaignBuilderCampaign().get_cbc_details_by_cbc_id(cbc_ids_str)
+        if cbc_resp is None:
+            raise ValidationFailedException(reason="Invalid cbc Id")
+        cbc = cbc_resp[0]
+
+        cssd_resp = CEDCampaignSchedulingSegmentDetails().fetch_scheduling_segment_entity_by_cbc_id(campaign_builder_campaign_id)
+        if cssd_resp is None:
+            raise ValidationFailedException(reason="Invalid cbc Id")
+
+        resp = CEDCampaignSchedulingSegmentDetails().update_scheduling_status(cssd_resp.id, "QUERY_EXECUTOR_SUCCESS_INSTANT")
+        if resp is None:
+            raise ValidationFailedException(reason=f"Unable tp update cssd scheduling status id::{cssd_resp.id}")
+
+        segment_details = CEDCampaignBuilderCampaign().get_project_name_seg_query_from_campaign_builder_campaign_id(campaign_builder_campaign_id)
+        if segment_details is None:
+            raise ValidationFailedException(reason=f"Project not found for mentioned cbc ::{campaign_builder_campaign_id}")
+        project_name = segment_details["project_name"]
+        sql_query = segment_details["sql_query"]
+
+        payload = {
+            "campaigns":[{
+                        "campaign_builder_campaign_id": campaign_builder_campaign_id,
+                        "campaign_name": camp_name,
+                        "record_count": cssd_resp.records,
+                        "startDate": cbc["StartDateTime"].strftime("%Y-%m-%d %H:%M:%S"),
+                        "endDate": cbc["EndDateTime"].strftime("%Y-%m-%d %H:%M:%S"),
+                        "contentType": cbc["ContentType"],
+                        "campaign_schedule_segment_details_id": cssd_resp.id,
+                        "query":sql_query,
+                        "is_test": False,
+                        "split_details": None,
+                        "segment_data_s3_path": task_data["response"]["s3_url"]
+                    }]
+        }
+        api_response = json.loads(RequestClient(request_type="POST", url=settings.HYPERION_LOCAL_DOMAIN[project_name]
+                        + LAMBDA_PUSH_PACKET_API_PATH,headers={"Content-Type": "application/json"}, request_body=json.dumps(payload)).get_api_response())
+
+        if api_response.get("success",False) is True:
+            resp = CEDCampaignSchedulingSegmentDetails().update_scheduling_status(cssd_resp.id,
+                                                                                  "SUCCESS")
+            if resp is None:
+                raise ValidationFailedException(reason=f"Unable tp update cssd scheduling status id::{cssd_resp.id}")
+        else:
+            resp = CEDCampaignSchedulingSegmentDetails().update_scheduling_status(cssd_resp.id,
+                                                                                  "ERROR")
+            if resp is None:
+                raise ValidationFailedException(reason=f"Unable tp update cssd scheduling status id::{cssd_resp.id}")
+
+
     where_dict = dict(UniqueId=campaign_builder_campaign_id)
     if is_split_flag == 0:
         # if is split flag is 0 or False, update the data for the corresponding CBC id

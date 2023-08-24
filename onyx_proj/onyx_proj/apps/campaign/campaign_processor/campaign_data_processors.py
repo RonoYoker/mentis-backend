@@ -11,10 +11,12 @@ import logging
 from django.conf import settings
 import requests
 from django.template.loader import render_to_string
+from Crypto.Cipher import AES
 
 from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT
 from onyx_proj.apps.slot_management.data_processor.slots_data_processor import vaildate_campaign_for_scheduling
 from onyx_proj.common.request_helper import RequestClient
+from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.common.utils.logging_helpers import log_entry, log_exit
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException, ValidationFailedException, \
     NotFoundException, InternalServerError
@@ -351,7 +353,7 @@ def generate_schedule(sched_data,start_time,end_time,execution_config_id):
         raise ValidationFailedException(method_name="generate_schedule",reason="mandatory params missing.")
 
     dates = []
-    if campaign_type == "SCHEDULENOW":
+    if campaign_type in ["SCHEDULENOW","INSTANT"]:
         dates.append(start_date)
 
     if campaign_type == "SCHEDULELATER" and repeat_type == "ONE_TIME":
@@ -377,7 +379,7 @@ def generate_schedule(sched_data,start_time,end_time,execution_config_id):
     for date in dates:
         date = datetime.datetime.strptime(date, '%Y-%m-%d').date()
         combined = datetime.datetime.combine(date, time)
-        if combined < curr_datetime_60_mints:
+        if combined < curr_datetime_60_mints and campaign_type !="INSTANT":
             pass
         else:
             recurring_date_time.append({"date": date, "start_time": start_time, "end_time": end_time,"execution_config_id":execution_config_id})
@@ -1085,6 +1087,11 @@ def validate_campaign_builder_campaign_for_scheduled_time(campaign_builder_entit
     """
     method_name = "validate_campaign_builder_campaign_for_scheduled_time"
     log_entry()
+    is_instant = False
+    recurring_detail = campaign_builder_entity.recurring_detail
+    if recurring_detail is not None and len(recurring_detail) > 0:
+        recurring_detail = json.loads(recurring_detail)
+        is_instant = recurring_detail.get("is_instant", False)
 
     if campaign_builder_entity is None or campaign_builder_entity.campaign_list is None or len(
             campaign_builder_entity.campaign_list) <= 0:
@@ -1092,7 +1099,7 @@ def validate_campaign_builder_campaign_for_scheduled_time(campaign_builder_entit
     for cbc in campaign_builder_entity.campaign_list:
         start_time = cbc.start_date_time
         current_time = datetime.datetime.utcnow()
-        final_time = current_time + datetime.timedelta(minutes=SCHEDULED_CAMPAIGN_TIME_DELAY_MINUTES)
+        final_time = current_time + datetime.timedelta(minutes=SCHEDULED_CAMPAIGN_TIME_DELAY_MINUTES if is_instant is False else MIN_INSTANT_CAMPAIGN_APPROVAL_TIME_BUFFER_IN_MINUTES)
         if final_time > start_time:
             raise ValidationFailedException(method_name=method_name,
                                             reason="Scheduled Campaign must be approved atleast 30 minutes before its start time")
@@ -1120,6 +1127,11 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
     # check cbc details
     if not campaign_builder_entity.campaign_list or len(campaign_builder_entity.campaign_list) <= 0:
         raise NotFoundException(method_name=method_name, reason="Campaign Builder Campaign not found")
+    is_instant = False
+    recurring_detail = campaign_builder_entity.recurring_detail
+    if recurring_detail is not None and len(recurring_detail) > 0:
+        recurring_detail = json.loads(recurring_detail)
+        is_instant = recurring_detail.get("is_instant", False)
 
     try:
         # fetch segment details
@@ -1190,7 +1202,7 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
             scheduling_segment_entity.campaign_type = campaign_builder_entity.type
             scheduling_segment_entity.test_campaign = False
             start_trigger_schedule_lambda_processing(scheduling_segment_entity, uuid.uuid4().hex, channel,
-                                                     project_entity, segment_entity)
+                                                     project_entity, segment_entity,is_instant=is_instant)
         except NotFoundException as ex:
             logger.debug(f"method_name: {method_name}, error: {ex.reason}")
             CEDCampaignBuilderCampaign().update_cbc_status(campaign.unique_id, CampaignStatus.ERROR.value)
@@ -1231,7 +1243,7 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
 
 
 def start_trigger_schedule_lambda_processing(campaign_scheduling_segment_entity, job_id, channel, project_entity,
-                                             segment_entity, test_campaign=False):
+                                             segment_entity, test_campaign=False,is_instant=False):
     method_name = "start_trigger_schedule_lambda_processing"
     log_entry()
 
@@ -1246,6 +1258,7 @@ def start_trigger_schedule_lambda_processing(campaign_scheduling_segment_entity,
         campaign_scheduling_segment_entity.channel = channel
         campaign_scheduling_segment_entity.schedule_date = datetime.datetime.utcnow().date()
         campaign_scheduling_segment_entity.segment_type = segment_entity.type
+        campaign_scheduling_segment_entity.campaign_sql_query = segment_entity.campaign_sql_query
         campaign_scheduling_segment_entity.project_id = project_entity.unique_id
 
         # set the service vendor details
@@ -1287,7 +1300,7 @@ def start_trigger_schedule_lambda_processing(campaign_scheduling_segment_entity,
             campaign_scheduling_segment_entity)
 
         # Trigger lambda
-        trigger_lambda_function_for_campaign_scheduling(campaign_scheduling_segment_entity, project_entity.name)
+        trigger_lambda_function_for_campaign_scheduling(campaign_scheduling_segment_entity, project_entity.name,is_instant=is_instant)
 
         # Save Campaign Scheduling segment entity with status LAMBDA_TRIGGERED
         campaign_scheduling_segment_entity.status = CampaignSchedulingSegmentStatus.LAMBDA_TRIGGERED.value
@@ -1380,7 +1393,7 @@ def generate_file_name(campaign_scheduling_segment_entity, segment_entity, is_te
     return file_name
 
 
-def trigger_lambda_function_for_campaign_scheduling(campaign_segment_details, project_name, backwords_compatible=True):
+def trigger_lambda_function_for_campaign_scheduling(campaign_segment_details, project_name, backwords_compatible=True,is_instant=False):
     """
     Method to trigger the lambda function and generate request paylaod
     """
@@ -1476,9 +1489,47 @@ def trigger_lambda_function_for_campaign_scheduling(campaign_segment_details, pr
         # if successfully created entry in local tables then update the CED_CampaignExecutionProgress as scheduled
         CEDCampaignExecutionProgress().update_campaign_status_by_cbc_id(campaign_scheduling_segment_entity.campaign_id,
                                                                         CampaignExecutionProgressStatus.SCHEDULED.value)
+    if is_instant:
+        process_campaigns_for_query_executor(campaign_scheduling_segment_entity)
 
     log_exit()
 
+
+def process_campaigns_for_query_executor(campaign_scheduling_segment_entity):
+    project_id = campaign_scheduling_segment_entity.project_id
+
+    camp_id = campaign_scheduling_segment_entity.id
+    campaign_sql_query = campaign_scheduling_segment_entity.campaign_sql_query
+    camp_builder_camp_id = campaign_scheduling_segment_entity.cbc_entity["unique_id"]
+    try:
+        payload = {
+            "source": "ONYX_CENTRAL",
+            "request_id": camp_builder_camp_id,
+            "request_type": "HYPERION_CAMPAIGN_QUERY_EXECUTION_FLOW",
+            "project_id": project_id,
+            "callback": {"callback_key": "HYPERION_CAMPAIGN_QUERY_EXECUTION"},
+            "queries": [{"query": campaign_sql_query, "response_format": "s3_output", "query_key": "SEGMENT_DATA_INSTANT"}]
+        }
+        rest_object = RequestClient()
+        request_response = rest_object.post_onyx_local_api_request(payload, settings.ONYX_LOCAL_DOMAIN[project_id],
+                                                                   CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH)
+        if request_response is None or request_response.get("success", False) is False:
+            logger.error(f"Unable to call query executor error::{request_response}")
+            CEDCampaignSchedulingSegmentDetails().update_scheduling_status(camp_id,"QUERY_EXECUTOR_ERROR")
+            CEDCampaignBuilderCampaign().update_campaign_builder_campaign_s3_status("ERROR",camp_builder_camp_id)
+            return
+        decrypted_resp_json = request_response.get("data",{})
+        if decrypted_resp_json.get("result", "FAILURE") == "SUCCESS":
+            CEDCampaignSchedulingSegmentDetails().update_scheduling_status(camp_id,"QUERY_EXECUTOR_TRIGGERED")
+            CEDCampaignBuilderCampaign().update_campaign_builder_campaign_s3_status("INITIALISED",camp_builder_camp_id)
+        else:
+            CEDCampaignSchedulingSegmentDetails().update_scheduling_status(camp_id,"QUERY_EXECUTOR_ERROR")
+            CEDCampaignBuilderCampaign().update_campaign_builder_campaign_s3_status("ERROR",camp_builder_camp_id)
+
+    except Exception as e:
+        logger.error(f"Unable to call query executor error::{str(e)}")
+        CEDCampaignSchedulingSegmentDetails().update_scheduling_status(camp_id, "QUERY_EXECUTOR_ERROR")
+        CEDCampaignBuilderCampaign().update_campaign_builder_campaign_s3_status("ERROR", camp_builder_camp_id)
 
 def set_follow_up_sms_template_details(campaign_segment_entity):
     method_name = "set_follow_up_sms_template_details"
@@ -1526,6 +1577,7 @@ def generate_campaign_scheduling_segment_entity_for_camp_scheduling(scheduling_s
     campaign_scheduling_segment_entity.cbc_entity = campaign_builder_campaign_dict
     campaign_scheduling_segment_entity.campaign_title = scheduling_segment_details.campaign_title
     campaign_scheduling_segment_entity.segment_type = scheduling_segment_details.segment_type
+    campaign_scheduling_segment_entity.campaign_sql_query = scheduling_segment_details.campaign_sql_query
     campaign_scheduling_segment_entity.project_id = scheduling_segment_details.project_id
     campaign_scheduling_segment_entity.schedule_start_date_time = campaign_builder_campaign.start_date_time.strftime(
         "%Y-%m-%d %H:%M:%S")
@@ -2186,16 +2238,22 @@ def validate_campaign_builder_campaign_details(campaign_builder, campaign_list, 
     method_name = "validate_campaign_builder_campaign_details"
     logger.debug(f"Trace Entry: {method_name}")
     unique_id = campaign_builder.unique_id
+    recurring_detail = campaign_builder.recurring_detail
+    is_instant = False
+    if recurring_detail is not None and len(recurring_detail)>0:
+        recurring_detail = json.loads(recurring_detail)
+        is_instant = recurring_detail.get("is_instant", False)
     if unique_id is None:
         return dict(result=TAG_FAILURE, details_message="Campaign builder id is not provided")
     campaign_builder_details = CEDCampaignBuilder().get_campaign_builder_details_by_unique_id(unique_id)
     if campaign_builder_details is None or len(campaign_builder_details) == 0:
         return dict(result=TAG_FAILURE, details_message="Campaign builder details are not valid")
 
-    response = validate_schedule(campaign_list, segment_id, unique_id, campaign_id,is_split)
-    if response.get("result") == TAG_FAILURE:
-        logger.error(f"{method_name}, validate schedule resp :: {response}  ")
-        return dict(result=TAG_FAILURE, details_message=response.get("details_message"))
+    if is_instant is False:
+        response = validate_schedule(campaign_list, segment_id, unique_id, campaign_id,is_split)
+        if response.get("result") == TAG_FAILURE:
+            logger.error(f"{method_name}, validate schedule resp :: {response}  ")
+            return dict(result=TAG_FAILURE, details_message=response.get("details_message"))
 
     response = validate_headers_compatibility(campaign_list, segment_id, unique_id)
     if response.get("result") == TAG_FAILURE:
@@ -2204,12 +2262,11 @@ def validate_campaign_builder_campaign_details(campaign_builder, campaign_list, 
 
     campaign_final_list = []
     order_number = 0
-    recurring_detail = campaign_builder.recurring_detail
     for campaign in campaign_list:
         if campaign is None:
             logger.error(f"{method_name}, campaign :: {campaign}  ")
             return dict(result=TAG_FAILURE, details_message="Campaign details is not provided")
-        validate_time = validate_date_time(campaign)
+        validate_time = validate_date_time(campaign,is_instant)
         if validate_time.get("result") == TAG_FAILURE:
             logger.error(f"{method_name}, validate date time :: {validate_time}  ")
             return dict(result=TAG_FAILURE, details_message=validate_time.get("details_message"))
@@ -2236,7 +2293,6 @@ def validate_campaign_builder_campaign_details(campaign_builder, campaign_list, 
 def make_split_cbc_list(campaign,is_split,recurring_detail):
     if recurring_detail is None or len(recurring_detail)==0:
         return [campaign]
-    recurring_detail = json.loads(recurring_detail)
     if is_split is True and not recurring_detail.get("is_auto_time_split",False) and not recurring_detail.get("is_segment_attr_split",False):
         raise ValidationFailedException(reason="Invalid Split Details Present")
     if is_split is True and recurring_detail.get("is_auto_time_split", False):
@@ -2327,15 +2383,21 @@ def validate_and_save_campaign_builder_campaign_details(campaign_builder, campai
 
 
 
-def validate_date_time(campaign):
+def validate_date_time(campaign,is_instant):
     curr_date_time = datetime.datetime.utcnow()
     start_date_time = campaign.get("input_start_date_time", "")
     end_date_time = campaign.get("input_end_date_time", "")
     if start_date_time == "" or end_date_time == "":
         return dict(result=TAG_FAILURE, details_message="Start or End date time of instance is null")
-    if datetime.datetime.strptime(start_date_time, "%Y-%m-%d %H:%M:%S") < curr_date_time + datetime.timedelta(
+    if is_instant is False and (datetime.datetime.strptime(start_date_time, "%Y-%m-%d %H:%M:%S") < curr_date_time + datetime.timedelta(
             minutes=45) or datetime.datetime.strptime(end_date_time, "%Y-%m-%d %H:%M:%S")\
-            < curr_date_time + datetime.timedelta(minutes=60):
+            < curr_date_time + datetime.timedelta(minutes=60)):
+        return dict(result=TAG_FAILURE, details_message="Start or End date time of instance is for past")
+    if is_instant is True and (datetime.datetime.strptime(start_date_time,
+                                                          "%Y-%m-%d %H:%M:%S") < curr_date_time + datetime.timedelta(
+            minutes=MIN_INSTANT_CAMPAIGN_SAVE_TIME_BUFFER_IN_MINUTES) or datetime.datetime.strptime(
+            end_date_time, "%Y-%m-%d %H:%M:%S") <= (datetime.datetime.strptime(start_date_time,
+                                                          "%Y-%m-%d %H:%M:%S"))) :
         return dict(result=TAG_FAILURE, details_message="Start or End date time of instance is for past")
     return dict(result=TAG_SUCCESS)
 

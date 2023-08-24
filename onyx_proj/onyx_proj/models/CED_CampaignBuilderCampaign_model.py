@@ -1,3 +1,5 @@
+import datetime
+
 from onyx_proj.common.constants import Roles
 from onyx_proj.common.decorators import UserAuth
 from onyx_proj.common.mysql_helper import *
@@ -143,6 +145,14 @@ class CEDCampaignBuilderCampaign:
         result = dict_fetch_query_all(self.curr, query)
         return result[0].get("project_id") if result is not None else None
 
+    def get_project_name_seg_query_from_campaign_builder_campaign_id(self, campaign_id):
+        query = f"Select cp.Name as project_name , s.CampaignSqlQuery as sql_query from {self.table_name} cbc join CED_CampaignBuilder cb on " \
+                f"cb.UniqueId = cbc.CampaignBuilderId join CED_Segment s on " \
+                 f"cb.SegmentId = s.UniqueId join CED_Projects cp on cp.UniqueId = s.ProjectId where " \
+                f"cbc.UniqueId = '{campaign_id}'"
+        result = dict_fetch_query_all(self.curr, query)
+        return {"project_name":result[0].get("project_name"),"sql_query":result[0].get("project_name")} if result is not None else None
+
     def delete_campaign_builder_campaign_by_unique_id(self, unique_id):
         return delete_rows_from_table(self.curr, self.table_name, {"campaignBuilderId": unique_id})
 
@@ -236,7 +246,7 @@ class CEDCampaignBuilderCampaign:
         return res
 
     def fetch_camp_name_and_records_by_time(self, project_id, channel, start_date_time, end_date_time):
-        query = f"Select cb.Name, s.Records from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb" \
+        query = f"Select cb.Name, s.Records, cb.Id from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb" \
                 f" on cb.UniqueId = cbc.CampaignBuilderId join CED_Segment s on cb.SegmentId = s.UniqueId join" \
                 f" CED_Projects p on p.UniqueId = s.ProjectId where p.UniqueId = '{project_id}' and '{start_date_time}'" \
                 f" BETWEEN cbc.StartDateTime and cbc.EndDateTime and '{end_date_time}' BETWEEN cbc.StartDateTime and" \
@@ -257,7 +267,7 @@ class CEDCampaignBuilderCampaign:
     def get_is_split_flag_by_cbc_id(self, cbc_id: str):
         query = f"""
         SELECT 
-            cb.isSplit AS SplitFlag
+            cb.isSplit AS SplitFlag,cb.Name as Name
         FROM
             CED_CampaignBuilder cb
                 JOIN
@@ -306,3 +316,7 @@ class CEDCampaignBuilderCampaign:
             cbc.UniqueId = '{cbc_id}'"""
         resp = dict_fetch_query_all(self.curr, query)
         return resp
+
+    def update_campaign_builder_campaign_s3_status(self, status, unique_id):
+        camp_builder_upd_query = f""" Update CED_CampaignBuilderCampaign set S3DataRefreshStatus = '{status}' , S3DataRefreshStartDate = '{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}' where UniqueId = '{unique_id}' """
+        return execute_update_query(self.engine, camp_builder_upd_query)
