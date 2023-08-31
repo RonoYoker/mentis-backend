@@ -739,6 +739,12 @@ class ContentType(Enum):
     EMAIL = "EMAIL"
     WHATSAPP = "WHATSAPP"
     MEDIA = "MEDIA"
+    TEXTUAL = "TEXTUAL"
+
+
+class TextualContentType(Enum):
+    HEADER = "HEADER"
+    FOOTER = "FOOTER"
 
 
 class CampaignSchedulingSegmentStatus(Enum):
@@ -795,6 +801,7 @@ class SubDataSource(Enum):
     USER = "USER"
     WHATSAPP_CONTENT = "WHATSAPP_CONTENT"
     MEDIA = "MEDIA"
+    TEXTUAL = "TEXTUAL"
 
 
 SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
@@ -827,6 +834,8 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     'vendor_mapping_enabled': 'isVendorMappingEnabled',
     'is_contain_url': 'containsURL',
     'is_contain_media': 'containsMedia',
+    'is_contain_header': 'containsHeader',
+    'is_contain_footer': 'containsFooter',
     'contain_url': 'containsURL',
     'rejection_reason': 'rejectionReason',
     'vendor_template_id': 'vendorTemplateId',
@@ -848,15 +857,23 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     'short_name': 'shortName',
     'url_mapping': 'urlMapping',
     'media_mapping': 'mediaMapping',
+    'header_mapping': 'headerMapping',
+    'footer_mapping': 'footerMapping',
     'content_id': 'contentId',
     'content_type': 'contentType',
     'url_id': 'urlId',
     'media_id': 'mediaId',
+    'header_id': 'headerId',
+    'footer_id': 'footerId',
+    'textual_id': 'textualId',
     'url': 'url',
     'media': 'media',
+    'textual': 'textual',
     'is_static': 'staticURL',
     'url_types': 'urlType',
     'media_type': 'mediaType',
+    'textual_content_id': 'textualContentId',
+    'sub_content_type': 'subContentType',
     'domain_type': 'domainType',
     'number_of_days': 'numberOfDays',
     'url_expiry_type': 'urlExpiryType',

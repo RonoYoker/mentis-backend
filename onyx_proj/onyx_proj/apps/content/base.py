@@ -9,13 +9,15 @@ from onyx_proj.apps.content import app_settings
 from onyx_proj.common.constants import TAG_SUCCESS, VAR_MAPPING_REGEX, DYNAMIC_VARIABLE_URL_NAME, \
     ContentType, CONTENT_VAR_NAME_REGEX, MAX_ALLOWED_CONTENT_NAME_LENGTH, \
     MIN_ALLOWED_CONTENT_NAME_LENGTH, MIN_ALLOWED_DESCRIPTION_LENGTH, MAX_ALLOWED_DESCRIPTION_LENGTH, DataSource, \
-    TAG_FAILURE, CampaignContentStatus, MIN_ALLOWED_REJECTION_REASON_LENGTH, MAX_ALLOWED_REJECTION_REASON_LENGTH, Roles
+    TAG_FAILURE, CampaignContentStatus, MIN_ALLOWED_REJECTION_REASON_LENGTH, MAX_ALLOWED_REJECTION_REASON_LENGTH, Roles, \
+    TextualContentType
 from onyx_proj.common.decorators import UserAuth
 from onyx_proj.common.logging_helper import log_entry
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException, InternalServerError
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.models.CED_CampaignMediaContent_model import CEDCampaignMediaContent
 from onyx_proj.models.CED_CampaignTagContent_model import CEDCampaignTagContent
+from onyx_proj.models.CED_CampaignTextualContent_model import CEDCampaignTextualContent
 from onyx_proj.models.CED_CampaignURLContent_model import CEDCampaignURLContent
 from onyx_proj.models.CED_CampaignWhatsAppContent_model import CEDCampaignWhatsAppContent
 from onyx_proj.models.CED_EntityTagMapping import CEDEntityTagMapping
@@ -202,6 +204,67 @@ class Content(ABC):
                                           reason="Same media mapped more than one time")
 
             mapped_media_id_list.append(media_detail.get('media_id'))
+
+    def validate_content_header_mapping(self, header_mapping, project_id):
+        method_name = "validate_content_header_mapping"
+        log_entry(project_id)
+
+        if header_mapping is None or len(header_mapping) < 1:
+            raise BadRequestException(method_name=method_name, reason="Header mapping is not provided")
+
+        header_id_list = []
+        mapped_header_id_list = []
+        header_ids = (CEDCampaignTextualContent().
+                      get_content_list_by_project_id_content_type_status(project_id, TextualContentType.HEADER.value))
+
+        for header_id in header_ids:
+            header_id_list.append(header_id.get('unique_id'))
+
+        for header_detail in header_mapping:
+            if header_detail.get('textual_content_id') is None or header_detail.get('textual_content_id') == "":
+                raise BadRequestException(method_name=method_name,
+                                          reason="Header id is not provided")
+
+            if header_detail.get('textual_content_id') not in header_id_list:
+                raise BadRequestException(method_name=method_name,
+                                          reason="Header details is not valid")
+
+            if header_detail.get('textual_content_id') in mapped_header_id_list:
+                raise BadRequestException(method_name=method_name,
+                                          reason="Same header mapped more than one time")
+
+            mapped_header_id_list.append(header_detail.get('textual_content_id'))
+
+
+    def validate_content_footer_mapping(self, footer_mapping, project_id):
+        method_name = "validate_content_footer_mapping"
+        log_entry(project_id)
+
+        if footer_mapping is None or len(footer_mapping) < 1:
+            raise BadRequestException(method_name=method_name, reason="Footer mapping is not provided")
+
+        footer_id_list = []
+        mapped_footer_id_list = []
+        footer_ids = (CEDCampaignTextualContent().
+                      get_content_list_by_project_id_content_type_status(project_id, TextualContentType.FOOTER.value))
+
+        for footer_id in footer_ids:
+            footer_id_list.append(footer_id.get('unique_id'))
+
+        for footer_detail in footer_mapping:
+            if footer_detail.get('textual_content_id') is None or footer_detail.get('textual_content_id') == "":
+                raise BadRequestException(method_name=method_name,
+                                          reason="Footer id is not provided")
+
+            if footer_detail.get('textual_content_id') not in footer_id_list:
+                raise BadRequestException(method_name=method_name,
+                                          reason="Footer details is not valid")
+
+            if footer_detail.get('textual_content_id') in mapped_footer_id_list:
+                raise BadRequestException(method_name=method_name,
+                                          reason="Same footer mapped more than one time")
+
+            mapped_footer_id_list.append(footer_detail.get('textual_content_id'))
 
     def validate_content_title(self, name):
         method_name = "validate_content_title"

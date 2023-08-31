@@ -15,9 +15,12 @@ class CED_EntityTagMapping(Base, Orm_helper):
     entity_id = Column("EntityId", String, ForeignKey("CED_Segment.UniqueId"),
                        ForeignKey("CED_CampaignSMSContent.UniqueId"),
                        ForeignKey("CED_CampaignIvrContent.UniqueId"),
-                       ForeignKey("CED_CampaignUrlContent.UniqueId"), ForeignKey("CED_CampaignWhatsAppContent.UniqueId"),
+                       ForeignKey("CED_CampaignUrlContent.UniqueId"),
+                       ForeignKey("CED_CampaignWhatsAppContent.UniqueId"),
                        ForeignKey("CED_CampaignEmailContent.UniqueId"),
-                       ForeignKey("CED_CampaignSubjectLineContent.UniqueId"),ForeignKey("CED_CampaignMediaContent.UniqueId"))
+                       ForeignKey("CED_CampaignSubjectLineContent.UniqueId"),
+                       ForeignKey("CED_CampaignMediaContent.UniqueId"),
+                       ForeignKey("CED_CampaignTextualContent.UniqueId"))
     tag_id = Column("TagId", String, ForeignKey("CED_CampaignContentTag.UniqueId"))
     tag = relationship("CED_CampaignContentTag")
 

@@ -201,6 +201,7 @@ def get_content_list_v2(data) -> dict:
     request_body = data.get("body", {})
     entity_type_list = request_body.get("entity_type", None)
     project_id = request_body.get("project_id", None)
+    sub_entity_type = request_body.get("sub_entity_type", None)
     content_fetch_mode = request_body.get("mode", None)
     entity_table_list = []
     campaign_entity_dict = {}
@@ -219,6 +220,8 @@ def get_content_list_v2(data) -> dict:
     # generate status list and content filters based on content fetch mode
     if FETCH_CONTENT_MODE_FILTERS.get(content_fetch_mode.upper(), None) is not None:
         content_filters = copy.deepcopy(FETCH_CONTENT_MODE_FILTERS[content_fetch_mode.upper()]["filters"])
+        if sub_entity_type is not None:
+            content_filters.append({"column": "content_type", "value": sub_entity_type, "op": "=="})
         content_filters.append({"column": "project_id", "value": project_id, "op": "=="})
     else:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,

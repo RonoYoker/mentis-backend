@@ -40,6 +40,7 @@ from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
 from onyx_proj.models.CED_CampaignContentFollowUPSmsMapping_model import CEDCampaignContentFollowUPSmsMapping
 from onyx_proj.models.CED_CampaignContentMediaMapping_model import CEDCampaignContentMediaMapping
 from onyx_proj.models.CED_CampaignContentSenderIdMapping_model import CEDCampaignContentSenderIdMapping
+from onyx_proj.models.CED_CampaignContentTextualMapping_model import CEDCampaignContentTextualMapping
 from onyx_proj.models.CED_CampaignContentUrlMapping_model import CEDCampaignContentUrlMapping
 from onyx_proj.models.CED_CampaignContentVariableMapping_model import CEDCampaignContentVariableMapping
 from onyx_proj.models.CED_CampaignEmailContent_model import CEDCampaignEmailContent
@@ -2008,7 +2009,6 @@ def save_campaign_details(request_data):
     user_session = Session().get_user_session_object()
     user_name = user_session.user.user_name
 
-
     if name is None or segment_id is None or start_date_time is None or end_date_time is None\
             or priority is None or type is None or len(campaign_list) == 0:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -2547,6 +2547,8 @@ def prepare_and_save_campaign_builder_whatsapp(campaign, campaign_entity, user_n
     whatsapp_campaign_entity.whats_app_content_id = whatsapp_campaign.get("whats_app_content_id")
     whatsapp_campaign_entity.url_id = whatsapp_campaign.get("url_id")
     whatsapp_campaign_entity.media_id = whatsapp_campaign.get("media_id")
+    whatsapp_campaign_entity.header_id = whatsapp_campaign.get("header_id")
+    whatsapp_campaign_entity.footer_id = whatsapp_campaign.get("footer_id")
     try:
         CEDCampaignBuilderWhatsApp().save_or_update_sms_campaign_details(whatsapp_campaign_entity)
         return whatsapp_campaign_entity
@@ -2786,6 +2788,34 @@ def validate_content_status(campaign):
                 else:
                     if db_res.get("response") is None or len(db_res.get("response")) == 0:
                         return dict(result=TAG_FAILURE, details_message="Media Mapping not found")
+        if campaign_whatsapp_content[0].get("is_contain_header") is not None and campaign_whatsapp_content[0].get("is_contain_header") == 1:
+            header_id = whatsapp_campaign.get("header_id")
+            if header_id is None:
+                return dict(result=TAG_FAILURE, details_message="Header Id is missing")
+            else:
+                db_res = CEDCampaignContentTextualMapping().get_content_and_textual_mapping_data(whatsapp_content_id,
+                                                                                                 header_id,
+                                                                                                 CampaignBuilderCampaignContentType.WHATSAPP.value,
+                                                                                                 TextualContentType.HEADER.value)
+                if not db_res.get("status"):
+                    return dict(result=TAG_FAILURE, details_message="Not able to fetch content header mapping")
+                else:
+                    if db_res.get("response") is None or len(db_res.get("response")) == 0:
+                        return dict(result=TAG_FAILURE, details_message="Header Mapping not found")
+        if campaign_whatsapp_content[0].get("is_contain_footer") is not None and campaign_whatsapp_content[0].get("is_contain_footer") == 1:
+            footer_id = whatsapp_campaign.get("footer_id")
+            if footer_id is None:
+                return dict(result=TAG_FAILURE, details_message="Footer Id is missing")
+            else:
+                db_res = CEDCampaignContentTextualMapping().get_content_and_textual_mapping_data(whatsapp_content_id,
+                                                                                                 footer_id,
+                                                                                                 CampaignBuilderCampaignContentType.WHATSAPP.value,
+                                                                                                 TextualContentType.FOOTER.value)
+                if not db_res.get("status"):
+                    return dict(result=TAG_FAILURE, details_message="Not able to fetch content footer mapping")
+                else:
+                    if db_res.get("response") is None or len(db_res.get("response")) == 0:
+                        return dict(result=TAG_FAILURE, details_message="Footer Mapping not found")
         return dict(result=TAG_SUCCESS, details_message="Whatsapp associated mapping found")
 
     else:
@@ -2891,24 +2921,24 @@ def prepare_unique_content_id_map(campaign_list):
             if email_camp is not None:
                 if email_camp.get('email_id') is not None and email_camp.get('email_id') not in email_id:
                     email_id.append(email_camp.get('email_id'))
-                if email_camp.get('subject_line_id') is not None and email_camp.get('subject_line_id') not in email_id:
+                if email_camp.get('subject_line_id') is not None and email_camp.get('subject_line_id') not in subject_line_id:
                     subject_line_id.append(email_camp.get('subject_line_id'))
-                if email_camp.get('url_id') is not None and email_camp.get('url_id') not in email_id:
+                if email_camp.get('url_id') is not None and email_camp.get('url_id') not in url_id:
                     url_id.append(email_camp.get('url_id'))
         if campaign.get("content_type", "") == CampaignChannel.SMS.value:
             sms_campaign = campaign.get("sms_campaign")
             if sms_campaign is not None:
-                if sms_campaign.get('sms_id') is not None and sms_campaign.get('sms_id') not in email_id:
+                if sms_campaign.get('sms_id') is not None and sms_campaign.get('sms_id') not in sms_id:
                     sms_id.append(sms_campaign.get('sms_id'))
-                if sms_campaign.get('url_id') is not None and sms_campaign.get('url_id') not in email_id:
+                if sms_campaign.get('url_id') is not None and sms_campaign.get('url_id') not in url_id:
                     url_id.append(sms_campaign.get('url_id'))
         if campaign.get("content_type", "") == CampaignChannel.WHATSAPP.value:
             whatsapp_campaign = campaign.get("whatsapp_campaign")
             if whatsapp_campaign is not None:
                 if whatsapp_campaign.get('whats_app_content_id') is not None and whatsapp_campaign.get(
-                        'whats_app_content_id') not in email_id:
+                        'whats_app_content_id') not in whats_app_content_id:
                     whats_app_content_id.append(whatsapp_campaign.get('whats_app_content_id'))
-                if whatsapp_campaign.get('url_id') is not None and whatsapp_campaign.get('url_id') not in email_id:
+                if whatsapp_campaign.get('url_id') is not None and whatsapp_campaign.get('url_id') not in url_id:
                     url_id.append(whatsapp_campaign.get('url_id'))
 
     if len(email_id) > 0:
