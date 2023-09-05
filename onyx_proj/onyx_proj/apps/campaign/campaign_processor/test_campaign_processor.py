@@ -214,12 +214,16 @@ def fetch_test_campaign_validation_status_local(request_data) -> json:
         click_data = copy.deepcopy(TEST_CAMPAIGN_RESPONSE_DATA)
 
         db_result = table().check_campaign_click_and_delivery_data(campaign_id_list, contact, click=url_exist)
+
         if db_result['error'] is True:
+            logger.error(method_name, f"Unable to fetch data form db")
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="Unable to fetch data from db.")
         if db_result['result'] is None or len(db_result['result']) == 0:
+            logger.error(method_name, f"no test campaign found in Last 30 minutes")
             return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data={},
                         details_message="No Test Campaign Found in Last 30 Minutes.")
+        logger.info(f"method_name :: {method_name}, Sucessfully fetched data from db :: {db_result}")
         camp_data = db_result.get('result', [])[0]
 
         camp_validated = True
