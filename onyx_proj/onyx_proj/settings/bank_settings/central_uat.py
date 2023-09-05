@@ -138,9 +138,9 @@ CELERY_ENABLE_UTC = False
 
 VENDOR_CONFIG = {
     "telegram": {
-        "API_URL": "http://m-stage-sandesh-elb-1821377603.ap-south-1.elb.amazonaws.com/api/send_communication",
+        "API_URL": "http://m-prod-sandesh-ecs-elb-1412672779.ap-south-1.elb.amazonaws.com/api/send_communication",
         "CLIENT": "HYPERION_CENTRAL",
-        "CONFIG_ID": "hyp_telegram_uat"
+        "CONFIG_ID": "hyp_telegram_prod"
     }
 }
 

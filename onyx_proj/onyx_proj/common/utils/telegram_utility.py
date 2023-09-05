@@ -95,7 +95,7 @@ class TelegramUtility:
         if send_msg_resp.get("success", False) is True:
             ack_id = send_msg_resp.get("data", {}).get("ack_id", None)
             if ack_id is not None:
-                CEDNotification().update_request_log(request_id, {"AckId": ack_id})
+                CEDNotification().update_request_log(request_id, {"ack_id": ack_id})
         else:
             logger.error(f'Unable to process telegram Notification at Sandesh API calling failure : {send_msg_resp}')
 
