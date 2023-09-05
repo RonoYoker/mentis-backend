@@ -18,11 +18,7 @@ class CEDNotification:
         self.engine = sql_alchemy_connect(self.database)
 
     def insert_notification(self, notification_list):
-        res = {"success": False}
-        try:
-            res = bulk_insert(self.engine, notification_list)
-        except Exception as ex:
-            pass
+        res = bulk_insert(self.engine, notification_list)
         return res
 
     def update_request_log(self, request_id, upd_dict={}):
