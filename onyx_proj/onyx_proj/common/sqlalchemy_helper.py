@@ -197,6 +197,8 @@ def add_filter(query, value, column, operator):
         return query.filter(column.like(value))
     elif operator.lower() == "orderbydesc":
         return query.order_by(column.desc())
+    elif operator.lower() == "is":
+        return query.filter(column.is_(value))
 
 
 def crete_update_dict(object):

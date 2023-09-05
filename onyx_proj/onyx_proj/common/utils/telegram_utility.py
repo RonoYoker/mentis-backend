@@ -7,6 +7,7 @@ import logging
 from onyx_proj.common.utils.datautils import nested_path_get
 from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.models.CED_Notification import CEDNotification
+from onyx_proj.models.CreditasCampaignEngine import CED_Notification
 from onyx_proj.common.utils.newrelic_helpers import push_error_to_newrelic
 from django.conf import settings
 import hashlib
@@ -61,16 +62,16 @@ class TelegramUtility:
         try:
             str2hash = f'{project_id}-{message_text}-{feature_section}'
             md5_result = hashlib.md5(str2hash.encode()).hexdigest()
-            insert_dict = {
-                "ProjectId": project_id,
-                "DataHash": md5_result,
-                "Message": message_text,
-                "RequestId": request_id,
-                "FeatureSection": feature_section
-            }
-            db_entry.append(list(insert_dict.values()))
-            columns = list(insert_dict.keys())
-            CEDNotification().insert_notification(db_entry, {"custom_columns": columns})
+            insert_dict = CED_Notification({
+                "project_id": project_id,
+                "data_hash": md5_result,
+                "message": message_text,
+                "request_id": request_id,
+                "feature_section": feature_section
+            })
+            db_entry.append(insert_dict)
+            CEDNotification().insert_notification(db_entry)
+
         except Exception as ex:
             logger.error(f'Unable to Insert into CED_Notification : {ex}')
             return {"success": False, "error": "Unable To Insert Into Notification Database"}
