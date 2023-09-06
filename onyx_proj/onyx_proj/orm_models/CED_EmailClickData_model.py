@@ -3,7 +3,7 @@ class CED_EmailClickData(Base, Orm_helper):
     __tablename__ = 'CED_EmailClickData'
 
     id = Column("Id", Integer, primary_key=True)
-    primary_key = Column("Email", String)
+    # primary_key = Column("Email", String)
     en_primary_key = Column("EnEmail", String)
     campaign_id = Column("CampaignId", Integer)
     type = Column("Type", String)

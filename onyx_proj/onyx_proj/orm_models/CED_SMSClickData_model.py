@@ -3,7 +3,7 @@ class CED_SMSClickData(Base, Orm_helper):
     __tablename__ = 'CED_SMSClickData'
 
     id = Column("Id", Integer, primary_key=True)
-    primary_key = Column("MobileNumber", String)
+    # primary_key = Column("MobileNumber", String)
     en_primary_key = Column("EnMobileNumber", String)
     campaign_id = Column("CampaignId", Integer)
     type = Column("Type", String)
