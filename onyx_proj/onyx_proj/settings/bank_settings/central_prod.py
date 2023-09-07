@@ -203,7 +203,7 @@ OTP_APP_USER_MAPPING = {
             "display_name": "Arsheen Gujral",
             "mobile_number": 9990701692
         },
-        "Abhishek Gupta": {
+        "abhishek_gupta": {
             "display_name": "Abhishek Gupta",
             "mobile_number": 9999913305
         },
