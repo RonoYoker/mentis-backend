@@ -935,6 +935,7 @@ def migrate_project_headers(old_project_id,new_project_id):
                     "header_name": header_name,
                     "id": master_id
                 }
+                new_header_mapping[header_name.lower()] = header
         else:
             if old_header['HeaderName'].lower() in new_header_mapping:
                 old_new_project_headers_mapping[old_header["UniqueId"]] = {
@@ -953,6 +954,7 @@ def migrate_project_headers(old_project_id,new_project_id):
                     "header_name": header_name,
                     "id": master_id
                 }
+                new_header_mapping[header_name.lower()] = header
 
     if len(headers_to_be_created) > 0:
         columns = list(headers_to_be_created[0].keys())
