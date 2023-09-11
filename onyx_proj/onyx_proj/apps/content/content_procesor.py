@@ -1190,8 +1190,8 @@ def process_content_variables(old_project,new_project,content_ids,headers_mappin
         variable.pop("Id",None)
         variable["UniqueId"] = new_project[:10] + variable["UniqueId"][10:]
         variable["ContentId"] = new_project[:10] + variable["ContentId"][10:]
-        variable["MasterId"] = headers_mapping[variable["MasterId"]]["id"] if variable["MasterId"]  in headers_mapping else variable["MasterId"]
         variable["ColumnName"] = headers_mapping[variable["MasterId"]]["header_name"] if variable["MasterId"]  in headers_mapping else variable["ColumnName"]
+        variable["MasterId"] = headers_mapping[variable["MasterId"]]["id"] if variable["MasterId"]  in headers_mapping else variable["MasterId"]
         variables_to_be_created.append(variable )
 
 
