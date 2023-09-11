@@ -214,6 +214,10 @@ OTP_APP_USER_MAPPING = {
         "ankur_srivastava": {
             "display_name": "Ankur Srivastava",
             "mobile_number": 7048909209
+        },
+        "vivek_phogat": {
+            "display_name": "Vivek Phogat",
+            "mobile_number": 9999332793
         }
     }
 }
