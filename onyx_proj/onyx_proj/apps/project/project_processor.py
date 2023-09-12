@@ -16,7 +16,7 @@ def fetch_project_data():
     user_type = user_session.user.user_type
     project_list = []
     try:
-        projects_data = CEDProjects().get_all_project_entity_with_active_check()
+        projects_data = CEDProjects().get_all_project_entity_with_active_check(True)
         if user_type != 'Admin':
             projects_permissions = session.get_user_project_permissions()
             for project in projects_data:

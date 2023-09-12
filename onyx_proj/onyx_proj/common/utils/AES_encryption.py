@@ -3,6 +3,8 @@ from Crypto.Cipher import AES
 import base64
 from django.conf import settings
 
+from onyx_proj.exceptions.permission_validation_exception import InternalServerError
+
 
 class AesEncryptDecrypt:
     def __init__(self, key: str = None, iv: str = None, mode=AES.MODE_ECB, block_size: int = 16):
@@ -37,6 +39,8 @@ class AesEncryptDecrypt:
             # now zero pad - just incase
             key = key.zfill(16)
             self.key = key
+        else:
+            raise InternalServerError(reason="Unable to set encryption keys due to invalid mode.")
 
     def encrypt(self, message: str) -> str:
         # convert to bytes

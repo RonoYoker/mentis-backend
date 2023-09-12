@@ -92,7 +92,7 @@ def decode_uuid_str(uuid):
         logger.error(f"method name: {method_name} , Error while decoding UUID")
         push_custom_parameters_to_newrelic({"error": "WHILE_DECODING_UUID"})
         raise Exception
-    logger.debug(f"method name: {method_name} , decrypted_uuid: {decrypted_uuid}")
+
     splitted_decrypted_uuid = decrypted_uuid.split("~")
     campaign_type = splitted_decrypted_uuid[0][0:1]
     primary_key = splitted_decrypted_uuid[0][1: len(splitted_decrypted_uuid[0])]
@@ -137,7 +137,7 @@ def decode_uuid_str(uuid):
     uuid_info['campaignChannel'] = CAMP_TYPE_CHANNEL_DICT.get(uuid_info['type'])
     uuid_info['uuid'] = uuid
     push_custom_parameters_to_newrelic({"stage": "UUID_DECODE_COMPLETED"})
-    log_exit(method_name, uuid_info)
+    log_exit(method_name)
     return uuid_info
 
 
@@ -191,7 +191,8 @@ def save_click_data(uuid_data):
     is_decoded = validate_decoded_uuid(decoded_uuid)
     primary_key = decoded_uuid.get('primaryKey')
     en_primary_key = AesEncryptDecrypt(key=settings.AES_ENCRYPTION_KEY.get("KEY"),
-                                       iv=settings.AES_ENCRYPTION_KEY.get("IV")).encrypt_aes_cbc(primary_key)
+                                       iv=settings.AES_ENCRYPTION_KEY.get("IV"),
+                                       mode=AES.MODE_CBC).encrypt_aes_cbc(primary_key)
     click_data = {
         "primary_key": primary_key,
         "en_primary_key": en_primary_key,
