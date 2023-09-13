@@ -202,6 +202,8 @@ def fetch_test_campaign_validation_status_local(request_data) -> json:
         logger.error(method_name, f"body: {body}")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid request data")
+
+    en_contact = AesEncryptDecrypt(key=settings.AES_ENCRYPTION_KEY["KEY"], iv=settings.AES_ENCRYPTION_KEY["IV"], mode=AES.MODE_CBC).encrypt_aes_cbc(contact)
     response_data = {
         "system_validated": False,
         "campaign_id": None,
@@ -213,7 +215,7 @@ def fetch_test_campaign_validation_status_local(request_data) -> json:
         delivery_data = copy.deepcopy(TEST_CAMPAIGN_RESPONSE_DATA)
         click_data = copy.deepcopy(TEST_CAMPAIGN_RESPONSE_DATA)
 
-        db_result = table().check_campaign_click_and_delivery_data(campaign_id_list, contact, click=url_exist)
+        db_result = table().check_campaign_click_and_delivery_data(campaign_id_list, en_contact, click=url_exist)
 
         if db_result['error'] is True:
             logger.error(method_name, f"Unable to fetch data form db")
