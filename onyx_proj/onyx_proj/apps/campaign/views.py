@@ -21,7 +21,8 @@ from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import 
     get_campaign_data_in_period, validate_campaign, create_campaign_details_in_local_db, \
     get_filtered_recurring_date_time, update_segment_count_and_status_for_campaign, update_campaign_status, filter_list, \
     deactivate_campaign_by_campaign_id, view_campaign_data, save_campaign_details, \
-    approval_action_on_campaign_builder_by_unique_id, get_camps_detail_between_time, get_camps_detail
+    approval_action_on_campaign_builder_by_unique_id, get_camps_detail_between_time, get_camps_detail, \
+    update_campaign_by_campaign_builder_ids_local
 from onyx_proj.apps.campaign.test_campaign.test_campaign_processor import test_campaign_process
 from django.views.decorators.csrf import csrf_exempt
 from onyx_proj.celery_app.tasks import trigger_eng_data
@@ -359,3 +360,16 @@ def update_campaign_query_execution_callback_data(request):
     data = update_campaign_segment_data(request_body)
     status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+def deactivate_campaign_by_campaign_builder_ids_local(request):
+    request_body = json.loads(AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).decrypt(
+        request.body.decode("utf-8")))
+    data = dict(body=request_body, headers=None)
+    # process and save campaign status
+    response = update_campaign_by_campaign_builder_ids_local(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(
+        json.dumps(response, default=str))
+    return HttpResponse(encrypted_data, status=status_code, content_type="application/json")

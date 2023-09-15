@@ -776,6 +776,7 @@ class DataSource(Enum):
     TEAM = "TEAM"
     USER = "USER"
     USER_ROLE = "USER_ROLE"
+    CAMPAIGN_BUILDER_CAMPAIGN = "CAMPAIGN_BUILDER_CAMPAIGN"
 
 
 class SubDataSource(Enum):

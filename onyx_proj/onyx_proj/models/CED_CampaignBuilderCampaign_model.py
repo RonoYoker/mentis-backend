@@ -162,19 +162,21 @@ class CEDCampaignBuilderCampaign:
 
     def get_campaign_data_by_cbc_id(self, campaign_builder_campaign_ids):
         query = f"""select cbc.UniqueId as cbc_id, cbc.EndDateTime as end_date_time, cb.name as campaign_name, 
-        cb.UniqueId as campaign_builder_id, cp.Name as project_name from CED_CampaignBuilderCampaign cbc join 
-        CED_CampaignBuilder cb on cbc.CampaignBuilderId = cb.UniqueId join CED_Segment cs on cs.UniqueId = 
-        cb.SegmentId join CED_Projects cp on cp.UniqueId = cs.ProjectId where cbc.uniqueId in 
-        ({campaign_builder_campaign_ids}) and cbc.EndDateTime > now() and cbc.isActive = 1 and cbc.isDeleted = 0"""
+        cb.UniqueId as campaign_builder_id, cp.UniqueId as project_id, cp.ValidationConfig as validation_config, 
+        cp.Name as project_name from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb on 
+        cbc.CampaignBuilderId = cb.UniqueId join CED_Segment cs on cs.UniqueId = cb.SegmentId join CED_Projects cp 
+        on cp.UniqueId = cs.ProjectId where cbc.UniqueId in ({campaign_builder_campaign_ids}) and cbc.EndDateTime > 
+        now() and cbc.isActive = 1 and cbc.isDeleted = 0"""
         return dict_fetch_query_all(self.curr, query)
 
     def get_campaign_data_by_cb_id(self, campaign_builder_ids):
         query = f"""SELECT cbc.UniqueId as cbc_id, cb.Name as campaign_name, cbc.EndDateTime as end_date_time, 
-        cp.Name as project_name from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb on cb.UniqueId = 
-        cbc.CampaignBuilderId join CED_Segment cs on cs.UniqueId = cb.SegmentId join CED_Projects cp on cp.UniqueId = 
-        cs.ProjectId where cb.UniqueId  in ({campaign_builder_ids}) and cbc.EndDateTime > now() and cb.isActive = 1 
-        and cb.isDeleted = 0 and cbc.isActive = 1 and cbc.isDeleted = 0 and cbc.EndDateTime is not null order by 
-        cbc.EndDateTime desc"""
+        cp.Name as project_name, cp.ValidationConfig as validation_config, cp.UniqueId as project_id from 
+        CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb on cb.UniqueId = cbc.CampaignBuilderId 
+        join CED_Segment cs on cs.UniqueId = cb.SegmentId join CED_Projects cp on cp.UniqueId = cs.ProjectId 
+        where cb.UniqueId  in ({campaign_builder_ids}) and cbc.EndDateTime > now() and cb.isActive = 1 and 
+        cb.isDeleted = 0 and cbc.isActive = 1 and cbc.isDeleted = 0 and cbc.EndDateTime is not null order 
+        by cbc.EndDateTime desc"""
         return dict_fetch_query_all(self.curr, query)
 
     def deactivate_campaigns_from_campaign_builder_campaign(self, campaign_builder_campaign_id):
@@ -320,3 +322,17 @@ class CEDCampaignBuilderCampaign:
     def update_campaign_builder_campaign_s3_status(self, status, unique_id):
         camp_builder_upd_query = f""" Update CED_CampaignBuilderCampaign set S3DataRefreshStatus = '{status}' , S3DataRefreshStartDate = '{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}' where UniqueId = '{unique_id}' """
         return execute_update_query(self.engine, camp_builder_upd_query)
+
+    def update_cbc_history_id(self, unique_id, history_id):
+        filter = [
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        ]
+        update_dict = {"history_id": history_id}
+        return update(self.engine, self.table, filter, update_dict)
+
+    def get_campaign_builder_campaign_details_by_ids_list(self, unique_ids_list):
+        filter_list = [
+            {"column": "unique_id", "value": unique_ids_list, "op": "IN"}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res

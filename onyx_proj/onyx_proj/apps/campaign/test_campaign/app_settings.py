@@ -21,4 +21,6 @@ SEGMENT_STATUS_FOR_TEST_CAMPAIGN = [SegmentStatusKeys.APPROVED.value, SegmentSta
 
 FILE_DATA_API_ENDPOINT = "campaign/local/create_campaign_details/"
 
+DEACTIVATE_CAMP_LOCAL = "campaign/local/deactivate_campaign_by_campaign_builder_ids/"
+
 

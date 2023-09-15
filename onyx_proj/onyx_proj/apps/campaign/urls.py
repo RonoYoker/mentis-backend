@@ -28,5 +28,6 @@ urlpatterns = [
     path("local/create_campaign_details/", views.create_campaign_details),
     path("get_campaigns_detail_between_time/", views.get_campaigns_detail_between_time),
     path("get_campaigns_detail/", views.get_campaigns_detail),
-    path("update_campaign_query_execution_callback_data/", views.update_campaign_query_execution_callback_data)
+    path("update_campaign_query_execution_callback_data/", views.update_campaign_query_execution_callback_data),
+    path("local/deactivate_campaign_by_campaign_builder_ids/", views.deactivate_campaign_by_campaign_builder_ids_local)
 ]

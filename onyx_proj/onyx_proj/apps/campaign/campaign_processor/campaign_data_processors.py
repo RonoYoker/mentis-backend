@@ -13,7 +13,7 @@ import requests
 from django.template.loader import render_to_string
 from Crypto.Cipher import AES
 
-from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT
+from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT, DEACTIVATE_CAMP_LOCAL
 from onyx_proj.apps.otp.app_settings import OtpAppName
 from onyx_proj.apps.otp.otp_processor import check_otp_status
 from onyx_proj.apps.slot_management.data_processor.slots_data_processor import vaildate_campaign_for_scheduling
@@ -43,6 +43,7 @@ from onyx_proj.models.CED_CampaignContentSenderIdMapping_model import CEDCampaig
 from onyx_proj.models.CED_CampaignContentTextualMapping_model import CEDCampaignContentTextualMapping
 from onyx_proj.models.CED_CampaignContentUrlMapping_model import CEDCampaignContentUrlMapping
 from onyx_proj.models.CED_CampaignContentVariableMapping_model import CEDCampaignContentVariableMapping
+from onyx_proj.models.CED_CampaignCreationDetails_model import CEDCampaignCreationDetails
 from onyx_proj.models.CED_CampaignEmailContent_model import CEDCampaignEmailContent
 from onyx_proj.models.CED_CampaignSMSContent_model import CEDCampaignSMSContent
 from onyx_proj.models.CED_CampaignContentSenderIdMapping_model import CEDCampaignContentSenderIdMapping
@@ -754,16 +755,28 @@ def deactivate_campaign_by_campaign_builder_id(campaign_builder_id, user_name):
     for cbc_data in campaign_details:
         cbc_id_list.append(cbc_data.get("cbc_id"))
 
-    project_name = campaign_details[0].get("project_name")
-    local_api_result = deactivate_campaign_from_local(project_name, cbc_id_list)
-    if not local_api_result.get("status"):
-        return dict(status=False, message=local_api_result.get("message"))
+    validation_conf = json.loads(campaign_details[0].get("validation_config"))
+    CAMPAIGN_DEACTIVATE_VIA_ONYX_LOCAL = validation_conf.get("CAMPAIGN_DEACTIVATE_VIA_ONYX_LOCAL", False)
+
+    if CAMPAIGN_DEACTIVATE_VIA_ONYX_LOCAL:
+        project_id = campaign_details[0].get("project_id")
+        req_map = {"campaign_builder_campaign_ids": cbc_id_list}
+        request_response = RequestClient().post_onyx_local_api_request(req_map, settings.ONYX_LOCAL_DOMAIN[project_id],
+                                                                       DEACTIVATE_CAMP_LOCAL)
+        if not request_response.get("success"):
+            return dict(status=False, message="Unable to deactivate campaign from local tables")
+
+    elif not CAMPAIGN_DEACTIVATE_VIA_ONYX_LOCAL:
+        project_name = campaign_details[0].get("project_name")
+        local_api_result = deactivate_campaign_from_local(project_name, cbc_id_list)
+        if not local_api_result.get("status"):
+            return dict(status=False, message=local_api_result.get("message"))
 
     deactivate_response = CEDCampaignBuilder().deactivate_campaigns_from_campaign_builder(cb_ids)
     if not deactivate_response.get("status"):
         return dict(status=False, message=deactivate_response.get("message"))
 
-    response = prepare_and_save_cb_history_data(cb_ids, user_name)
+    response = prepare_and_save_cb_history_data(campaign_builder_id, user_name)
     if not response.get("status"):
         return dict(status=False, message=response.get("message"))
 
@@ -790,16 +803,17 @@ def deactivate_campaign_by_campaign_builder_campaign_id(campaign_builder_campaig
     if len(campaign_details) == 0:
         return dict(status=False, message="No Campaign Data Found or campaign executed")
 
-    project_name = campaign_details[0].get("project_name")
-
-    local_api_result = deactivate_campaign_from_local(project_name, campaign_builder_campaign_ids)
-    if not local_api_result.get("status"):
-        return dict(status=False, message=local_api_result.get("message"))
+    project_id = campaign_details[0].get("project_id")
+    req_map = {"campaign_builder_campaign_ids": campaign_builder_campaign_ids}
+    request_response = RequestClient().post_onyx_local_api_request(req_map, settings.ONYX_LOCAL_DOMAIN[project_id],
+                                                               DEACTIVATE_CAMP_LOCAL)
+    if not request_response.get("success"):
+        return dict(status=False, message="Unable to deactivate campaign from local tables")
 
     deactivate_response = CEDCampaignBuilderCampaign().deactivate_campaigns_from_campaign_builder_campaign(cbc_ids)
     if not deactivate_response.get("status"):
         return dict(status=False, message=deactivate_response.get("message"))
-    response = prepare_and_save_cbc_history_data(cbc_ids, user_name)
+    response = prepare_and_save_cbc_history_data(campaign_builder_campaign_ids, user_name)
     if not response.get("status"):
         return dict(status=False, message=response.get("message"))
 
@@ -822,74 +836,74 @@ def deactivate_campaign_from_local(project_name, cbc_id_list):
 
 
 def prepare_and_save_cb_history_data(campaign_builder_ids, user_name):
-    history_object = CEDCampaignBuilder().get_cb_details_by_cb_id(campaign_builder_ids)
+    history_object = CEDCampaignBuilder().get_campaign_builder_details_by_ids_list(campaign_builder_ids)
     if len(history_object) == 0:
         return dict(status=False, message="cb data is empty")
-    activity_logs_data = []
-    for his_obj in history_object:
-        his_obj["CampaignBuilderId"] = his_obj.pop("UniqueId")
-        his_obj["UniqueId"] = his_obj.pop("HistoryId")
-        comment = f"<strong>CampaignBuilder {his_obj.get('Id')} </strong> is Deactivated by {user_name}"
-        his_obj["Comment"] = comment
-        activity_log_entity = CED_ActivityLog({
-            "unique_id": uuid.uuid4().hex,
-            "created_by": user_name,
-            "updated_by": user_name,
-            "data_source": DataSource.CAMPAIGN_BUILDER.value,
-            "sub_data_source": SubDataSource.CAMPAIGN_BUILDER.value,
-            "data_source_id": his_obj["CampaignBuilderId"],
-            "comment": comment,
-            "history_table_id": his_obj["UniqueId"],
-            "filter_id": his_obj["CampaignBuilderId"]
-        })
-        activity_logs_data.append(activity_log_entity)
-        del his_obj['Id']
-
     try:
-        response = CED_HISCampaignBuilder().save_history_data(history_object)
-        CEDActivityLog().save_activity_logs_bulk(activity_logs_data)
+        for his_obj in history_object:
+            comment = f"<strong>CampaignBuilder {his_obj.get('id')} </strong> is Deactivated by {user_name}"
+            campaign_builder_his_entity = CED_HIS_CampaignBuilder(his_obj)
+            campaign_builder_his_entity.id = None
+            campaign_builder_his_entity.campaign_builder_id = his_obj.get("unique_id")
+            campaign_builder_his_entity.unique_id = uuid.uuid4().hex
+            campaign_builder_his_entity.comment = comment
+
+            activity_log_entity = CED_ActivityLog()
+            activity_log_entity.data_source = DataSource.CAMPAIGN_BUILDER.value,
+            activity_log_entity.sub_data_source = SubDataSource.CAMPAIGN_BUILDER.value,
+            activity_log_entity.data_source_id = his_obj.get("unique_id")
+            activity_log_entity.comment = comment
+            activity_log_entity.filter_id = his_obj["segment_id"]
+            activity_log_entity.history_table_id = his_obj["unique_id"]
+            activity_log_entity.unique_id = uuid.uuid4().hex
+            activity_log_entity.created_by = user_name
+            activity_log_entity.updated_by = user_name
+
+            CEDActivityLog().save_or_update_activity_log(activity_log_entity)
+            CEDHIS_CampaignBuilder().save_or_update_his_campaign_builder(campaign_builder_his_entity)
+            CEDCampaignBuilder().update_campaign_builder_history_id(his_obj.get("unique_id"),
+                                                                    campaign_builder_his_entity.unique_id)
+            return dict(status=True, result=TAG_SUCCESS)
     except Exception as ex:
-        return dict(status=False, message=str(ex))
-
-    if not response:
+        logger.debug(
+            f"prepare_and_save_cb_history_data :: campaign_builder_ids: {campaign_builder_ids}, Exception: {str(ex)}")
         return dict(status=False, message="Error while saving the history data")
-    else:
-        return dict(status=True)
 
 
-def prepare_and_save_cbc_history_data(campaign_builder_campaign_id, user_name):
-    history_object = CEDCampaignBuilderCampaign().get_cbc_details_by_cbc_id(campaign_builder_campaign_id)
+def prepare_and_save_cbc_history_data(campaign_builder_campaign_ids, user_name):
+    history_object = (CEDCampaignBuilderCampaign().
+                      get_campaign_builder_campaign_details_by_ids_list(campaign_builder_campaign_ids))
     if len(history_object) == 0:
         return dict(status_code=False, message="cbc data is empty")
-    activity_logs_data = []
-    for his_obj in history_object:
-        his_obj["CampaignBuilderCampaignId"] = his_obj.pop("UniqueId")
-        his_obj["UniqueId"] = his_obj.pop("HistoryId")
-        comment = f"<strong>CampaignBuilderCampaign {his_obj.get('Id')} </strong> is Deactivated by {user_name}"
-        his_obj["Comment"] = comment
-        activity_log_entity = CED_ActivityLog({
-            "unique_id": uuid.uuid4().hex,
-            "created_by": user_name,
-            "updated_by": user_name,
-            "data_source": DataSource.CAMPAIGN_BUILDER.value,
-            "sub_data_source": SubDataSource.CB_CAMPAIGN.value,
-            "data_source_id": his_obj["CampaignBuilderCampaignId"],
-            "comment": comment,
-            "history_table_id": his_obj["UniqueId"],
-            "filter_id": his_obj["CampaignBuilderCampaignId"]
-        })
-        activity_logs_data.append(activity_log_entity)
-        del his_obj['Id']
     try:
-        response = CEDHIS_CampaignBuilderCampaign().save_history_data(history_object)
-        CEDActivityLog().save_activity_logs_bulk(activity_logs_data)
-    except Exception as ex:
-        return dict(status=False, message=str(ex))
+        for his_obj in history_object:
+            comment = f"<strong>CampaignBuilderCampaign {his_obj.get('id')} </strong> is Deactivated by {user_name}"
+            cbc_his_entity = CED_HIS_CampaignBuilderCampaign(his_obj)
+            cbc_his_entity.id = None
+            cbc_his_entity.campaign_builder_campaign_id = his_obj.get("unique_id")
+            cbc_his_entity.unique_id = uuid.uuid4().hex
+            cbc_his_entity.comment = comment
 
-    if not response:
+            activity_log_entity = CED_ActivityLog()
+            activity_log_entity.data_source = DataSource.CAMPAIGN_BUILDER.value,
+            activity_log_entity.sub_data_source = SubDataSource.CB_CAMPAIGN.value,
+            activity_log_entity.data_source_id = his_obj.get("unique_id")
+            activity_log_entity.comment = comment
+            activity_log_entity.filter_id = his_obj.get("unique_id")
+            activity_log_entity.history_table_id = cbc_his_entity.unique_id
+            activity_log_entity.unique_id = uuid.uuid4().hex
+            activity_log_entity.created_by = user_name
+            activity_log_entity.updated_by = user_name
+
+            CEDActivityLog().save_or_update_activity_log(activity_log_entity)
+            CEDHIS_CampaignBuilderCampaign().save_or_update_campaign_builder_history(cbc_his_entity)
+            CEDCampaignBuilderCampaign().update_cbc_history_id(his_obj.get("unique_id"),
+                                                                    cbc_his_entity.unique_id)
+            return dict(status=True, result=TAG_SUCCESS)
+    except Exception as ex:
+        logger.debug(f"prepare_and_save_cb_history_data :: campaign_builder_campaign_id:"
+                     f" {campaign_builder_campaign_ids}, Exception: {str(ex)}")
         return dict(status=False, message="Error while saving the history data")
-    else:
-        return dict(status=True)
 
 
 def send_status_email(campaign_details):
@@ -3152,3 +3166,20 @@ def get_camps_detail(request_body):
                     details_message="Campaign data not found for the given parameters.")
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=campaign_data)
+
+
+def update_campaign_by_campaign_builder_ids_local(request_data):
+    method_name = "update_campaign_by_campaign_builder_ids_local"
+    logger.info(f"Trace entry, method name: {method_name}, request_data: {request_data}")
+    body = request_data.get("body", {})
+    cbc_id_list = body.get("campaign_builder_campaign_ids")
+
+    if len(cbc_id_list) <= 0:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Campaign builder campaign Id not present.")
+
+    update_resp = CEDCampaignCreationDetails().deactivate_camp_using_cbc_id_local(cbc_id_list)
+    logger.debug(f"method name: {method_name} , updated rowcount: {update_resp}")
+    if not update_resp.get("success"):
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE)
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)

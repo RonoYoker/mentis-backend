@@ -205,3 +205,10 @@ class CEDCampaignBuilder:
 
     def update_campaign_builder(self, where_dict: dict, update_dict: dict):
         return update_row(cursor=self.curr, table=self.table_name, q_data=where_dict, u_data=update_dict)
+
+    def get_campaign_builder_details_by_ids_list(self, unique_ids_list):
+        filter_list = [
+            {"column": "unique_id", "value": unique_ids_list, "op": "IN"}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
