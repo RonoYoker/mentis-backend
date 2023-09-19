@@ -537,9 +537,9 @@ def generate_queries_for_async_task(sql_query: str, project_id):
     util to create two queries, one to fetch headers and the other to fetch count for the segment
     """
     count_sql_query = f"SELECT COUNT(*) AS row_count FROM ({sql_query}) derived_table"
-    limit_sql_query = f"{sql_query} ORDER BY AccountNumber DESC LIMIT 50"
+    limit_sql_query = f"{sql_query} ORDER BY AccountNumber DESC LIMIT 10"
     if project_id in settings.USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN:
-        limit_sql_query = f"{sql_query} LIMIT 50"
+        limit_sql_query = f"{sql_query} LIMIT 10"
     return [dict(query=count_sql_query, response_format="json", query_key=QueryKeys.SEGMENT_COUNT.value),
             dict(query=limit_sql_query, response_format="json", query_key=QueryKeys.SEGMENT_HEADERS_AND_DATA.value)]
 

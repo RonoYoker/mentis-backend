@@ -803,12 +803,27 @@ def deactivate_campaign_by_campaign_builder_campaign_id(campaign_builder_campaig
     if len(campaign_details) == 0:
         return dict(status=False, message="No Campaign Data Found or campaign executed")
 
-    project_id = campaign_details[0].get("project_id")
-    req_map = {"campaign_builder_campaign_ids": campaign_builder_campaign_ids}
-    request_response = RequestClient().post_onyx_local_api_request(req_map, settings.ONYX_LOCAL_DOMAIN[project_id],
-                                                               DEACTIVATE_CAMP_LOCAL)
-    if not request_response.get("success"):
-        return dict(status=False, message="Unable to deactivate campaign from local tables")
+    validation_conf = json.loads(campaign_details[0].get("validation_config"))
+    CAMPAIGN_DEACTIVATE_VIA_ONYX_LOCAL = validation_conf.get("CAMPAIGN_DEACTIVATE_VIA_ONYX_LOCAL", False)
+
+    if CAMPAIGN_DEACTIVATE_VIA_ONYX_LOCAL:
+        project_id = campaign_details[0].get("project_id")
+        req_map = {"campaign_builder_campaign_ids": campaign_builder_campaign_ids}
+        logger.debug(
+            f"deactivate_campaign_by_campaign_builder_campaign_id onyx local :: req_map: {req_map}")
+        request_response = RequestClient().post_onyx_local_api_request(req_map, settings.ONYX_LOCAL_DOMAIN[project_id],
+                                                                       DEACTIVATE_CAMP_LOCAL)
+        if not request_response.get("success"):
+            return dict(status=False, message="Unable to deactivate campaign from local tables")
+
+    elif not CAMPAIGN_DEACTIVATE_VIA_ONYX_LOCAL:
+        project_name = campaign_details[0].get("project_name")
+        logger.debug(
+            f"deactivate_campaign_by_campaign_builder_campaign_id hyp local :: campaign_builder_campaign_ids: {campaign_builder_campaign_ids}")
+        local_api_result = deactivate_campaign_from_local(project_name, campaign_builder_campaign_ids)
+
+        if not local_api_result.get("status"):
+            return dict(status=False, message=local_api_result.get("message"))
 
     deactivate_response = CEDCampaignBuilderCampaign().deactivate_campaigns_from_campaign_builder_campaign(cbc_ids)
     if not deactivate_response.get("status"):

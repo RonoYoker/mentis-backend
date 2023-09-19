@@ -119,13 +119,13 @@ def fetch_test_campaign_data(request_data) -> json:
     if validity_flag is False:
         # initiate async flow for data population
 
-        queries_data = [dict(query=sql_query + " ORDER BY AccountNumber DESC LIMIT 50", response_format="json",
+        queries_data = [dict(query=sql_query + " ORDER BY AccountNumber DESC LIMIT 10", response_format="json",
                              query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
                         dict(query=count_sql_query, response_format="json",
                              query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)]
 
         if segment_data.get("ProjectId") in settings.USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN:
-            queries_data = [dict(query=sql_query + " LIMIT 50", response_format="json",
+            queries_data = [dict(query=sql_query + " LIMIT 10", response_format="json",
                                  query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
                             dict(query=count_sql_query, response_format="json",
                                  query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)]
