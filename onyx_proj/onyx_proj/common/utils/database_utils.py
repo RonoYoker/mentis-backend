@@ -53,6 +53,8 @@ def fetch_all_without_args(engine, query):
                 raise TimeoutError
             else:
                 return {"error": True, "exception": e}
+        except TimeoutError as tx:
+            raise tx
         except Exception as ex:
             logging.error(f"Error mssg :: {ex}")
             return {"error": True, "exception": e}
