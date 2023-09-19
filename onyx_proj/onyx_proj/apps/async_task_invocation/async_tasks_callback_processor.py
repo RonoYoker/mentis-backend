@@ -143,7 +143,8 @@ def hyperion_campaign_query_execution_callback_processor(parent_id: str, url: st
             response = json.loads(task["Response"])
         request_node = {
             "response": response,
-            "response_format": task["ResponseFormat"], "status": task["Status"],
+            "response_format": task["ResponseFormat"],
+            "status": task["Status"],
             "error_message": task["ErrorMessage"]
         }
         request_payload["tasks"][task["QueryKey"]] = request_node

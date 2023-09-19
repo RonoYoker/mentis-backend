@@ -7,6 +7,8 @@ from django.views.decorators.csrf import csrf_exempt
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.apps.async_task_invocation.async_tasks_processor import AsyncQueryExecution
 
+import logging
+logger = logging.getLogger("apps")
 
 @csrf_exempt
 # @user_authentication
@@ -18,4 +20,3 @@ def invoke_async_query_execution(request):
     encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(
         json.dumps(response, default=str))
     return HttpResponse(encrypted_data, status=status_code, content_type="application/json")
-

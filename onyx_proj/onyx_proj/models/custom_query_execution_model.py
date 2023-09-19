@@ -1,7 +1,7 @@
 from onyx_proj.common.utils.database_utils import *
 import logging
-
 from onyx_proj.common.utils.sql_alchemy_engine import SqlAlchemyEngine
+from onyx_proj.exceptions.permission_validation_exception import QueryTimeoutException
 
 logger = logging.getLogger("app")
 
@@ -25,3 +25,16 @@ class CustomQueryExecution:
         logger.debug(f"CustomQueryExecution :: query: {query}")
         # query = query.replace("%", "%%")
         return execute_write(self.curr, query,args)
+
+
+def execute_custom_query(db_conf_key=None, query=None):
+    if db_conf_key is None or query is None:
+        raise Exception
+
+    try:
+        custom_query_resp = CustomQueryExecution(db_conf_key=db_conf_key).execute_query(query)
+    except TimeoutError:
+        logger.error(f"Query Execution timed out")
+        raise QueryTimeoutException
+
+    return custom_query_resp

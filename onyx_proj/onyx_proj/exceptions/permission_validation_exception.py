@@ -33,3 +33,6 @@ class OtpRequiredException(Exception):
     def __init__(self, **kwargs):
         self.method_name = kwargs.get("method_name")
         self.data = kwargs.get("data")
+
+class QueryTimeoutException(Exception):
+    pass

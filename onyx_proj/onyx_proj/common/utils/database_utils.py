@@ -2,7 +2,7 @@ from django.db import connections
 from sqlalchemy import text
 import time
 import logging
-
+from onyx_proj.exceptions.permission_validation_exception import QueryTimeoutException
 
 def mysql_connect(database):
     cur = connections[database].cursor()
@@ -47,7 +47,13 @@ def fetch_all_without_args(engine, query):
         logging.error({
             'error': 'mysql thrown exception while fetching dict one.', 'exception': e.__cause__, 'logkey': 'mysql_helper'
         })
-        return {"error": True, "exception": e}
+        try:
+            if e.orig.args[0] == 2013:
+                raise TimeoutError
+            else:
+                return {"error": True, "exception": e}
+        except Exception as ex:
+            return {"error": True, "exception": e}
 
 
 def execute_output_file_query(engine, query):

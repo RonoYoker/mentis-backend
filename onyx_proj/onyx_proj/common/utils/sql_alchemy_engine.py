@@ -25,10 +25,10 @@ class SqlAlchemyEngine(object, metaclass=Singleton):
     def get_connection(self):
         if self.database not in self.engines:
             engine = create_engine(
-                f"mysql://{self.user}:%s@"
+                f"mysql+pymysql://{self.user}:%s@"
                 f"{settings.DATABASES[self.database]['HOST']}:{settings.DATABASES[self.database]['PORT']}/{settings.DATABASES[self.database]['NAME']}?charset=utf8mb4" % quote(
                     f"{self.password}"),
-                echo=False, pool_size=10, max_overflow=20, pool_pre_ping=True, pool_recycle=3600)
+                echo=False, pool_size=10, max_overflow=20, pool_pre_ping=True, pool_recycle=3600, connect_args={'read_timeout': 1200})
             self.engines[self.database] = engine
         return self.engines[self.database]
 

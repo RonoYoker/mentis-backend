@@ -3,12 +3,13 @@ import sys
 import time
 from celery import task
 from celery.exceptions import SoftTimeLimitExceeded
+from onyx_proj.exceptions.permission_validation_exception import QueryTimeoutException
 
 from onyx_proj.apps.campaign.campaign_engagement_data.engagement_data_processor import \
     prepare_and_update_campaign_engagement_data
 from onyx_proj.models.CED_Projects_local import CED_Projects_local
 from onyx_proj.common.utils.newrelic_helpers import push_custom_parameters_to_newrelic
-from onyx_proj.models.custom_query_execution_model import CustomQueryExecution
+from onyx_proj.models.custom_query_execution_model import CustomQueryExecution, execute_custom_query
 from onyx_proj.apps.async_task_invocation.app_settings import ASYNC_QUERY_EXECUTOR_CALLBACK_KEY_PROCESSOR_MAPPING, \
     FETCH_TASK_DATA_QUERY, ASYNC_TASK_CALLBACK_PATH
 from onyx_proj.apps.async_task_invocation.async_tasks_callback_processor import *
@@ -20,7 +21,7 @@ logger = logging.getLogger("celery_master")
 TMP_PATH = "/tmp/"
 
 
-@task(soft_time_limit=1500)
+@task
 def query_executor(task_id: str):
     """
     task that executes queries in async flow
@@ -51,7 +52,14 @@ def query_executor(task_id: str):
 
         processed_query = task_data["Query"] + " LIMIT 1" if task_data["ResponseFormat"] == "s3_output" else task_data["Query"]
         init_time = time.time()
-        query_response = CustomQueryExecution(db_conf_key=db_reader_config_key).execute_query(processed_query)
+        try:
+            query_response = execute_custom_query(db_conf_key=db_reader_config_key, query=processed_query)
+        except QueryTimeoutException:
+            logger.error(f"Query Execution timed out for parent ID : {task_id}")
+            raise QueryTimeoutException
+        except Exception as ex:
+            logger.error(f"Query Execution other exception captured : {ex}")
+            raise Exception
         query_execution_time = time.time() - init_time
         logger.info(f"query_executor :: Time taken to execute query for task_id: {task_id} is {query_execution_time}.")
         task_data["QueryExecutionTime"] = query_execution_time
@@ -143,7 +151,7 @@ def query_executor(task_id: str):
 
         # invoke async task
         callback_resolver.apply_async(kwargs={"parent_id": task_data["ParentId"]}, queue="celery_callback_resolver")
-    except SoftTimeLimitExceeded:
+    except QueryTimeoutException:
         # if timeout is exceeded mark task as TIMEOUT
         logger.error(f"query_executor :: Query executor task time out reached for task_id: {task_id}")
         task_data = CustomQueryExecution().execute_query(FETCH_TASK_DATA_QUERY.replace("{#task_id#}", task_id))["result"][0]
@@ -152,6 +160,19 @@ def query_executor(task_id: str):
         db_resp = CEDQueryExecutionJob().update_task_status(AsyncJobStatus.TIMEOUT.value, task_id)
         if db_resp.get("exception", None) is None and db_resp.get("row_count", 0) > 0:
             logger.info(f"query_executor :: Updated status to {AsyncJobStatus.TIMEOUT.value} for task_id: {task_data['TaskId']}.")
+        else:
+            logger.error(f"query_executor :: Unable to update status for task_id: {task_data['TaskId']}.")
+            return
+
+        callback_resolver.apply_async(kwargs={"parent_id": task_data["ParentId"]}, queue="celery_callback_resolver")
+
+    except Exception as exp:
+        task_data = CustomQueryExecution().execute_query(FETCH_TASK_DATA_QUERY.replace("{#task_id#}", task_id))["result"][0]
+
+        # update status in CED_QueryExecutionJob table to ERROR
+        db_resp = CEDQueryExecutionJob().update_task_status(AsyncJobStatus.ERROR.value, task_id)
+        if db_resp.get("exception", None) is None and db_resp.get("row_count", 0) > 0:
+            logger.info(f"query_executor :: Updated status to {AsyncJobStatus.ERROR.value} for task_id: {task_data['TaskId']}.")
         else:
             logger.error(f"query_executor :: Unable to update status for task_id: {task_data['TaskId']}.")
             return

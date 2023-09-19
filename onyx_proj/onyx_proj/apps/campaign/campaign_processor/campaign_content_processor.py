@@ -151,9 +151,13 @@ def update_campaign_segment_data(request_data) -> json:
         elif len(recurring_details_db_resp) == 1:
             recurring_details_json = json.loads(recurring_details_db_resp[0]["RecurringDetail"])
             if recurring_details_json.get("is_auto_time_split", False) is True:
-                if task_data["status"] in [AsyncJobStatus.ERROR.value, AsyncJobStatus.TIMEOUT.value]:
+                if task_data["status"] in [AsyncJobStatus.ERROR.value]:
                     update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
                                        S3DataRefreshStatus="ERROR")
+                elif task_data["status"] in [AsyncJobStatus.TIMEOUT.value]:
+                    logger.info(f'Updating Timeout error status, cbc ID : {campaign_builder_campaign_id}')
+                    update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
+                                       S3DataRefreshStatus="TIMEOUT")
                 else:
                     update_dict = dict(S3Path=task_data["response"]["s3_url"],
                                        S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
@@ -174,8 +178,11 @@ def update_campaign_segment_data(request_data) -> json:
 
 
 def update_cbc_instance_for_s3_callback(task_data: dict, where_dict: dict, campaign_builder_campaign_id: str) -> dict:
-    if task_data["status"] in [AsyncJobStatus.ERROR.value, AsyncJobStatus.TIMEOUT.value]:
+    if task_data["status"] in [AsyncJobStatus.ERROR.value]:
         update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()), S3DataRefreshStatus="ERROR")
+    elif task_data["status"] in [AsyncJobStatus.TIMEOUT.value]:
+        logger.info(f'Updating Timeout error status, cbc ID : {campaign_builder_campaign_id}')
+        update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()), S3DataRefreshStatus="TIMEOUT")
     else:
         update_dict = dict(S3Path=task_data["response"]["s3_url"], S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
                            S3DataRefreshStatus="SUCCESS")
