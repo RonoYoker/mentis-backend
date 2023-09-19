@@ -48,6 +48,7 @@ def fetch_all_without_args(engine, query):
             'error': 'mysql thrown exception while fetching dict one.', 'exception': e.__cause__, 'logkey': 'mysql_helper'
         })
         try:
+            logging.error(f"Error arguments :: {e.__cause__}")
             if e.orig.args[0] == 2013:
                 raise TimeoutError
             else:
