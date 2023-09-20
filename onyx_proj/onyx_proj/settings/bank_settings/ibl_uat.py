@@ -48,3 +48,4 @@ AWS_ACCOUNTID = INFRA_CONF["AWS_ACCOUNTID"]
 SNS_SEGMENT_EVALUATOR = "TEST_HYP_DK_Campaign_Segment_Evaluator"
 QUERY_EXECUTION_JOB_BUCKET = "ibl-uat-async-query-execution-response"
 
+MKT_CLICKDATA_FLAG = True

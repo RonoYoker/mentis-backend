@@ -68,3 +68,5 @@ AWS_REGION = "ap-south-1"
 AWS_ACCOUNTID = INFRA_CONF["AWS_ACCOUNTID"]
 SNS_SEGMENT_EVALUATOR = "TEST_HYP_DK_Campaign_Segment_Evaluator"
 QUERY_EXECUTION_JOB_BUCKET = "ybl-uat-async-query-execution-response"
+
+MKT_CLICKDATA_FLAG = False

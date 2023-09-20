@@ -45,3 +45,5 @@ AWS_REGION = "ap-south-1"
 AWS_ACCOUNTID = 519499429845
 SNS_SEGMENT_EVALUATOR = "PROD_HYP_DK_Campaign_Segment_Evaluator"
 QUERY_EXECUTION_JOB_BUCKET = "ibl-prod-async-query-execution-response"
+
+MKT_CLICKDATA_FLAG = True

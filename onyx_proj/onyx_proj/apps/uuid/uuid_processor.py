@@ -16,6 +16,10 @@ from onyx_proj.common.utils.newrelic_helpers import push_custom_parameters_to_ne
 from onyx_proj.models.CED_EmailClickData import CEDEmailClickData
 from onyx_proj.models.CED_SMSClickData import CEDSMSClickData
 from onyx_proj.models.CreditasCampaignEngine import CED_SMSClickData, CED_EmailClickData
+from onyx_proj.models.MKT_EmailClickData import MKTEmailClickData
+from onyx_proj.models.MKT_SMSClickData import MKTSMSClickData
+from onyx_proj.orm_models.MKT_EmailClickData_model import MKT_EmailClickData
+from onyx_proj.orm_models.MKT_SMSClickData_model import MKT_SMSClickData
 
 logger = logging.getLogger("apps")
 
@@ -136,7 +140,7 @@ def decode_uuid_str(uuid):
     uuid_info['type'] = CAMP_TYPE_DICT.get(campaign_type, "NOT_FOUND")
     uuid_info['campaignChannel'] = CAMP_TYPE_CHANNEL_DICT.get(uuid_info['type'])
     uuid_info['uuid'] = uuid
-    push_custom_parameters_to_newrelic({"stage": "UUID_DECODE_COMPLETED"})
+    push_custom_parameters_to_newrelic({"stage": "UUID_DECODE_COMPLETED", "channel": uuid_info['campaignChannel']})
     log_exit(method_name)
     return uuid_info
 
@@ -172,7 +176,12 @@ def validate_decoded_uuid(decoded_uuid):
 def save_click_data(uuid_data):
     method_name = "save_click_data"
     log_entry(method_name, uuid_data)
-    push_custom_parameters_to_newrelic({"stage": "SAVE_CLICK_DATA_STARTED"})
+    push_custom_parameters_to_newrelic({
+        "transaction_name": "SAVE_CLICK_DATA_STARTED",
+        "uuid_data": uuid_data,
+        "stage": "START",
+        "txn_init_time": datetime.datetime.timestamp(datetime.datetime.utcnow())
+    })
 
     if uuid_data is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -209,12 +218,19 @@ def save_click_data(uuid_data):
         if not resp.get("status"):
             logger.error(f"method name: {method_name} , Error while inserting in CED_EmailClickData")
             push_custom_parameters_to_newrelic({"error": "INSERTING_IN_CED_EmailClickData"})
+        if settings.MKT_CLICKDATA_FLAG:
+            mkt_click_data_entity = MKT_EmailClickData(click_data)
+            resp = MKTEmailClickData().save_email_click_data_entity(mkt_click_data_entity)
     else:
         click_data_entity = CED_SMSClickData(click_data)
         resp = CEDSMSClickData().save_sms_click_data_entity(click_data_entity)
         if not resp.get("status"):
             logger.error(f"method name: {method_name} , Error while inserting in CED_SMSClickData")
             push_custom_parameters_to_newrelic({"error": "INSERTING_IN_CED_SMSClickData"})
+        if settings.MKT_CLICKDATA_FLAG:
+            click_data_entity = MKT_SMSClickData(click_data)
+            resp = MKTSMSClickData().save_sms_click_data_entity(click_data_entity)
+
     push_custom_parameters_to_newrelic({"stage": "SAVE_CLICK_DATA_COMPLETED", "is_decoded_keys": is_decoded})
     log_exit(method_name, resp)
 

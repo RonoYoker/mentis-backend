@@ -49,3 +49,4 @@ SNS_SEGMENT_EVALUATOR = "TEST_HYP_DK_Campaign_Segment_Evaluator"
 QUERY_EXECUTION_JOB_BUCKET = "abl-uat-async-query-execution-response"
 
 
+MKT_CLICKDATA_FLAG = False

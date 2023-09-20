@@ -68,3 +68,5 @@ QUERY_EXECUTION_JOB_BUCKET = "ybl-prod-async-query-execution-response"
 SNS_SEGMENT_EVALUATOR = "PROD_HYP_DK_Campaign_Segment_Evaluator"
 AWS_REGION = "ap-south-1"
 AWS_ACCOUNTID = 471070473108
+
+MKT_CLICKDATA_FLAG = False

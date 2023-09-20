@@ -48,4 +48,5 @@ AWS_ACCOUNTID = INFRA_CONF["AWS_ACCOUNTID"]
 SNS_SEGMENT_EVALUATOR = "PROD_HYP_DK_Campaign_Segment_Evaluator"
 QUERY_EXECUTION_JOB_BUCKET = "abl-prod-async-query-execution-response"
 
+MKT_CLICKDATA_FLAG = False
 
