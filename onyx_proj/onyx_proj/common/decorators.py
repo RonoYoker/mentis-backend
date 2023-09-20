@@ -98,7 +98,7 @@ def ReqEncryptDecrypt(input_app=None, output_app=None):
             if output_app is not None:
                 key = ''.join(random.choices(string.ascii_lowercase + string.digits, k=32))
                 iv = ''.join(random.choices(string.ascii_lowercase + string.digits, k=16))
-                encrypted_data = AesEncryptDecrypt(key=key, iv=iv, mode=AES.MODE_CBC).encrypt_aes_cbc(json.dumps(result))
+                encrypted_data = AesEncryptDecrypt(key=key, iv=iv, mode=AES.MODE_CBC).encrypt_aes_cbc(json.dumps(result, default=str))
                 encrypted_key = RsaEncrypt(output_app).rsa_encrypt_data(key)
                 encrypted_iv = RsaEncrypt(output_app).rsa_encrypt_data(iv)
                 result = {

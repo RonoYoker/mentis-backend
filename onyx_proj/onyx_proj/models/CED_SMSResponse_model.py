@@ -1,5 +1,7 @@
 from onyx_proj.common.mysql_helper import *
 from django.conf import settings
+
+from onyx_proj.common.sqlalchemy_helper import execute_query, sql_alchemy_connect
 from onyx_proj.common.utils.database_utils import *
 import logging
 from onyx_proj.common.utils.sql_alchemy_engine import SqlAlchemyEngine
@@ -11,6 +13,7 @@ class CEDSMSResponse:
         self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_SMSResponse"
         self.curr = SqlAlchemyEngine(database=self.database).get_connection()
+        self.engine = sql_alchemy_connect(self.database)
 
     def check_campaign_click_and_delivery_data(self, campaign_ids: [], mobile_number, click=False):
         method_name = "check_campaign_click_and_delivery_data"
@@ -21,3 +24,8 @@ class CEDSMSResponse:
             query = f"SELECT sr.CampaignId, sr.ShortUUID, sr.Status, sr.UpdateDate, st.UpdationDate from CED_SMSResponse sr left join CED_SMSClickTracker st on sr.ShortUUID = st.ShortUUID where sr.TestCampaign = 1 and sr.CampaignId in {campaign_id_tuple} and sr.EnMobileNumber = '{mobile_number}' ORDER BY sr.CampaignId DESC LIMIT 1"
         logger.info(f"method: {method_name}, Executing query :{query}")
         return fetch_all(self.curr, query)
+
+    def fetch_sms_campaign_data(self, account_id: str, start_date: str, end_date:str):
+        query = f"SELECT smsr.EnAccountId as account_id, smsr.Time as delivery_time, smsr.EnMobileNumber as mobile_number, ctMap.EnContentText as content_text, smsr.Uuid as uuid, smsr.Status as delivery_status FROM CED_SMSResponse smsr LEFT JOIN CED_CampaignContentMapping ctMap ON smsr.CustomerReferenceId = ctMap.CustomerReferenceId WHERE smsr.EnAccountId = '{account_id}' AND smsr.Time BETWEEN '{start_date}' AND '{end_date}' AND smsr.TestCampaign != 1"
+        result = execute_query(self.engine, query)
+        return result

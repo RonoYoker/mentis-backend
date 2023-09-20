@@ -85,3 +85,6 @@ FETCH_CONTENT_MODE_FILTERS = {
                     {"column": "status", "value": [CampaignContentStatus.APPROVED.value], "op": "in"}]
     }
 }
+
+
+CAMPAIGN_CONTENT_DATA_CHANNEL_LIST = ["SMS", "WHATSAPP", "EMAIL"]

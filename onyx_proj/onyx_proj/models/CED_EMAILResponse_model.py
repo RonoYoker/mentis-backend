@@ -1,5 +1,7 @@
 from onyx_proj.common.mysql_helper import *
 from django.conf import settings
+
+from onyx_proj.common.sqlalchemy_helper import execute_query, sql_alchemy_connect
 from onyx_proj.common.utils.database_utils import *
 from onyx_proj.common.utils.sql_alchemy_engine import SqlAlchemyEngine
 
@@ -9,6 +11,7 @@ class CEDEMAILResponse:
         self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_EMAILResponse"
         self.curr = SqlAlchemyEngine(database=self.database).get_connection()
+        self.engine = sql_alchemy_connect(self.database)
 
     def check_campaign_click_and_delivery_data(self, campaign_ids: [], email_id, click=False):
         campaign_id_tuple = f"('{campaign_ids[0]}')" if len(campaign_ids) == 1 else tuple(campaign_ids)
@@ -20,3 +23,8 @@ class CEDEMAILResponse:
                     f'er.TestCampaign = 1 and er.CampaignId in {campaign_id_tuple} and er.EnEmailid = "{email_id}" ' \
                     f'ORDER BY er.CampaignId DESC LIMIT 1'
         return fetch_all(self.curr, query)
+
+    def fetch_email_campaign_data(self, account_id, start_date, end_date):
+        query = f"SELECT emlr.EnAccountId as account_id, emlr.CreatedDate as delivery_time, emlr.EnEmailId as email_id, ctMap.EnContentText as content_text, emlr.Uuid as uuid, emlr.Status as delivery_status, emlr.EventType as event_type FROM CED_EMAILResponse emlr LEFT JOIN CED_CampaignContentMapping ctMap ON emlr.CustomerReferenceId = ctMap.CustomerReferenceId WHERE emlr.EnAccountId = '{account_id}' AND emlr.Time BETWEEN '{start_date}' AND '{end_date}' AND emlr.TestCampaign != 1"
+        result = execute_query(self.engine, query)
+        return result
