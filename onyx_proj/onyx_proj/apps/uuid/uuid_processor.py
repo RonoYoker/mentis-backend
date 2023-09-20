@@ -176,12 +176,8 @@ def validate_decoded_uuid(decoded_uuid):
 def save_click_data(uuid_data):
     method_name = "save_click_data"
     log_entry(method_name, uuid_data)
-    push_custom_parameters_to_newrelic({
-        "transaction_name": "SAVE_CLICK_DATA_STARTED",
-        "uuid_data": uuid_data,
-        "stage": "START",
-        "txn_init_time": datetime.datetime.timestamp(datetime.datetime.utcnow())
-    })
+
+    push_custom_parameters_to_newrelic({"stage": "SAVE_CLICK_DATA_STARTED"})
 
     if uuid_data is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,

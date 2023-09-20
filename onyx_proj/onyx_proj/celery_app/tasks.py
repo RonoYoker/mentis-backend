@@ -1,3 +1,4 @@
+import datetime
 import os
 import sys
 import time
@@ -238,7 +239,12 @@ def segment_refresh_for_campaign_approval(cb_id, segment_id, retry_count=0):
 def uuid_processor(uuid_data):
     from onyx_proj.apps.uuid.uuid_processor import save_click_data
     method_name = "click_data"
-    push_custom_parameters_to_newrelic({"stage": "UUID_ASYNC_STARTED"})
+    push_custom_parameters_to_newrelic({
+        "transaction_name": "SAVE_CLICK_DATA",
+        "uuid_data": uuid_data,
+        "stage": "UUID_ASYNC_STARTED",
+        "txn_init_time": datetime.datetime.timestamp(datetime.datetime.utcnow())
+    })
     uuid_data = uuid_data.encode("utf-8")
     logger.info(f"Trace entry, method name: {method_name}, uuid_data: {uuid_data}")
 
