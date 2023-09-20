@@ -20,7 +20,7 @@ from onyx_proj.models.CED_WHATSAPPResponse_model import CEDWHATSAPPResponse
 
 logger = logging.getLogger("apps")
 
-@ReqEncryptDecrypt(ApplicationName.HYPERION.value, ApplicationName.HYPERION.value)
+@ReqEncryptDecrypt(ApplicationName.PEGASUS.value, ApplicationName.PEGASUS.value)
 def fetch_user_campaign_data(body):
     """
     Method to fetch campaign content by account id
