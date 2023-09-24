@@ -40,4 +40,9 @@ ONYX_DOMAIN = "https://onyx.hyperiontool.com" # prod
 
 ONYX_CENTRAL_AUTH_TOKEN = "ACDB144B-5CAF-473F-9B1C-FEF493AA6865"
 
+AWS_REGION = "ap-south-1"
+AWS_ACCOUNTID = 217510739764
+SNS_SEGMENT_EVALUATOR = "PROD_HYP_DK_Campaign_Segment_Evaluator"
+QUERY_EXECUTION_JOB_BUCKET = "cmd-prod-async-query-execution-response"
+
 MKT_CLICKDATA_FLAG = False
