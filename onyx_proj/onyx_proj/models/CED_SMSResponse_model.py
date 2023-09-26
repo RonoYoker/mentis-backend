@@ -26,6 +26,6 @@ class CEDSMSResponse:
         return fetch_all(self.curr, query)
 
     def fetch_sms_campaign_data(self, account_id: str, start_date: str, end_date:str):
-        query = f"SELECT smsr.EnAccountId as account_id, smsr.Time as delivery_time, smsr.EnMobileNumber as mobile_number, ctMap.EnContentText as content_text, smsr.Uuid as uuid, smsr.Status as delivery_status FROM CED_SMSResponse smsr LEFT JOIN CED_CampaignContentMapping ctMap ON smsr.CustomerReferenceId = ctMap.CustomerReferenceId WHERE smsr.EnAccountId = '{account_id}' AND smsr.Time BETWEEN '{start_date}' AND '{end_date}' AND smsr.TestCampaign != 1"
+        query = f"SELECT smsr.AccountId as account_id, smsr.Time as delivery_time, smsr.EnMobileNumber as mobile_number, ctMap.EnContentText as content_text, smsr.Uuid as uuid, smsr.Status as delivery_status FROM CED_SMSResponse smsr LEFT JOIN CED_CampaignContentMapping ctMap ON smsr.CustomerReferenceId = ctMap.CustomerReferenceId WHERE smsr.AccountId = '{account_id}' AND smsr.Time BETWEEN '{start_date}' AND '{end_date}' AND smsr.TestCampaign != 1"
         result = execute_query(self.engine, query)
         return result

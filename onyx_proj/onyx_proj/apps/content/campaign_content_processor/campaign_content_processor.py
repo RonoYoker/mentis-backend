@@ -75,14 +75,13 @@ def fetch_user_campaign_data(body):
 
     # add one day to date
     updated_end_date = (end_date_obj + timedelta(days=1)).strftime("%Y-%m-%d")
-    account_id_enc = AesEncryptDecrypt(key=settings.AES_ENCRYPTION_KEY["KEY"], iv=settings.AES_ENCRYPTION_KEY["IV"], mode=AES.MODE_CBC).encrypt_aes_cbc(account_id)
 
     if channel == "SMS":
-        query_result = CEDSMSResponse().fetch_sms_campaign_data(account_id_enc, start_date, updated_end_date)
+        query_result = CEDSMSResponse().fetch_sms_campaign_data(account_id, start_date, updated_end_date)
     elif channel == "EMAIL":
-        query_result = CEDEMAILResponse().fetch_email_campaign_data(account_id_enc, start_date, updated_end_date)
+        query_result = CEDEMAILResponse().fetch_email_campaign_data(account_id, start_date, updated_end_date)
     elif channel == "WHATSAPP":
-        query_result = CEDWHATSAPPResponse().fetch_whatsapp_campaign_data(account_id_enc, start_date, updated_end_date)
+        query_result = CEDWHATSAPPResponse().fetch_whatsapp_campaign_data(account_id, start_date, updated_end_date)
 
     try:
         processed_query_result = process_user_campaign_data_fetch_data(query_result, channel)
@@ -108,7 +107,7 @@ def process_user_campaign_data_fetch_data(data, channel):
             if not acc_data:
                 break
             updated_data = {}
-            updated_data['account_id'] = decrypt.decrypt_aes_cbc(acc_data['account_id'])
+            updated_data['account_id'] = acc_data['account_id']
             if channel in ["SMS", "WHATSAPP"]:
                 updated_data['unique_id'] = decrypt.decrypt_aes_cbc(acc_data['mobile_number'])
                 updated_data['delivery_status'] = acc_data['delivery_status']

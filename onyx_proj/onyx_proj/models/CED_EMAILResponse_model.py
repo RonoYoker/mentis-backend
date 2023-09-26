@@ -25,6 +25,6 @@ class CEDEMAILResponse:
         return fetch_all(self.curr, query)
 
     def fetch_email_campaign_data(self, account_id, start_date, end_date):
-        query = f"SELECT emlr.EnAccountId as account_id, emlr.CreatedDate as delivery_time, emlr.EnEmailId as email_id, ctMap.EnContentText as content_text, emlr.Uuid as uuid, emlr.Status as delivery_status, emlr.EventType as event_type FROM CED_EMAILResponse emlr LEFT JOIN CED_CampaignContentMapping ctMap ON emlr.CustomerReferenceId = ctMap.CustomerReferenceId WHERE emlr.EnAccountId = '{account_id}' AND emlr.Time BETWEEN '{start_date}' AND '{end_date}' AND emlr.TestCampaign != 1"
+        query = f"SELECT emlr.AccountId as account_id, emlr.CreatedDate as delivery_time, emlr.EnEmailId as email_id, ctMap.EnContentText as content_text, emlr.Uuid as uuid, emlr.Status as delivery_status, emlr.EventType as event_type FROM CED_EMAILResponse emlr LEFT JOIN CED_CampaignContentMapping ctMap ON emlr.CustomerReferenceId = ctMap.CustomerReferenceId WHERE emlr.AccountId = '{account_id}' AND emlr.Time BETWEEN '{start_date}' AND '{end_date}' AND emlr.TestCampaign != 1"
         result = execute_query(self.engine, query)
         return result
