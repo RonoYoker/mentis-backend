@@ -13,7 +13,7 @@ class CustomQueryExecution:
         self.curr = SqlAlchemyEngine(database=self.database).get_connection()
 
     def execute_query(self, query: str):
-        logger.debug(f"CustomQueryExecution :: query: {query}")
+        logger.debug(f"CustomQueryExecution :: query: {query}  conf::{self.database}")
         # query = query.replace("%", "%%")
         return fetch_all_without_args(self.curr, query)
 
@@ -33,6 +33,7 @@ def execute_custom_query(db_conf_key=None, query=None):
 
     try:
         custom_query_resp = CustomQueryExecution(db_conf_key=db_conf_key).execute_query(query)
+        logger.debug(f"Executing custom query::{query} with conf ::{db_conf_key}")
     except TimeoutError:
         logger.error(f"Query Execution timed out")
         raise QueryTimeoutException

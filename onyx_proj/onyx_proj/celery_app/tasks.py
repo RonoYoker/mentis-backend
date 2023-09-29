@@ -129,7 +129,7 @@ def query_executor(task_id: str):
                 file_name = f"{task_id}"
                 output_query = f"""SELECT {headers_placeholder} UNION ALL {task_data["Query"]} INTO OUTFILE S3 's3://{settings.QUERY_EXECUTION_JOB_BUCKET}/{file_name}' FIELDS TERMINATED BY "|" LINES TERMINATED BY "\\n\" MANIFEST ON OVERWRITE ON"""
                 init_time = time.time()
-                output_query_response = CustomQueryExecution().execute_output_file_query(output_query)
+                output_query_response = CustomQueryExecution(db_conf_key=db_reader_config_key).execute_output_file_query(output_query)
                 query_execution_time = time.time() - init_time
                 logger.info(
                     f"query_executor :: Time taken to execute output query for task_id: {task_id} is {query_execution_time}.")
