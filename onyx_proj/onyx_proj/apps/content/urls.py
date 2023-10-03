@@ -13,5 +13,6 @@ urlpatterns = {
     path("content_action/", views.content_action),
     path("migrate_content/",views.migrate_content_across_projects),
     path("local/messageData", views.fetch_campaign_data_by_account_id),
-    path("local/message_data", views.fetch_campaign_data_by_account_id)
+    path("local/message_data", views.fetch_campaign_data_by_account_id),
+    path("local/message_data_v2", views.fetch_campaign_data_by_account_id_v2)
 }

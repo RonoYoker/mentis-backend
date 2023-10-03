@@ -5,7 +5,8 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from onyx_proj.apps.content.base import Content
-from onyx_proj.apps.content.campaign_content_processor.campaign_content_processor import fetch_user_campaign_data
+from onyx_proj.apps.content.campaign_content_processor.campaign_content_processor import fetch_user_campaign_data, \
+    fetch_user_campaign_data_cover, fetch_user_campaign_data_cover_v2
 from onyx_proj.common.constants import Roles
 from onyx_proj.apps.content.content_procesor import fetch_campaign_processor, get_content_list, get_content_data, \
     deactivate_content_and_campaign, get_content_list_v2, add_or_remove_url_and_subject_line_from_content, \
@@ -133,6 +134,15 @@ def fetch_campaign_data_by_account_id(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
     data = dict(body=request_body, header=request_headers)
-    response = fetch_user_campaign_data(data)
+    response = fetch_user_campaign_data_cover(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+@csrf_exempt
+def fetch_campaign_data_by_account_id_v2(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    data = dict(body=request_body, header=request_headers)
+    response = fetch_user_campaign_data_cover_v2(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")

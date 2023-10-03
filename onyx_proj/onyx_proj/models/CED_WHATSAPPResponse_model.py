@@ -22,6 +22,11 @@ class CEDWHATSAPPResponse:
         return fetch_all(self.curr, query)
 
     def fetch_whatsapp_campaign_data(self, account_id, start_date, end_date):
-        query = f"SELECT wpr.AccountId as account_id, wpr.Time as delivery_time, wpr.EnMobileNumber as mobile_number, ctMap.EnContentText as content_text, wpr.Uuid as uuid, wpr.Status as delivery_status FROM CED_WhatsAppResponse wpr LEFT JOIN CED_CampaignContentMapping ctMap ON wpr.CustomerReferenceId = ctMap.CustomerReferenceId WHERE wpr.AccountId = '{account_id}' AND wpr.Time BETWEEN '{start_date}' AND '{end_date}' AND wpr.TestCampaign != 1"
+        query = f"SELECT wpr.AccountId as account_id, wpr.Time as delivery_time, wpr.EnMobileNumber as mobile_number, ctMap.EnContentText as content_text, wpr.Uuid as uuid, wpr.Status as delivery_status, wpr.CustomerReferenceId as cust_ref_id FROM CED_WhatsAppResponse wpr LEFT JOIN CED_CampaignContentMapping ctMap ON wpr.CustomerReferenceId = ctMap.CustomerReferenceId WHERE wpr.AccountId = '{account_id}' AND wpr.Time BETWEEN '{start_date}' AND '{end_date}' AND wpr.TestCampaign != 1"
+        result = execute_query(self.engine, query)
+        return result
+
+    def fetch_whatsapp_campaign_data_all_table(self, account_id, start_date, end_date):
+        query = f"SELECT wpr.AccountId as account_id, wpr.Time as delivery_time, wpr.EnMobileNumber as mobile_number, ctMap.EnContentText as content_text, wpr.Uuid as uuid, wpr.Status as delivery_status, wpr.CustomerReferenceId as cust_ref_id FROM CED_WhatsAppResponse_Intermediate wpr LEFT JOIN CED_CampaignContentMapping_Intermediate ctMap ON wpr.CustomerReferenceId = ctMap.CustomerReferenceId WHERE wpr.AccountId = '{account_id}' AND wpr.Time BETWEEN '{start_date}' AND '{end_date}' AND wpr.TestCampaign != 1"
         result = execute_query(self.engine, query)
         return result

@@ -21,12 +21,20 @@ from onyx_proj.models.CED_WHATSAPPResponse_model import CEDWHATSAPPResponse
 logger = logging.getLogger("apps")
 
 @ReqEncryptDecrypt(ApplicationName.PEGASUS.value, ApplicationName.PEGASUS.value)
+def fetch_user_campaign_data_cover(body):
+    body['body'] = json.loads(body['body'])
+    return fetch_user_campaign_data(body)
+
+def fetch_user_campaign_data_cover_v2(body):
+    return fetch_user_campaign_data(body)
+
 def fetch_user_campaign_data(body):
     """
     Method to fetch campaign content by account id
     """
     method_name = "fetch_user_campaign_data"
-    request_body = json.loads(body['body'])
+    # request_body = json.loads(body['body'])
+    request_body = body['body']
     request_header = body['header']
     log_entry(request_body)
 
@@ -77,11 +85,15 @@ def fetch_user_campaign_data(body):
     updated_end_date = (end_date_obj + timedelta(days=1)).strftime("%Y-%m-%d")
 
     if channel == "SMS":
-        query_result = CEDSMSResponse().fetch_sms_campaign_data(account_id, start_date, updated_end_date)
+        query_result_main_table = CEDSMSResponse().fetch_sms_campaign_data(account_id, start_date, updated_end_date)
+        query_result_all_table = CEDSMSResponse().fetch_sms_campaign_data_all_table(account_id, start_date, updated_end_date)
     elif channel == "EMAIL":
-        query_result = CEDEMAILResponse().fetch_email_campaign_data(account_id, start_date, updated_end_date)
+        query_result_main_table = CEDEMAILResponse().fetch_email_campaign_data(account_id, start_date, updated_end_date)
+        query_result_all_table = CEDEMAILResponse().fetch_email_campaign_data_all_table(account_id, start_date, updated_end_date)
     elif channel == "WHATSAPP":
-        query_result = CEDWHATSAPPResponse().fetch_whatsapp_campaign_data(account_id, start_date, updated_end_date)
+        query_result_main_table = CEDWHATSAPPResponse().fetch_whatsapp_campaign_data(account_id, start_date, updated_end_date)
+        query_result_all_table = CEDWHATSAPPResponse().fetch_whatsapp_campaign_data_all_table(account_id, start_date, updated_end_date)
+    query_result = aggregate_all_and_main_table_result_for_user_campaign_data(query_result_all_table, query_result_main_table)
 
     try:
         processed_query_result = process_user_campaign_data_fetch_data(query_result, channel)
@@ -121,4 +133,24 @@ def process_user_campaign_data_fetch_data(data, channel):
             updated_data['uuid'] = acc_data['uuid']
             processed_data.append(updated_data)
     return processed_data
+
+def aggregate_all_and_main_table_result_for_user_campaign_data(query_result_all_table, query_result_main_table):
+    logger.info(f"method_name :: aggregate_all_and_main_table_result_for_user_campaign_data, query_result_all_table: {query_result_all_table}, query_result_main_table: {query_result_main_table}")
+    query_result = []
+
+    if (query_result_main_table is None or len(query_result_main_table) == 0) and (query_result_all_table is None or len(query_result_all_table) == 0):
+        return query_result
+    elif query_result_main_table is None or len(query_result_main_table) == 0:
+        return query_result_all_table
+    elif query_result_all_table is None or len(query_result_all_table) == 0:
+        return query_result_main_table
+    processed_records = [result['cust_ref_id'] for result in query_result_main_table]
+    query_result = query_result_main_table
+
+    for result in query_result_all_table:
+        cust_ref_id = result['cust_ref_id']
+        if cust_ref_id not in processed_records:
+            processed_records.append(cust_ref_id)
+            query_result.append(result)
+    return query_result
 
