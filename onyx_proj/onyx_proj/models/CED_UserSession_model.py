@@ -9,7 +9,7 @@ class CEDUserSession:
     def __init__(self, **kwargs):
         self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_UserSession"
-        self.curr1 = SqlAlchemyEngine(database=self.database).get_connection()
+        self.curr1 = SqlAlchemyEngine().get_connection(database=self.database)
         self.curr = mysql_connect(self.database)
         self.engine = sql_alchemy_connect(self.database)
         self.alch_class = CED_UserSession

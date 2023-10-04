@@ -10,7 +10,7 @@ class CustomQueryExecution:
 
     def __init__(self, **kwargs):
         self.database = kwargs.get("db_conf_key", "default")
-        self.curr = SqlAlchemyEngine(database=self.database).get_connection()
+        self.curr = SqlAlchemyEngine().get_connection(database=self.database)
 
     def execute_query(self, query: str):
         logger.debug(f"CustomQueryExecution :: query: {query}  conf::{self.database}")

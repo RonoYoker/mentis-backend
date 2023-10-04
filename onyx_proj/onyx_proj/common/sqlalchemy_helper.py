@@ -6,7 +6,7 @@ from onyx_proj.models.CreditasCampaignEngine import CEDTeam, CED_Projects, CEDTe
 
 
 def sql_alchemy_connect(database, project_id=None):
-    engine = SqlAlchemyEngine(database=database).get_connection()
+    engine = SqlAlchemyEngine().get_connection(database=database)
     return engine
 
 

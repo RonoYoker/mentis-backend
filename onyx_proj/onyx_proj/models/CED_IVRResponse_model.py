@@ -9,7 +9,7 @@ class CEDIVRResponse:
     def __init__(self, **kwargs):
         self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_IVRResponse"
-        self.curr = SqlAlchemyEngine(database=self.database).get_connection()
+        self.curr = SqlAlchemyEngine().get_connection(database=self.database)
 
     def check_campaign_click_and_delivery_data(self, campaign_ids: [], mobile_number, click=False):
         campaign_id_tuple = f"('{campaign_ids[0]}')" if len(campaign_ids) == 1 else tuple(campaign_ids)

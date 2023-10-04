@@ -10,7 +10,7 @@ class CEDWHATSAPPResponse:
     def __init__(self, **kwargs):
         self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_WHATSAPPResponse"
-        self.curr = SqlAlchemyEngine(database=self.database).get_connection()
+        self.curr = SqlAlchemyEngine().get_connection(database=self.database)
         self.engine = sql_alchemy_connect(self.database)
 
     def check_campaign_click_and_delivery_data(self, campaign_ids: [], mobile_number, click=False):

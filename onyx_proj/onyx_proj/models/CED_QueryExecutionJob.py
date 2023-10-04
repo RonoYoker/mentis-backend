@@ -13,7 +13,7 @@ class CEDQueryExecutionJob:
         self.database = kwargs.get("db_conf_key", "default")
         self.table_name = "CED_QueryExecutionJob"
         self.table_columns = ["ParentId", "TaskId", "Query", "QueryKey", "ResponseFormat", "Response", "Status", "Extra"]
-        self.curr = SqlAlchemyEngine(database=self.database).get_connection()
+        self.curr = SqlAlchemyEngine().get_connection(database=self.database)
 
     def insert(self, records=None, params={}):
         values = records or [[]]

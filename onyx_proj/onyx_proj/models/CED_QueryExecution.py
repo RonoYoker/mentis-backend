@@ -11,7 +11,7 @@ class CEDQueryExecution:
         self.table_name = "CED_QueryExecution"
         self.table_columns = ["ProjectId", "UniqueId", "Client", "RequestId", "RequestType", "Payload",
                               "Status", "CallbackDetails", "Extra"]
-        self.curr = SqlAlchemyEngine(database=self.database).get_connection()
+        self.curr = SqlAlchemyEngine().get_connection(database=self.database)
 
     def insert(self, records=None, params={}):
         values = records or [[]]

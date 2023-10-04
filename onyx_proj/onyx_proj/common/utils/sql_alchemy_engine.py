@@ -19,24 +19,15 @@ class SqlAlchemyEngine(object, metaclass=Singleton):
 
     def __init__(self, **kwargs):
         self.engines = {}
-        self.database = kwargs.get("database", "default")
-        self.user, self.password = self.get_sql_user_by_project_id()
 
-    def get_connection(self):
-        if self.database not in self.engines:
+    def get_connection(self, database="default"):
+        if database not in self.engines:
             engine = create_engine(
-                f"mysql+pymysql://{self.user}:%s@"
-                f"{settings.DATABASES[self.database]['HOST']}:{settings.DATABASES[self.database]['PORT']}/{settings.DATABASES[self.database]['NAME']}?charset=utf8mb4" % quote(
-                    f"{self.password}"),
-                echo=False, pool_size=10, max_overflow=20, pool_pre_ping=True, pool_recycle=3600, connect_args={'read_timeout': 1200})
-            self.engines[self.database] = engine
-        return self.engines[self.database]
+                f"mysql+pymysql://{settings.DATABASES[database]['USER']}:%s@"
+                f"{settings.DATABASES[database]['HOST']}:{settings.DATABASES[database]['PORT']}/{settings.DATABASES[database]['NAME']}?charset=utf8mb4" % quote(
+                    f"{settings.DATABASES[database]['PASSWORD']}"),
+                echo=False, pool_size=10, max_overflow=20, pool_pre_ping=True, pool_recycle=3600,
+                connect_args={'read_timeout': 1200})
+            self.engines[database] = engine
+        return self.engines[database]
 
-    def get_sql_user_by_project_id(self):
-        """
-        returns user password for creating mysql connection to limit access based on project_id
-        """
-        try:
-            return settings.DATABASES[self.database]["USER"], settings.DATABASES[self.database]["PASSWORD"]
-        except Exception as e:
-            logger.error(f"Exception: {e}. settings: {settings.DATABASES}")
