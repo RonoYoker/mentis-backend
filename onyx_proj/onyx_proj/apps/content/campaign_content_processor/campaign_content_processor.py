@@ -21,20 +21,12 @@ from onyx_proj.models.CED_WHATSAPPResponse_model import CEDWHATSAPPResponse
 logger = logging.getLogger("apps")
 
 @ReqEncryptDecrypt(ApplicationName.PEGASUS.value, ApplicationName.PEGASUS.value)
-def fetch_user_campaign_data_cover(body):
-    body['body'] = json.loads(body['body'])
-    return fetch_user_campaign_data(body)
-
-def fetch_user_campaign_data_cover_v2(body):
-    return fetch_user_campaign_data(body)
-
 def fetch_user_campaign_data(body):
     """
     Method to fetch campaign content by account id
     """
     method_name = "fetch_user_campaign_data"
-    # request_body = json.loads(body['body'])
-    request_body = body['body']
+    request_body = json.loads(body['body'])
     request_header = body['header']
     log_entry(request_body)
 
