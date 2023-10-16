@@ -94,8 +94,8 @@ def get_campaign_content_data_by_channel(details_dict: dict):
                     template_content=details_dict["campaignSubjectLineContentEntity"]["contentText"])
     elif channel.lower() == "ivr":
         # long_url = None if len(details_dict["campaignIvrContentEntity"].get("urlMapping", [])) == 0 else details_dict["campaignIvrContentEntity"]["urlMapping"][0]["url"]["contentText"]
-        return dict(template_id=details_dict["campaignIvrContentEntity"]["id"], long_url=None,
-                    template_content=details_dict["campaignIvrContentEntity"]["contentText"])
+        return dict(template_id=details_dict["campaignIVRContentEntity"]["id"], long_url=None,
+                    template_content=details_dict["campaignIVRContentEntity"]["contentText"])
     elif channel.lower() == "whatsapp":
         long_url_fetch_dict = dict(configured_url_id=details_dict["campaignBuilderCampaignEntity"]["whatsAppCampaign"].get("urlId", None),
                                    url_mapping=details_dict["campaignWhatsAppContentEntity"].get("urlMapping", []))
