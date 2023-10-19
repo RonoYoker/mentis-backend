@@ -115,5 +115,23 @@ OTP_APP_USER_MAPPING = {
             "display_name": "Devesh Satija",
             "mobile_number": 9953095877
         }
+    },
+    OtpAppName.CAMP_SCHEDULE_TIME_UPDATE.value:  {
+        "divyansh_jain": {
+            "display_name": "Divyansh Jain",
+            "mobile_number": 8929294241
+        },
+        "ritik_saini": {
+            "display_name": "Ritik Saini",
+            "mobile_number": 9871880272
+        },
+        "sanjeev_juyal": {
+            "display_name": "Divyansh Jain",
+            "mobile_number": 8929294241
+        },
+        "devesh_satija": {
+            "display_name": "Devesh Satija",
+            "mobile_number": 9953095877
+        }
     }
 }

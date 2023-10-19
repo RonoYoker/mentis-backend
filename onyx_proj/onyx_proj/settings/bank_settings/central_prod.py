@@ -228,5 +228,27 @@ OTP_APP_USER_MAPPING = {
             "display_name": "Vivek Phogat",
             "mobile_number": 9999332793
         }
+    },
+    OtpAppName.CAMP_SCHEDULE_TIME_UPDATE.value: {
+        "arsheen_gujral": {
+            "display_name": "Arsheen Gujral",
+            "mobile_number": 9990701692
+        },
+        "abhishek_gupta": {
+            "display_name": "Abhishek Gupta",
+            "mobile_number": 9999913305
+        },
+        "devesh_satija": {
+            "display_name": "Devesh Satija",
+            "mobile_number": 9953095877
+        },
+        "ankur_srivastava": {
+            "display_name": "Ankur Srivastava",
+            "mobile_number": 7048909209
+        },
+        "vivek_phogat": {
+            "display_name": "Vivek Phogat",
+            "mobile_number": 9999332793
+        }
     }
 }

@@ -312,6 +312,7 @@ def fetch_rows_limited(engine, table, filter_list, columns=[], relationships=[],
             return entity
         except Exception as ex:
             logging.error(f"error while fetching from table, Error: ", ex)
+            raise ex
 
 
 def add_columns_projections(q, columns=[]):

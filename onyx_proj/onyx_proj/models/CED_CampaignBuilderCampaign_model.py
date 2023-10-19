@@ -4,7 +4,7 @@ from onyx_proj.common.constants import Roles
 from onyx_proj.common.decorators import UserAuth
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, save_or_update, update, \
-    execute_query, fetch_rows_limited, execute_update_query
+    execute_query, fetch_rows_limited, execute_update_query, fetch_columns
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilderCampaign
 from onyx_proj.common.sqlalchemy_helper import save_or_update, sql_alchemy_connect, update, fetch_rows, \
     save_or_update_merge
@@ -336,3 +336,10 @@ class CEDCampaignBuilderCampaign:
         ]
         res = fetch_rows(self.engine, self.table, filter_list)
         return res
+
+    def update_schedule_time_by_unique_id(self, unique_id, start_date_time, end_date_time):
+        filter = [
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        ]
+        update_dict = {"start_date_time": start_date_time, "end_date_time": end_date_time}
+        return update(self.engine, self.table, filter, update_dict)

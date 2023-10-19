@@ -237,3 +237,8 @@ class CEDCampaignBuilder:
         ]
         res = fetch_rows(self.engine, self.table, filter_list)
         return res
+
+    def get_cb_status_by_cbc_id(self, cbc_id):
+        query = (f"SELECT cb.Status FROM `CED_CampaignBuilder` cb JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId ="
+                 f" cbc.CampaignBuilderId WHERE cbc.UniqueId = '{cbc_id}'")
+        return dict_fetch_query_all(self.curr, query=query)

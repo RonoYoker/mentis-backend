@@ -13,7 +13,8 @@ import requests
 from django.template.loader import render_to_string
 from Crypto.Cipher import AES
 
-from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT, DEACTIVATE_CAMP_LOCAL
+from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT, DEACTIVATE_CAMP_LOCAL, \
+    UPDATE_SCHEDULING_TIME_IN_CCD_API_ENDPOINT, CAMP_SCHEDULING_TIME_UPDATE_ALLOWED_BUFFER
 from onyx_proj.apps.otp.app_settings import OtpAppName
 from onyx_proj.apps.otp.otp_processor import check_otp_status
 from onyx_proj.apps.slot_management.data_processor.slots_data_processor import vaildate_campaign_for_scheduling
@@ -3214,4 +3215,145 @@ def update_campaign_by_campaign_builder_ids_local(request_data):
     logger.debug(f"method name: {method_name} , updated rowcount: {update_resp}")
     if not update_resp.get("success"):
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE)
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
+
+
+def change_approved_campaign_time(request_data):
+    method_name = "change_approved_campaign_time"
+    logger.info(f"Trace entry, method name: {method_name}, request_data: {request_data}")
+    body = request_data["body"]
+    cbc_id = body["cbc_id"]
+    start_time = body["start_time"]
+    end_time = body["end_time"]
+
+    start_time_obj = datetime.datetime.strptime(start_time, "%H:%M:%S").time()
+    end_time_obj = datetime.datetime.strptime(end_time, "%H:%M:%S").time()
+    if not cbc_id or not start_time or not end_time:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid request")
+
+    # validate the start and end time for instance
+    if start_time_obj > end_time_obj or start_time_obj < datetime.time(3, 30) or end_time_obj > datetime.time(13, 30):
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid start time or end time")
+
+    # get campaign builder campaign entity
+    cbc_entity = CEDCampaignBuilderCampaign().fetch_entity_by_unique_id(cbc_id)
+    if cbc_entity is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid instance Id provided")
+
+    # validate campaign builder is in APPROVED state
+    cb_entity = CEDCampaignBuilder().get_campaign_builder_entity_by_unique_id(cbc_entity.campaign_builder_id)
+    if cb_entity.status != CampaignBuilderStatus.APPROVED.value:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Campaign is not in approved state")
+
+    camp_schedule_date = cbc_entity.start_date_time.date()
+    if cbc_entity.start_date_time <= datetime.datetime.utcnow():
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Old campaigns can not be edited")
+    if camp_schedule_date == datetime.datetime.utcnow().date():
+        # validate campaign should not be scheduled within one hour of now,
+        # and start time should not be within one hour of now
+        time_buffer = (datetime.datetime.utcnow() + datetime.timedelta(minutes=CAMP_SCHEDULING_TIME_UPDATE_ALLOWED_BUFFER)).time()
+        if start_time_obj < time_buffer:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Campaign can not be scheduled within one hour")
+        if cbc_entity.start_date_time.time() < time_buffer:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Campaign is already processing and can not be edited")
+
+    return proceed_to_change_approved_campaign_time(cbc_id, start_time, end_time)
+
+
+def proceed_to_change_approved_campaign_time(cbc_id, start_time, end_time):
+    method_name = "proceed_to_change_approved_campaign_time"
+
+    cbc_entity = CEDCampaignBuilderCampaign().fetch_entity_by_unique_id(cbc_id)
+    cb_entity = CEDCampaignBuilder().get_campaign_builder_entity_by_unique_id(cbc_entity.campaign_builder_id)
+    start_time_obj = datetime.datetime.strptime(start_time, "%H:%M:%S").time()
+    end_time_obj = datetime.datetime.strptime(end_time, "%H:%M:%S").time()
+
+    start_date_time = datetime.datetime(cbc_entity.start_date_time.year, cbc_entity.start_date_time.month,
+                                        cbc_entity.start_date_time.day,
+                                        start_time_obj.hour, start_time_obj.minute, start_time_obj.second)
+    end_date_time = datetime.datetime(cbc_entity.end_date_time.year, cbc_entity.end_date_time.month,
+                                      cbc_entity.end_date_time.day,
+                                      end_time_obj.hour, end_time_obj.minute, end_time_obj.second)
+    # check slot availability
+    slot_availability_request = {
+        "segmentId": cb_entity.segment_id,
+        "campaigns": [{"startDateTime": str(start_date_time),
+                       "endDateTime": str(end_date_time),
+                       "contentType": cbc_entity.content_type}]}
+    slot_status = vaildate_campaign_for_scheduling({"body": slot_availability_request})
+    if slot_status.get("result") == TAG_FAILURE:
+        logger.error(f"{method_name}, Error: {slot_status.get('response', '')}  ")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Error while checking slot availability")
+
+    if not slot_status.get("response")[0].get("valid_schedule"):
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Slots you are trying to book are not available")
+    # Validate OTP
+    try:
+        check_otp_status(cbc_entity.unique_id+str(start_date_time)+str(end_date_time), OtpAppName.CAMP_SCHEDULE_TIME_UPDATE.value)
+    except OtpRequiredException as ex:
+        raise OtpRequiredException(data=ex.data)
+    except Exception as ex:
+        logger.error(f"method_name: {method_name}, Error while validating OTP, Error: {ex}")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Slots you are trying to book are not available")
+
+    # update data in local table
+    project_id = CEDCampaignBuilderCampaign().get_project_id_from_campaign_builder_campaign_id(cbc_entity.unique_id)
+    request_payload = {"campaign_uuid": cbc_entity.unique_id,
+                       "start_date_time": str(start_date_time),
+                       "end_date_time": str(end_date_time)
+                       }
+    response = RequestClient().post_onyx_local_api_request(request_payload, settings.ONYX_LOCAL_DOMAIN[project_id],
+                                                               UPDATE_SCHEDULING_TIME_IN_CCD_API_ENDPOINT)
+    logger.debug(f"{method_name} :: local api request_response: {response}")
+    if response.get("success") is False or response['data'].get("result", "FAILURE") != "SUCCESS":
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                    details_message="Unable to update the campaign scheduling time, please try again after some time")
+
+    # after successful update in local table, update in central
+    try:
+        CEDCampaignBuilderCampaign().update_schedule_time_by_unique_id(cbc_entity.unique_id, start_date_time, end_date_time)
+    except Exception as ex:
+        logger.error(f"method_name: {method_name}, Error while updating the schedule time in central table, Error: {ex}")
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                    details_message="Unable to update the campaign scheduling time, please try again after some time")
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data="Suscesfully updated the schedule time for "
+                                                                         "campaign.")
+
+
+def update_campaign_scheduling_time_in_campaign_creation_details(request_data):
+    """
+    Method to update the start and end time of campaign in CED_CampaignCreationDetails Table
+    """
+    method_name = "update_campaign_scheduling_time_in_campaign_creation_details"
+    logger.info(f"Trace entry, method name: {method_name}, request_data: {request_data}")
+
+    data = request_data["body"]
+
+    campaign_uuid = data["campaign_uuid"]
+    start_date_time = data["start_date_time"]
+    end_date_time = data["end_date_time"]
+
+    if not campaign_uuid or not start_date_time or not end_date_time:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid reqeust details")
+
+    start_time = datetime.datetime.strptime(start_date_time, "%Y-%m-%d %H:%M:%S").time()
+    try:
+        CEDCampaignCreationDetails().update_scheduling_time_by_campaign_uuid(start_time, end_date_time, campaign_uuid)
+    except Exception as ex:
+        logger.error(f"method_name: {method_name}, error while updating the scheduling time for campaign: "
+                     f"{campaign_uuid}, Error: {ex}")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Error while updating the scheduling time for campaigns")
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)

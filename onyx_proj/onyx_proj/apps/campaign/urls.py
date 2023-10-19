@@ -30,6 +30,7 @@ urlpatterns = [
     path("get_campaigns_detail/", views.get_campaigns_detail),
     path("update_campaign_query_execution_callback_data/", views.update_campaign_query_execution_callback_data),
     path("local/deactivate_campaign_by_campaign_builder_ids/", views.deactivate_campaign_by_campaign_builder_ids_local),
-    path("get_process_favourite/", views.get_process_favourite)
-
+    path("get_process_favourite/", views.get_process_favourite),
+    path("update_approved_camp_scheduling_time/", views.update_approved_camp_scheduling_time),
+    path("local/update_camp_scheduling_time_ccd/", views.update_camp_scheduling_time_in_campaign_creation_details)
 ]

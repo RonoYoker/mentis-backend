@@ -4,10 +4,12 @@ SANDESH_SEND_SMS_URL = "https://2poqg6bgm5.execute-api.ap-south-1.amazonaws.com/
 
 class OtpAppName(Enum):
     INSTANT_CAMPAIGN_APPROVAL = "INSTANT_CAMPAIGN_APPROVAL"
+    CAMP_SCHEDULE_TIME_UPDATE = "CAMP_SCHEDULE_TIME_UPDATE"
 
 
 OTP_APP_TEMPLATE_MAPPING = {
-    OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value: "{#OTP#} is your OTP. - Clearmydues"
+    OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value: "{#OTP#} is your OTP. - Clearmydues",
+    OtpAppName.CAMP_SCHEDULE_TIME_UPDATE.value: "{#OTP#} is your OTP. - Clearmydues"
 }
 
 class OtpRequest(Enum):

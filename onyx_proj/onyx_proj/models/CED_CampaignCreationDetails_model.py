@@ -1,4 +1,4 @@
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, execute_update_query
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, execute_update_query, update
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.orm_models.CED_CampaignCreationDetails_model import CED_CampaignCreationDetails
 
@@ -18,3 +18,10 @@ class CEDCampaignCreationDetails:
           ccd.CampaignDeactivationDateTime = CURRENT_TIMESTAMP, fp.FileStatus = "STOPPED" where
            ccd.TestCampaign = 0 and fp.TestCampaign = 0 and ccd.CampaignUUID in ({cbc_ids}) """
         return execute_update_query(self.engine, query)
+
+    def update_scheduling_time_by_campaign_uuid(self, start_time, end_time, camp_uuid):
+        filter = [{"column": "campaign_uuid", "value": camp_uuid, "op": "=="}]
+        update_dict = {
+            "schedule_time": start_time,
+            "end_time": end_time}
+        return update(self.engine, self.table, filter, update_dict)

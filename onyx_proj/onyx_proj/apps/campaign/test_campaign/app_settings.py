@@ -19,7 +19,10 @@ CAMPAIGN_BUILDER_CAMPAIGN_VALID_STATUS = [CampaignStatus.APPROVED.value, Campaig
 SEGMENT_STATUS_FOR_TEST_CAMPAIGN = [SegmentStatusKeys.APPROVED.value, SegmentStatusKeys.SAVED.value,
                                     SegmentStatusKeys.APPROVAL_PENDING.value]
 
+CAMP_SCHEDULING_TIME_UPDATE_ALLOWED_BUFFER = 45
+
 FILE_DATA_API_ENDPOINT = "campaign/local/create_campaign_details/"
+UPDATE_SCHEDULING_TIME_IN_CCD_API_ENDPOINT = "campaign/local/update_camp_scheduling_time_ccd/"
 
 DEACTIVATE_CAMP_LOCAL = "campaign/local/deactivate_campaign_by_campaign_builder_ids/"
 
