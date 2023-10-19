@@ -87,6 +87,8 @@ COPY onyx_proj/config/uwsgi/onyx_uwsgi.ini /etc/onyx_uwsgi.ini
 COPY onyx_proj/config/uwsgi/onyx.conf /etc/nginx/conf.d/onyx.conf
 COPY onyx_proj/config/newrelic/* /etc/newrelic/
 
+RUN /usr/local/python3.8/bin/pip3.8 install --upgrade pip
+
 COPY onyx_proj/config/pip/requirements.txt /etc/pip/requirements.txt
 RUN /usr/local/python3.8/bin/pip3.8 install -r /etc/pip/requirements.txt
 
