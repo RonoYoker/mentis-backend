@@ -672,6 +672,7 @@ def view_campaign_data(request_body):
     logger.debug(f"view_campaign_data :: request_body: {request_body}")
 
     campaign_id = request_body.get("campaign_id", None)
+    mode = request_body.get("mode", None)
 
     if campaign_id is None:
         logger.error(f"view_campaign_data :: Campaign id is not valid for request: {request_body}.")
@@ -685,7 +686,11 @@ def view_campaign_data(request_body):
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
                     details_message="Campaign data not found for the given parameters.")
 
-    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=campaign_data[0])
+    final_data = campaign_data[0]
+    if mode == "clone":
+        final_data["name"] = f"{final_data['name']}_2"
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=final_data)
 
 
 def deactivate_campaign_by_campaign_id(request_body):
