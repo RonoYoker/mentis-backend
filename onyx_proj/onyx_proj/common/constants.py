@@ -108,6 +108,7 @@ SELECT
   cb.CreatedBy as created_by, 
   cb.ApprovedBy as approved_by, 
   cep.Status as status,
+  cep.ErrorMsg as error_message,
   cssd.SchedulingStatus as scheduling_status,
   cbc.IsActive as is_active,
   cb.IsRecurring as is_recurring,

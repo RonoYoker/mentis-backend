@@ -248,7 +248,7 @@ def process_segment_data_callback(body):
             logger.error(f"process_segment_data_callback :: Segment_id empty for the given request.")
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="Segment_id missing in request payload.")
-
+        segment_name = CEDSegment().get_segment_name_by_id(segment_id=segment_id)
         project_id = body.get("project_id", None)
         task_data = body["tasks"]
 
@@ -266,7 +266,6 @@ def process_segment_data_callback(body):
         if bool(error_update_dict):
             try:
                 try:
-                    segment_name = CEDSegment().get_segment_name_by_id(segment_id=segment_id)
                     alerting_text = f'Segment Name : {segment_name}, Segment ID : {segment_id}, Segment Error Status: {error_update_dict.get("Status")}, Error Update Time : {error_update_dict.get("UpdationDate")}, ERROR : Process Segment Async Job Error'
                     alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                                           message_text=alerting_text,
@@ -326,6 +325,13 @@ def process_segment_data_callback(body):
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                         details_message="Unable to update")
 
+        # Send telegram notification for completed segment refresh
+        segment_entity = CEDSegment().get_segment_data_entity(segment_id)
+        alerting_text = f'Segment refresh success, Segment Name : {segment_name}, Segment ID : {segment_entity.id}, Refresh Time : {str(datetime.datetime.utcnow())}'
+        alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
+                                                              message_text=alerting_text,
+                                                              feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get(
+                                                                  "SEGMENT", "DEFAULT"))
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                     details_message=f"Count and headers updated for segment_id: {segment_id}.")
 
