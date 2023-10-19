@@ -309,6 +309,7 @@ def get_filtered_recurring_date_time(data):
         "end_date": data["body"].get('end_date'),
         "repeat_type": data["body"].get('repeat_type'),
         "days": data["body"].get('days'),
+        "dates": data["body"].get('dates'),
         "number_of_days": data["body"].get('number_of_days'),
     }
     multi_slot = data["body"].get("multi_slot",[])
@@ -350,6 +351,7 @@ def generate_schedule(sched_data,start_time,end_time,execution_config_id):
     repeat_type = sched_data.get('repeat_type')
     days = sched_data.get('days')
     number_of_days = sched_data.get('number_of_days')
+    repeat_dates = sched_data.get('dates')
 
 
     if start_date is None or end_date is None or start_time is None or end_time is None or campaign_type is None or (
@@ -362,6 +364,11 @@ def generate_schedule(sched_data,start_time,end_time,execution_config_id):
 
     if campaign_type == "SCHEDULELATER" and repeat_type == "ONE_TIME":
         dates.append(start_date)
+
+    if campaign_type == "SCHEDULELATER" and repeat_type == "DATES":
+        if repeat_dates is None:
+            raise ValidationFailedException(reason="Dates are not mentioned for repeat_type :: DATES")
+        dates = copy.deepcopy(repeat_dates)
 
     if campaign_type == "SCHEDULELATER" and repeat_type == "DAILY":
         dates = get_all_dates_between_dates(start_date, end_date)
