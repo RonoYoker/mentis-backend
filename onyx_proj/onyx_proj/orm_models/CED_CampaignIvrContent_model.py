@@ -28,7 +28,7 @@ class CED_CampaignIvrContent(Base, Orm_helper):
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     history_id = Column("HistoryId", String)
     extra = Column("Extra", String)
-
+    is_starred = Column("IsStarred", Boolean, default=False)
     variables = relationship("CED_CampaignContentVariableMapping")
 
     tag_mapping = relationship("CED_EntityTagMapping")

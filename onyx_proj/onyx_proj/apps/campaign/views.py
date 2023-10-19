@@ -26,6 +26,7 @@ from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import 
 from onyx_proj.apps.campaign.test_campaign.test_campaign_processor import test_campaign_process
 from django.views.decorators.csrf import csrf_exempt
 from onyx_proj.celery_app.tasks import trigger_eng_data
+from onyx_proj.apps.campaign.campaign_processor.campaign_content_processor import process_favourite
 
 @csrf_exempt
 @UserAuth.user_authentication()
@@ -373,3 +374,15 @@ def deactivate_campaign_by_campaign_builder_ids_local(request):
     encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(
         json.dumps(response, default=str))
     return HttpResponse(encrypted_data, status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def get_process_favourite(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    data = dict(body=request_body, headers=request_headers)
+    # query processor call
+    response = process_favourite(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")

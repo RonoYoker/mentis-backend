@@ -29,6 +29,7 @@ class CED_CampaignWhatsAppContent(Base, Orm_helper):
     history_id = Column("HistoryId", String)
     extra = Column("Extra", String)
     description = Column("Description", String)
+    is_starred = Column("IsStarred", Boolean,default=False)
 
     variables = relationship("CED_CampaignContentVariableMapping")
 

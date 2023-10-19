@@ -25,6 +25,7 @@ class CED_CampaignUrlContent(Base, Orm_helper):
     number_of_days = Column("NumberOfDays", Integer, default=1)
     url_expiry_type = Column("UrlExpiryType", String)
     description = Column("Description", String)
+    is_starred = Column("IsStarred", Boolean,default=False)
 
     variables = relationship("CED_CampaignContentVariableMapping")
 

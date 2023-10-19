@@ -26,6 +26,7 @@ class CED_CampaignEmailContent(Base, Orm_helper):
     extra = Column("Extra", String)
     vendor_template_id = Column("VendorTemplateId", String)
     description = Column("Description", String)
+    is_starred = Column("IsStarred", Boolean,default=False)
 
     variables = relationship("CED_CampaignContentVariableMapping",lazy="select")
 

@@ -203,6 +203,7 @@ def get_content_list_v2(data) -> dict:
     project_id = request_body.get("project_id", None)
     sub_entity_type = request_body.get("sub_entity_type", None)
     content_fetch_mode = request_body.get("mode", None)
+    starred = request_body.get("starred")
     entity_table_list = []
     campaign_entity_dict = {}
     if project_id is None or entity_type_list is None or content_fetch_mode is None:
@@ -223,6 +224,8 @@ def get_content_list_v2(data) -> dict:
         if sub_entity_type is not None:
             content_filters.append({"column": "content_type", "value": sub_entity_type, "op": "=="})
         content_filters.append({"column": "project_id", "value": project_id, "op": "=="})
+        if starred is True:
+            content_filters.append({"column": "is_starred", "value": True, "op": "IS"})
     else:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid mode selected")
@@ -231,11 +234,15 @@ def get_content_list_v2(data) -> dict:
         entity_type = entity_table.get("entity_type")
         entity_table_name = entity_table.get("entity_table_name")
         campaign_entity_dict[entity_type] = entity_table_name().get_content_data(content_filters)
-
     if campaign_entity_dict is None:
         return dict(status_code=http.HTTPStatus.NOT_FOUND, result=TAG_SUCCESS,
                     response=[])
     else:
+        fav_tag_db_resp = CEDCampaignTagContent().get_favourite_by_project_id(project_id)
+        fav_tag_list = []
+        for row in fav_tag_db_resp:
+            fav_tag_list.append({"tag_id": row.get("unique_id"), "name": row.get("short_name")})
+        campaign_entity_dict.update({"fav_tag_list":fav_tag_list})
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=campaign_entity_dict)
 
 

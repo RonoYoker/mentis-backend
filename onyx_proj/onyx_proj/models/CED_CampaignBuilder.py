@@ -42,7 +42,7 @@ class CEDCampaignBuilder:
         baseQuery = """SELECT cb.Id AS id, cb.UniqueId AS unique_id, cb.Name AS name, cb.SegmentName AS segment_name, 
         cb.Status AS status, cb.CreatedBy AS created_by, min(cbc.StartDateTime) AS start_date_time, cb.ApprovedBy AS 
         approved_by, cb.RecordsInSegment AS segment_records, cb.Type AS type, cb.IsActive as active, cb.IsRecurring 
-        AS is_recurring, cb.RecurringDetail AS recurring_details, cbc.ContentType AS channel, COUNT(*) AS 
+        AS is_recurring, cb.RecurringDetail AS recurring_details,cb.IsStarred as is_starred, cbc.ContentType AS channel, COUNT(*) AS 
         instance_count, cb.Description as description FROM CED_CampaignBuilder cb JOIN CED_Segment cs ON cs.UniqueId = 
         cb.SegmentId JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId WHERE % s GROUP BY 1, 
         2, 3, 4, 5 order by cb.Id DESC""" % filters
@@ -209,6 +209,31 @@ class CEDCampaignBuilder:
     def get_campaign_builder_details_by_ids_list(self, unique_ids_list):
         filter_list = [
             {"column": "unique_id", "value": unique_ids_list, "op": "IN"}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
+
+    def update_favourite(self, system_identifier, identifier_value, is_starred):
+        filter = [
+            {"column": system_identifier, "value": identifier_value, "op": "=="}
+        ]
+        update_dict = {"is_starred": is_starred}
+        return update(self.engine, self.table, filter, update_dict)
+
+    def get_active_data_by_unique_id(self, uid):
+        filter_list = [
+            {"column": "unique_id", "value": uid, "op": "=="},
+            {"column": "is_active", "value": 1, "op": "=="}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
+
+    def get_favourite_by_project_id(self, project_id):
+        filter_list = [
+            {"column": "project_id", "value": project_id, "op": "=="},
+            {"column": "is_active", "value": 1, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "is_starred", "value": True, "op": "IS"}
         ]
         res = fetch_rows(self.engine, self.table, filter_list)
         return res

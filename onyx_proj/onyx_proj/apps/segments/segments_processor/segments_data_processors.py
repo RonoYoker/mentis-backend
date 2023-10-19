@@ -42,16 +42,19 @@ def get_segment_list(request: dict, session_id=None):
     method_name = "get_segment_list"
     logger.debug(f"{method_name} :: request: {request}, session_id: {session_id}")
 
-    start_time = request["start_time"]
-    end_time = request["end_time"]
+    start_time = request.get("start_time")
+    end_time = request.get("end_time")
     tab_name = request["tab_name"]
     project_id = request["project_id"]
+    starred = request.get("starred")
+    if start_time is not None and end_time is not None:
+        end_date = datetime.strptime(end_time, SEGMENT_END_DATE_FORMAT)
+        end_date_delta = end_date + timedelta(days=1)
+        end_date_time = end_date_delta.strftime(SEGMENT_END_DATE_FORMAT)
+    else:
+        end_date_time = datetime.now().strftime(SEGMENT_END_DATE_FORMAT)
 
-    end_date = datetime.strptime(end_time, SEGMENT_END_DATE_FORMAT)
-    end_date_delta = end_date + timedelta(days=1)
-    end_date_time = end_date_delta.strftime(SEGMENT_END_DATE_FORMAT)
-
-    if start_time is None or end_time is None or tab_name is None or project_id is None:
+    if tab_name is None or project_id is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid request parameters!")
 
@@ -77,12 +80,18 @@ def get_segment_list(request: dict, session_id=None):
             {"column": "created_by", "value": created_by, "op": "=="},
             {"column": "project_id", "value": project_id, "op": "=="}
         ]
+    elif tab_name.lower() == SegmentList.ALL_STARRED.value.lower():
+        filter_list = [
+            {"column": "project_id", "value": project_id, "op": "=="},
+            {"column": "is_starred", "value": True, "op": "IS"}
+        ]
     else:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="Invalid Tab!")
-
+    if starred is True:
+        filter_list.append({"column": "is_starred", "value": True, "op": "IS"})
     columns_list = ["id", "include_all", "unique_id", "title", "data_id", "project_id", "type", "created_by",
                     "approved_by", "description", "creation_date", "records", "refresh_date", "status",
-                    "segment_builder_id", "rejection_reason", "sql_query", "active"]
+                    "segment_builder_id", "rejection_reason", "sql_query", "active","is_starred"]
     filter_list = filter_list + FIXED_SEGMENT_LISTING_FILTERS
     data = CEDSegment().get_segment_listing_data(filter_list, columns_list)
 

@@ -40,6 +40,7 @@ class CED_Segment(Base, Orm_helper):
     tag_mapping = relationship("CED_EntityTagMapping")
     description = Column("Description", String)
     parent_id = Column("ParentId",String)
+    is_starred = Column("IsStarred", Boolean,default=False)
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)

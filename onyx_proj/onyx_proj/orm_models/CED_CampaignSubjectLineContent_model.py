@@ -23,6 +23,7 @@ class CED_CampaignSubjectLineContent(Base, Orm_helper):
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     history_id = Column("HistoryId", String)
+    is_starred = Column("IsStarred", Boolean,default=False)
 
     variables = relationship("CED_CampaignContentVariableMapping")
 

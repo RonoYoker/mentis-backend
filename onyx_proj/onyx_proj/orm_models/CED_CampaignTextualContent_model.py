@@ -24,7 +24,7 @@ class CED_CampaignTextualContent(Base, Orm_helper):
     history_id = Column("HistoryId", String)
     extra = Column("Extra", String)
     description = Column("Description", String)
-
+    is_starred = Column("IsStarred", Boolean,default=False)
     tag_mapping = relationship("CED_EntityTagMapping")
 
     def __init__(self, data={}):

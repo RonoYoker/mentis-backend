@@ -10,8 +10,20 @@ from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetails_model import CEDCampaignSchedulingSegmentDetails
 from onyx_proj.models.CED_Projects import CEDProjects
-from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, LAMBDA_PUSH_PACKET_API_PATH
+from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, LAMBDA_PUSH_PACKET_API_PATH,SYS_IDENTIFIER_TABLE_MAPPING
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
+from onyx_proj.common.utils.datautils import nested_path_get
+from onyx_proj.models.CED_CampaignEmailContent_model import CEDCampaignEmailContent
+from onyx_proj.models.CED_CampaignIvrContent_model import CEDCampaignIvrContent
+from onyx_proj.models.CED_CampaignMediaContent_model import CEDCampaignMediaContent
+from onyx_proj.models.CED_CampaignSMSContent_model import CEDCampaignSMSContent
+from onyx_proj.models.CED_CampaignSubjectLineContent_model import CEDCampaignSubjectLineContent
+from onyx_proj.models.CED_CampaignTagContent_model import CEDCampaignTagContent
+from onyx_proj.models.CED_CampaignTextualContent_model import CEDCampaignTextualContent
+from onyx_proj.models.CED_CampaignURLContent_model import CEDCampaignURLContent
+from onyx_proj.models.CED_CampaignWhatsAppContent_model import CEDCampaignWhatsAppContent
+from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
+from onyx_proj.models.CED_Segment_model import CEDSegment
 
 logger = logging.getLogger("apps")
 
@@ -194,3 +206,47 @@ def update_cbc_instance_for_s3_callback(task_data: dict, where_dict: dict, campa
     else:
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
 
+def process_favourite(request_data)-> json:
+    method_name = "process_favourite"
+    logger.debug(f"LOG_ENTRY function name : {method_name}")
+    sys_identifier = request_data.get("body",{}).get("sys_identifier")
+    star_flag = request_data.get("body",{}).get("star_flag")
+    if star_flag is None or not isinstance(star_flag,bool):
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="star flag is not appropriate")
+    entity_type = request_data.get("body",{}).get("type")
+    mode = request_data.get("body",{}).get("mode")
+    if sys_identifier is None or mode is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="mandatory params missing.")
+    table_path = f'{mode}.{entity_type}' if entity_type is not None else mode
+    table_to_use = nested_path_get(SYS_IDENTIFIER_TABLE_MAPPING,f'{table_path}.table',default_return_value=None,strict=False)
+    fav_limit = nested_path_get(SYS_IDENTIFIER_TABLE_MAPPING,f'{table_path}.fav_limit',default_return_value=None,strict=False)
+    try:
+        table_model = eval(f"{table_to_use}()")
+    except Exception as ex:
+        logger.error(f'Unable to eval table name {table_to_use}, method_name: {method_name}, Exp : {ex}')
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="failed to eval table model")
+    table_column_to_use = nested_path_get(SYS_IDENTIFIER_TABLE_MAPPING,f"{table_path}.column",default_return_value=None,strict=False)
+    if table_model is None or table_column_to_use is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="mapping not found for type")
+    if fav_limit is not None:
+        db_resp = table_model.get_active_data_by_unique_id(uid=sys_identifier)
+        if len(db_resp) == 0:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="unable to find data")
+        project_id = db_resp[0].get("project_id")
+        fav_db_resp = table_model.get_favourite_by_project_id(project_id=project_id)
+        if len(fav_db_resp) >= fav_limit:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="max fav limit reached")
+    update_db_resp = table_model.update_favourite(system_identifier=table_column_to_use, identifier_value=sys_identifier,is_starred=star_flag)
+    if update_db_resp is False:
+        logger.error(
+            f"update_favourite :: Error while updating is_starred for request_id: {sys_identifier}")
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE)
+    else:
+        logger.debug(f"LOG_EXIT function name : {method_name}")
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)

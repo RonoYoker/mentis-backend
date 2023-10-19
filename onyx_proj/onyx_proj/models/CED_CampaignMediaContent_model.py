@@ -4,6 +4,7 @@ from onyx_proj.common.mysql_helper import mysql_connect
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, save_or_update_merge, update, \
     fetch_rows, fetch_rows_limited
 from onyx_proj.orm_models.CED_CampaignMediaContent_model import CED_CampaignMediaContent
+from onyx_proj.common.sqlalchemy_helper import update
 
 
 class CEDCampaignMediaContent:
@@ -70,5 +71,27 @@ class CEDCampaignMediaContent:
         res = [entity._asdict(fetch_loaded_only=True) for entity in res]
         return res
 
+    def update_favourite(self, system_identifier, identifier_value, is_starred):
+        filter = [
+            {"column": system_identifier, "value": identifier_value, "op": "=="}
+        ]
+        update_dict = {"is_starred": is_starred}
+        return update(self.engine, self.table, filter, update_dict)
 
+    def get_active_data_by_unique_id(self, uid):
+        filter_list = [
+            {"column": "unique_id", "value": uid, "op": "=="},
+            {"column": "is_active", "value": 1, "op": "=="}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
 
+    def get_favourite_by_project_id(self, project_id):
+        filter_list = [
+            {"column": "project_id", "value": project_id, "op": "=="},
+            {"column": "is_active", "value": 1, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "is_starred", "value": True, "op": "IS"}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res

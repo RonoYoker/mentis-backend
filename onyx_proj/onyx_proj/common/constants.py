@@ -29,12 +29,13 @@ class SegmentList(Enum):
     ALL = "ALL"
     PENDING_REQ = "PENDING_REQ"
     MY_SEGMENT = "MY_SEGMENT"
-
+    ALL_STARRED = "ALL_STARRED"
 
 class TabName(Enum):
     ALL = "ALL"
     APPROVAL_PENDING = "APPROVAL_PENDING"
     MY_CAMPAIGN = "MY_CAMPAIGN"
+    ALL_STARRED = "ALL_STARRED"
 
 
 class DashboardTab(Enum):
@@ -935,7 +936,8 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     'encrypted': 'encrypted',
     'filter_json': 'FilterJson',
     'parent_id': 'ParentId',
-    'execution_config_id': 'ExecutionConfigId'
+    'execution_config_id': 'ExecutionConfigId',
+    'is_starred': 'isStarred'
 }
 
 CAMPAIGN_APPROVAL_STATUS_SUBJECT_MAPPING = {
@@ -1177,4 +1179,21 @@ INSERT_CONTENT_PROJECT_MIGRATION = {
     "CED_CampaignUrlContent":"""Insert into CED_CampaignUrlContent (UniqueId,ProjectId,URL,Strength,CreatedBy,ApprovedBy,Status,DomainType,IsStatic,IsActive,RejectionReason,IsDeleted,HistoryId,UrlTypes,NumberOfDays,UrlExpiryType,Description) SELECT concat("{project_prefix}",RIGHT(UniqueId,54)),"{new_project_id}",URL,Strength,CreatedBy,ApprovedBy,Status,DomainType,IsStatic,IsActive,RejectionReason,IsDeleted,HistoryId,UrlTypes,NumberOfDays,UrlExpiryType,Description FROM CED_CampaignUrlContent where UniqueId in ({ids})""",
     "CED_CampaignContentTag":"""Insert into CED_CampaignContentTag (Name,ProjectId,ShortName,UniqueId,Status,CreatedBy,ApprovedBy,IsActive,RejectionReason,Description,IsDeleted,HistoryId) SELECT Name,"{new_project_id}",ShortName,concat("{project_prefix}",RIGHT(UniqueId,54)),Status,CreatedBy,ApprovedBy,IsActive,RejectionReason,Description,IsDeleted,HistoryId FROM CED_CampaignContentTag where UniqueId in ({ids})""",
     "CED_EntityTagMapping":"""Insert into CED_EntityTagMapping (UniqueId,EntityId,EntitySubType,TagId,IsActive,IsDeleted,EntityType) SELECT concat("{project_prefix}",RIGHT(UniqueId,54)),concat("{project_prefix}",RIGHT(EntityId,54)),EntitySubType,concat("{project_prefix}",RIGHT(TagId,54)),IsActive,IsDeleted,EntityType FROM CED_EntityTagMapping where EntityId in ({ids})""",
+}
+
+SYS_IDENTIFIER_TABLE_MAPPING = {
+    "CONTENT": {
+                "SMS": {"table":"CEDCampaignSMSContent","column": "unique_id"},
+                "EMAIL": {"table":"CEDCampaignEmailContent","column": "unique_id"},
+                "IVR": {"table":"CEDCampaignIvrContent","column": "unique_id"},
+                "WHATSAPP": {"table":"CEDCampaignWhatsAppContent","column": "unique_id"},
+                "URL": {"table":"CEDCampaignURLContent","column": "unique_id"},
+                "SUBJECTLINE": {"table":"CEDCampaignSubjectLineContent","column": "unique_id"},
+                "MEDIA": {"table":"CEDCampaignMediaContent","column": "unique_id"},
+                "TEXTUAL": {"table":"CEDCampaignTextualContent","column": "unique_id"},
+                "TAG": {"table": "CEDCampaignTagContent", "column": "unique_id", "fav_limit": 5}
+                },
+    "SEGMENT": {"table":"CEDSegment","column": "unique_id"},
+    "CAMPAIGN": {"table":"CEDCampaignBuilder","column": "unique_id"},
+    "TAG": {"table":"CEDCampaignTagContent","column":"unique_id","fav_limit":5}
 }

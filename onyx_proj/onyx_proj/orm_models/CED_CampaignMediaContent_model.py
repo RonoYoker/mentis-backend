@@ -22,6 +22,7 @@ class CED_CampaignMediaContent(Base, Orm_helper):
     history_id = Column("HistoryId", String)
     media_type = Column("MediaType", String)
     description = Column("Description", String)
+    is_starred = Column("IsStarred", Boolean,default=False)
 
     tag_mapping = relationship("CED_EntityTagMapping")
 

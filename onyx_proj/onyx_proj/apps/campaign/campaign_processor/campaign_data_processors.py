@@ -620,11 +620,11 @@ def filter_list(request, session_id):
     tab_name = request.get("tab_name")
     project_id = request.get("project_id")
     segment_ids = request.get("segment_ids", [])
-
+    starred = request.get("starred")
     logger.debug(
         f"start_time :: {start_time}, end_time :: {end_time}, tab_name :: {tab_name}, project_id :: {project_id}, segment_ids :: {segment_ids} ")
 
-    if start_time is None or end_time is None or tab_name is None or project_id is None:
+    if tab_name is None or project_id is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid Input")
 
@@ -646,10 +646,15 @@ def filter_list(request, session_id):
         filters = f" DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' and cs.ProjectId ='{project_id}' {segment_filter_placeholder} "
     elif tab_name == TabName.MY_CAMPAIGN.value:
         filters = f" cb.CreatedBy = '{created_by}' and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' and cs.ProjectId='{project_id}' {segment_filter_placeholder} "
+    elif tab_name == TabName.MY_CAMPAIGN.value:
+        filters = f" cb.CreatedBy = '{created_by}' and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' and cs.ProjectId='{project_id}' {segment_filter_placeholder} "
+    elif tab_name == TabName.ALL_STARRED.value:
+        filters = f" cb.IsStarred is True and cs.ProjectId ='{project_id}' {segment_filter_placeholder} "
     else:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid Tab")
-
+    if starred is True:
+        filters = f" cb.IsStarred is True and {filters}"
     data = CEDCampaignBuilder().get_campaign_list(filters)
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
