@@ -689,7 +689,7 @@ ALPHA_NUMERIC_HYPHEN_UNDERSCORE = r'^[a-zA-Z0-9-_]+$'
 MOBILE_NUMBER_REGEX = r'^[6-9]{1}[0-9]{9}$'
 EMAIL_ID_REGEX = r'^[_A-Za-z0-9-\+]+(\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\.[A-Za-z0-9]+)*(\.[A-Za-z]{2,})$'
 USER_NAME_REGEX = r'^[0-9a-zA-Z]+[_][0-9a-zA-Z]+$'
-SESSION_TIMEOUT = 480 * 60
+SESSION_TIMEOUT = 60 * 60
 
 
 class RateLimitationLevels(Enum):

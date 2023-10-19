@@ -420,11 +420,28 @@ def update_project_on_session(request_data):
 def validate_session(user_session_data):
     curr_time = datetime.datetime.now()
     session_expire_time = user_session_data[0].get("expire_time", None)
+    session_expired = user_session_data[0].get("expired", 0)
     if session_expire_time is None:
         return False
-    diff = session_expire_time - curr_time
-    time_out = SESSION_TIMEOUT
-    if diff.seconds > time_out:
+    if session_expire_time < curr_time or session_expired == 1:
         return False
     else:
         return True
+
+def validate_session_and_inc_session(request_data):
+    method_name = "validate_session_and_inc_session"
+    logger.debug(f"LOG_ENTRY function name : {method_name}")
+    curr_time = datetime.datetime.now()
+    user_session = Session().get_user_session_object()
+    session_expire_time = user_session.expire_time
+    session_id = user_session.session_id
+    if session_expire_time is None:
+        return dict(status_code=http.HTTPStatus.UNAUTHORIZED, result=TAG_FAILURE,
+                    details_message="expire time is none")
+    new_expire_time = curr_time + datetime.timedelta(seconds=SESSION_TIMEOUT)
+    db_resp = CEDUserSession().update_user_session_data(dict(expire_time=new_expire_time), session_id)
+    if not db_resp.get("status"):
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Unable to update expire_time in session table")
+    logger.debug(f"LOG_EXIT function name : {method_name}")
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=dict(validate_session=True))

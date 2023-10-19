@@ -1,3 +1,5 @@
+import datetime
+
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, fetch_rows, update, \
     fetch_rows_limited
@@ -44,7 +46,8 @@ class CEDUserSession:
     def get_session_obj_from_session_id(self,session_id: str):
         filter_list = [
                         {"op": "==", "column": "session_id", "value": session_id},
-                        {"op": "==", "column": "expired", "value": 0}
+                        {"op": "==", "column": "expired", "value": 0},
+                        {"op": ">", "column": "expire_time", "value": datetime.now()}
                       ]
         res = fetch_rows_limited(self.engine, self.alch_class, filter_list, columns=[],
                            relationships=["user.user_project_mapping_list.roles.roles_permissions_mapping_list.permission"])
