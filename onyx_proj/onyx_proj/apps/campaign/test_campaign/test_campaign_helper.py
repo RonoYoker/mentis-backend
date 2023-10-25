@@ -179,7 +179,7 @@ def create_file_details_json(campaign_test_segment_details,
                   "campaign_whatsapp_content_entity", "campaign_title",
                   "campaign_subjectline_content_entity", "cbc_entity", "project_id", "schedule_end_date_time",
                   "schedule_start_date_time", "status", "segment_type", "test_campaign",
-                  "data_id", "campaign_type", "follow_up_sms_variables"]
+                  "data_id", "campaign_type", "follow_up_sms_variables","campaign_builder_id","campaign_category"]
 
     project_details_map = campaign_scheduling_segment_details_test_entity._asdict(attrs_list)
     project_details_map = update_process_file_data_map(project_details_map)
@@ -216,6 +216,8 @@ def generate_campaign_scheduling_segment_entity_details_test_entity(campaign_tes
     campaign_scheduling_segment_entity_final.segment_type = campaign_test_segment_details.segment_type
     campaign_scheduling_segment_entity_final.campaign_type = campaign_test_segment_details.campaign_type
     campaign_scheduling_segment_entity_final.test_campaign = campaign_test_segment_details.test_campaign
+    campaign_scheduling_segment_entity_final.campaign_builder_id = campaign_test_segment_details.campaign_builder_id
+    campaign_scheduling_segment_entity_final.campaign_category = campaign_test_segment_details.campaign_category
 
     if campaign_test_segment_details.channel == ContentType.SMS.value:
         prepare_sms_related_data(campaign_builder_campaign, campaign_scheduling_segment_entity_final, is_test=True)

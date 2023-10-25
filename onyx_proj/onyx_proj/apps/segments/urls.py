@@ -15,6 +15,7 @@ urlpatterns = [
     path("update_segment_data/", views.update_segment_callback),
     path("segment_records_count/", views.segment_records_count),
     path("fetch_segment_list/", views.fetch_segments_list),
+    path("fetch_main_segment_list_from_campaign/", views.get_segments_from_campaign),
     path("old_segment_tagging/", views.update_segment_tags),
     path("update_custom_segment_callback/", views.update_custom_segment_callback),
     path("fetch_segment_builder_list/", views.fetch_segment_builder_list),
@@ -24,6 +25,7 @@ urlpatterns = [
     path("validate_segment_title_in_project/", views.validate_segment_title_in_project),
     path("get_master_mapping_for_segment/", views.get_master_mapping_by_data_id),
     path("save_sub_segment/", views.save_sub_segment),
-    path("get_headers_for_segment/", views.get_headers_for_segment)
+    path("get_headers_for_segment/", views.get_headers_for_segment),
+    path("check_header_compatibility_with_template/", views.check_header_compatibility_with_template)
     # path("back_fill_encrypted_data/", views.back_fill_segment_data)
 ]

@@ -8,6 +8,8 @@ class CED_HIS_CampaignBuilder(Base, Orm_helper):
     name = Column("Name", String, unique=True)
     campaign_builder_id = Column("CampaignBuilderId", String)
     segment_id = Column("SegmentId", String)
+    project_id = Column("ProjectId", String)
+    campaign_category = Column("CampaignCategory", String)
     status = Column("Status", String)
     segment_name = Column("SegmentName", String)
     comment = Column("Comment", String)

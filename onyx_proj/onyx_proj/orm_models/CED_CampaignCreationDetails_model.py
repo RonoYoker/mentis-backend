@@ -30,7 +30,9 @@ class CED_CampaignCreationDetails(Base, Orm_helper):
     end_time = Column("EndTime", DateTime)
     data_id = Column("DataId", String)
     file_id = Column("FileId", Integer)
-
+    campaign_builder_id = Column("CampaignBuilderId",Integer)
+    campaign_category = Column("CampaignCategory", Integer)
+    execution_config_id = Column("ExecutionConfigId", String)
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)
 

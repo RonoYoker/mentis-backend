@@ -20,6 +20,7 @@ from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt,AES
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException, ValidationFailedException, \
     InternalServerError
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
+from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.models.CED_DataID_Details_model import CEDDataIDDetails
 from onyx_proj.models.CED_FP_HeaderMap_model import CEDFPHeaderMapping
 from onyx_proj.models.CED_MasterHeaderMapping_model import CEDMasterHeaderMapping
@@ -508,3 +509,64 @@ def get_segment_headers(segment_id):
         } for header in headers_list
     ]
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=res)
+
+
+
+def get_segment_list_from_campaign(request: dict, session_id=None):
+    method_name = "get_segment_list"
+    logger.debug(f"{method_name} :: request: {request}, session_id: {session_id}")
+
+    cb_id = request.get("campaign_builder_id")
+    if cb_id is None:
+        raise BadRequestException(reason="Campaign Builder Id missing")
+
+    cb_resp = CEDCampaignBuilder().get_campaign_details(cb_id)
+    if len(cb_resp) != 1:
+        raise BadRequestException(reason="Invalid Campaign Builder Id")
+
+    segment_data = CEDCampaignBuilder().get_all_segment_details(cb_id)
+    if segment_data is None:
+        raise InternalServerError(reason="Unable to fetch Segment Data Related to Campaign")
+    used_seg_ids = []
+    filtered_data = []
+
+    for record in segment_data:
+
+        if record["main_seg_parent_id"] is None and record["main_seg_unique_id"] not in used_seg_ids and record[
+            "main_seg_unique_id"] is not None:
+            main_segment = {
+                "unique_id":record["main_seg_unique_id"],
+                "title":record["main_seg_name"],
+                "records":record["main_seg_records"],
+                "id":record["main_seg_id"],
+                "status":record["main_seg_status"]
+            }
+            filtered_data.append(main_segment)
+            used_seg_ids.append(record["main_seg_unique_id"])
+
+        if record["parent_seg_parent_id"] is None and record["parent_seg_unique_id"] not in used_seg_ids and record[
+            "parent_seg_unique_id"] is not None:
+            parent_segment = {
+                "unique_id":record["parent_seg_unique_id"],
+                "title":record["parent_seg_name"],
+                "records":record["parent_seg_records"],
+                "id":record["parent_seg_id"],
+                "status":record["parent_seg_status"]
+            }
+            filtered_data.append(parent_segment)
+            used_seg_ids.append(record["parent_seg_unique_id"])
+
+        if record["sub_seg_parent_id"] is None and record["sub_seg_unique_id"] not in used_seg_ids and record[
+            "sub_seg_unique_id"] is not None:
+            sub_segment = {
+                "unique_id":record["sub_seg_unique_id"],
+                "title":record["sub_seg_name"],
+                "records":record["sub_seg_records"],
+                "id":record["sub_seg_id"],
+                "status":record["sub_seg_status"]
+            }
+            filtered_data.append(sub_segment)
+            used_seg_ids.append(record["sub_seg_unique_id"])
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=filtered_data)
+
