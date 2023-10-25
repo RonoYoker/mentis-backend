@@ -13,9 +13,6 @@ def add_filter_to_query_using_params(filter_dict: dict, mapping_dict: dict, proj
         else:
             query = STATS_VIEW_BASE_QUERY + f" WHERE s.ProjectId = '{project_id}' AND {mapping_dict.get('column')} {mapping_dict.get('condition').get('range').get('from')} '{mapping_dict.get('values').get('value').get('range').get('from_date')}'" \
                                         f" AND {mapping_dict.get('column')} {mapping_dict.get('condition').get('range').get('to')} '{mapping_dict.get('values').get('value').get('range').get('to_date')}'"
-
-    if filter_dict.get("campaign_id") is not None:
-        query = f"{query} AND cb.Id = {filter_dict['campaign_id']}"
     return query
 
 

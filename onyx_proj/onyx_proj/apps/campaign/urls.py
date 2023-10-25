@@ -13,7 +13,6 @@ urlpatterns = [
     path("validate_test_campaign/", views.validate_test_campaign),
     path("get_dashboard_tab_campaign_data/", views.get_dashboard_tab_campaign_data),
     path("get_campaign_monitoring_stats/", views.get_campaign_monitoring_stats),
-    path("get_campaign_monitoring_stats_v2/", views.get_campaign_monitoring_stats_v2),
     path("update_campaign_stats/", views.update_campaign_stats),
     path("update_campaign_status/", views.update_camp_status_in_camps_tables),
     path("fetch_campaign_lists/", views.fetch_campaign_list),
@@ -33,6 +32,5 @@ urlpatterns = [
     path("local/deactivate_campaign_by_campaign_builder_ids/", views.deactivate_campaign_by_campaign_builder_ids_local),
     path("get_process_favourite/", views.get_process_favourite),
     path("update_approved_camp_scheduling_time/", views.update_approved_camp_scheduling_time),
-    path("local/update_camp_scheduling_time_ccd/", views.update_camp_scheduling_time_in_campaign_creation_details),
-    path("generate_campaign_builder_campaign/", views.generate_campaign_builder_campaign),
+    path("local/update_camp_scheduling_time_ccd/", views.update_camp_scheduling_time_in_campaign_creation_details)
 ]

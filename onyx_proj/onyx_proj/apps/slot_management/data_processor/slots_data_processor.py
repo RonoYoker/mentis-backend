@@ -24,8 +24,7 @@ def vaildate_campaign_for_scheduling(request_data):
     body = request_data.get("body", {})
     headers = request_data.get("headers", {})
     session_id = headers.get("X-AuthToken", None)
-    segment_id = body.get("segmentId")
-    project_id = body.get("projectId", "")
+    segment_id = body.get("segmentId", "")
     campaigns_list = body.get("campaigns", [])
     campaign_id = body.get("campaignId")
     is_split = body.get("is_split",False)
@@ -35,17 +34,13 @@ def vaildate_campaign_for_scheduling(request_data):
     campaigns_date_type_data={}
     valid_campaigns_date_type_data = {}
     content_date_keys_to_validate = set()
+    project_id = CEDSegment().get_project_id_by_segment_id(segment_id)
+    if project_id is None:
+        return dict(status_code=200, result=TAG_FAILURE, response={"error": "Invalid ProjectId Associated"})
 
-    segment_count = None
-    if segment_id is not None:
-        project_id = CEDSegment().get_project_id_by_segment_id(segment_id)
-        if project_id is None:
-            return dict(status_code=200, result=TAG_FAILURE, response={"error": "Invalid ProjectId Associated"})
-
-        segment_count = CEDSegment().get_segment_count_by_unique_id(segment_id)
-        if segment_count == 0:
-            return dict(status_code=200, result=TAG_FAILURE, response={"error": "No data found for this Segment"})
-
+    segment_count = CEDSegment().get_segment_count_by_unique_id(segment_id)
+    if segment_count == 0:
+        return dict(status_code=200, result=TAG_FAILURE, response={"error": "No data found for this Segment"})
 
     project_data = CEDProjects().get_project_bu_limits_by_project_id(project_id)
     if project_data is None:
@@ -80,9 +75,6 @@ def vaildate_campaign_for_scheduling(request_data):
 
     campaign_validate_resp = []
     affected_campaigns = []
-
-    campaigns_list = split_seg_count_by_split_detail(campaigns_list)
-
     for campaign in campaigns_list:
         camp_date = datetime.strptime(campaign.get("startDateTime"),"%Y-%m-%d %H:%M:%S").date()
         camp_type = campaign.get("contentType","")
@@ -91,7 +83,9 @@ def vaildate_campaign_for_scheduling(request_data):
         campaigns_date_type_data_project = deepcopy(valid_project_campaigns)
         sub_segment_count = segment_count
         if sub_segment_id is not None:
-            sub_segment_count = campaign["count"]
+            sub_segment_count = CEDSegment().get_segment_count_by_unique_id(sub_segment_id)
+            if sub_segment_count == 0:
+                sub_segment_count = segment_count
         camp_info = {
             "start": datetime.strptime(campaign.get("startDateTime"), "%Y-%m-%d %H:%M:%S"),
             "end": datetime.strptime(campaign.get("endDateTime"), "%Y-%m-%d %H:%M:%S"),
@@ -148,49 +142,6 @@ def vaildate_campaign_for_scheduling(request_data):
         }
 
     return dict(status_code=200, result=TAG_SUCCESS, response=campaign_validate_resp, warning_data=warning_data)
-
-
-def split_seg_count_by_split_detail(campaigns_list):
-
-    segment_ids = []
-    for campaign in campaigns_list:
-        if campaign.get("segment_id") is not None and campaign.get("segment_id") not in segment_ids:
-            segment_ids.append(campaign.get("segment_id"))
-
-    if len(segment_ids) < 1:
-        return campaigns_list
-
-    resp = CEDSegment().get_segment_count_by_unique_id_list(segment_ids)
-    if resp is None or len(resp) < 1:
-        return dict(status_code=200, result=TAG_FAILURE,
-                    response={"error": "Unable to fetch Segment attribute counts."})
-
-    seg_id_count = {val['UniqueId']: val['Records'] for val in resp}
-
-    for campaign in campaigns_list:
-        if campaign.get("segment_id") is not None:
-            count = seg_id_count[campaign.get("segment_id")]
-            if campaign.get("split_details") is not None:
-                count = get_count_by_split_details(json.loads(campaign.get("split_details")), count)
-                campaign['count'] = count
-            else:
-                campaign['count'] = count
-
-    return campaigns_list
-
-
-def get_count_by_split_details(split_detail, count):
-    percentage_split = split_detail.get("percentage_split")
-    total_splits = split_detail.get("total_splits")
-    if percentage_split is not None:
-        from_count = ceil((percentage_split.get("from_percentage") * count)/100)
-        to_count = ceil((percentage_split.get("to_percentage") * count) / 100)
-        count = to_count - from_count
-
-    if total_splits is not None:
-        count = ceil(count / total_splits)
-
-    return count
 
 
 def validate_schedule(schedule,slot_limit_per_min):
@@ -290,9 +241,6 @@ def fetch_valid_bu_campaigns(content_date_keys_to_validate,dates_to_validate,bus
         if campaign.get("is_split",False) is True:
             split_details = json.loads(campaign["split_details"])
             campaign["count"] = ceil(campaign["count"]/split_details["total_splits"])
-        if campaign.get("split_details") is not None and campaign.get("is_split", False) is False:
-            split_count = get_count_by_split_details(json.loads(campaign.get("split_details")), campaign["count"])
-            campaign["count"] = split_count
         valid_bu_campaigns.setdefault(key, []).append(campaign)
 
     return valid_bu_campaigns
@@ -331,9 +279,6 @@ def fetch_valid_project_campaigns(content_date_keys_to_validate, dates_to_valida
         if campaign.get("is_split",False) is True:
             split_details = json.loads(campaign["split_details"])
             campaign["count"] = ceil(campaign["count"]/split_details["total_splits"])
-        if campaign.get("split_details") is not None and campaign.get("is_split", False) is False:
-            split_count = get_count_by_split_details(json.loads(campaign.get("split_details")), campaign["count"])
-            campaign["count"] = split_count
         valid_project_campaigns.setdefault(key, []).append(campaign)
 
     return valid_project_campaigns
@@ -561,12 +506,10 @@ def fetch_bu_campaigns(business_unit_id, date):
             continue
         if campaign.get("StartDateTime") is None or campaign.get("EndDateTime") is None:
             continue
-        count = campaign.get("sub_seg_records") if campaign.get("sub_seg_records") is not None else campaign.get(
-            "Records", 0)
         campaign = {
             "start": campaign.get("StartDateTime"),
             "end": campaign.get("EndDateTime"),
-            "count": int(count),
+            "count": int(campaign.get("Records", 0)),
             "proj_name": campaign.get("project_name"),
             "camp_id": campaign.get("campaign_builder_id"),
             "bu_name": campaign.get("bu_name")
@@ -574,9 +517,6 @@ def fetch_bu_campaigns(business_unit_id, date):
         if campaign.get("is_split", False) is True:
             split_details = json.loads(campaign["split_details"])
             campaign["count"] = ceil(campaign["count"]/split_details["total_splits"])
-        if campaign.get("split_details") is not None and campaign.get("is_split", False) is False:
-            split_count = get_count_by_split_details(json.loads(campaign.get("split_details")), campaign["count"])
-            campaign["count"] = split_count
         valid_bu_campaigns.setdefault(camp_type, []).append(campaign)
 
     return valid_bu_campaigns

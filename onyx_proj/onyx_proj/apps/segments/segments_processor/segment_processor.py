@@ -6,7 +6,7 @@ from onyx_proj.common.utils.telegram_utility import TelegramUtility
 from django.conf import settings
 
 from onyx_proj.common.constants import SEGMENT_REFRESH_VALIDATION_DURATION_MINUTES, \
-    ASYNC_SEGMENT_QUERY_EXECUTION_WAITING_MINUTES, CampaignStatus, DataSource, SubDataSource, CampaignCategory
+    ASYNC_SEGMENT_QUERY_EXECUTION_WAITING_MINUTES, CampaignStatus, DataSource, SubDataSource
 from onyx_proj.common.utils.logging_helpers import log_entry
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.apps.segments.segments_processor.segment_helpers import check_validity_flag, check_restart_flag, \
@@ -215,9 +215,8 @@ def validate_segment_status(segment_id, status):
     # check above for list
     if not segment_data:
         raise ValidationFailedException(method_name=method_name, reason="Segment details are not valid")
-    if status is not None:
-        if not segment_data.status or segment_data.status != status:
-            raise ValidationFailedException(method_name=method_name, reason="Segment is not approved")
+    if not segment_data.status or segment_data.status != status:
+        raise ValidationFailedException(method_name=method_name, reason="Segment is not approved")
     return segment_data
 
 
@@ -247,15 +246,11 @@ def trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_
     log_entry(cb_id, segment_id, retry_count)
 
     CEDCampaignBuilder().increment_approval_flow_retry_count(cb_id)
-    campaign_builder_entity = CEDCampaignBuilder().get_campaign_builder_entity_by_unique_id(cb_id)
-
-    if campaign_builder_entity.campaign_category in [CampaignCategory.AB_Segment.value,CampaignCategory.AB_Content.value]:
-        schedule_campaign_using_campaign_builder_id(cb_id)
-        return
 
     segment_entity = CEDSegment().get_segment_data_entity(segment_id)
     project_id = segment_entity.project_id
 
+    campaign_builder_entity = CEDCampaignBuilder().get_campaign_builder_entity_by_unique_id(cb_id)
     if campaign_builder_entity.approval_retry != retry_count + 1:
         logger.error(f"method_name :: {method_name}, error :: retry count unmatched")
         alerting_text = f'Campaign Name: {campaign_builder_entity.name}, Campaign ID : {campaign_builder_entity.id}, ERROR : Campaign retry count did not match. Please reach out to tech'

@@ -7,10 +7,10 @@ from django.conf import settings
 from onyx_proj.apps.async_task_invocation.app_settings import AsyncJobStatus
 from onyx_proj.apps.segments.app_settings import QueryKeys
 from onyx_proj.common.request_helper import RequestClient
-from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException, InternalServerError
+from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetails_model import CEDCampaignSchedulingSegmentDetails
 from onyx_proj.models.CED_Projects import CEDProjects
-from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, LAMBDA_PUSH_PACKET_API_PATH, SYS_IDENTIFIER_TABLE_MAPPING, CampaignCategory
+from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, LAMBDA_PUSH_PACKET_API_PATH,SYS_IDENTIFIER_TABLE_MAPPING
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
 from onyx_proj.common.utils.datautils import nested_path_get
 from onyx_proj.models.CED_CampaignEmailContent_model import CEDCampaignEmailContent
@@ -75,48 +75,21 @@ def update_campaign_segment_data(request_data) -> json:
     """
     logger.debug(f"update_campaign_segment_data :: request_data: {request_data}")
     is_split_flag = 0
-    is_ab_camp_split = False
+
     campaign_builder_campaign_id = request_data.get("unique_id", None)
     if campaign_builder_campaign_id is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid Payload.")
+
+    task_data = request_data["tasks"]
 
     is_split_flag_db_resp = CEDCampaignBuilderCampaign().get_is_split_flag_by_cbc_id(campaign_builder_campaign_id)
     if len(is_split_flag_db_resp) == 0:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid CampaignBuilderCampaignId.")
     else:
-        category = is_split_flag_db_resp[0]["CampaignCategory"]
-        if category is None:
-            category = CampaignCategory.Recurring
-        else:
-            category = CampaignCategory[category]
         is_split_flag = is_split_flag_db_resp[0]["SplitFlag"]
         camp_name = is_split_flag_db_resp[0]["Name"]
-
-
-    cbc_ids_str = f"'{campaign_builder_campaign_id}'"
-    cbc_resp = CEDCampaignBuilderCampaign().get_cbc_details_by_cbc_id(cbc_ids_str)
-    if cbc_resp is None:
-        raise ValidationFailedException(reason="Invalid cbc Id")
-    cbc = cbc_resp[0]
-    if cbc.get("SplitDetails") is not None and is_split_flag == 0 and category in [CampaignCategory.AB_Segment,CampaignCategory.AB_Content]:
-        is_ab_camp_split = True
-        split_det = json.loads(cbc["SplitDetails"])
-        if split_det.get("total_splits") is not None or split_det.get("percentage_split") is not None:
-            filters = [
-                {"column": "campaign_builder_id", "value": cbc["CampaignBuilderId"], "op": "=="},
-                {"column": "segment_id", "value": cbc["SegmentId"], "op": "=="},
-                {"column": "start_date_time", "value": datetime.datetime.utcnow(), "op": ">="},
-                {"column": "start_date_time", "value": datetime.datetime.utcnow().replace(hour=0,minute=0,second=0) + datetime.timedelta(days=1), "op": "<"},
-            ]
-            cbcs_to_update = CEDCampaignBuilderCampaign().get_campaign_builder_campaign_details_by_filters(filters)
-            if cbcs_to_update is None:
-                raise InternalServerError(error="Unable to find cbc list to update")
-            cbcs_ids_for_ab = ', '.join(f"'{ele['unique_id']}'" for ele in cbcs_to_update)
-
-    task_data = request_data["tasks"]
-
     is_instant = False
     if QueryKeys.SEGMENT_DATA.value in task_data:
         task_data = task_data[QueryKeys.SEGMENT_DATA.value]
@@ -125,7 +98,6 @@ def update_campaign_segment_data(request_data) -> json:
         is_instant = True
     else:
         raise ValidationFailedException(reason="Invalid Query Key Present")
-    where_dict = dict(UniqueId=campaign_builder_campaign_id)
 
     if is_instant:
         cbc_ids_str = f"'{campaign_builder_campaign_id}'"
@@ -176,28 +148,10 @@ def update_campaign_segment_data(request_data) -> json:
                                                                                   "ERROR")
             if resp is None:
                 raise ValidationFailedException(reason=f"Unable tp update cssd scheduling status id::{cssd_resp.id}")
-        return update_cbc_instance_for_s3_callback(task_data, where_dict, campaign_builder_campaign_id)
-    elif is_ab_camp_split is True:
-        if task_data["status"] in [AsyncJobStatus.ERROR.value]:
-            update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
-                               S3DataRefreshStatus="ERROR")
-        elif task_data["status"] in [AsyncJobStatus.TIMEOUT.value]:
-            logger.info(f'Updating Timeout error status, cbc ID : {campaign_builder_campaign_id}')
-            update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
-                               S3DataRefreshStatus="TIMEOUT")
-        else:
-            update_dict = dict(S3Path=task_data["response"]["s3_url"],
-                               S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
-                               S3DataRefreshStatus="SUCCESS")
 
-        upd_resp = CEDCampaignBuilderCampaign().bulk_update_segment_data_for_cbc_ids(cbcs_ids_for_ab, update_dict)
-        if upd_resp["success"] is False:
-            logger.error(
-                f"update_campaign_segment_data :: Error while updating status in table CEDCampaignBuilderCampaign for request_id: {campaign_builder_campaign_id}")
-            return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE)
-        else:
-            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
-    elif is_split_flag == 0:
+
+    where_dict = dict(UniqueId=campaign_builder_campaign_id)
+    if is_split_flag == 0:
         # if is split flag is 0 or False, update the data for the corresponding CBC id
         return update_cbc_instance_for_s3_callback(task_data, where_dict, campaign_builder_campaign_id)
     else:
