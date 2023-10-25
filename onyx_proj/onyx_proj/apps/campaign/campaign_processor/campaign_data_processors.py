@@ -454,7 +454,7 @@ def update_segment_count_and_status_for_campaign(request_data):
     }
 
     if segment_count == 0:
-        message = "segment count is empty"
+        error_message = "segment count is empty"
         try:
             if status.find("ERROR") != -1:
                 from onyx_proj.common.decorators import fetch_project_id_from_conf_from_given_identifier
@@ -465,7 +465,7 @@ def update_segment_count_and_status_for_campaign(request_data):
         except Exception as ex:
             logger.error(f'Unable to send telegram Request, {ex}')
 
-        CEDCampaignExecutionProgress().update_campaign_status(status, campaign_id, message)
+        CEDCampaignExecutionProgress().update_campaign_status(status, campaign_id, error_message)
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="segment count is empty")
 

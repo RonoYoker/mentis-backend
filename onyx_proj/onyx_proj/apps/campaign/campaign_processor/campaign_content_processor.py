@@ -8,6 +8,7 @@ from onyx_proj.apps.async_task_invocation.app_settings import AsyncJobStatus
 from onyx_proj.apps.segments.app_settings import QueryKeys
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException
+from onyx_proj.models.CED_CampaignExecutionProgress_model import CEDCampaignExecutionProgress
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetails_model import CEDCampaignSchedulingSegmentDetails
 from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, LAMBDA_PUSH_PACKET_API_PATH,SYS_IDENTIFIER_TABLE_MAPPING
@@ -152,6 +153,7 @@ def update_campaign_segment_data(request_data) -> json:
 
     where_dict = dict(UniqueId=campaign_builder_campaign_id)
     if is_split_flag == 0:
+        update_camp_query_executor_callback_for_retry(task_data, campaign_builder_campaign_id)
         # if is split flag is 0 or False, update the data for the corresponding CBC id
         return update_cbc_instance_for_s3_callback(task_data, where_dict, campaign_builder_campaign_id)
     else:
@@ -159,17 +161,22 @@ def update_campaign_segment_data(request_data) -> json:
         recurring_details_db_resp = CEDCampaignBuilderCampaign().get_recurring_details_json(campaign_builder_campaign_id)
         if len(recurring_details_db_resp) == 0:
             # only update the cbc instance
+            update_camp_query_executor_callback_for_retry(task_data, campaign_builder_campaign_id)
             return update_cbc_instance_for_s3_callback(task_data, where_dict, campaign_builder_campaign_id)
         elif len(recurring_details_db_resp) == 1:
             recurring_details_json = json.loads(recurring_details_db_resp[0]["RecurringDetail"])
             if recurring_details_json.get("is_auto_time_split", False) is True:
                 if task_data["status"] in [AsyncJobStatus.ERROR.value]:
                     update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
-                                       S3DataRefreshStatus="ERROR")
+                                       S3DataRefreshStatus="ERROR", S3Path=None)
                 elif task_data["status"] in [AsyncJobStatus.TIMEOUT.value]:
                     logger.info(f'Updating Timeout error status, cbc ID : {campaign_builder_campaign_id}')
                     update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
-                                       S3DataRefreshStatus="TIMEOUT")
+                                       S3DataRefreshStatus="TIMEOUT", S3Path=None)
+                elif task_data["status"] in [AsyncJobStatus.EMPTY_SEGMENT.value]:
+                    logger.info(f'Updating Timeout error status, cbc ID : {campaign_builder_campaign_id}')
+                    update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
+                                       S3DataRefreshStatus="EMPTY_SEGMENT", S3Path=None)
                 else:
                     update_dict = dict(S3Path=task_data["response"]["s3_url"],
                                        S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
@@ -178,6 +185,7 @@ def update_campaign_segment_data(request_data) -> json:
                 cbc_ids_db_resp = CEDCampaignBuilderCampaign().get_all_cbc_ids_for_split_campaign(campaign_builder_campaign_id)
                 cbc_placeholder = ', '.join(f"'{ele['UniqueId']}'" for ele in cbc_ids_db_resp)
                 upd_resp = CEDCampaignBuilderCampaign().bulk_update_segment_data_for_cbc_ids(cbc_placeholder, update_dict)
+                update_camp_query_executor_callback_for_retry(task_data, campaign_builder_campaign_id)
                 if upd_resp["success"] is False:
                     logger.error(
                         f"update_campaign_segment_data :: Error while updating status in table CEDCampaignBuilderCampaign for request_id: {campaign_builder_campaign_id}")
@@ -186,7 +194,77 @@ def update_campaign_segment_data(request_data) -> json:
                     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
             else:
                 # only update the cbc instance
+                update_camp_query_executor_callback_for_retry(task_data, campaign_builder_campaign_id)
                 return update_cbc_instance_for_s3_callback(task_data, where_dict, campaign_builder_campaign_id)
+
+def update_camp_query_executor_callback_for_retry(task_data, cbc_id):
+    """
+    Update the status for failed query execution in CSSD and Campaign Execution Progress for Retrial
+    """
+    if task_data["status"] not in [AsyncJobStatus.ERROR.value, AsyncJobStatus.EMPTY_SEGMENT.value, AsyncJobStatus.TIMEOUT.value]:
+        return
+
+    # Fetch the campaign start and end date time from cbc
+    cbc_entity = CEDCampaignBuilderCampaign().fetch_entity_by_unique_id(cbc_id)
+    cssd_entity = CEDCampaignSchedulingSegmentDetails().fetch_scheduling_segment_entity_by_cbc_id(cbc_id)
+    camp_start_time = cbc_entity.start_date_time
+    camp_end_time = cbc_entity.end_date_time
+    last_allowed_retry_time = camp_end_time if camp_end_time - camp_start_time < datetime.timedelta(hours=1) else camp_end_time - datetime.timedelta(minutes=30)
+
+    # query callback error received
+    if task_data["status"] == AsyncJobStatus.ERROR.value:
+        CEDCampaignSchedulingSegmentDetails().update_scheduling_status_by_unique_id(cssd_entity.unique_id, "ERROR")
+        update_campaign_execution_progress_for_query_execution_retry(task_data, "ERROR", cssd_entity.id,
+                                                                     cssd_entity.s3_segment_refresh_attempts)
+        return
+
+    # check for current time greater than last allowed retry time or Max allowed retry exhausted for campaign retrial
+    if datetime.datetime.utcnow() > last_allowed_retry_time or cssd_entity.s3_segment_refresh_attempts >= settings.MAX_ALLOWED_CAMPAIGN_RETRY_FOR_QUERY_EXECUTOR:
+        # update error in CSSD
+        CEDCampaignSchedulingSegmentDetails().update_scheduling_status_by_unique_id(cssd_entity.unique_id, "ERROR")
+        update_campaign_execution_progress_for_query_execution_retry(task_data, "RETRY_EXHAUSTED", cssd_entity.id, cssd_entity.s3_segment_refresh_attempts)
+        return
+
+    CEDCampaignSchedulingSegmentDetails().update_scheduling_status_by_unique_id(cssd_entity.unique_id, "QUERY_RETRIAL_IN_PROGRESS")
+    update_campaign_execution_progress_for_query_execution_retry(task_data, "QUERY_RETRIAL_IN_PROGRESS", cssd_entity.id,
+                                                                 cssd_entity.s3_segment_refresh_attempts)
+
+
+def update_campaign_execution_progress_for_query_execution_retry(task_data, camp_execution_status, campaign_id, retry_count):
+    """
+    Function to update the status of Camp execution progress along with the retry details
+    """
+    method_name = "update_campaign_execution_progress_for_query_execution_retry"
+    logger.info(f"method_name: {method_name}, task_data: {task_data}, camp_execution_status: {camp_execution_status}, campaign_id: {campaign_id}, retry_count: {retry_count}")
+    error_message = None
+    details_message = ""
+    if camp_execution_status == "ERROR":
+        error_message = f"Received Query Execution callback: {task_data['error_message']}"
+        details_message = f"Retry Count: {retry_count}, Received {task_data['status']} during query execution at {str(datetime.datetime.utcnow())}."
+
+    if camp_execution_status == "RETRY_EXHAUSTED":
+        error_message = "Maximum retry for campaign exhausted"
+        details_message = f"Retry Count: {retry_count}, Received {task_data['status']} during query execution at {str(datetime.datetime.utcnow())}."
+
+    if camp_execution_status == "QUERY_RETRIAL_IN_PROGRESS":
+        if task_data["status"] == AsyncJobStatus.EMPTY_SEGMENT.value:
+            expected_retry_time = datetime.datetime.now() + datetime.timedelta(minutes=15)
+        else:
+            expected_retry_time = datetime.datetime.now() + datetime.timedelta(minutes=5)
+        details_message = f"Retry Count: {retry_count}, Received {task_data['status']} during query execution at {str(datetime.datetime.now())}, Expected query retrial at {str(expected_retry_time)}"
+
+    camp_execution_entity = CEDCampaignExecutionProgress().fetch_entity_by_campaign_id(campaign_id)
+    if camp_execution_entity.extra is None:
+        extra = {}
+    else:
+        extra = json.loads(camp_execution_entity.extra)
+    query_execution_status = extra.get("query_execution_status", None)
+    if query_execution_status is None:
+        query_execution_status = details_message
+    else:
+        query_execution_status = query_execution_status + "\n " + details_message
+    extra["query_execution_status"] = query_execution_status
+    CEDCampaignExecutionProgress().update_campaign_status_and_extra(campaign_id, camp_execution_status, json.dumps(extra), error_message)
 
 
 def update_cbc_instance_for_s3_callback(task_data: dict, where_dict: dict, campaign_builder_campaign_id: str) -> dict:
@@ -195,6 +273,9 @@ def update_cbc_instance_for_s3_callback(task_data: dict, where_dict: dict, campa
     elif task_data["status"] in [AsyncJobStatus.TIMEOUT.value]:
         logger.info(f'Updating Timeout error status, cbc ID : {campaign_builder_campaign_id}')
         update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()), S3DataRefreshStatus="TIMEOUT")
+    elif task_data["status"] in [AsyncJobStatus.EMPTY_SEGMENT.value]:
+        logger.info(f'Updating Timeout error status, cbc ID : {campaign_builder_campaign_id}')
+        update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()), S3DataRefreshStatus="EMPTY_SEGMENT")
     else:
         update_dict = dict(S3Path=task_data["response"]["s3_url"], S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
                            S3DataRefreshStatus="SUCCESS")

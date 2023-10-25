@@ -24,6 +24,7 @@ class CED_CampaignSchedulingSegmentDetails(Base, Orm_helper):
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     creation_date = Column("CreationDate", TIMESTAMP, default=datetime.utcnow())
+    s3_segment_refresh_attempts = Column("S3SegmentRefreshAttempts", Integer, default=0)
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)

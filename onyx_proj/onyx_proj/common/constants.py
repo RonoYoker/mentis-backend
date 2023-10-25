@@ -109,6 +109,7 @@ SELECT
   cb.ApprovedBy as approved_by, 
   cep.Status as status,
   cep.ErrorMsg as error_message,
+  cep.Extra as extra, 
   cssd.SchedulingStatus as scheduling_status,
   cbc.IsActive as is_active,
   cb.IsRecurring as is_recurring,
@@ -938,6 +939,7 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     'filter_json': 'FilterJson',
     'parent_id': 'ParentId',
     'execution_config_id': 'ExecutionConfigId',
+    's3_segment_refresh_attempts': 'S3SegmentRefreshAttempts',
     'is_starred': 'isStarred'
 }
 

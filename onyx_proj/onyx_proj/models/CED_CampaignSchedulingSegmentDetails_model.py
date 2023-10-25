@@ -2,7 +2,7 @@ import datetime
 
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, save_or_update, \
-    execute_query, fetch_rows_limited
+    execute_query, fetch_rows_limited, update
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignSchedulingSegmentDetails
 
 
@@ -46,4 +46,9 @@ class CEDCampaignSchedulingSegmentDetails:
 
     def update_scheduling_status(self,id,status):
         return update_row(self.curr, self.table_name,{"Id":id} , {"SchedulingStatus": status,"SchedulingTime":datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+
+    def update_scheduling_status_by_unique_id(self, unique_id, status):
+        filter_list = [{"column": "unique_id", "value": unique_id, "op": "=="}]
+        update_dict = {"scheduling_status": status}
+        return update(self.engine, self.table, filter_list, update_dict)
 

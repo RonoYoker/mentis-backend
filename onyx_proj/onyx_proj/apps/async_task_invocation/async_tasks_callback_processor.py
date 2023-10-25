@@ -139,6 +139,8 @@ def hyperion_campaign_query_execution_callback_processor(parent_id: str, url: st
             response = "Query Timeout"
         elif task["Status"] == AsyncJobStatus.ERROR.value:
             response = "Error"
+        elif task["Status"] == AsyncJobStatus.EMPTY_SEGMENT.value:
+            response = "Empty Segment"
         else:
             response = json.loads(task["Response"])
         request_node = {

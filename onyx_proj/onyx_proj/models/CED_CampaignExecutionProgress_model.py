@@ -1,5 +1,5 @@
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, save_or_update, insert, update
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, save_or_update, insert, update, fetch_rows_limited
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignExecutionProgress
 
 
@@ -37,3 +37,17 @@ class CEDCampaignExecutionProgress:
             update_dict["error_message"] = error_reason
         return update(self.engine, self.table, filter_list, update_dict)
 
+    def fetch_entity_by_campaign_id(self, campaign_id, test_camp=0):
+        filter_list = [{"column": "campaign_id", "value": campaign_id, "op": "=="},
+                       {"column": "test_campaign", "value": test_camp, "op": "=="}]
+        res = fetch_rows_limited(self.engine, self.table, filter_list, columns=[])
+        if res is None or len(res) <= 0:
+            return None
+        return res[0]
+
+    def update_campaign_status_and_extra(self, campaign_id, status, extra, error=None):
+        filter_list = [{"column": "campaign_id", "value": campaign_id, "op": "=="}]
+        update_dict = {"status": status, "extra": extra}
+        if error is not None:
+            update_dict["error_message"] = error
+        return update(self.engine, self.table, filter_list, update_dict)

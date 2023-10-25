@@ -4,7 +4,7 @@ import sys
 import time
 from celery import task
 from celery.exceptions import SoftTimeLimitExceeded
-from onyx_proj.exceptions.permission_validation_exception import QueryTimeoutException
+from onyx_proj.exceptions.permission_validation_exception import QueryTimeoutException, EmptySegmentException
 
 from onyx_proj.apps.campaign.campaign_engagement_data.engagement_data_processor import \
     prepare_and_update_campaign_engagement_data
@@ -124,6 +124,10 @@ def query_executor(task_id: str):
                     finally:
                         os.remove(TMP_PATH+file_key)
             elif task_data["ResponseFormat"] == "s3_output":
+                if query_response.get("result") is None or len(query_response.get("result")) <= 0:
+                    # Empty Segment
+                    logger.info(f"query_executor :: Query response is empty for the task_id: {task_id}.")
+                    raise EmptySegmentException
                 headers_list = [*query_response.get("result", [])[0]]
                 headers_placeholder = ", ".join("'"+header+"'" for header in headers_list)
                 file_name = f"{task_id}"
@@ -166,7 +170,20 @@ def query_executor(task_id: str):
             return
 
         callback_resolver.apply_async(kwargs={"parent_id": task_data["ParentId"]}, queue="celery_callback_resolver")
+    except EmptySegmentException:
+        # if segment is empty is exceeded mark task as EMPTY_SEGMENT
+        logger.error(f"query_executor :: Query executor segment is empty for task_id: {task_id}")
+        task_data = CustomQueryExecution().execute_query(FETCH_TASK_DATA_QUERY.replace("{#task_id#}", task_id))["result"][0]
 
+        # update status in CED_QueryExecutionJob table to EMPTY_SEGMENT
+        db_resp = CEDQueryExecutionJob().update_task_status(AsyncJobStatus.EMPTY_SEGMENT.value, task_id)
+        if db_resp.get("exception", None) is None and db_resp.get("row_count", 0) > 0:
+            logger.info(f"query_executor :: Updated status to {AsyncJobStatus.EMPTY_SEGMENT.value} for task_id: {task_data['TaskId']}.")
+        else:
+            logger.error(f"query_executor :: Unable to update status for task_id: {task_data['TaskId']}.")
+            return
+
+        callback_resolver.apply_async(kwargs={"parent_id": task_data["ParentId"]}, queue="celery_callback_resolver")
     except Exception as exp:
         task_data = CustomQueryExecution().execute_query(FETCH_TASK_DATA_QUERY.replace("{#task_id#}", task_id))["result"][0]
 
@@ -199,7 +216,8 @@ def callback_resolver(parent_id: str):
         return
 
     for status_count in db_resp["result"]:
-        if status_count["Status"] not in [AsyncJobStatus.SUCCESS.value, AsyncJobStatus.ERROR.value, AsyncJobStatus.TIMEOUT.value]:
+        if status_count["Status"] not in [AsyncJobStatus.SUCCESS.value, AsyncJobStatus.ERROR.value, AsyncJobStatus.TIMEOUT.value,
+                                          AsyncJobStatus.EMPTY_SEGMENT.value]:
             return
 
     # callback flow initiated now

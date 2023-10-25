@@ -36,3 +36,6 @@ class OtpRequiredException(Exception):
 
 class QueryTimeoutException(Exception):
     pass
+
+class EmptySegmentException(Exception):
+    pass
