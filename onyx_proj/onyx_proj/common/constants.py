@@ -91,14 +91,21 @@ ALLOWED_SEGMENT_STATUS = ["APPROVED", "APPROVAL_PENDING"]
 BASE_DASHBOARD_TAB_QUERY = """
 SELECT 
   cb.Id as campaign_id, 
-  cb.Name as campaign_title,
-  cb.UniqueId as campaign_builder_unique_id,
+  cb.Name as campaign_title, 
+  cb.UniqueId as campaign_builder_unique_id, 
   cbc.UniqueId as campaign_builder_campaign_unique_id, 
   cbc.ContentType as channel, 
-  cbc.FilterJson as filter_json,
+  cbc.FilterJson as filter_json, 
+  cbc.SplitDetails as split_details,
   cssd.Id as campaign_instance_id, 
-  cb.SegmentName as segment_title,
-  cb.Type as campaign_type,
+  if (
+    sp.Title is NULL, 
+    if (
+      s.Title is NULL, subs.Title, s.Title
+    ), 
+    sp.Title
+  ) as segment_title, 
+  cb.Type as campaign_type, 
   subs.Records as sub_segment_count, 
   IF(
     cep.Status = "SCHEDULED", "0", cssd.Records
@@ -107,26 +114,27 @@ SELECT
   cbc.EndDateTime as end_date_time, 
   cb.CreatedBy as created_by, 
   cb.ApprovedBy as approved_by, 
-  cep.Status as status,
-  cep.ErrorMsg as error_message,
+  cep.Status as status, 
+  cep.ErrorMsg as error_message, 
   cep.Extra as extra, 
-  cssd.SchedulingStatus as scheduling_status,
-  cbc.IsActive as is_active,
-  cb.IsRecurring as is_recurring,
-  cb.RecurringDetail as recurring_detail,
-  cb.CreationDate as creation_date
+  cssd.SchedulingStatus as scheduling_status, 
+  cbc.IsActive as is_active, 
+  cb.IsRecurring as is_recurring, 
+  cb.RecurringDetail as recurring_detail, 
+  cb.CreationDate as creation_date 
 FROM 
   CED_CampaignExecutionProgress cep 
   JOIN CED_CampaignSchedulingSegmentDetails cssd ON cep.CampaignId = cssd.Id 
   JOIN CED_CampaignBuilderCampaign cbc ON cbc.UniqueId = cssd.CampaignId 
   JOIN CED_CampaignBuilder cb ON cb.UniqueId = cbc.CampaignBuilderId 
-  JOIN CED_Segment s ON s.UniqueId = cb.SegmentId
-  LEFT JOIN CED_Segment subs ON subs.UniqueId = cbc.SegmentId
+  LEFT JOIN CED_Segment s ON s.UniqueId = cb.SegmentId 
+  LEFT JOIN CED_Segment subs ON subs.UniqueId = cbc.SegmentId 
+  LEFT JOIN CED_Segment sp ON subs.ParentId = sp.UniqueId 
 WHERE 
   cep.TestCampaign = 0 
-  AND cb.Type != "SIMPLE"
-  AND s.ProjectId = '{project_id}'
-  AND DATE(cbc.StartDateTime) >= DATE('{start_date}')
+  AND cb.Type != "SIMPLE" 
+  AND cb.ProjectId = '{project_id}' 
+  AND DATE(cbc.StartDateTime) >= DATE('{start_date}') 
   AND DATE(cbc.StartDateTime) <= DATE('{end_date}')
 """
 
@@ -408,7 +416,9 @@ STATS_VIEW_BASE_QUERY = """SELECT
     cep.EndDateTime AS CompletionDate,
     cbc.StartDateTime AS ScheduleStartDate,
     cbc.EndDateTime AS ScheduleEndDate,
+    cbc.ExecutionConfigId AS ExecutionConfigId,
     cbc.FilterJson as filter_json,
+    cbc.SplitDetails as SplitDetails,
     IF(cbc.ContentType = 'SMS',
         (SELECT 
                 csc.Id
@@ -942,6 +952,7 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     'parent_id': 'ParentId',
     'execution_config_id': 'ExecutionConfigId',
     'is_starred': 'isStarred',
+    'campaign_category': 'campaignCategory',
     's3_path': 's3Path',
     's3_data_refresh_start_date': 's3DataRefreshStartDate',
     's3_data_refresh_end_date': 'S3DataRefreshEndDate',
@@ -1206,3 +1217,25 @@ SYS_IDENTIFIER_TABLE_MAPPING = {
     "CAMPAIGN": {"table":"CEDCampaignBuilder","column": "unique_id"},
     "TAG": {"table":"CEDCampaignTagContent","column":"unique_id","fav_limit":5}
 }
+
+
+class CampaignCategory(Enum):
+    AB_Segment = "AB_Segment"
+    AB_Content = "AB_Content"
+    Recurring = "Recurring"
+    Campaign_Journey_Builder = "Campaign_Journey_Builder"
+
+
+class ABMode(Enum):
+    SEGMENT = "SEGMENT"
+    TEMPLATE = "TEMPLATE"
+
+
+class SegmentABTypes(Enum):
+    ATTRIBUTE = "ATTRIBUTE"
+    PERCENTAGE = "PERCENTAGE"
+
+
+class TemplateABTypes(Enum):
+    SINGLE_SEG = "SINGLE_SEG"
+    MULTI_SEG = "MULTI_SEG"

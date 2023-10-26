@@ -7,7 +7,8 @@ import json
 from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import prepare_sms_related_data, \
     prepare_email_related_data, prepare_ivr_related_data, prepare_whatsapp_related_data, \
     set_follow_up_sms_template_details, update_process_file_data_map, datetime_converter
-from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CHANNELS_LIST, ContentType, CampaignContentStatus
+from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CHANNELS_LIST, ContentType, CampaignContentStatus, \
+    CampaignCategory
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
 from onyx_proj.apps.campaign.test_campaign.app_settings import CAMPAIGN_BUILDER_CAMPAIGN_VALID_STATUS, \
     SEGMENT_STATUS_FOR_TEST_CAMPAIGN
@@ -83,18 +84,20 @@ def validate_test_campaign_data(data_dict: dict):
             f"{method_name} :: invalid campaign_builder configuration for campaign_id: {campaign_builder_campaign_id}")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, success=TAG_FAILURE, details_message="Invalid campaign_id")
 
-    if campaign_builder_campaign_object["campaign_builder_data"].get("segment_data", None) is None or \
-            bool(campaign_builder_campaign_object["campaign_builder_data"].get("segment_data", None)) is False:
-        logger.error(f"{method_name} :: segment entity not found for campaign_id: {campaign_builder_campaign_id}")
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, success=TAG_FAILURE,
-                    details_message="Invalid campaign configuration")
+    if campaign_builder_campaign_object["campaign_builder_data"].get("campaign_category") not in [CampaignCategory.AB_Segment.value, CampaignCategory.AB_Content.value]:
+        if campaign_builder_campaign_object["campaign_builder_data"].get("segment_data", None) is None or \
+                bool(campaign_builder_campaign_object["campaign_builder_data"].get("segment_data", None)) is False:
+            logger.error(f"{method_name} :: segment entity not found for campaign_id: {campaign_builder_campaign_id}")
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, success=TAG_FAILURE,
+                        details_message="Invalid campaign configuration")
 
-    if campaign_builder_campaign_object["campaign_builder_data"]["segment_data"]["status"] not in \
-            SEGMENT_STATUS_FOR_TEST_CAMPAIGN or \
-            campaign_builder_campaign_object["campaign_builder_data"]["segment_data"]["active"] == 0:
-        logger.error(f"{method_name} :: segment entity is not valid for campaign_id: {campaign_builder_campaign_id}")
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, success=TAG_FAILURE,
-                    details_message="Invalid segment entity for the given campaign_id")
+        if campaign_builder_campaign_object["campaign_builder_data"]["segment_data"]["status"] not in \
+                SEGMENT_STATUS_FOR_TEST_CAMPAIGN or \
+                campaign_builder_campaign_object["campaign_builder_data"]["segment_data"]["active"] == 0:
+            logger.error(f"{method_name} :: segment entity is not valid for campaign_id: {campaign_builder_campaign_id}")
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, success=TAG_FAILURE,
+                        details_message="Invalid segment entity for the given campaign_id")
+
     segment_id = campaign_builder_campaign_object.get("segment_id")
     if segment_id is not None:
         segment_data = CEDSegment().get_segment_data(segment_id=segment_id)
@@ -179,7 +182,7 @@ def create_file_details_json(campaign_test_segment_details,
                   "campaign_whatsapp_content_entity", "campaign_title",
                   "campaign_subjectline_content_entity", "cbc_entity", "project_id", "schedule_end_date_time",
                   "schedule_start_date_time", "status", "segment_type", "test_campaign",
-                  "data_id", "campaign_type", "follow_up_sms_variables"]
+                  "data_id", "campaign_type", "follow_up_sms_variables","campaign_builder_id","campaign_category"]
 
     project_details_map = campaign_scheduling_segment_details_test_entity._asdict(attrs_list)
     project_details_map = update_process_file_data_map(project_details_map)
@@ -216,6 +219,8 @@ def generate_campaign_scheduling_segment_entity_details_test_entity(campaign_tes
     campaign_scheduling_segment_entity_final.segment_type = campaign_test_segment_details.segment_type
     campaign_scheduling_segment_entity_final.campaign_type = campaign_test_segment_details.campaign_type
     campaign_scheduling_segment_entity_final.test_campaign = campaign_test_segment_details.test_campaign
+    campaign_scheduling_segment_entity_final.campaign_builder_id = campaign_test_segment_details.campaign_builder_id
+    campaign_scheduling_segment_entity_final.campaign_category = campaign_test_segment_details.campaign_category
 
     if campaign_test_segment_details.channel == ContentType.SMS.value:
         prepare_sms_related_data(campaign_builder_campaign, campaign_scheduling_segment_entity_final, is_test=True)

@@ -147,11 +147,13 @@ class CEDSegment:
         sql_query = "select UniqueId, Extra from CED_Segment where isActive = 1 and Status != 'ERROR' and Extra is not NULL"
         return execute_query(self.engine, sql_query)
 
-    def get_segment_data_by_unique_id(self, segment_id):
+    def get_segment_data_by_unique_id(self, segment_id, status_list=None):
+        if status_list is None:
+            status_list = ["APPROVAL_PENDING", "APPROVED"]
         filter_list = [
             {"column": "unique_id", "value": segment_id, "op": "=="},
             {"column": "is_deleted", "value": 0, "op": "=="},
-            {"column": "status", "value": ["APPROVAL_PENDING", "APPROVED"], "op": "in"}
+            {"column": "status", "value": status_list, "op": "in"}
         ]
         res = fetch_rows(self.engine, self.table, filter_list)
         return res
@@ -199,3 +201,17 @@ class CEDSegment:
         ]
         res = fetch_rows(self.engine, self.table, filter_list)
         return res
+
+    def get_active_segments_data_by_ids(self, segment_ids):
+        filter_list = [
+            {"column": "unique_id", "value": segment_ids, "op": "IN"},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "active", "value": 1, "op": "=="}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list,return_type="entity")
+        return res
+
+    def get_segment_count_by_unique_id_list(self, segment_ids):
+        seg_ids_str = ",".join([f"'{idx}'" for idx in segment_ids])
+        sql_query = f"select UniqueId, Records from CED_Segment where UniqueId in ( %s )" % seg_ids_str
+        return execute_query(self.engine, sql_query)

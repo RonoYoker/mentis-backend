@@ -12,7 +12,7 @@ from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT
 from onyx_proj.apps.campaign.test_campaign.test_campaign_helper import validate_test_campaign_data, \
     get_campaign_service_vendor, generate_test_file_name, create_file_details_json, get_time_difference
-from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CampaignSchedulingSegmentStatus
+from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CampaignSchedulingSegmentStatus, CampaignCategory
 from onyx_proj.orm_models.CED_CampaignSchedulingSegmentDetailsTEST_model import CED_CampaignSchedulingSegmentDetailsTEST
 from onyx_proj.orm_models.CED_CampaignExecutionProgress_model import CED_CampaignExecutionProgress
 from onyx_proj.models.CED_Projects import CEDProjects
@@ -93,8 +93,8 @@ def test_campaign_process(request: dict):
     campaign_scheduling_segment_details_test_entity.project_id = project_id
     campaign_scheduling_segment_details_test_entity.campaign_id = validation_object["unique_id"]
     campaign_scheduling_segment_details_test_entity.campaign_title = validation_object["campaign_builder_data"]["name"]
-    campaign_scheduling_segment_details_test_entity.segment_id = validation_object["campaign_builder_data"][
-        "segment_id"]
+    campaign_scheduling_segment_details_test_entity.campaign_builder_id = validation_object["campaign_builder_data"]["id"]
+    campaign_scheduling_segment_details_test_entity.segment_id = validation_object["campaign_builder_data"]["segment_data"]["unique_id"]
     campaign_scheduling_segment_details_test_entity.segment_type = \
         validation_object["campaign_builder_data"]["segment_data"]["type"]
     campaign_scheduling_segment_details_test_entity.data_id = \
@@ -108,7 +108,7 @@ def test_campaign_process(request: dict):
     campaign_scheduling_segment_details_test_entity.needed_slots = 0
     campaign_scheduling_segment_details_test_entity.status = CampaignSchedulingSegmentStatus.STARTED.value
     campaign_scheduling_segment_details_test_entity.file_name = generate_test_file_name(
-        validation_object["content_type"], validation_object["campaign_builder_data"]["segment_id"])
+        validation_object["content_type"], validation_object["campaign_builder_data"]["segment_data"]["unique_id"])
     campaign_scheduling_segment_details_test_entity.job_id = uuid.uuid4().hex
     campaign_scheduling_segment_details_test_entity.channel = validation_object["content_type"]
     campaign_scheduling_segment_details_test_entity.per_slot_record_count = 10
@@ -118,6 +118,9 @@ def test_campaign_process(request: dict):
     campaign_scheduling_segment_details_test_entity.schedule_date = datetime.datetime.utcnow().date()
     campaign_scheduling_segment_details_test_entity.updation_date = datetime.datetime.utcnow()
     campaign_scheduling_segment_details_test_entity.creation_date = datetime.datetime.utcnow()
+    recurring_detail = validation_object["campaign_builder_data"]["recurring_detail"]
+    campaign_scheduling_segment_details_test_entity.campaign_category = validation_object["campaign_builder_data"].get("campaign_category",CampaignCategory.Recurring.value)
+
 
     # save CED_CampaignSchedulingSegmentDetailsTEST entity in DB
     save_or_update_cssdtest(campaign_scheduling_segment_details_test_entity)

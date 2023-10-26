@@ -53,7 +53,7 @@ def check_headers_compatibility_with_content_template(request_data) -> json:
     fetch_headers_params_dict = {"UniqueId": segment_id}
     segment_data = CEDSegment().get_headers_for_custom_segment(fetch_headers_params_dict,
                                                                headers_list=["Type", "Extra", "ProjectId", "DataId",
-                                                                             "SqlQuery", "Status","SegmentBuilderId"])
+                                                                             "SqlQuery", "Status", "ParentId", "SegmentBuilderId"])
     logger.debug(f"segment data :: {segment_data}")
     if not segment_data:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -62,7 +62,7 @@ def check_headers_compatibility_with_content_template(request_data) -> json:
     segment_status = segment_data[0]["Status"]
     logger.debug(f"segment_status :: {segment_status}")
 
-    if segment_status not in ALLOWED_SEGMENT_STATUS:
+    if segment_status not in ALLOWED_SEGMENT_STATUS and segment_data[0].get("ParentId") is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Segment is not in Valid state")
 
@@ -260,3 +260,32 @@ def get_headers_list_for_segment_builder(segment_data):
         logger.error(f"Error while fetching Headers for Segment Builder Id::{segment_builder_id} error:{str(e)}")
         return {"success":False}
     return {"success":True,"headers":headers_list}
+
+
+def check_seg_header_compatibility_with_template(data):
+
+    method_name = "check_seg_header_compatibility_with_template"
+    logger.debug(f"Entry: {method_name} :: request_data: {data}")
+
+    request_data = data.get("data", [])
+    if len(request_data) < 1:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Mandate params are missing.")
+
+    result = []
+    for request in request_data:
+        content_type = request.get("template_type")
+        resp = check_headers_compatibility_with_content_template(request)
+        if resp is None:
+            result.append(dict(result=TAG_FAILURE,
+                        details_message=f"Content Type: {content_type}. Error which checking headers compatibility"))
+            continue
+        if resp.get("result") == TAG_FAILURE:
+            result.append(dict(result=TAG_FAILURE,
+                               details_message=f"Content Type: {content_type}. {resp.get('details_message')}"))
+        else:
+            result.append(dict(result=TAG_SUCCESS,
+                               details_message=f"Content Type: {content_type}."))
+
+    logger.debug(f"Exit: {method_name} :: result: {result}")
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result)

@@ -14,8 +14,10 @@ from django.template.loader import render_to_string
 from Crypto.Cipher import AES
 
 from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT, DEACTIVATE_CAMP_LOCAL, \
-    UPDATE_SCHEDULING_TIME_IN_CCD_API_ENDPOINT, CAMP_SCHEDULING_TIME_UPDATE_ALLOWED_BUFFER, \
-    VALIDATE_CAMPAIGN_PROCESSING_ONYX_LOCAL
+    UPDATE_SCHEDULING_TIME_IN_CCD_API_ENDPOINT, CAMP_SCHEDULING_TIME_UPDATE_ALLOWED_BUFFER,VALIDATE_CAMPAIGN_PROCESSING_ONYX_LOCAL
+from onyx_proj.apps.campaign.app_settings import CBC_DICT
+from onyx_proj.apps.campaign.campaign_monitoring.campaign_stats_processor import get_filters_applied_screen
+from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT, DEACTIVATE_CAMP_LOCAL
 from onyx_proj.apps.otp.app_settings import OtpAppName
 from onyx_proj.apps.otp.otp_processor import check_otp_status
 from onyx_proj.apps.slot_management.data_processor.slots_data_processor import vaildate_campaign_for_scheduling
@@ -256,6 +258,7 @@ def get_filtered_dashboard_tab_data(data) -> json:
             camp_data["segment_count"] = camp_data["sub_segment_count"]
         camp_data.pop('scheduling_status')
         camp_data.pop('is_active')
+        camp_data["filters_applied"] = get_filters_applied_screen(camp_data.get("filter_json"), camp_data.get("split_details"))
         if camp_data.get('status') == DashboardTab.SCHEDULED.value and filter_type == DashboardTab.SCHEDULED.value:
             final_camp_data.append(camp_data)
         elif filter_type != DashboardTab.SCHEDULED.value:
@@ -347,7 +350,7 @@ def get_filtered_recurring_date_time(data):
                 data=recurring_schedule)
 
 
-def generate_schedule(sched_data,start_time,end_time,execution_config_id):
+def generate_schedule(sched_data, start_time, end_time, execution_config_id=None):
     start_date = sched_data.get('start_date')
     campaign_type = sched_data.get('campaign_type')
     end_date = sched_data.get('end_date')
@@ -356,6 +359,8 @@ def generate_schedule(sched_data,start_time,end_time,execution_config_id):
     number_of_days = sched_data.get('number_of_days')
     repeat_dates = sched_data.get('dates')
 
+    start_date_ts = datetime.datetime.strptime(start_date,'%Y-%m-%d').date()
+    end_date_ts = datetime.datetime.strptime(end_date,'%Y-%m-%d').date()
 
     if start_date is None or end_date is None or start_time is None or end_time is None or campaign_type is None or (
             campaign_type == "SCHEDULELATER" and repeat_type is None):
@@ -393,7 +398,7 @@ def generate_schedule(sched_data,start_time,end_time,execution_config_id):
     for date in dates:
         date = datetime.datetime.strptime(date, '%Y-%m-%d').date()
         combined = datetime.datetime.combine(date, time)
-        if combined < curr_datetime_60_mints and campaign_type !="INSTANT":
+        if combined < curr_datetime_60_mints and campaign_type !="INSTANT" or date > end_date_ts or date < start_date_ts:
             pass
         else:
             recurring_date_time.append({"date": date, "start_time": start_time, "end_time": end_time,"execution_config_id":execution_config_id})
@@ -566,59 +571,106 @@ def validate_campaign(request_data):
     created_by = resp[0].get("CreatedBy")
     maker_validator = resp[0].get("MakerValidator", None)
     execution_config_id = resp[0].get("ExecutionConfigId")
-    if resp[0].get("IsRecurring") == True:
-        camp_status = CEDCampaignBuilderCampaign().get_camp_status_by_cb_id(cb_id,execution_config_id)
-        logger.info(f"method name: {method_name}, camp_status: {camp_status}")
-        if camp_status[0].get("camp_status") == TestCampStatus.NOT_DONE.value:
-            update_resp = CEDCampaignBuilderCampaign().maker_validate_campaign_builder_campaign(cb_id,
-                                                                                                TestCampStatus.MAKER_VALIDATED.value,
-                                                                                                user_name,execution_config_id)
-            if update_resp is True:
-                data['validated'] = True
-                return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
-                            data=data)
-        elif camp_status[0].get("camp_status") == TestCampStatus.MAKER_VALIDATED.value:
-            if maker_validator is None or maker_validator == user_name or created_by == user_name:
-                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                            details_message="Maker validator is not found or the same as approver validator")
-            else:
-                update_resp = CEDCampaignBuilderCampaign().approver_validate_campaign_builder_campaign(cb_id,
-                                                                                                       TestCampStatus.VALIDATED.value,
-                                                                                                       user_name)
-                if update_resp is True:
-                    data['validated'] = True
-                    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
-                                data=data)
-        elif camp_status[0].get("camp_status") == TestCampStatus.VALIDATED.value:
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Campaign is already validated.")
+    campaign_category = resp[0].get("CampaignCategory")
+    is_recurring = resp[0].get("IsRecurring")
+    channel = resp[0].get("ContentType")
 
-    elif resp[0].get("IsRecurring") == False:
-        camp_status = CEDCampaignBuilderCampaign().get_camp_status_by_cbc_id(cbc_id)
-        logger.info(f"method name: {method_name}, camp_status: {camp_status}")
-        if camp_status[0].get("camp_status") == TestCampStatus.NOT_DONE.value:
-            update_resp = CEDCampaignBuilderCampaign().maker_validate_campaign_builder_campaign_by_unique_id(cbc_id,
-                                                                                                             TestCampStatus.MAKER_VALIDATED.value,
-                                                                                                             user_name)
-            if update_resp is True:
-                data['validated'] = True
-                return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
-                            data=data)
-        elif camp_status[0].get("camp_status") == TestCampStatus.MAKER_VALIDATED.value:
-            if maker_validator is None or maker_validator == user_name or created_by == user_name:
-                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                            details_message="Maker validator is not found or the same as approver validator")
-            else:
-                update_resp = CEDCampaignBuilderCampaign().approver_validate_campaign_builder_campaign_by_unique_id(
-                    cbc_id,
-                    TestCampStatus.VALIDATED.value, user_name)
-                if update_resp is True:
-                    data['validated'] = True
-                    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
-                                data=data)
-        elif camp_status[0].get("camp_status") == TestCampStatus.VALIDATED.value:
+    cbc_ids = CEDCampaignBuilderCampaign().get_cbc_ids_to_be_validated(cbc_id,campaign_category,is_recurring,channel)
+
+    if cbc_ids is None:
+        raise InternalServerError(reason="Unable to fetch CBC IDs to validate")
+
+
+    test_camp_statuses = CEDCampaignBuilderCampaign().get_distinct_camp_status_by_cbc_ids(cbc_ids)
+    if test_camp_statuses is None:
+        raise InternalServerError(reason="Unable to check Status of  CBC IDs to validate")
+
+    if len(test_camp_statuses) > 1:
+        raise InternalServerError(reason="Multiple Status found for CBC Ids")
+
+
+    if test_camp_statuses[0].get("camp_status") == TestCampStatus.NOT_DONE.value:
+        update_resp = CEDCampaignBuilderCampaign().maker_validate_campaign_builder_campaign(cb_id,TestCampStatus.MAKER_VALIDATED.value,
+                                                                                            user_name,cbc_ids)
+        if update_resp is True:
+            data['validated'] = True
+            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                        data=data)
+
+    elif test_camp_statuses[0].get("camp_status") == TestCampStatus.MAKER_VALIDATED.value:
+        if maker_validator is None or maker_validator == user_name or created_by == user_name:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Campaign is already validated.")
+                    details_message="Maker validator is not found or the same as approver validator")
+        update_resp = CEDCampaignBuilderCampaign().approver_validate_campaign_builder_campaign(cb_id,
+                                                                                            TestCampStatus.VALIDATED.value,
+                                                                                            user_name,
+                                                                                            cbc_ids)
+        if update_resp is True:
+            data['validated'] = True
+            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                        data=data)
+
+    elif test_camp_statuses[0].get("camp_status") == TestCampStatus.VALIDATED.value:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Campaign is already validated.")
+
+    # if resp[0].get("IsRecurring") == True:
+    #     if resp[0].get("CampaignCategory") in [CampaignCategory.AB_Content.value,CampaignCategory.AB_Segment.value]:
+    #
+    #
+    #     else:
+    #         camp_status = CEDCampaignBuilderCampaign().get_camp_status_by_cb_id(cb_id,execution_config_id)
+    #         logger.info(f"method name: {method_name}, camp_status: {camp_status}")
+    #         if camp_status[0].get("camp_status") == TestCampStatus.NOT_DONE.value:
+    #             update_resp = CEDCampaignBuilderCampaign().maker_validate_campaign_builder_campaign(cb_id,
+    #                                                                                                 TestCampStatus.MAKER_VALIDATED.value,
+    #                                                                                                 user_name,execution_config_id)
+    #             if update_resp is True:
+    #                 data['validated'] = True
+    #                 return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+    #                             data=data)
+    #         elif camp_status[0].get("camp_status") == TestCampStatus.MAKER_VALIDATED.value:
+    #             if maker_validator is None or maker_validator == user_name or created_by == user_name:
+    #                 return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+    #                             details_message="Maker validator is not found or the same as approver validator")
+    #             else:
+    #                 update_resp = CEDCampaignBuilderCampaign().approver_validate_campaign_builder_campaign(cb_id,
+    #                                                                                                        TestCampStatus.VALIDATED.value,
+    #                                                                                                        user_name)
+    #                 if update_resp is True:
+    #                     data['validated'] = True
+    #                     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+    #                                 data=data)
+    #         elif camp_status[0].get("camp_status") == TestCampStatus.VALIDATED.value:
+    #             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+    #                         details_message="Campaign is already validated.")
+    #
+    # elif resp[0].get("IsRecurring") == False:
+    #     camp_status = CEDCampaignBuilderCampaign().get_camp_status_by_cbc_id(cbc_id)
+    #     logger.info(f"method name: {method_name}, camp_status: {camp_status}")
+    #     if camp_status[0].get("camp_status") == TestCampStatus.NOT_DONE.value:
+    #         update_resp = CEDCampaignBuilderCampaign().maker_validate_campaign_builder_campaign_by_unique_id(cbc_id,
+    #                                                                                                          TestCampStatus.MAKER_VALIDATED.value,
+    #                                                                                                          user_name)
+    #         if update_resp is True:
+    #             data['validated'] = True
+    #             return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+    #                         data=data)
+    #     elif camp_status[0].get("camp_status") == TestCampStatus.MAKER_VALIDATED.value:
+    #         if maker_validator is None or maker_validator == user_name or created_by == user_name:
+    #             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+    #                         details_message="Maker validator is not found or the same as approver validator")
+    #         else:
+    #             update_resp = CEDCampaignBuilderCampaign().approver_validate_campaign_builder_campaign_by_unique_id(
+    #                 cbc_id,
+    #                 TestCampStatus.VALIDATED.value, user_name)
+    #             if update_resp is True:
+    #                 data['validated'] = True
+    #                 return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+    #                             data=data)
+    #     elif camp_status[0].get("camp_status") == TestCampStatus.VALIDATED.value:
+    #         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+    #                     details_message="Campaign is already validated.")
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                 data=data)
@@ -651,15 +703,13 @@ def filter_list(request, session_id):
     logger.debug(f"created_by :: {created_by}")
 
     if tab_name == TabName.APPROVAL_PENDING.value:
-        filters = f" cb.Status = 'APPROVAL_PENDING' and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' and cs.ProjectId='{project_id}' {segment_filter_placeholder}"
+        filters = f" cb.Status = 'APPROVAL_PENDING' and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' and cb.ProjectId='{project_id}' {segment_filter_placeholder}"
     elif tab_name == TabName.ALL.value:
-        filters = f" DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' and cs.ProjectId ='{project_id}' {segment_filter_placeholder} "
+        filters = f" DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' and cb.ProjectId ='{project_id}' {segment_filter_placeholder} "
     elif tab_name == TabName.MY_CAMPAIGN.value:
-        filters = f" cb.CreatedBy = '{created_by}' and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' and cs.ProjectId='{project_id}' {segment_filter_placeholder} "
-    elif tab_name == TabName.MY_CAMPAIGN.value:
-        filters = f" cb.CreatedBy = '{created_by}' and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' and cs.ProjectId='{project_id}' {segment_filter_placeholder} "
+        filters = f" cb.CreatedBy = '{created_by}' and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' and cb.ProjectId='{project_id}' {segment_filter_placeholder} "
     elif tab_name == TabName.ALL_STARRED.value:
-        filters = f" cb.IsStarred is True and cs.ProjectId ='{project_id}' {segment_filter_placeholder} "
+        filters = f" cb.IsStarred is True and cb.ProjectId ='{project_id}' {segment_filter_placeholder} "
     else:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid Tab")
@@ -667,8 +717,29 @@ def filter_list(request, session_id):
         filters = f" cb.IsStarred is True and {filters}"
     data = CEDCampaignBuilder().get_campaign_list(filters)
 
+    resp = parse_data_acc_to_campaign_category(data)
+
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
-                data=data)
+                data=resp)
+
+
+def parse_data_acc_to_campaign_category(camp_data):
+    for data in camp_data:
+        seg_name_list = []
+        if data.get('campaign_category', '') in [CampaignCategory.AB_Content.value,
+                                                                    CampaignCategory.AB_Segment.value]:
+            recurring_details = data.get('recurring_details')
+            if recurring_details is not None:
+                recurring_details = json.loads(recurring_details)
+                camp_info = recurring_details['camp_info']
+                for camp_meta in camp_info:
+                    seg_name_list.append(camp_meta['segment_title'])
+            data['segment_records'] = None
+        else:
+            seg_name_list.append(data['segment_name'])
+        data['segment_name'] = seg_name_list
+
+    return camp_data
 
 
 @UserAuth.user_validation(permissions=[Roles.VIEWER.value], identifier_conf={
@@ -700,6 +771,16 @@ def view_campaign_data(request_body):
     if mode == "clone":
         final_data["name"] = f"{final_data['name']}_2"
 
+    variant_to_cbc_mapping = {}
+    for cbc in final_data["campaign_list"]:
+        variant_to_cbc_mapping.setdefault(cbc["execution_config_id"],[])
+        variant_to_cbc_mapping[cbc["execution_config_id"]].append(cbc["unique_id"])
+
+    final_mapping = {}
+    for variant,data in variant_to_cbc_mapping.items():
+        final_mapping[variant] = sorted(data)[0]
+
+    final_data["variant_to_cbc_mapping"] = final_mapping
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=final_data)
 
 
@@ -888,7 +969,7 @@ def prepare_and_save_cb_history_data(campaign_builder_ids, user_name):
             activity_log_entity.sub_data_source = SubDataSource.CAMPAIGN_BUILDER.value,
             activity_log_entity.data_source_id = his_obj.get("unique_id")
             activity_log_entity.comment = comment
-            activity_log_entity.filter_id = his_obj["segment_id"]
+            activity_log_entity.filter_id = his_obj["project_id"]
             activity_log_entity.history_table_id = his_obj["unique_id"]
             activity_log_entity.unique_id = uuid.uuid4().hex
             activity_log_entity.created_by = user_name
@@ -1059,23 +1140,30 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
             # check campaign starts atleast 30 minutes before campaign schedule time
             validate_campaign_builder_campaign_for_scheduled_time(campaign_builder_entity_db)
 
-            # Validated the segment
-            segment_entity = validate_segment_status(campaign_builder_entity_db.segment_id,
-                                                     SegmentStatus.APPROVED.value)
-
             # Validate content details
+            segment_list = []
             for cbc in campaign_builder_entity_db.campaign_list:
                 validate_content_details(cbc, validate_for_approval=True)
+                if cbc.segment_id is not None:
+                    segment_list.append(cbc.segment_id)
+
+            fetch_and_validate_sub_segment_ids(segment_ids=segment_list,mode="APPROVAL")
 
             approved_by = user_session.user.user_name
             if campaign_builder_entity_db.created_by == approved_by:
                 raise BadRequestException(method_name=method_name,
                                           reason="Campaign can't be created and approved by same user!")
 
+            project_id = campaign_builder_entity_db.project_id
+            if campaign_builder_entity_db.campaign_category not in [CampaignCategory.AB_Content.value,
+                                                                    CampaignCategory.AB_Segment.value]:
+                segment_entity = validate_segment_status(campaign_builder_entity_db.segment_id,
+                                                         SegmentStatus.APPROVED.value)
+                project_id = segment_entity.project_id
             # validate project id
-            if not segment_entity.project_id:
+            if not project_id:
                 raise NotFoundException(method_name=method_name, reason="Project Id not found")
-            project_entity = CEDProjects().get_active_project_id_entity_alchemy(segment_entity.project_id)
+            project_entity = CEDProjects().get_active_project_id_entity_alchemy(project_id)
             if not project_entity or len(project_entity) <= 0:
                 raise NotFoundException(method_name=method_name, reason="Project Entity not found")
 
@@ -1087,7 +1175,7 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
                                                                 CampaignStatus.APPROVAL_IN_PROGRESS.value, approved_by)
 
             # Evaluate the segment and proceed for Campaign approval
-            segment_refresh_for_campaign_approval.apply_async(args=(campaign_builder_id, segment_entity.unique_id),
+            segment_refresh_for_campaign_approval.apply_async(args=(campaign_builder_id, campaign_builder_entity_db.segment_id),
                                                               queue="celery_campaign_approval")
             # trigger_update_segment_count_for_campaign_approval(campaign_builder_id, segment_entity.unique_id, 0)
 
@@ -1196,45 +1284,47 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
         recurring_detail = json.loads(recurring_detail)
         is_instant = recurring_detail.get("is_instant", False)
 
-    try:
-        # fetch segment details
-        segment_entity = validate_segment_status(campaign_builder_entity.segment_id,
-                                                 SegmentStatus.APPROVED.value)
-    except ValidationFailedException as ex:
-        logger.error(f"method_name :: {method_name}, Error while fetching segment entity, {ex.reason}")
-        CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id,
-                                                    "Error while fetching segment entity")
-        raise ValidationFailedException(method_name=method_name, reason="Segment entity not found")
-    except BadRequestException as ex:
-        logger.error(f"method_name :: {method_name}, Error while fetching segment entity, {ex.reason}")
-        CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id,
-                                                    "Error while fetching segment entity")
-        raise BadRequestException(method_name=method_name, reason="Segment entity not found")
-    except Exception as ex:
-        logger.error(f"method_name :: {method_name}, Error while fetching segment entity, {ex}")
-        CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id,
-                                                    "Error while fetching segment entity")
-        raise BadRequestException(method_name=method_name, reason="Segment entity not found")
+    if campaign_builder_entity.campaign_category not in [CampaignCategory.AB_Segment.value,
+                                                     CampaignCategory.AB_Content.value]:
+        try:
+            # fetch segment details
+            segment_entity = validate_segment_status(campaign_builder_entity.segment_id,
+                                                     SegmentStatus.APPROVED.value)
+        except ValidationFailedException as ex:
+            logger.error(f"method_name :: {method_name}, Error while fetching segment entity, {ex.reason}")
+            CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id,
+                                                        "Error while fetching segment entity")
+            raise ValidationFailedException(method_name=method_name, reason="Segment entity not found")
+        except BadRequestException as ex:
+            logger.error(f"method_name :: {method_name}, Error while fetching segment entity, {ex.reason}")
+            CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id,
+                                                        "Error while fetching segment entity")
+            raise BadRequestException(method_name=method_name, reason="Segment entity not found")
+        except Exception as ex:
+            logger.error(f"method_name :: {method_name}, Error while fetching segment entity, {ex}")
+            CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id,
+                                                        "Error while fetching segment entity")
+            raise BadRequestException(method_name=method_name, reason="Segment entity not found")
 
-    if segment_entity.records is None or segment_entity.records <= 0:
-        logger.error(f"method_name :: {method_name}, Segment has 0 records")
-        CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id,
-                                                    "Segment has 0 records")
-        generate_campaign_approval_status_mail(
-            {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
-        raise ValidationFailedException(method_name=method_name, reason="Segment records not found")
+        if segment_entity.records is None or segment_entity.records <= 0:
+            logger.error(f"method_name :: {method_name}, Segment has 0 records")
+            CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id,
+                                                        "Segment has 0 records")
+            generate_campaign_approval_status_mail(
+                {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
+            raise ValidationFailedException(method_name=method_name, reason="Segment records not found")
 
-    if not segment_entity.data_id:
-        raise NotFoundException(method_name=method_name, reason="Segment data id not found")
+        if not segment_entity.data_id:
+            raise NotFoundException(method_name=method_name, reason="Segment data id not found")
 
-    data_id_entity = CEDDataIDDetails().fetch_data_id_entity_by_unique_id(segment_entity.data_id)
-    if not data_id_entity:
-        raise NotFoundException(method_name=method_name, reason="Segment data id entity not found")
+        data_id_entity = CEDDataIDDetails().fetch_data_id_entity_by_unique_id(segment_entity.data_id)
+        if not data_id_entity:
+            raise NotFoundException(method_name=method_name, reason="Segment data id entity not found")
 
-    # validate project id
-    project_entity = CEDProjects().get_project_entity_by_unique_id(segment_entity.project_id)
-    if project_entity is None:
-        raise NotFoundException(method_name=method_name, reason="Project entity not found")
+        # validate project id
+        project_entity = CEDProjects().get_project_entity_by_unique_id(segment_entity.project_id)
+        if project_entity is None:
+            raise NotFoundException(method_name=method_name, reason="Project entity not found")
 
     # update campaign status as approved
     CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity.unique_id,
@@ -1246,6 +1336,28 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
                 raise ValidationFailedException(method_name=method_name, reason="Campaign Channel not found")
             channel = ContentType(campaign.content_type).value
 
+            if campaign_builder_entity.campaign_category in [CampaignCategory.AB_Segment.value,
+                                                             CampaignCategory.AB_Content.value]:
+                # fetch segment details
+                segment_entity = validate_segment_status(campaign.segment_id,
+                                                         SegmentStatus.APPROVED.value)
+
+                if segment_entity.records is None or segment_entity.records <= 0:
+                    logger.error(f"method_name :: {method_name}, Segment has 0 records")
+                    raise ValidationFailedException(method_name=method_name, reason="Segment has 0 records")
+
+                if not segment_entity.data_id:
+                    raise NotFoundException(method_name=method_name, reason="Segment data id not found")
+
+                data_id_entity = CEDDataIDDetails().fetch_data_id_entity_by_unique_id(segment_entity.data_id)
+                if not data_id_entity:
+                    raise NotFoundException(method_name=method_name, reason="Segment data id entity not found")
+
+                # validate project id
+                project_entity = CEDProjects().get_project_entity_by_unique_id(segment_entity.project_id)
+                if project_entity is None:
+                    raise NotFoundException(method_name=method_name, reason="Project entity not found")
+
             # check unique entry in CSSD for campaign builder campaign id
             scheduling_segment_entity_db = CEDCampaignSchedulingSegmentDetails().fetch_scheduling_segment_entity_by_cbc_id(
                 campaign.unique_id)
@@ -1253,7 +1365,9 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
                 logger.error(f"method_name :: {method_name}, Campaign Scheduling Segment entity already exists")
                 raise ValidationFailedException(method_name=method_name,
                                                 reason="Campaign Scheduling Segment entity already exists")
-
+            campaign_category = CampaignCategory.Recurring.value
+            if campaign_builder_entity.campaign_category is not None:
+                campaign_category = campaign_builder_entity.campaign_category
             # avoiding slot check
             scheduling_segment_entity = CED_CampaignSchedulingSegmentDetails()
             scheduling_segment_entity.channel = channel
@@ -1264,6 +1378,9 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
             scheduling_segment_entity.data_id = data_id_entity.unique_id
             scheduling_segment_entity.campaign_type = campaign_builder_entity.type
             scheduling_segment_entity.test_campaign = False
+            scheduling_segment_entity.campaign_builder_id = campaign_builder_entity.id
+
+            scheduling_segment_entity.campaign_category = campaign_category
             start_trigger_schedule_lambda_processing(scheduling_segment_entity, uuid.uuid4().hex, channel,
                                                      project_entity, segment_entity,is_instant=is_instant)
         except NotFoundException as ex:
@@ -1506,7 +1623,7 @@ def trigger_lambda_function_for_campaign_scheduling(campaign_segment_details, pr
                   "campaign_whatsapp_content_entity", "campaign_title",
                   "campaign_subjectline_content_entity", "cbc_entity", "project_id", "schedule_end_date_time",
                   "schedule_start_date_time", "status", "segment_type", "test_campaign",
-                  "data_id", "campaign_type", "follow_up_sms_variables"]
+                  "data_id", "campaign_type", "follow_up_sms_variables","campaign_builder_id","campaign_category"]
     project_details_map = campaign_scheduling_segment_entity._asdict(attrs_list)
     project_details_map = update_process_file_data_map(project_details_map)
     process_file_data_dict[project_details_var] = project_details_map
@@ -1650,6 +1767,8 @@ def generate_campaign_scheduling_segment_entity_for_camp_scheduling(scheduling_s
     campaign_scheduling_segment_entity.segment_type = scheduling_segment_details.segment_type
     campaign_scheduling_segment_entity.campaign_type = scheduling_segment_details.campaign_type
     campaign_scheduling_segment_entity.test_campaign = scheduling_segment_details.test_campaign
+    campaign_scheduling_segment_entity.campaign_builder_id = scheduling_segment_details.campaign_builder_id
+    campaign_scheduling_segment_entity.campaign_category = scheduling_segment_details.campaign_category
 
     if scheduling_segment_details.channel == ContentType.SMS.value:
         prepare_sms_related_data(campaign_builder_campaign, campaign_scheduling_segment_entity)
@@ -1876,7 +1995,7 @@ def prepare_and_save_campaign_builder_history_data(campaign_builder_entity):
             "data_source_id": campaign_builder_entity.unique_id,
             "comment": history_campaign_builder_entity.comment,
             "history_table_id": history_campaign_builder_entity.unique_id,
-            "filter_id": campaign_builder_entity.segment_id
+            "filter_id": campaign_builder_entity.project_id
         })
         # save activity log
         CEDActivityLog().save_activity_log(activity_log_entity)
@@ -2054,35 +2173,48 @@ def save_campaign_details(request_data):
     recurring_detail = body.get("recurring_detail", None)
     campaign_list = body.get("campaign_list", [])
     description = body.get("description", None)
+    camp_project_id = body.get("project_id", None)
     is_split = body.get("is_split", False)
+    campaign_category = body.get("campaign_category", CampaignCategory.Recurring.value)
     user_session = Session().get_user_session_object()
     user_name = user_session.user.user_name
 
-    if name is None or segment_id is None or start_date_time is None or end_date_time is None\
+    segment_entity = None
+
+    if name is None  or start_date_time is None or end_date_time is None\
             or priority is None or type is None or len(campaign_list) == 0:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Request body has missing fields")
 
-    segment_entity = CEDSegment().get_segment_data_by_unique_id(segment_id)
-    if len(segment_entity) == 0:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Segment is not in Valid state")
-    data_id = segment_entity[0].get("data_id")
-    project_id = segment_entity[0].get("project_id")
+    project_id = None
 
-    if data_id is None or project_id is None:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="DataId/ProjectId is not present")
+    if campaign_category not in [CampaignCategory.AB_Segment.value,CampaignCategory.AB_Content.value]:
+        segment_entity = CEDSegment().get_segment_data_by_unique_id(segment_id)
+        if len(segment_entity) == 0:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Segment is not in Valid state")
+        data_id = segment_entity[0].get("data_id")
+        project_id = segment_entity[0].get("project_id")
+
+        if data_id is None or project_id is None:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="DataId/ProjectId is not present")
+
+        data_entity = CEDDataIDDetails().fetch_data_id_details(data_id)
+        if len(data_entity) == 0:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="DataId is not in Valid state")
+    else:
+        project_id = camp_project_id
 
     if is_split and project_id in settings.SPLIT_CAMPAIGN_DISABLED:
         raise ValidationFailedException(reason="Split Campaign not enabled for this project")
 
-    data_entity = CEDDataIDDetails().fetch_data_id_details(data_id)
     project_entity = CEDProjects().get_active_project_id_entity_alchemy(project_id)
 
-    if len(data_entity) == 0 or len(project_entity) == 0:
+    if len(project_entity) == 0:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="DataSet/Project is not in Valid state")
+                    details_message="Project is not in Valid state")
 
     if unique_id is not None:
         validated_old_camp = validate_campaign_edit_config(unique_id)
@@ -2096,8 +2228,8 @@ def save_campaign_details(request_data):
 
     campaign_builder.status = CampaignBuilderStatus.SAVED.value
     campaign_builder.created_by = user_name
-    campaign_builder.segment_name = segment_entity[0].get("title", "")
-    campaign_builder.records_in_segment = segment_entity[0].get("records", "")
+    campaign_builder.segment_name = segment_entity[0].get("title", "") if segment_entity is not None else None
+    campaign_builder.records_in_segment = segment_entity[0].get("records", "") if segment_entity is not None else None
     campaign_builder.name = name
     campaign_builder.segment_id = segment_id
     campaign_builder.priority = priority
@@ -2108,9 +2240,11 @@ def save_campaign_details(request_data):
     campaign_builder.is_recurring = is_recurring
     campaign_builder.description = description
     campaign_builder.is_split = is_split
+    campaign_builder.campaign_category = campaign_category
+    campaign_builder.project_id = project_id
 
     try:
-        saved_campaign_builder = save_campaign_builder_details(campaign_builder, campaign_list, unique_id, data_id)
+        saved_campaign_builder = save_campaign_builder_details(campaign_builder, campaign_list, unique_id, project_id)
         if saved_campaign_builder.get("result") == TAG_FAILURE:
             raise BadRequestException(method_name=method_name,
                                       reason=saved_campaign_builder.get("details_message"))
@@ -2122,6 +2256,7 @@ def save_campaign_details(request_data):
             CEDCampaignBuilder().save_or_update_campaign_builder_details(campaign_builder)
             raise BadRequestException(method_name=method_name,
                                       reason=saved_cbc_data.get("details_message"))
+        campaign_builder = CEDCampaignBuilder().get_campaign_builder_entity_by_unique_id(campaign_builder.unique_id)
     except BadRequestException as ex:
         logger.error(f"Error while prepare and saving campaign builder details BadRequestException ::{ex}")
         campaign_builder.is_active = False
@@ -2168,10 +2303,10 @@ def save_campaign_details(request_data):
                         details_message=campaign_builder.error_msg)
 
 
-def save_campaign_builder_details(campaign_builder, campaign_list, unique_id, data_id):
+def save_campaign_builder_details(campaign_builder, campaign_list, unique_id, project_id):
     method_name = "save_campaign_builder_details"
     if unique_id is None:
-        is_campaign_name_exist = CEDCampaignBuilder().get_campaign_builder_detail_from_campaign_name(campaign_builder.name, data_id)
+        is_campaign_name_exist = CEDCampaignBuilder().get_campaign_builder_detail_from_campaign_name(campaign_builder.name, project_id)
         if len(is_campaign_name_exist) > 0:
             return dict(result=TAG_FAILURE, details_message="Name is already used with another campaign builder")
     if campaign_builder.type.upper() == "SCHEDULED":
@@ -2312,18 +2447,19 @@ def validate_campaign_builder_campaign_details(campaign_builder, campaign_list, 
         return dict(result=TAG_FAILURE, details_message="Campaign builder details are not valid")
 
     if is_instant is False:
-        response = validate_schedule(campaign_list, segment_id, unique_id, campaign_id,is_split)
+        response = validate_schedule(campaign_list, segment_id, unique_id, campaign_id,is_split,campaign_builder)
         if response.get("result") == TAG_FAILURE:
             logger.error(f"{method_name}, validate schedule resp :: {response}  ")
             return dict(result=TAG_FAILURE, details_message=response.get("details_message"))
 
-    response = validate_headers_compatibility(campaign_list, segment_id, unique_id)
+    response = validate_headers_compatibility(campaign_list, segment_id, unique_id,campaign_builder)
     if response.get("result") == TAG_FAILURE:
         logger.error(f"{method_name}, validate schedule resp :: {response}  ")
         return dict(result=TAG_FAILURE, details_message=response.get("details_message"))
 
     campaign_final_list = []
     order_number = 0
+    segment_list = []
     for campaign in campaign_list:
         if campaign is None:
             logger.error(f"{method_name}, campaign :: {campaign}  ")
@@ -2348,6 +2484,17 @@ def validate_campaign_builder_campaign_details(campaign_builder, campaign_list, 
             campaign["end_date_time"] = campaign.get("input_end_date_time")
         split_campaign_list = make_split_cbc_list(campaign,is_split,recurring_detail)
         campaign_final_list.extend(split_campaign_list)
+        if campaign.get("segment_id") is not None:
+            segment_list.append(campaign["segment_id"])
+
+    camp_seg_info = fetch_and_validate_sub_segment_ids(segment_ids=segment_list, mode="SAVE")
+
+    if isinstance(recurring_detail,dict):
+        recurring_detail["camp_info"] = camp_seg_info
+
+    CEDCampaignBuilder().update_campaign_builder_history(unique_id,
+                                                         dict(recurring_detail=json.dumps(recurring_detail)))
+
     logger.debug(f"Trace Exit: {method_name}, campaign final list :: {campaign_final_list}")
     return dict(result=TAG_SUCCESS, data=campaign_final_list)
 
@@ -2471,7 +2618,7 @@ def prepare_and_save_camp_builder_history_data(campaign_builder_details):
     id = campaign_builder_details.id
     unique_id = campaign_builder_details.unique_id
     history_id = campaign_builder_details.history_id
-    segment_id = campaign_builder_details.segment_id
+    project_id = campaign_builder_details.project_id
     try:
         campaign_builder_his_entity = CED_HIS_CampaignBuilder(campaign_builder_details._asdict())
         campaign_builder_his_entity.campaign_builder_id = unique_id
@@ -2490,7 +2637,7 @@ def prepare_and_save_camp_builder_history_data(campaign_builder_details):
             activity_log_entity.sub_data_source = SubDataSource.CAMPAIGN_BUILDER.value,
             activity_log_entity.data_source_id = unique_id
             activity_log_entity.comment = campaign_builder_his_entity.comment
-            activity_log_entity.filter_id = segment_id
+            activity_log_entity.filter_id = project_id
             activity_log_entity.history_table_id = campaign_builder_his_entity.unique_id
             activity_log_entity.unique_id = uuid.uuid4().hex
             activity_log_entity.created_by = Session().get_user_session_object().user.user_uuid
@@ -2907,7 +3054,7 @@ def validate_campaign_content_mapping(campaign):
         return dict(result=TAG_FAILURE, details_message="Campaign Content type is not valid")
 
 
-def validate_schedule(campaign_list, segment_id, unique_id, campaign_id,is_split):
+def validate_schedule(campaign_list, segment_id, unique_id, campaign_id,is_split,campaign_builder):
     method_name = "validate_schedule"
     campaign_data = []
     for campaign in campaign_list:
@@ -2916,7 +3063,11 @@ def validate_schedule(campaign_list, segment_id, unique_id, campaign_id,is_split
         end_date_time = campaign.get("input_end_date_time", "")
         sub_segment_id = campaign.get("segment_id")
         campaign_data.append({"contentType": content_type, "startDateTime": start_date_time, "endDateTime": end_date_time, "campaignId": campaign_id,"segment_id":sub_segment_id})
-    request_data = {"body": {"segmentId": segment_id, "campaigns": campaign_data, "is_split":is_split }}
+    if campaign_builder.campaign_category not in [CampaignCategory.AB_Segment.value, CampaignCategory.AB_Content.value]:
+        request_data = {"body": {"segmentId": segment_id, "campaigns": campaign_data, "is_split":is_split }}
+    else:
+        request_data = {"body": {"projectId": campaign_builder.project_id, "campaigns": campaign_data, "is_split":is_split }}
+
     validated = True
     try:
         campaign_validate_response = vaildate_campaign_for_scheduling(request_data)
@@ -2933,17 +3084,49 @@ def validate_schedule(campaign_list, segment_id, unique_id, campaign_id,is_split
         raise ex
     except Exception as e:
         raise e
-    return dict(result=TAG_SUCCESS, details_message="schedule validated successfully")
+    return dict(result=TAG_SUCCESS, details_message="schedule validated successfully", data=campaign_validate_response)
 
 
-def validate_headers_compatibility(campaign_list, segment_id, unique_id):
+def validate_ab_schedule_slots(campaign_list, segment_id, campaign_id,is_split):
+    method_name = "validate_schedule"
+    campaign_data = []
+    project_id = CEDSegment().get_project_id_by_segment_id(segment_id)
+    if project_id is None:
+        raise BadRequestException(method_name=method_name, reason=f"Not able to find ProjectId against SegmentId::{segment_id}")
+    for campaign in campaign_list:
+        content_type = campaign.get("content_type", "")
+        start_date_time = campaign.get("input_start_date_time", "")
+        end_date_time = campaign.get("input_end_date_time", "")
+        sub_segment_id = campaign.get("segment_id")
+        split_details = campaign.get("split_details")
+        campaign_data.append({"contentType": content_type, "startDateTime": start_date_time, "endDateTime": end_date_time, "campaignId": campaign_id,"segment_id":sub_segment_id, "split_details": split_details})
+    request_data = {"body": {"projectId": project_id, "campaigns": campaign_data, "is_split":is_split }}
+    try:
+        campaign_validate_response = vaildate_campaign_for_scheduling(request_data)
+        if campaign_validate_response is None or campaign_validate_response.get("result") == TAG_FAILURE:
+            logger.error(f"{method_name}, Error: While checking slots availability. ")
+            raise BadRequestException(method_name=method_name, reason="Error: While checking slots availability. ")
+    except BadRequestException as ex:
+        raise ex
+    except Exception as e:
+        raise e
+    return dict(result=TAG_SUCCESS, details_message="schedule validated successfully", data=campaign_validate_response.get("response", []))
+
+
+def validate_headers_compatibility(campaign_list, segment_id, unique_id,campaign_builder):
     from onyx_proj.apps.segments.segments_processor.segment_headers_processor import \
         check_headers_compatibility_with_content_template
     method_name = "validate_headers_compatibility"
     logger.debug(f"Trace Entry: {method_name}")
     try:
-        content_id_map = prepare_unique_content_id_map(campaign_list)
-        request_list = prepare_and_check_headers_compatibility(content_id_map, segment_id)
+        request_list = []
+        if campaign_builder.campaign_category not in [CampaignCategory.AB_Segment.value,
+                                                      CampaignCategory.AB_Content.value]:
+
+            content_id_map = prepare_unique_content_id_map(campaign_list)
+            request_list = prepare_and_check_headers_compatibility(content_id_map, segment_id)
+        else:
+            request_list = prepare_header_compatibility_for_ab_campaigns(campaign_list)
         for request in request_list:
             resp = check_headers_compatibility_with_content_template(request)
             if resp.get('result') == TAG_FAILURE:
@@ -2953,6 +3136,59 @@ def validate_headers_compatibility(campaign_list, segment_id, unique_id):
         raise e
     logger.debug(f"Trace Exit: {method_name}")
     return dict(result=TAG_SUCCESS, details_message="schedule validated successfully")
+
+def prepare_header_compatibility_for_ab_campaigns(campaign_list):
+    unique_requests = []
+    added_hash_val = []
+
+    for campaign in campaign_list:
+        seg_id = campaign["segment_id"]
+        if campaign.get("content_type", "") == CampaignChannel.EMAIL.value:
+            email_camp = campaign.get("email_campaign")
+            if email_camp is not None:
+                if email_camp.get('email_id') is not None and email_camp.get('email_id'):
+                    req_hash = f"{'EMAIL'}_{email_camp['email_id']}_{seg_id}"
+                    if req_hash not in added_hash_val:
+                        added_hash_val.append(req_hash)
+                        unique_requests.append({"segment_id": seg_id, "content_id": email_camp['email_id'], "template_type": "EMAIL"})
+                if email_camp.get('subject_line_id') is not None and email_camp.get('subject_line_id'):
+                    req_hash = f"{'SUBJECT'}_{email_camp['subject_line_id']}_{seg_id}"
+                    if req_hash not in added_hash_val:
+                        added_hash_val.append(req_hash)
+                        unique_requests.append({"segment_id": seg_id, "content_id": email_camp['subject_line_id'], "template_type": "SUBJECT"})
+                if email_camp.get('url_id') is not None and email_camp.get('url_id'):
+                    req_hash = f"{'URL'}_{email_camp['url_id']}_{seg_id}"
+                    if req_hash not in added_hash_val:
+                        added_hash_val.append(req_hash)
+                        unique_requests.append({"segment_id": seg_id, "content_id": email_camp['url_id'], "template_type": "URL"})
+        if campaign.get("content_type", "") == CampaignChannel.SMS.value:
+            sms_campaign = campaign.get("sms_campaign")
+            if sms_campaign is not None:
+                if sms_campaign.get('sms_id') is not None and sms_campaign.get('sms_id'):
+                    req_hash = f"{'SMS'}_{sms_campaign['sms_id']}_{seg_id}"
+                    if req_hash not in added_hash_val:
+                        added_hash_val.append(req_hash)
+                        unique_requests.append({"segment_id": seg_id, "content_id": sms_campaign['sms_id'], "template_type": "SMS"})
+                if sms_campaign.get('url_id') is not None and sms_campaign.get('url_id'):
+                    req_hash = f"{'URL'}_{sms_campaign['url_id']}_{seg_id}"
+                    if req_hash not in added_hash_val:
+                        added_hash_val.append(req_hash)
+                        unique_requests.append({"segment_id": seg_id, "content_id": sms_campaign['url_id'], "template_type": "URL"})
+        if campaign.get("content_type", "") == CampaignChannel.WHATSAPP.value:
+            whatsapp_campaign = campaign.get("whatsapp_campaign")
+            if whatsapp_campaign is not None:
+                if whatsapp_campaign.get('whats_app_content_id') is not None and whatsapp_campaign.get(
+                        'whats_app_content_id'):
+                    req_hash = f"{'WHATSAPP'}_{whatsapp_campaign['whats_app_content_id']}_{seg_id}"
+                    if req_hash not in added_hash_val:
+                        added_hash_val.append(req_hash)
+                        unique_requests.append({"segment_id": seg_id, "content_id": whatsapp_campaign['whats_app_content_id'], "template_type": "WHATSAPP"})
+                if whatsapp_campaign.get('url_id') is not None and whatsapp_campaign.get('url_id'):
+                    req_hash = f"{'URL'}_{whatsapp_campaign['url_id']}_{seg_id}"
+                    if req_hash not in added_hash_val:
+                        added_hash_val.append(req_hash)
+                        unique_requests.append({"segment_id": seg_id, "content_id": whatsapp_campaign['url_id'], "template_type": "URL"})
+    return unique_requests
 
 
 def prepare_unique_content_id_map(campaign_list):
@@ -3105,6 +3341,9 @@ def create_campaign_details_in_local_db(request: dict):
     ccd_entity.long_url = content_data["long_url"]
     ccd_entity.data_id = fp_project_details_json["dataId"]
     ccd_entity.file_id = fp_file_data_entity_final.id
+    ccd_entity.campaign_builder_id = fp_project_details_json["campaignBuilderId"]
+    ccd_entity.campaign_category = fp_project_details_json["campaignCategory"]
+    ccd_entity.execution_config_id = fp_project_details_json["campaignBuilderCampaignEntity"]["ExecutionConfigId"]
 
     try:
         if not fp_project_details_json.get("testCampaign"):
@@ -3480,3 +3719,474 @@ def replay_campaign_in_error(request_data):
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                 details_message="Successfully changed the campaign for retry")
+
+
+def fetch_and_validate_sub_segment_ids(segment_ids, mode="APPROVAL"):
+    segment_ids = list(set(segment_ids))
+    resp = CEDSegment().get_active_segments_data_by_ids(segment_ids)
+    if len(resp) != len(segment_ids):
+        raise ValidationFailedException(reason="Invalid Segment Ids found with CBC's")
+    main_segment_ids = []
+    for seg in resp:
+        if seg.unique_id not in main_segment_ids:
+            if seg.parent_id is None:
+                main_segment_ids.append(seg.unique_id)
+            else:
+                main_segment_ids.append(seg.parent_id)
+    main_segment_ids = list(set(main_segment_ids))
+    resp = CEDSegment().get_active_segments_data_by_ids(main_segment_ids)
+    if len(resp) != len(main_segment_ids):
+        raise ValidationFailedException(reason="Invalid Segment Ids found with CBC's")
+
+    valid_status = [SegmentStatus.APPROVED.value, SegmentStatus.APPROVAL_PENDING.value] if mode == "SAVE" \
+        else [SegmentStatus.APPROVED.value]
+    seg_detail_list = []
+    for seg in resp:
+        seg_detail = {
+            "segment_title": seg.title
+        }
+        seg_detail_list.append(seg_detail)
+        if seg.status not in valid_status:
+            raise ValidationFailedException(reason=f"Base Segment ::{seg.id} is not Approved")
+
+    return seg_detail_list
+
+
+def prepare_campaign_builder_campaign(request_data):
+    method_name = "prepare_campaign_builder_campaign"
+    logger.info(f"Trace entry, method name: {method_name}, request_data: {request_data}")
+    mode = request_data.get("ab_mode")
+    data = request_data.get("data")
+    recurring_detail = request_data.get("recurring_detail")
+
+    if mode is None or data is None or recurring_detail is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Mandate params are missing.")
+    try:
+        if mode == ABMode.SEGMENT.value:
+            resp = get_seg_based_cbc_list(data, recurring_detail)
+        elif mode == ABMode.TEMPLATE.value:
+            resp = get_template_based_cbc_list(data, recurring_detail)
+        else:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="AB mode is not valid.")
+    except ValidationFailedException as vx:
+        logger.error(
+            f"Error while validating and preparing ab campaign. ValidationFailedException ::{vx.reason}")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message=vx.reason)
+    except InternalServerError as ix:
+        logger.error(f"Error while validating and preparing ab campaign. InternalServerError ::{ix.reason}")
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE, details_message=ix.reason)
+    except BadRequestException as ex:
+        logger.error(
+            f"Error while validating and preparing ab campaign. BadRequestException ::{ex.reason}")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message=ex.reason)
+    except Exception as e:
+        logger.error(f"Error while validating and preparing ab campaign. Exception ::{e}")
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE, details_message={e})
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=resp)
+
+
+def get_seg_based_cbc_list(data, recurring_detail):
+    log_entry(data, recurring_detail)
+
+    try:
+        validate_seg_based_campaign(data, recurring_detail)
+        data = prepare_seg_based_campaign_list(data, recurring_detail)
+        log_exit(data)
+        return data
+    except ValidationFailedException as vx:
+        logger.error(f"Error while validating and preparing segment based campaign. ValidationFailedException ::{vx.reason}")
+        raise vx
+    except InternalServerError as ix:
+        logger.error(f"Error while validating and preparing segment based campaign. InternalServerError ::{ix.reason}")
+        raise ix
+    except BadRequestException as ex:
+        logger.error(f"Error while validating and preparing segment based campaign. BadRequestException ::{ex.reason}")
+        raise ex
+    except Exception as e:
+        logger.error(f"Error while validating and preparing segment based campaign. Exception ::{e}")
+        raise e
+
+
+def prepare_seg_based_campaign_list(data, recurring_detail):
+    method_name = "prepare_seg_based_campaign_list"
+    log_entry(data, recurring_detail)
+
+    segment_id = data.get("segment_id")
+    segment_type = data.get("type")
+    variants = data.get("variants")
+    campaign_id = data.get("campaign_id")
+
+    segment_filter = None
+    if data.get('filter_json') is not None:
+        segment_id = data['filter_json']['sub_segment_id']
+        segment_filter = data['filter_json']['segment_filter']
+
+    final_cbc_list = []
+    slot_availability_list = []
+    try:
+        for seg_variants in variants:
+            percentage = 0
+            for i, variant_dict in enumerate(seg_variants):
+                campaign_builder_campaign_list = []
+                variant = copy.deepcopy(CBC_DICT)
+                resp = make_content_conf(variant_dict["template_info"], variant_dict["channel"])
+                variant[resp.get("key")] = resp.get("data")
+                variant['execution_config_id'] = variant_dict["execution_config_id"]
+                variant['content_type'] = variant_dict["channel"]
+                variant['vendor_config_id'] = variant_dict["template_info"]["vendor_config_id"]
+                if segment_type == SegmentABTypes.PERCENTAGE.value:
+                    variant['split_details'] = json.dumps({"percentage_split": {
+                        "from_percentage": percentage,
+                        "to_percentage": percentage + variant_dict["filter_json"]["percentage"] - 1
+                    }})
+                    percentage += variant_dict["filter_json"]["percentage"]
+                    variant['segment_id'] = segment_id
+                    if segment_filter is not None:
+                        variant['filter_json'] = json.dumps(segment_filter)
+
+                elif segment_type == SegmentABTypes.ATTRIBUTE.value:
+                    variant['filter_json'] = json.dumps(variant_dict["filter_json"]["segment_filter"])
+                    variant['segment_id'] = variant_dict["filter_json"]["sub_segment_id"]
+
+                recurring_dates = generate_schedule(recurring_detail, "03:30:00", "03:30:00")
+                if len(recurring_dates) < 1:
+                    raise InternalServerError(method_name=method_name, reason="Enable to find date.")
+                for rec_data in recurring_dates:
+                    cbc = copy.deepcopy(variant)
+                    cbc["input_start_date_time"] = datetime.datetime.combine(rec_data.get("date"), datetime.datetime.strptime(variant_dict["start_time"], '%H:%M:%S').time())
+                    cbc["input_end_date_time"] = datetime.datetime.combine(rec_data.get("date"), datetime.datetime.strptime(variant_dict["end_time"], '%H:%M:%S').time())
+
+                    if variant_dict.get("tbd", False):
+                        cbc_list = make_split_camp_detail(cbc)
+                        for cbc_dict in cbc_list:
+                            if cbc.get("split_details") is not None:
+                                cbc_dict["split_details"].update(json.loads(variant["split_details"]))
+                            cbc_dict["split_details"] = json.dumps(cbc_dict["split_details"])
+                        campaign_builder_campaign_list.extend(cbc_list)
+                    else:
+                        cbc["input_start_date_time"] = cbc["input_start_date_time"].strftime("%Y-%m-%d %H:%M:%S")
+                        cbc["input_end_date_time"] = cbc["input_end_date_time"].strftime("%Y-%m-%d %H:%M:%S")
+                        campaign_builder_campaign_list.append(cbc)
+                resp = validate_ab_schedule_slots(campaign_builder_campaign_list, segment_id, campaign_id, False)
+                if resp.get("result") != TAG_SUCCESS:
+                    raise InternalServerError(method_name=method_name, reason="Enable to check slots availability")
+                valid_schedule = True
+                for slots_data in resp.get("data"):
+                    if not slots_data.get("valid_schedule"):
+                        valid_schedule = False
+                slot_dict = {
+                    "execution_config_id": variant_dict["execution_config_id"],
+                    "valid_schedule": valid_schedule
+                }
+                slot_availability_list.append(slot_dict)
+                final_cbc_list.extend(campaign_builder_campaign_list)
+
+        cbc_details = {
+            "cbc_list": final_cbc_list,
+            "slot_availability": slot_availability_list
+        }
+
+        log_exit(cbc_details)
+        return cbc_details
+    except InternalServerError as iex:
+        logger.error(f"Error while preparing segment based campaign. InternalServerError ::{iex.reason}")
+        raise iex
+    except Exception as e:
+        logger.error(f"Error while preparing segment based campaign. Exception ::{e}")
+        raise e
+
+
+def prepare_template_based_campaign_list(data, recurring_detail):
+    method_name = "prepare_template_based_campaign_list"
+    log_entry(data, recurring_detail)
+
+    channel = data.get("channel")
+    template_info = data.get("template_info")
+    template_type = data.get("type")
+    variants = data.get("variants")
+    campaign_id = data.get("campaign_id")
+    final_cbc_list = []
+    slot_availability_list = []
+    try:
+        for seg_variants in variants:
+            percentage = 0
+            for i, variant_dict in enumerate(seg_variants):
+                segment_type = variant_dict["segment_type"]
+                campaign_builder_campaign_list = []
+                variant = copy.deepcopy(CBC_DICT)
+                resp = make_content_conf(template_info, channel)
+                variant[resp.get("key")] = resp.get("data")
+                variant['execution_config_id'] = variant_dict["execution_config_id"]
+                variant['content_type'] = channel
+                variant['vendor_config_id'] = template_info["vendor_config_id"]
+                if segment_type == SegmentABTypes.PERCENTAGE.value:
+                    variant['segment_id'] = variant_dict["segment_id"]
+                    variant['split_details'] = json.dumps({"percentage_split": {
+                        "from_percentage": percentage,
+                        "to_percentage": percentage + variant_dict["filter_json"]["percentage"] - 1
+                    }})
+                    percentage += variant_dict["filter_json"]["percentage"]
+                    if variant_dict["filter_json"].get("sub_segment_id") is not None:
+                        variant['segment_id'] = variant_dict["filter_json"]["sub_segment_id"]
+                        variant['filter_json'] = json.dumps(variant_dict["filter_json"]["segment_filter"])
+                elif segment_type == SegmentABTypes.ATTRIBUTE.value:
+                    variant['filter_json'] = json.dumps(variant_dict["filter_json"]["segment_filter"])
+                    variant['segment_id'] = variant_dict["filter_json"]["sub_segment_id"]
+
+                recurring_dates = generate_schedule(recurring_detail, "03:30:00", "03:30:00")
+                if len(recurring_dates) < 1:
+                    raise InternalServerError(method_name=method_name, reason="Enable to find date.")
+                for rec_data in recurring_dates:
+                    cbc = copy.deepcopy(variant)
+                    cbc["input_start_date_time"] = datetime.datetime.combine(rec_data.get("date"), datetime.datetime.strptime(variant_dict["start_time"], '%H:%M:%S').time())
+                    cbc["input_end_date_time"] = datetime.datetime.combine(rec_data.get("date"), datetime.datetime.strptime(variant_dict["end_time"], '%H:%M:%S').time())
+
+                    if variant_dict.get("tbd", False):
+                        cbc_list = make_split_camp_detail(cbc)
+                        for cbc_dict in cbc_list:
+                            if cbc.get("split_details") is not None:
+                                cbc_dict["split_details"].update(json.loads(variant["split_details"]))
+                            cbc_dict["split_details"] = json.dumps(cbc_dict["split_details"])
+                        campaign_builder_campaign_list.extend(cbc_list)
+                    else:
+                        cbc["input_start_date_time"] = cbc["input_start_date_time"].strftime("%Y-%m-%d %H:%M:%S")
+                        cbc["input_end_date_time"] = cbc["input_end_date_time"].strftime("%Y-%m-%d %H:%M:%S")
+                        campaign_builder_campaign_list.append(cbc)
+                resp = validate_ab_schedule_slots(campaign_builder_campaign_list, variant_dict["segment_id"], campaign_id, False)
+                if resp.get("result") != TAG_SUCCESS:
+                    raise InternalServerError(method_name=method_name, reason="Enable to check slots availability")
+                valid_schedule = True
+                for slots_data in resp.get("data"):
+                    if not slots_data.get("valid_schedule"):
+                        valid_schedule = False
+                slot_dict = {
+                    "execution_config_id": variant_dict["execution_config_id"],
+                    "valid_schedule": valid_schedule
+                }
+                slot_availability_list.append(slot_dict)
+                final_cbc_list.extend(campaign_builder_campaign_list)
+
+        cbc_details = {
+            "cbc_list": final_cbc_list,
+            "slot_availability": slot_availability_list
+        }
+
+        log_exit(cbc_details)
+        return cbc_details
+    except InternalServerError as iex:
+        logger.error(f"Error while preparing segment based campaign. InternalServerError ::{iex.reason}")
+        raise iex
+    except Exception as e:
+        logger.error(f"Error while preparing segment based campaign. Exception ::{e}")
+        raise e
+
+
+def make_content_conf(template_info, channel):
+    method_name = "make_content_conf"
+    log_entry(template_info, channel)
+
+    if channel == CampaignBuilderCampaignContentType.EMAIL.value:
+        resp = dict(status=TAG_SUCCESS, key="email_campaign", data=template_info)
+    elif channel == CampaignBuilderCampaignContentType.IVR.value:
+        resp = dict(status=TAG_SUCCESS, key="ivr_campaign", data=template_info)
+    elif channel == CampaignBuilderCampaignContentType.SMS.value:
+        resp = dict(status=TAG_SUCCESS, key="sms_campaign", data=template_info)
+    elif channel == CampaignBuilderCampaignContentType.WHATSAPP.value:
+        resp = dict(status=TAG_SUCCESS, key="whatsapp_campaign", data=template_info)
+    else:
+        raise BadRequestException(method_name=method_name, reason="Channel is missing.")
+
+    log_exit(resp)
+    return resp
+
+
+def make_split_camp_detail(camp_builder_camp):
+    method_name = "make_split_camp_detail"
+
+    final_cbc_list = []
+    start_date_time = camp_builder_camp["input_start_date_time"]
+    end_date_time = camp_builder_camp["input_end_date_time"]
+
+    if start_date_time.minute != end_date_time.minute:
+        raise BadRequestException(method=method_name, reason="Time Difference in Split Campaigns should be in multiple of hours")
+
+    hours = int((int(end_date_time.timestamp()) - int(start_date_time.timestamp())) / (60 * 60))
+
+    for hour in range(0, hours):
+        camp = copy.deepcopy(camp_builder_camp)
+        camp["input_start_date_time"] = start_date_time.strftime("%Y-%m-%d %H:%M:%S")
+        camp["input_end_date_time"] = (start_date_time + timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
+        camp["split_details"] = {
+            "total_splits": hours,
+            "current_split": hour
+        }
+
+        start_date_time = start_date_time + timedelta(hours=1)
+
+        final_cbc_list.append(camp)
+
+    return final_cbc_list
+
+
+def get_template_based_cbc_list(data, recurring_detail):
+    log_entry(data, recurring_detail)
+
+    try:
+        validate_template_based_campaign(data, recurring_detail)
+        data = prepare_template_based_campaign_list(data, recurring_detail)
+        return data
+    except ValidationFailedException as vx:
+        logger.error(
+            f"Error while validating and preparing template based campaign. ValidationFailedException ::{vx.reason}")
+        raise vx
+    except InternalServerError as ix:
+        logger.error(f"Error while validating and preparing template based campaign. InternalServerError ::{ix.reason}")
+        raise ix
+    except BadRequestException as ex:
+        logger.error(f"Error while validating and preparing template based campaign. BadRequestException ::{ex.reason}")
+        raise ex
+    except Exception as e:
+        logger.error(f"Error while validating and preparing template based campaign. Exception ::{e}")
+        raise e
+
+
+def validate_template_based_campaign(data, recurring_detail):
+    method_name = "validate_seg_based_campaign"
+    log_entry(data, recurring_detail)
+
+    channel = data.get("channel")
+    template_seg_type = data.get("type")
+    variants = data.get("variants")
+    template_info = data.get("template_info")
+
+    if (channel is None or template_seg_type is None or template_seg_type not in
+            [TemplateABTypes.SINGLE_SEG.value, TemplateABTypes.MULTI_SEG.value] or
+            len(variants) < 1 or len(variants[0]) < 1):
+        raise BadRequestException(method_name=method_name, reason="Mandatory params missing.")
+
+    validate_recurring_details(recurring_detail)
+    validate_ab_variants(variants, ABMode.TEMPLATE.value)
+    validate_template_info(template_info, channel)
+
+    log_exit(method_name, "Success")
+
+
+def validate_seg_based_campaign(data, recurring_detail):
+    method_name = "validate_seg_based_campaign"
+    log_entry(data, recurring_detail)
+
+    segment_id = data.get("segment_id")
+    segment_type = data.get("type")
+    variants = data.get("variants")
+
+    if (segment_id is None or segment_type is None or segment_type not in
+            [SegmentABTypes.ATTRIBUTE.value, SegmentABTypes.PERCENTAGE.value] or len(variants) < 1 or len(variants[0]) < 1):
+        raise BadRequestException(method_name=method_name, reason="Mandatory params missing.")
+
+    segment_entity = CEDSegment().get_segment_data_by_unique_id(segment_id, ["APPROVAL_PENDING", "APPROVED", "SAVED"])
+    if len(segment_entity) == 0:
+        raise BadRequestException(method_name=method_name, reason="Segment is not in Valid state")
+
+    validate_recurring_details(recurring_detail)
+    validate_ab_variants(variants, ABMode.SEGMENT.value, segment_type)
+
+    log_exit(method_name, "Success")
+
+
+def validate_recurring_details(recurring_detail):
+    method_name = "validate_seg_based_campaign"
+    log_entry(recurring_detail)
+
+    start_date = recurring_detail.get('start_date')
+    campaign_type = recurring_detail.get('campaign_type')
+    end_date = recurring_detail.get('end_date')
+    repeat_type = recurring_detail.get('repeat_type')
+    days = recurring_detail.get('days')
+    number_of_days = recurring_detail.get('number_of_days')
+
+    if (start_date is None or end_date is None or campaign_type is None
+            or (campaign_type == "SCHEDULELATER" and repeat_type is None)):
+        raise BadRequestException(method_name=method_name, reason="Mandatory params missing.")
+
+    if campaign_type == "SCHEDULELATER" and repeat_type == "WEEKDAYS" and days is None:
+        raise BadRequestException(method_name=method_name, reason="Week days are missing in scheduling details.")
+
+    if campaign_type == "SCHEDULELATER" and repeat_type == "DELAY" and number_of_days is None:
+        raise BadRequestException(method_name=method_name, reason="Number of days are missing in scheduling details.")
+
+    log_exit(method_name, "Success")
+
+
+def validate_ab_variants(variants, ab_camp_type, segment_type=None):
+    method_name = "validate_ab_variants"
+    log_entry(variants)
+
+    if len(variants) < 1 and len(variants[0]) < 1:
+        raise BadRequestException(method_name=method_name, reason="Mandatory params missing.")
+
+    for seg_variants in variants:
+        percentage = 0
+        for variant_dict in seg_variants:
+            if variant_dict.get("segment_type") is not None:
+                segment_type = variant_dict.get("segment_type")
+
+            if variant_dict.get("start_time") is None or variant_dict.get("end_time") is None or variant_dict.get(
+                    "execution_config_id") is None or variant_dict.get("filter_json") is None:
+                raise BadRequestException(method_name=method_name, reason="Mandatory params missing in variants.")
+
+            if ab_camp_type == ABMode.SEGMENT.value:
+                if variant_dict.get("template_info") is None:
+                    raise BadRequestException(method_name=method_name, reason="Template info missing.")
+                validate_template_info(variant_dict.get("template_info"), variant_dict.get("channel"))
+            elif ab_camp_type == ABMode.TEMPLATE.value:
+                if variant_dict.get("segment_id") is None:
+                    raise BadRequestException(method_name=method_name, reason="Segment is not provided")
+                segment_entity = CEDSegment().get_segment_data_by_unique_id(variant_dict.get("segment_id"))
+                if len(segment_entity) == 0:
+                    raise BadRequestException(method_name=method_name, reason="Segment is not in Valid state")
+
+            if segment_type == SegmentABTypes.PERCENTAGE.value:
+                if variant_dict.get("filter_json").get("percentage") is None:
+                    raise BadRequestException(method_name=method_name, reason="Percentage is missing.")
+                percentage += variant_dict.get("filter_json").get("percentage")
+            elif segment_type == SegmentABTypes.ATTRIBUTE.value:
+                if variant_dict.get("filter_json").get("sub_segment_id") is None or variant_dict.get("filter_json").get(
+                        "segment_filter") is None or len(variant_dict.get("filter_json").get("segment_filter")) < 1:
+                    raise BadRequestException(method_name=method_name, reason="Attribute segment id is missing.")
+
+        if segment_type == SegmentABTypes.PERCENTAGE.value and percentage != 100:
+            raise BadRequestException(method_name=method_name, reason="Percentage is not equals to 100%.")
+
+    log_exit(method_name, "Success")
+
+
+def validate_template_info(template_info, channel):
+    method_name = "validate_template_info"
+    log_entry(template_info, channel)
+
+    if channel is None or template_info is None or template_info.get("vendor_config_id") is None:
+        raise BadRequestException(method_name=method_name, reason="Mandatory params missing.")
+    if channel == CampaignBuilderCampaignContentType.EMAIL.value:
+        subject_line_id = template_info.get("subject_line_id")
+        email_id = template_info.get("email_id")
+        if subject_line_id is None or email_id is None:
+            return dict(result=TAG_FAILURE, details_message="SubjectLineId or EmailId not provided")
+    elif channel == CampaignBuilderCampaignContentType.IVR.value:
+        ivr_id = template_info.get("ivr_id")
+        if ivr_id is None:
+            return dict(result=TAG_FAILURE, details_message="IvrId not provided")
+    elif channel == CampaignBuilderCampaignContentType.SMS.value:
+        sender_id = template_info.get("sender_id")
+        sms_id = template_info.get("sms_id")
+        if sms_id is None or sender_id is None:
+            return dict(result=TAG_FAILURE, details_message="SmsId or senderId not provided")
+    elif channel == CampaignBuilderCampaignContentType.WHATSAPP.value:
+        whatsapp_content_id = template_info.get("whats_app_content_id")
+        if whatsapp_content_id is None:
+            return dict(result=TAG_FAILURE, details_message="Whatsapp content is not provided")
+    else:
+        return dict(result=TAG_FAILURE, details_message="Channel is not valid")
+
+    log_exit(method_name, "Success")

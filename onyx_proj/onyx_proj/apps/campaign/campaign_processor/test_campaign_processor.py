@@ -22,7 +22,7 @@ from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH, \
     CHANNEL_RESPONSE_TABLE_MAPPING, TEST_CAMPAIGN_RESPONSE_DATA, CHANNEL_CAMPAIGN_BUILDER_TABLE_MAPPING, \
     TEST_CAMPAIGN_VALIDATION_DURATION_MINUTES, TEST_CAMPAIGN_VALIDATION_API_PATH, ASYNC_QUERY_EXECUTION_ENABLED, \
-    GET_DECRYPTED_DATA
+    GET_DECRYPTED_DATA, CampaignCategory
 from onyx_proj.apps.segments.app_settings import AsyncTaskRequestKeys, AsyncTaskSourceKeys, AsyncTaskCallbackKeys, \
     QueryKeys, DATA_THRESHOLD_MINUTES
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
@@ -280,12 +280,22 @@ def fetch_test_campaign_validation_status(request_data) -> json:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid campaign builder campaign id.")
 
-    project_details = CEDProjects().get_project_id_by_cbc_id(campaign_builder_campaign_id)
-    if not project_details or len(project_details) == 0 or project_details[0] is None or project_details[0].get(
-            'UniqueId', None) in [None, ""]:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message=f"Project not found for campaign_builder_campaign_id : {campaign_builder_campaign_id}.")
-    project_id = project_details[0]['UniqueId']
+    if campaign_details.get("campaign_category") not in [CampaignCategory.AB_Segment.value,
+                                                         CampaignCategory.AB_Content.value]:
+        project_details = CEDProjects().get_project_id_by_cbc_id(campaign_builder_campaign_id)
+        if not project_details or len(project_details) == 0 or project_details[0] is None or project_details[0].get(
+                'UniqueId', None) in [None, ""]:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message=f"Project not found for campaign_builder_campaign_id : {campaign_builder_campaign_id}.")
+        project_id = project_details[0]['UniqueId']
+
+    else:
+        project_details = CEDProjects().get_project_id_by_cbc_id_and_cbc_seg_id(campaign_builder_campaign_id)
+        if not project_details or len(project_details) == 0 or project_details[0] is None or project_details[0].get(
+                'UniqueId', None) in [None, ""]:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message=f"Project not found for campaign_builder_campaign_id : {campaign_builder_campaign_id}.")
+        project_id = project_details[0]['UniqueId']
 
     if project_id not in settings.ONYX_LOCAL_CAMP_VALIDATION:
         result["system_validated"] = True

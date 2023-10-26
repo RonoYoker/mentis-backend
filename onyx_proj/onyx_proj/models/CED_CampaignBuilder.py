@@ -41,19 +41,18 @@ class CEDCampaignBuilder:
     def get_campaign_list(self, filters):
         baseQuery = """SELECT cb.Id AS id, cb.UniqueId AS unique_id, cb.Name AS name, cb.SegmentName AS segment_name, 
         cb.Status AS status, cb.CreatedBy AS created_by, min(cbc.StartDateTime) AS start_date_time, cb.ApprovedBy AS 
-        approved_by, cb.RecordsInSegment AS segment_records, cb.Type AS type, cb.IsActive as active, cb.IsRecurring 
-        AS is_recurring, cb.RecurringDetail AS recurring_details,cb.IsStarred as is_starred, cbc.ContentType AS channel, COUNT(*) AS 
-        instance_count, cb.Description as description FROM CED_CampaignBuilder cb JOIN CED_Segment cs ON cs.UniqueId = 
-        cb.SegmentId JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId WHERE % s GROUP BY 1, 
-        2, 3, 4, 5 order by cb.Id DESC""" % filters
+        approved_by, cb.RecordsInSegment AS segment_records, cb.Type AS type, cb.IsActive as active, cb.CampaignCategory
+         as campaign_category , cb.IsRecurring AS is_recurring, cb.RecurringDetail AS recurring_details, cb.IsStarred as
+          is_starred, cbc.ContentType AS channel, COUNT(*) AS instance_count, cb.Description as description FROM 
+          CED_CampaignBuilder cb LEFT JOIN CED_Segment cs ON cs.UniqueId = cb.SegmentId JOIN CED_CampaignBuilderCampaign
+           cbc ON cb.UniqueId = cbc.CampaignBuilderId WHERE % s GROUP BY 1, 2, 3, 4, 5 order by cb.Id DESC""" % filters
         return dict_fetch_query_all(self.curr, baseQuery)
 
     def execute_fetch_campaigns_list_query(self, query) -> list:
         return dict_fetch_query_all(self.curr, query)
 
     def get_project_id_from_campaign_builder_id(self, campaign_id):
-        query = f"Select s.ProjectId as project_id from {self.table_name} cb join CED_Segment s on cb.SegmentId = " \
-                f"s.UniqueId where cb.UniqueId = '{campaign_id}'"
+        query = f"Select cb.ProjectId as project_id from {self.table_name} cb where cb.UniqueId = '{campaign_id}'"
         result = dict_fetch_query_all(self.curr, query)
         return result[0].get("project_id") if result is not None else None
 
@@ -131,7 +130,7 @@ class CEDCampaignBuilder:
         return update(self.engine, self.table, filter, update_dict)
 
     def fetch_campaign_approval_status_details(self, unique_id):
-        query = f"SELECT cb.Id, cb.Name, cb.CreatedBy, cb.ApprovedBy, cb.Id, cb.Status, seg.Title as SegmentName FROM CED_CampaignBuilder cb JOIN CED_Segment seg ON seg.UniqueId = cb.SegmentId WHERE cb.UniqueId = '{unique_id}'"
+        query = f"SELECT cb.Id, cb.Name, cb.CreatedBy, cb.ApprovedBy, cb.Id, cb.Status FROM CED_CampaignBuilder cb  WHERE cb.UniqueId = '{unique_id}'"
         return execute_query(self.engine, query)
 
     def mark_campaign_as_error(self, unique_id, reason):
@@ -150,9 +149,9 @@ class CEDCampaignBuilder:
         update_dict = {"approval_retry": 0}
         return update(self.engine, self.table, filter, update_dict)
 
-    def get_campaign_builder_detail_from_campaign_name(self, name, data_id):
+    def get_campaign_builder_detail_from_campaign_name(self, name, project_id):
         base_query = f"select cb.* from CED_CampaignBuilder cb join CED_Segment s on s.uniqueId = cb.segmentId" \
-                     f" where cb.name = '{name}' and cb.IsDeleted = 0 and cb.IsActive = 1 and s.DataId = '{data_id}' and cb.Status != 'ERROR'"
+                     f" where cb.name = '{name}' and cb.IsDeleted = 0 and cb.IsActive = 1 and ( s.ProjectId = '{project_id}' or cb.ProjectId = '{project_id}' ) and cb.Status != 'ERROR'"
         return dict_fetch_query_all(self.curr, base_query)
 
     def get_campaign_builder_details_from_segment(self,segment_id,type):
@@ -213,6 +212,11 @@ class CEDCampaignBuilder:
         res = fetch_rows(self.engine, self.table, filter_list)
         return res
 
+    def get_cb_status_by_cbc_id(self, cbc_id):
+        query = (f"SELECT cb.Status FROM `CED_CampaignBuilder` cb JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId ="
+                 f" cbc.CampaignBuilderId WHERE cbc.UniqueId = '{cbc_id}'")
+        return dict_fetch_query_all(self.curr, query=query)
+
     def update_favourite(self, system_identifier, identifier_value, is_starred):
         filter = [
             {"column": system_identifier, "value": identifier_value, "op": "=="}
@@ -238,7 +242,16 @@ class CEDCampaignBuilder:
         res = fetch_rows(self.engine, self.table, filter_list)
         return res
 
-    def get_cb_status_by_cbc_id(self, cbc_id):
-        query = (f"SELECT cb.Status FROM `CED_CampaignBuilder` cb JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId ="
-                 f" cbc.CampaignBuilderId WHERE cbc.UniqueId = '{cbc_id}'")
-        return dict_fetch_query_all(self.curr, query=query)
+    def get_all_segment_details(self,campaign_id):
+        query = f"Select cb.id as id ,cb.UniqueId as uniq_id , cb.Name as name, ms.UniqueId as main_seg_unique_id ," \
+                f"ms.Id as main_seg_id , ms.Records as main_seg_records ,ms.Status as main_seg_status, " \
+                f"ms.Title as main_seg_name , ms.ParentId as main_seg_parent_id , ps.UniqueId as parent_seg_unique_id " \
+                f",ps.Id as parent_seg_id , ps.Records as parent_seg_records ,ps.Status as parent_seg_status, " \
+                f"ps.Title as parent_seg_name , ps.ParentId as parent_seg_parent_id , ss.UniqueId as sub_seg_unique_id " \
+                f",ss.Id as sub_seg_id , ss.Records as sub_seg_records ,ss.Status as sub_seg_status, ss.Title as sub_seg_name" \
+                f" , ss.ParentId as sub_seg_parent_id  from CED_CampaignBuilder cb left join CED_CampaignBuilderCampaign " \
+                f"cbc on cbc.CampaignBuilderId = cb.UniqueId left join CED_Segment ms on ms.UniqueId = cb.SegmentId " \
+                f"left join CED_Segment ss on ss.UniqueId = cbc.SegmentId left join CED_Segment ps on " \
+                f"ps.UniqueId = ss.ParentId where cb.UniqueId = '{campaign_id}'"
+
+        return dict_fetch_query_all(self.curr, query)
