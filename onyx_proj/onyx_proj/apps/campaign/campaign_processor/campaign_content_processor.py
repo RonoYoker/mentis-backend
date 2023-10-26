@@ -313,7 +313,7 @@ def process_favourite(request_data)-> json:
     if table_model is None or table_column_to_use is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="mapping not found for type")
-    if fav_limit is not None:
+    if fav_limit is not None and star_flag:
         db_resp = table_model.get_active_data_by_unique_id(uid=sys_identifier)
         if len(db_resp) == 0:
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
