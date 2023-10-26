@@ -31,7 +31,7 @@ def validate_test_campaign_data(data_dict: dict):
     method_name = "validate_test_campaign_data"
     logger.debug(f"{method_name} :: data_dict: {data_dict}")
 
-    if data_dict.get("auth_token", None) is None:
+    if data_dict.get("auth_token", None) is None and data_dict.get("test_campaign_mode", "manual") == "manual":
         logger.error(f"{method_name} :: auth_token is not valid.")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, success=TAG_FAILURE, details_message="Invalid request")
 

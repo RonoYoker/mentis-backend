@@ -28,6 +28,8 @@ class CED_CampaignBuilderCampaign(Base, Orm_helper):
     is_deleted = Column("IsDeleted", Boolean, default=False)
     start_date_time = Column("StartDateTime", DateTime)
     end_date_time = Column("EndDateTime", DateTime)
+    is_validated_system = Column("IsValidatedSystem", Boolean, default=False)
+    system_validation_retry_count = Column("SystemValidationRetryCount", Integer, default=0)
     creation_date = Column("CreationDate", DateTime, default=datetime.utcnow())
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))

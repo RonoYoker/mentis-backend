@@ -94,6 +94,7 @@ from onyx_proj.orm_models.CED_HIS_CampaignBuilderEmail_model import CED_HIS_Camp
 from onyx_proj.orm_models.CED_HIS_CampaignBuilderIVR_model import CED_HIS_CampaignBuilderIVR
 from onyx_proj.common.constants import CampaignTablesStatus
 from onyx_proj.common.utils.telegram_utility import TelegramUtility
+from onyx_proj.models.CED_CampaignSystemValidation import CEDCampaignSystemValidation
 
 logger = logging.getLogger("apps")
 
@@ -717,6 +718,24 @@ def filter_list(request, session_id):
         filters = f" cb.IsStarred is True and {filters}"
     data = CEDCampaignBuilder().get_campaign_list(filters)
 
+    for one_cbc_row in data:
+        try:
+        #     Set Flag for Ready to go To Campaigns
+            one_cbc_row.setdefault('validation', 'Not Validated')
+            if one_cbc_row.get("test_campaign_state") != "VALIDATED":
+                if int(one_cbc_row.get("is_manual_validation_mandatory", 1)) == 1:
+                    logger.error(
+                        f'Campaign needs to be manually validated cbc : {one_cbc_row.get("unique_id")}')
+                    continue
+                if int(one_cbc_row.get("is_validated_system", 0)) == 0:
+                    logger.error(
+                        f'Campaign needs to be system validated or Manually Validated cbc : {one_cbc_row.get("unique_id")}')
+                    continue
+            one_cbc_row.update({"validation": "Validated"})
+        except Exception as ex:
+            logger.error(f'Some issue in setting validation flag for campaign listing page, cb: {one_cbc_row.get("unique_id")}, {ex}')
+
+
     resp = parse_data_acc_to_campaign_category(data)
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
@@ -1055,22 +1074,23 @@ def approval_action_on_campaign_builder_by_unique_id(request_data):
     request_body = request_data["body"]
     campaign_builder_id = request_body.get("unique_id", None)
     input_status = request_body.get("status", None)
+    input_is_manual_validation_mandatory = request_body.get("is_manual_validation_mandatory", 1)
 
-    if not campaign_builder_id or not input_status or input_status.upper() not in CampaignStatus._value2member_map_:
+    if not campaign_builder_id or not input_status or input_status.upper() not in CampaignStatus._value2member_map_ or input_is_manual_validation_mandatory is None:
         logger.error(f"{method_name}, invalid request data")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid request data")
 
     try:
         if input_status == CampaignStatus.APPROVED.value:
-            update_campaign_builder_status_by_unique_id(campaign_builder_id, input_status, None)
+            update_campaign_builder_status_by_unique_id(campaign_builder_id, input_status, None, input_is_manual_validation_mandatory)
         elif input_status == CampaignStatus.DIS_APPROVED.value:
             reason = request_body.get("reason", None)
             if not reason:
                 logger.error(f"{method_name}, reason not found")
                 return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                             details_message="reason not found")
-            update_campaign_builder_status_by_unique_id(campaign_builder_id, input_status, reason)
+            update_campaign_builder_status_by_unique_id(campaign_builder_id, input_status, reason, input_is_manual_validation_mandatory)
         else:
             logger.error(f"{method_name}, invalid status request")
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -1098,7 +1118,7 @@ def approval_action_on_campaign_builder_by_unique_id(request_data):
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, details_message="")
 
 
-def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_status, reason):
+def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_status, reason, input_is_manual_validation_mandatory):
     """
         method to update campaign builder status using unique id
     """
@@ -1127,8 +1147,10 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
             # check for valid test campaign state in campaign builder
             for cbc in campaign_builder_entity_db.campaign_list:
                 if cbc.test_campign_state != TestCampStatus.VALIDATED.value:
-                    raise ValidationFailedException(method_name=method_name,
-                                                    reason="Please validate the test campaign.")
+                    system_validation_entity = CEDCampaignSystemValidation().get_campaign_validation_entity(cbc.campaign_builder_id, cbc.execution_config_id, ["READY_TO_APPROVE", "COMPLETED"])
+                    if system_validation_entity is None or system_validation_entity.execution_status not in ["READY_TO_APPROVE", "COMPLETED"]:
+                        raise ValidationFailedException(method_name=method_name,
+                                                        reason="Please validate the test campaign (system/manual).")
 
             recurring_detail = campaign_builder_entity_db.recurring_detail
             if recurring_detail is not None and len(recurring_detail) > 0:
@@ -1172,7 +1194,7 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
             #     return call_hyperion_for_campaign_approval(campaign_builder_id, input_status)
 
             CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity_db.unique_id,
-                                                                CampaignStatus.APPROVAL_IN_PROGRESS.value, approved_by)
+                                                                CampaignStatus.APPROVAL_IN_PROGRESS.value, input_is_manual_validation_mandatory, approved_by)
 
             # Evaluate the segment and proceed for Campaign approval
             segment_refresh_for_campaign_approval.apply_async(args=(campaign_builder_id, campaign_builder_entity_db.segment_id),
@@ -1187,7 +1209,9 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
                 raise BadRequestException(method_name=method_name, reason="Campaign Builder cannot be dis approved")
             # update campaign builder status as DIS_APPROVED
             CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity_db.unique_id,
-                                                                CampaignStatus.DIS_APPROVED.value, approved_by=None,
+                                                                CampaignStatus.DIS_APPROVED.value,
+                                                                input_is_manual_validation_mandatory=input_is_manual_validation_mandatory,
+                                                                approved_by=None,
                                                                 rejection_reason=reason)
             generate_campaign_approval_status_mail(
                 {'unique_id': campaign_builder_entity_db.unique_id, 'status': CampaignStatus.DIS_APPROVED.value})
@@ -1328,7 +1352,7 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
 
     # update campaign status as approved
     CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity.unique_id,
-                                                        CampaignStatus.APPROVED.value)
+                                                        CampaignStatus.APPROVED.value, input_is_manual_validation_mandatory=1)
 
     for campaign in campaign_builder_entity.campaign_list:
         try:
@@ -2178,6 +2202,7 @@ def save_campaign_details(request_data):
     campaign_category = body.get("campaign_category", CampaignCategory.Recurring.value)
     user_session = Session().get_user_session_object()
     user_name = user_session.user.user_name
+    is_manual_validation_mandatory = body.get("is_manual_validation_mandatory", True)
 
     segment_entity = None
 
@@ -2242,6 +2267,7 @@ def save_campaign_details(request_data):
     campaign_builder.is_split = is_split
     campaign_builder.campaign_category = campaign_category
     campaign_builder.project_id = project_id
+    campaign_builder.is_manual_validation_mandatory = is_manual_validation_mandatory
 
     try:
         saved_campaign_builder = save_campaign_builder_details(campaign_builder, campaign_list, unique_id, project_id)
@@ -2578,6 +2604,7 @@ def validate_and_save_campaign_builder_campaign_details(campaign_builder, campai
             return dict(result=TAG_FAILURE, details_message=validate_resp.get('details_message'))
         campaign_final_list = validate_resp.get('data')
         CEDCampaignBuilderCampaign().delete_campaign_builder_campaign_by_unique_id(unique_id)
+        CEDCampaignSystemValidation().mark_entries_invalid(campaign_builder_id = unique_id)
         prepare_and_save_campaign_builder_campaign_details(campaign_builder, campaign_final_list, unique_id, campaign_list)
         return dict(result=TAG_SUCCESS)
     except BadRequestException as ex:

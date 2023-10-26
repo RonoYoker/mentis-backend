@@ -303,10 +303,10 @@ class CEDCampaignBuilderCampaign:
         return res
 
     def get_campaign_builder_details_by_id(self, unique_id):
-        filter_list = [{
+        filter_list = [
             {"column": "unique_id", "value": unique_id, "op": "=="}
-        }]
-        res = fetch_rows(self.engine, self.table, filter_list)
+        ]
+        res = fetch_one_row(self.engine, self.table, filter_list, return_type="dict")
         return res
 
     def get_derived_seg_query_by_cbc_id(self,unique_id):
@@ -431,3 +431,53 @@ class CEDCampaignBuilderCampaign:
         except Exception as e:
             logging.error(str(e))
             return None
+
+    def fetch_cbc_for_system_validation(self, campaign_builder_id):
+        # query = f"""
+        #     SELECT
+        #         UniqueId AS UniqueId,
+        #         CampaignBuilderId AS CampaignBuilderId,
+        #         DISTINCT(ExecutionConfigId) AS ExecutionConfigId,
+        #         IsValidatedSystem AS IsValidatedSystem,
+        #         ContentType AS ContentType,
+        #         TestCampignState AS TestCampignState,
+        #         SystemValidationRetryCount AS SystemValidationRetryCount
+        #     FROM
+        #         CED_CampaignBuilderCampaign cbc
+        #     WHERE
+        #         cbc.CampaignBuilderId = '{campaign_builder_id}'
+        #     GROUP BY
+        #         cbc.ExecutionConfigId
+        # """
+        # return dict_fetch_query_all(self.curr,query)
+
+        filter_list = [
+            {"column": "campaign_builder_id", "value": campaign_builder_id, "op": "=="}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
+
+    def fetch_cbc_from_cb_and_ec(self, campaign_builder_id, execution_config_id):
+
+        filter = [
+            {"column": "campaign_builder_id", "value": campaign_builder_id, "op": "=="},
+            {"column": "execution_config_id", "value": execution_config_id, "op": "=="},
+            {"column": "is_validated_system", "value": False, "op": "=="}
+        ]
+        return fetch_one_row(self.engine, self.table, filter, return_type="dict")
+
+    def update_system_validation_retry_count(self, campaign_builder_id, execution_config_id, retry_count=5):
+        filter = [
+            {"column": "campaign_builder_id", "value": campaign_builder_id, "op": "=="},
+            {"column": "execution_config_id", "value": execution_config_id, "op": "=="}
+        ]
+        update_dict = {"system_validation_retry_count": retry_count}
+        return update(self.engine, self.table, filter, update_dict)
+
+    def update_system_validation_status(self, campaign_builder_id, execution_config_id):
+        filter = [
+            {"column": "campaign_builder_id", "value": campaign_builder_id, "op": "=="},
+            {"column": "execution_config_id", "value": execution_config_id, "op": "=="}
+        ]
+        update_dict = {"is_validated_system": True}
+        return update(self.engine, self.table, filter, update_dict)

@@ -264,7 +264,7 @@ def fetch_test_campaign_validation_status(request_data) -> json:
     campaign_builder_campaign_id = body["campaign_builder_campaign_id"]
     user_session = Session().get_user_session_object()
 
-    if not campaign_builder_campaign_id or not user_session:
+    if not campaign_builder_campaign_id or not (user_session or body.get("test_campaign_mode", "manual") == "system"):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Missing campaign_builder_id in request or invalid user.")
 
@@ -326,7 +326,10 @@ def fetch_test_campaign_validation_status(request_data) -> json:
                     details_message=f"Hyperion central campaign details not found, Campaign Builder Campaign Id: {campaign_builder_campaign_id}.")
 
     campaign_builder_channel_table, contact = CHANNEL_CAMPAIGN_BUILDER_TABLE_MAPPING[channel]
-    contact_details = user_session.user.email_id if contact == "EmailId" else user_session.user.mobile_number
+    if body.get("test_campaign_mode", "manual") == "system":
+        contact_details = body.get("user_data", {}).get("email", "") if contact == "EmailId" else body.get("user_data", {}).get("mobile_number", "")
+    else:
+        contact_details = user_session.user.email_id if contact == "EmailId" else user_session.user.mobile_number
 
     if channel == "IVR":
         urlid = None

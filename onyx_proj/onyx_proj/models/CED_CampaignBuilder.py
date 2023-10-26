@@ -43,7 +43,8 @@ class CEDCampaignBuilder:
         cb.Status AS status, cb.CreatedBy AS created_by, min(cbc.StartDateTime) AS start_date_time, cb.ApprovedBy AS 
         approved_by, cb.RecordsInSegment AS segment_records, cb.Type AS type, cb.IsActive as active, cb.CampaignCategory
          as campaign_category , cb.IsRecurring AS is_recurring, cb.RecurringDetail AS recurring_details, cb.IsStarred as
-          is_starred, cbc.ContentType AS channel, COUNT(*) AS instance_count, cb.Description as description FROM 
+          is_starred, cbc.ContentType AS channel, COUNT(*) AS instance_count, cb.Description as description, cb.IsManualValidationMandatory as 
+        is_manual_validation_mandatory, cbc.IsValidatedSystem as is_validated_system, cbc.TestCampignState as test_campaign_state FROM 
           CED_CampaignBuilder cb LEFT JOIN CED_Segment cs ON cs.UniqueId = cb.SegmentId JOIN CED_CampaignBuilderCampaign
            cbc ON cb.UniqueId = cbc.CampaignBuilderId WHERE % s GROUP BY 1, 2, 3, 4, 5 order by cb.Id DESC""" % filters
         return dict_fetch_query_all(self.curr, baseQuery)
@@ -91,12 +92,12 @@ class CEDCampaignBuilder:
             return None
         return res[0]
 
-    def update_campaign_builder_status(self, unique_id, status, approved_by=None, **kwargs):
+    def update_campaign_builder_status(self, unique_id, status, input_is_manual_validation_mandatory, approved_by=None, **kwargs):
         filter = [
             {"column": "unique_id", "value": unique_id, "op": "=="}
         ]
         if approved_by is not None:
-            update_dict = {"approved_by": approved_by, "status": status}
+            update_dict = {"approved_by": approved_by, "status": status, "is_manual_validation_mandatory": input_is_manual_validation_mandatory}
         elif kwargs.get("rejection_reason", None) is not None:
             rejection_reason = kwargs.get("rejection_reason", None)
             update_dict = {"rejection_reason": rejection_reason, "status": status}

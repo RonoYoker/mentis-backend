@@ -39,9 +39,15 @@ def test_campaign_process(request: dict):
     validation_object = validate_test_campaign_data(request)
 
     # fetch user data
-    user = CEDUserSession().get_user_personal_data_by_session_id(request["auth_token"])
-    user_dict = dict(first_name=user[0].get("FirstName", None), mobile_number=user[0].get("MobileNumber", None),
-                     email=user[0].get("EmailId", None))
+    if request.get("test_campaign_mode", "manual") == "system":
+        user_dict = dict(first_name=request.get("user_data", {}).get("first_name", None), mobile_number=request.get("user_data", {}).get("mobile_number", None),
+                         email=request.get("user_data", {}).get("email_id", None))
+    else:
+        user = CEDUserSession().get_user_personal_data_by_session_id(request["auth_token"])
+        user_dict = dict(first_name=user[0].get("FirstName", None), mobile_number=user[0].get("MobileNumber", None),
+                         email=user[0].get("EmailId", None))
+
+
 
     # if user has configured a test account_number for testing,
     # pass it in the user_dict and replace in segment_evaluator while creating data for test campaign
@@ -75,7 +81,8 @@ def test_campaign_process(request: dict):
     if project_id not in settings.TEST_CAMPAIGN_ENABLED:
         url = settings.HYPERION_TEST_CAMPAIGN_URL
         payload = json.dumps({"campaignId": request["campaign_id"]})
-        headers = {"Content-Type": "application/json", "X-AuthToken": request["auth_token"]}
+        headers = {"Content-Type": "application/json", "X-AuthToken": request.get("auth_token")}
+
         response = requests.post(url, data=payload, headers=headers, verify=False)
         if response.status_code == http.HTTPStatus.OK:
             return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,

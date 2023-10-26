@@ -12,3 +12,4 @@ CBC_DICT = {
     "filter_json": None,
     "split_details": None
 }
+

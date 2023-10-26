@@ -213,3 +213,12 @@ OTP_APP_USER_MAPPING = {
 }
 
 MAX_ALLOWED_CAMPAIGN_RETRY_FOR_QUERY_EXECUTOR = 4
+
+HYPERION_CENTRAL_API_CALL = {
+    "test_campaign_status": {
+        "url": "http://uatdev.hyperiontool.com/hyperioncampaigntooldashboard/centerdb/testcampaignstatus",
+        "referer": "http://uatdev.hyperiontool.com/"
+    }
+}
+
+WEB_PROTOCOL = "http://"

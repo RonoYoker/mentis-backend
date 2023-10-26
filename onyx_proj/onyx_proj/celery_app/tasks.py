@@ -16,6 +16,8 @@ from onyx_proj.apps.async_task_invocation.app_settings import ASYNC_QUERY_EXECUT
 from onyx_proj.apps.async_task_invocation.async_tasks_callback_processor import *
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.common.utils.s3_utils import S3Helper
+from onyx_proj.apps.campaign.system_validation.system_validation_processor import trigger_campaign_system_validation_processor
+
 
 logger = logging.getLogger("celery_master")
 
@@ -273,6 +275,10 @@ def uuid_processor(uuid_data):
     push_custom_parameters_to_newrelic({"stage": "UUID_ASYNC_COMPLETED"})
     return
 
+
+@task
+def trigger_campaign_system_validation(campaign_builder_id=None, execution_config_id=None):
+    trigger_campaign_system_validation_processor(campaign_builder_id, execution_config_id)
 
 ####### temp functionm #########
 @task

@@ -1,5 +1,5 @@
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import save_or_update, sql_alchemy_connect, fetch_rows, update, \
+from onyx_proj.common.sqlalchemy_helper import save_or_update, sql_alchemy_connect, fetch_one_row, fetch_rows, update, \
     save_or_update_merge
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilderIVR
 
@@ -46,3 +46,10 @@ class CEDCampaignBuilderIVR:
         query = f"SELECT cb.MappingId FROM {self.table_name} cb JOIN CED_CampaignContentFollowUPSmsMapping fs ON" \
                 f" cb.IvrId = fs.ContentId WHERE fs.SmsId = '{sms_id}' AND fs.UrlId {operator} {url_id_list}"
         return query_executor(self.curr, query)
+
+    def fetch_all_content_from_cbc_id(self, cbc_id):
+        filter_list = [
+            {"column": "mapping_id", "value": cbc_id, "op": "=="}
+        ]
+        res = fetch_one_row(self.engine, self.table, filter_list, return_type='dict')
+        return res

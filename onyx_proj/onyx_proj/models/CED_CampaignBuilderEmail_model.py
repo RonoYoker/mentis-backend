@@ -1,5 +1,5 @@
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, save_or_update, fetch_rows, update, \
+from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, save_or_update, fetch_one_row, fetch_rows, update, \
     save_or_update_merge
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilderEmail
 
@@ -54,4 +54,11 @@ class CEDCampaignBuilderEmail:
         if filters and len(filters) > 0:
             filter_list.extend(filters)
         res = fetch_rows(self.engine, self.table, filter_list)
+        return res
+
+    def fetch_all_content_from_cbc_id(self, cbc_id):
+        filter_list = [
+            {"column": "mapping_id", "value": cbc_id, "op": "=="}
+        ]
+        res = fetch_one_row(self.engine, self.table, filter_list, return_type='dict')
         return res

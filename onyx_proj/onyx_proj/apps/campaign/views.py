@@ -13,8 +13,6 @@ from onyx_proj.apps.campaign.campaign_processor.campaign_content_processor impor
 from onyx_proj.apps.campaign.campaign_monitoring.campaign_stats_processor import get_filtered_campaign_stats, \
     update_campaign_stats_to_central_db, get_filtered_campaign_stats_v2, get_filtered_campaign_stats_variants
 
-from onyx_proj.apps.campaign.campaign_engagement_data.engagement_data_processor import \
-    prepare_and_update_campaign_engagement_data
 from onyx_proj.common.decorators import *
 from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import save_or_update_campaign_data, \
     get_filtered_dashboard_tab_data, get_min_max_date_for_scheduler, get_time_range_from_date, \
@@ -26,8 +24,10 @@ from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import 
     change_approved_campaign_time, replay_campaign_in_error, check_camp_status,prepare_campaign_builder_campaign
 from onyx_proj.apps.campaign.test_campaign.test_campaign_processor import test_campaign_process
 from django.views.decorators.csrf import csrf_exempt
-from onyx_proj.celery_app.tasks import trigger_eng_data
+from onyx_proj.apps.campaign.system_validation.system_validation_processor import get_campaign_system_validation_status, process_system_validation_entry
+from onyx_proj.celery_app.tasks import trigger_eng_data, trigger_campaign_system_validation
 from onyx_proj.apps.campaign.campaign_processor.campaign_content_processor import process_favourite
+from onyx_proj.models.CED_UserSession_model import CEDUserSession
 
 @csrf_exempt
 @UserAuth.user_authentication()
@@ -449,3 +449,50 @@ def generate_campaign_builder_campaign(request):
     response = prepare_campaign_builder_campaign(request_body)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def trigger_system_validation(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    status_code = http.HTTPStatus.BAD_REQUEST
+    request_headers = request.headers
+    auth_token = request_headers.get('X-Authtoken', '')
+    user = CEDUserSession().get_user_personal_data_by_session_id(auth_token)
+    user_dict = dict(first_name=user[0].get("FirstName", None), mobile_number=user[0].get("MobileNumber", None),
+                     email=user[0].get("EmailId", None))
+
+    data = {}
+    """
+    Create entry for system validation in respective table in Pushed state.
+    IF entry already found, then return error msg in response accordingly.
+    """
+    campaign_builder_id = request_body.get("campaign_builder_id", None)
+    force = request_body.get("force", False)
+    if campaign_builder_id is None:
+        return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
+    if request_body.get("mode", "campaign") == "campaign":
+        data = process_system_validation_entry(campaign_builder_id=campaign_builder_id, force=force, user_dict = user_dict)
+        if data.get("success", False) is False:
+            return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+        status_code = http.HTTPStatus.OK
+    return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def get_validation_status(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    status_code = http.HTTPStatus.BAD_REQUEST
+    data = {}
+    campaign_builder_id = request_body.get("campaign_builder_id", None)
+    if campaign_builder_id is None:
+        data.update({"success": False, "error": "Invalid Input campaign_builder_id"})
+        return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
+    if request_body.get("mode", "campaign") == "campaign":
+        data = get_campaign_system_validation_status(campaign_builder_id=campaign_builder_id)
+
+    status_code = http.HTTPStatus.OK
+    return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")

@@ -136,4 +136,15 @@ OTP_APP_USER_MAPPING = {
     }
 }
 
+ETHERA_COMMONS_DOMAIN = "http://127.0.0.1:8000"
+
 MAX_ALLOWED_CAMPAIGN_RETRY_FOR_QUERY_EXECUTOR = 3
+
+HYPERION_CENTRAL_API_CALL = {
+    "test_campaign_status": {
+        "url": "http://uatdev.hyperiontool.com/hyperioncampaigntooldashboard/centerdb/testcampaignstatus",
+        "referer": "http://uatdev.hyperiontool.com/"
+    }
+}
+
+WEB_PROTOCOL = "http://"
