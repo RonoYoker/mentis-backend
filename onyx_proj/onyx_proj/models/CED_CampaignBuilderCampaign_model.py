@@ -116,7 +116,7 @@ class CEDCampaignBuilderCampaign:
         return resp
 
     def get_cbc_ids_to_be_validated(self,cbc_id,campaign_type,is_recurring,channel=None):
-        if is_recurring is False:
+        if not is_recurring:
             return [cbc_id]
         if campaign_type not in [CampaignCategory.AB_Segment.value,CampaignCategory.AB_Content.value]:
             query =  f"Select cbc.UniqueId as cbc_id from CED_CampaignBuilderCampaign cbc_m  " \
