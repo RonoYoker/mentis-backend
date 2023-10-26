@@ -2517,9 +2517,10 @@ def validate_campaign_builder_campaign_details(campaign_builder, campaign_list, 
 
     if isinstance(recurring_detail,dict):
         recurring_detail["camp_info"] = camp_seg_info
+        recurring_detail = json.dumps(recurring_detail)
 
     CEDCampaignBuilder().update_campaign_builder_history(unique_id,
-                                                         dict(recurring_detail=json.dumps(recurring_detail)))
+                                                         dict(recurring_detail=recurring_detail))
 
     logger.debug(f"Trace Exit: {method_name}, campaign final list :: {campaign_final_list}")
     return dict(result=TAG_SUCCESS, data=campaign_final_list)
