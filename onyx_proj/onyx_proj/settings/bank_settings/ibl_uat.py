@@ -49,3 +49,5 @@ SNS_SEGMENT_EVALUATOR = "TEST_HYP_DK_Campaign_Segment_Evaluator"
 QUERY_EXECUTION_JOB_BUCKET = "ibl-uat-async-query-execution-response"
 
 MKT_CLICKDATA_FLAG = True
+
+ETHERA_COMMONS_DOMAIN = "http://m-stage-ethera-commons-elb-61896516.ap-south-1.elb.amazonaws.com"
