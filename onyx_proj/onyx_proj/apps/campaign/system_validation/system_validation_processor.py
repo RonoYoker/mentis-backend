@@ -211,28 +211,6 @@ def trigger_campaign_system_validation_processor(campaign_builder_id, execution_
 
     process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
 
-    step_name = "delivered"
-    if cv_entity.delivered_status in ["IN_PROGRESS"] and cv_entity.delivered_status not in ["INVALID"]:
-        if cv_entity.delivered_count > STEP_RETRIAL_COUNT[step_name]:
-            # cv_entity.execution_status = "FAILED"
-            cv_entity.delivered_status = "FAILED"
-            process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
-            logger.info(f'Retry Stopped due to {step_name} failure, campaign_builder_id = {campaign_builder_id}, execution_config_id = {execution_config_id}')
-        else:
-            cv_entity.delivered_count = cv_entity.delivered_count + 1
-            cv_entity.delivered_last_execution_time = datetime.datetime.now()
-            delivery_status = current_test_campaign_instance.get("deliveryStatus", "")
-            if delivery_status.lower() in ["delivered"]:
-                cv_entity.delivered_status = "COMPLETED"
-            else:
-                process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
-                trigger_campaign_system_validation.apply_async(queue="celery_campaign_approval",
-                                                               kwargs={"campaign_builder_id": campaign_builder_id,
-                                                                       "execution_config_id": execution_config_id}, countdown=STEP_DELAY_TIMEDELTA.get(step_name, 10))
-                logger.info(f'Retry pushed due to {step_name} failure, campaign_builder_id = {campaign_builder_id}, execution_config_id = {execution_config_id}')
-
-    process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
-
     step_name = "url_response_received"
     if cv_entity.url_response_received_status in ["IN_PROGRESS"] and cv_entity.url_response_received_status not in ["INVALID"]:
         if preview_data_obj.get("url_present", True) is False:
@@ -249,7 +227,7 @@ def trigger_campaign_system_validation_processor(campaign_builder_id, execution_
             payload = {}
             headers = {}
             try:
-                response = requests.request("GET", processed_url, headers=headers, data=payload)
+                response = requests.request("GET", processed_url, headers=headers, data=payload, verify=False)
                 logger.info(f'url_response_received status of url = {processed_url}, response status ccode : {response.status_code}')
             except Exception as ex:
                 logger.error(f'Exception captured for requesting short URL : processed_url : {processed_url}, {ex}')
@@ -289,6 +267,29 @@ def trigger_campaign_system_validation_processor(campaign_builder_id, execution_
             logger.info(test_campaign_click_data)
             if test_campaign_click_data.get("data", {}).get("system_validated", False) is True:
                 cv_entity.clicked_status = "COMPLETED"
+            else:
+                process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
+                trigger_campaign_system_validation.apply_async(queue="celery_campaign_approval",
+                                                               kwargs={"campaign_builder_id": campaign_builder_id,
+                                                                       "execution_config_id": execution_config_id}, countdown=STEP_DELAY_TIMEDELTA.get(step_name, 10))
+                logger.info(f'Retry pushed due to {step_name} failure, campaign_builder_id = {campaign_builder_id}, execution_config_id = {execution_config_id}')
+                return
+
+    process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
+
+    step_name = "delivered"
+    if cv_entity.delivered_status in ["IN_PROGRESS"] and cv_entity.delivered_status not in ["INVALID"]:
+        if cv_entity.delivered_count > STEP_RETRIAL_COUNT[step_name]:
+            # cv_entity.execution_status = "FAILED"
+            cv_entity.delivered_status = "FAILED"
+            process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
+            logger.info(f'Retry Stopped due to {step_name} failure, campaign_builder_id = {campaign_builder_id}, execution_config_id = {execution_config_id}')
+        else:
+            cv_entity.delivered_count = cv_entity.delivered_count + 1
+            cv_entity.delivered_last_execution_time = datetime.datetime.now()
+            delivery_status = current_test_campaign_instance.get("deliveryStatus", "")
+            if delivery_status.lower() in ["delivered"]:
+                cv_entity.delivered_status = "COMPLETED"
             else:
                 process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
                 trigger_campaign_system_validation.apply_async(queue="celery_campaign_approval",
