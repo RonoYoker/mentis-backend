@@ -2232,8 +2232,6 @@ def save_campaign_details(request_data):
     else:
         project_id = camp_project_id
 
-    if is_split and project_id in settings.SPLIT_CAMPAIGN_DISABLED:
-        raise ValidationFailedException(reason="Split Campaign not enabled for this project")
 
     project_entity = CEDProjects().get_active_project_id_entity_alchemy(project_id)
 
