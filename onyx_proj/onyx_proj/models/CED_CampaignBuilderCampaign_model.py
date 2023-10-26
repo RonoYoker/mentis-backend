@@ -343,3 +343,11 @@ class CEDCampaignBuilderCampaign:
         ]
         update_dict = {"start_date_time": start_date_time, "end_date_time": end_date_time}
         return update(self.engine, self.table, filter, update_dict)
+    
+    def reset_segment_s3_details(self, cbc_id):
+        filter = [
+            {"column": "unique_id", "value": cbc_id, "op": "=="}
+        ]
+        update_dict = {"s3_path": None, "s3_data_refresh_start_date": None, "s3_data_refresh_end_date": None,
+                       "s3_data_refresh_status": None}
+        return update(self.engine, self.table, filter, update_dict)

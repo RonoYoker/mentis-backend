@@ -14,7 +14,8 @@ from django.template.loader import render_to_string
 from Crypto.Cipher import AES
 
 from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT, DEACTIVATE_CAMP_LOCAL, \
-    UPDATE_SCHEDULING_TIME_IN_CCD_API_ENDPOINT, CAMP_SCHEDULING_TIME_UPDATE_ALLOWED_BUFFER
+    UPDATE_SCHEDULING_TIME_IN_CCD_API_ENDPOINT, CAMP_SCHEDULING_TIME_UPDATE_ALLOWED_BUFFER, \
+    VALIDATE_CAMPAIGN_PROCESSING_ONYX_LOCAL
 from onyx_proj.apps.otp.app_settings import OtpAppName
 from onyx_proj.apps.otp.otp_processor import check_otp_status
 from onyx_proj.apps.slot_management.data_processor.slots_data_processor import vaildate_campaign_for_scheduling
@@ -71,6 +72,7 @@ from onyx_proj.models.CED_HIS_CampaignBuilderIVR_model import CEDHisCampaignBuil
 from onyx_proj.models.CED_HIS_CampaignBuilderSMS_model import CEDHisCampaignBuilderSms
 from onyx_proj.models.CED_HIS_CampaignBuilderWhatsApp_model import CEDHisCampaignBuilderWhatsapp
 from onyx_proj.models.CED_HIS_CampaignBuilder_model import CEDHIS_CampaignBuilder
+from onyx_proj.models.CED_SchedulingTable_model import CEDSchedulingTable
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from django.conf import settings
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
@@ -3267,9 +3269,9 @@ def change_approved_campaign_time(request_data):
     return proceed_to_change_approved_campaign_time(cbc_id, start_time, end_time)
 
 
-def proceed_to_change_approved_campaign_time(cbc_id, start_time, end_time):
+def proceed_to_change_approved_campaign_time(cbc_id, start_time, end_time, source="edit_approved_campaign_time"):
     method_name = "proceed_to_change_approved_campaign_time"
-
+    logger.info(f"method_name: {method_name}, LOG ENTRY, cbc_id:{cbc_id}, start_time:{start_time}, end_time:{end_time}")
     cbc_entity = CEDCampaignBuilderCampaign().fetch_entity_by_unique_id(cbc_id)
     cb_entity = CEDCampaignBuilder().get_campaign_builder_entity_by_unique_id(cbc_entity.campaign_builder_id)
     start_time_obj = datetime.datetime.strptime(start_time, "%H:%M:%S").time()
@@ -3316,7 +3318,7 @@ def proceed_to_change_approved_campaign_time(cbc_id, start_time, end_time):
                                                                UPDATE_SCHEDULING_TIME_IN_CCD_API_ENDPOINT)
     logger.debug(f"{method_name} :: local api request_response: {response}")
     if response.get("success") is False or response['data'].get("result", "FAILURE") != "SUCCESS":
-        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Unable to update the campaign scheduling time, please try again after some time")
 
     # after successful update in local table, update in central
@@ -3324,9 +3326,47 @@ def proceed_to_change_approved_campaign_time(cbc_id, start_time, end_time):
         CEDCampaignBuilderCampaign().update_schedule_time_by_unique_id(cbc_entity.unique_id, start_date_time, end_date_time)
     except Exception as ex:
         logger.error(f"method_name: {method_name}, Error while updating the schedule time in central table, Error: {ex}")
-        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Unable to update the campaign scheduling time, please try again after some time")
 
+    # Create Activity log
+    activity_log_entity = CED_ActivityLog()
+    activity_log_entity.data_source = DataSource.CAMPAIGN_BUILDER_CAMPAIGN.value,
+    activity_log_entity.sub_data_source = SubDataSource.CAMPAIGN_BUILDER_CAMPAIGN.value,
+    activity_log_entity.data_source_id = cbc_id
+    activity_log_entity.comment = f"Campaign {cb_entity.name} timing has been changed form {str(cbc_entity.start_date_time)} - {str(cbc_entity.end_date_time)} to {str(start_date_time)} - {str(end_date_time)} by {Session().get_user_session_object().user.user_name}"
+    activity_log_entity.filter_id = cbc_id
+    activity_log_entity.history_table_id = None
+    activity_log_entity.unique_id = uuid.uuid4().hex
+    activity_log_entity.created_by = Session().get_user_session_object().user.user_uuid
+    activity_log_entity.updated_by = Session().get_user_session_object().user.user_uuid
+    CEDActivityLog().save_or_update_activity_log(activity_log_entity)
+
+    if source == "replay_campaign_in_error":
+        cssd_entity = CEDCampaignSchedulingSegmentDetails().fetch_scheduling_segment_entity_by_cbc_id(cbc_entity.unique_id)
+        # Update CBC s3 refresh data as null
+        CEDCampaignBuilderCampaign().reset_segment_s3_details(cbc_id)
+        # Update cssd retry count as  0
+        CEDCampaignSchedulingSegmentDetails().reset_s3_segment_refresh_attempts(cssd_entity.id)
+        # Update Camp execution progress status as scheduled
+        CEDCampaignExecutionProgress().update_campaign_status(CampaignExecutionProgressStatus.SCHEDULED.value,
+                                                              cssd_entity.id)
+        # Trigger telegram alert for replay error campaign
+        # TODO
+
+        # Create Activity log
+        activity_log_entity = CED_ActivityLog()
+        activity_log_entity.data_source = DataSource.CAMPAIGN_BUILDER_CAMPAIGN.value,
+        activity_log_entity.sub_data_source = SubDataSource.CAMPAIGN_BUILDER_CAMPAIGN.value,
+        activity_log_entity.data_source_id = cbc_id
+        activity_log_entity.comment = f"Campaign {cb_entity.name} has been replayed after error by {Session().get_user_session_object().user.user_name} on {str(datetime.datetime.utcnow().date())}."
+        activity_log_entity.filter_id = cbc_id
+        activity_log_entity.history_table_id = None
+        activity_log_entity.unique_id = uuid.uuid4().hex
+        activity_log_entity.created_by = Session().get_user_session_object().user.user_uuid
+        activity_log_entity.updated_by = Session().get_user_session_object().user.user_uuid
+        CEDActivityLog().save_or_update_activity_log(activity_log_entity)
+    logger.info(f"method_name: {method_name}, LOG EXIT, cbc_id:{cbc_id}")
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data="Suscesfully updated the schedule time for "
                                                                          "campaign.")
 
@@ -3357,3 +3397,86 @@ def update_campaign_scheduling_time_in_campaign_creation_details(request_data):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Error while updating the scheduling time for campaigns")
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
+
+def check_camp_status(request_data):
+    """
+        Method to check if campaign has started executing on local or not
+    """
+    method_name = "check_camp_status"
+    logger.info(f"Trace entry, method name: {method_name}, request_data: {request_data}")
+
+    data = request_data["body"]
+    campaign_id = data["campaign_id"]
+    if not campaign_id:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid request")
+
+    camp_details = CEDSchedulingTable().check_campaign_processing(campaign_id)
+    if not camp_details:
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                    details_message="Campaign is not processing right now", data={"execution_status": False})
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                details_message="Campaign is processing", data={"execution_status": True})
+
+
+def replay_campaign_in_error(request_data):
+    method_name = "replay_campaign_in_error"
+    logger.info(f"Trace entry, method name: {method_name}, request_data: {request_data}")
+    body = request_data["body"]
+    cbc_id = body["cbc_id"]
+    start_time = body["start_time"]
+    end_time = body["end_time"]
+
+    start_time_obj = datetime.datetime.strptime(start_time, "%H:%M:%S").time()
+    end_time_obj = datetime.datetime.strptime(end_time, "%H:%M:%S").time()
+    if not cbc_id or not start_time or not end_time:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid request")
+
+    # validate the start and end time for instance
+    if start_time_obj > end_time_obj or start_time_obj < datetime.time(3, 30) or end_time_obj > datetime.time(13, 30):
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid start time or end time")
+
+    # get campaign builder campaign entity
+    cbc_entity = CEDCampaignBuilderCampaign().fetch_entity_by_unique_id(cbc_id)
+    if cbc_entity is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid instance Id provided")
+
+    # validate campaign builder is in APPROVED state
+    cb_entity = CEDCampaignBuilder().get_campaign_builder_entity_by_unique_id(cbc_entity.campaign_builder_id)
+    if cb_entity.status != CampaignBuilderStatus.APPROVED.value:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Campaign is not in approved state")
+
+    # Validate campaign should be of todays date
+    camp_schedule_date = cbc_entity.start_date_time.date()
+    if camp_schedule_date != datetime.datetime.utcnow().date():
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Only today's campaign can be edited.")
+
+    # validate CSSD in error state
+    cssd_entity = CEDCampaignSchedulingSegmentDetails().fetch_scheduling_segment_entity_by_cbc_id(cbc_id)
+    camp_execution_entity = CEDCampaignExecutionProgress().fetch_entity_by_campaign_id(cssd_entity.id)
+    if cssd_entity.scheduling_status != CampaignSchedulingSegmentStatus.ERROR.value or camp_execution_entity.status not in [CampaignExecutionProgressStatus.RETRY_EXHAUSTED.value, CampaignExecutionProgressStatus.ERROR.value]:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Campaign not in valid state.")
+
+    # Check onyx local campaign processing status
+    project_id = CEDCampaignBuilderCampaign().get_project_id_from_campaign_builder_campaign_id(cbc_entity.unique_id)
+    response = RequestClient().post_onyx_local_api_request({"campaign_id": cssd_entity.id}, settings.ONYX_LOCAL_DOMAIN[project_id],
+                                                               VALIDATE_CAMPAIGN_PROCESSING_ONYX_LOCAL)
+    logger.debug(f"{method_name} :: local api request_response: {response}")
+    if response.get("success") is False or response['data'].get("data", {}).get("execution_status", True) == True:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Campaign has already started processing, or is processed")
+
+    # If given time slots are available, update time in cbc, and local table
+    upd_camp_schedule_status = proceed_to_change_approved_campaign_time(cbc_id, start_time, end_time, source="replay_campaign_in_error")
+    if upd_camp_schedule_status["result"] != TAG_SUCCESS:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message=upd_camp_schedule_status.get("details_message", "Something went wrong."))
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                details_message="Successfully changed the campaign for retry")

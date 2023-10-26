@@ -33,6 +33,10 @@ class CED_CampaignBuilderCampaign(Base, Orm_helper):
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     history_id = Column("HistoryId", String)
     campaign_deactivation_date_time = Column("CampaignDeactivationDateTime", String)
+    s3_path = Column("S3Path", String)
+    s3_data_refresh_start_date = Column("S3DataRefreshStartDate", String)
+    s3_data_refresh_end_date = Column("S3DataRefreshEndDate", String)
+    s3_data_refresh_status = Column("S3DataRefreshStatus", String)
 
     sms_campaign = relationship("CED_CampaignBuilderSMS", lazy="joined")
     email_campaign = relationship("CED_CampaignBuilderEmail", lazy="joined")

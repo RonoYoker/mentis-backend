@@ -32,5 +32,7 @@ urlpatterns = [
     path("local/deactivate_campaign_by_campaign_builder_ids/", views.deactivate_campaign_by_campaign_builder_ids_local),
     path("get_process_favourite/", views.get_process_favourite),
     path("update_approved_camp_scheduling_time/", views.update_approved_camp_scheduling_time),
-    path("local/update_camp_scheduling_time_ccd/", views.update_camp_scheduling_time_in_campaign_creation_details)
+    path("local/update_camp_scheduling_time_ccd/", views.update_camp_scheduling_time_in_campaign_creation_details),
+    path("replay_error_campaign/", views.replay_error_campaign),
+    path("local/check_campaign_processing/", views.check_campaign_status)
 ]

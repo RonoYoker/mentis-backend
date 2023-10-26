@@ -52,3 +52,10 @@ class CEDCampaignSchedulingSegmentDetails:
         update_dict = {"scheduling_status": status}
         return update(self.engine, self.table, filter_list, update_dict)
 
+
+    def reset_s3_segment_refresh_attempts(self, id):
+        filter = [
+            {"column": "id", "value": id, "op": "=="}
+        ]
+        update_dict = {"s3_segment_refresh_attempts":0, "scheduling_status": None}
+        return update(self.engine, self.table, filter, update_dict)

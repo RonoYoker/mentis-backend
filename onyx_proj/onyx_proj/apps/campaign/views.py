@@ -23,7 +23,7 @@ from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import 
     deactivate_campaign_by_campaign_id, view_campaign_data, save_campaign_details, \
     approval_action_on_campaign_builder_by_unique_id, get_camps_detail_between_time, get_camps_detail, \
     update_campaign_by_campaign_builder_ids_local, update_campaign_scheduling_time_in_campaign_creation_details, \
-    change_approved_campaign_time
+    change_approved_campaign_time, replay_campaign_in_error, check_camp_status
 from onyx_proj.apps.campaign.test_campaign.test_campaign_processor import test_campaign_process
 from django.views.decorators.csrf import csrf_exempt
 from onyx_proj.celery_app.tasks import trigger_eng_data
@@ -399,11 +399,32 @@ def update_approved_camp_scheduling_time(request):
     return HttpResponse(json.dumps(result, default=str), status=status_code, content_type="application/json")
 
 @csrf_exempt
+@UserAuth.user_authentication()
+def replay_error_campaign(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    body = dict(body=request_body, headers=request_headers)
+    result = replay_campaign_in_error(body)
+    status_code = result.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(result, default=str), status=status_code, content_type="application/json")
+
+@csrf_exempt
 def update_camp_scheduling_time_in_campaign_creation_details(request):
     request_body = json.loads(AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).decrypt(
         request.body.decode("utf-8")))
     data = dict(body=request_body, headers=None)
     response = update_campaign_scheduling_time_in_campaign_creation_details(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(
+        json.dumps(response, default=str))
+    return HttpResponse(encrypted_data, status=status_code, content_type="application/json")
+
+@csrf_exempt
+def check_campaign_status(request):
+    request_body = json.loads(AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).decrypt(
+        request.body.decode("utf-8")))
+    data = dict(body=request_body, headers=None)
+    response = check_camp_status(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     encrypted_data = AesEncryptDecrypt(key=settings.CENTRAL_TO_LOCAL_ENCRYPTION_KEY).encrypt(
         json.dumps(response, default=str))
