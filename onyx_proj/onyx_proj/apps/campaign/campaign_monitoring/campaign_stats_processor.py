@@ -113,7 +113,7 @@ def get_filtered_campaign_stats_variants(data) -> json:
                   "campaign_instance_id": row["CampaignInstanceId"],
                   "delivered_count": row["DeliveredCount"],
                   "acknowledge_count": row["AcknowledgeCount"],
-                  "delivered_percentage": 0 if row["DeliveredCount"] is None or row["AcknowledgeCount"] is None or row["AcknowledgeCount"] == 0 else (row["DeliveredCount"]*100)/row["AcknowledgeCount"],
+                  "delivered_percentage": round(0 if row["DeliveredCount"] is None or row["AcknowledgeCount"] is None or row["AcknowledgeCount"] == 0 else (row["DeliveredCount"]*100)/row["AcknowledgeCount"],2),
                   "status": row["Status"],
                   "template_id": row["TemplateId"],
                   "channel": row["Channel"],
@@ -134,7 +134,7 @@ def get_filtered_campaign_stats_variants(data) -> json:
                   "template_id": tmp_id,
                   "channel": channel,
                   "filters_applied": get_filters_applied_screen(row["filter_json"],None),
-                  "delivered_percentage": 0 if ack_count == 0 else (del_count*100)/ack_count,
+                  "delivered_percentage": round(0 if ack_count == 0 else (del_count*100)/ack_count,2),
                   "segment_name": seg_id,
                   "extra": None,
                   "segment_id": seg_name,
@@ -153,7 +153,7 @@ def get_filtered_campaign_stats_variants(data) -> json:
             "acknowledge_count": acknowledge_count,
             "campaign_id": camp_id,
             "delivered_count": delivered_count,
-            "delivered_percentage": 0 if acknowledge_count == 0 else (delivered_count*100)/acknowledge_count,
+            "delivered_percentage": round(0 if acknowledge_count == 0 else (delivered_count*100)/acknowledge_count , 2),
             "status": get_final_status_from_camp_status_list(list(statuses)),
             "last_refresh_time": last_refresh_time
         }
