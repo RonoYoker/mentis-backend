@@ -7,6 +7,9 @@ from django.conf import settings
 from onyx_proj.apps.async_task_invocation.app_settings import AsyncJobStatus
 from onyx_proj.apps.segments.app_settings import QueryKeys
 from onyx_proj.common.request_helper import RequestClient
+from onyx_proj.common.utils.telegram_utility import TelegramUtility
+from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException, InternalServerError
+from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException
 from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException,InternalServerError
 from onyx_proj.models.CED_CampaignExecutionProgress_model import CEDCampaignExecutionProgress
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetails_model import CEDCampaignSchedulingSegmentDetails
@@ -186,11 +189,15 @@ def update_campaign_segment_data(request_data) -> json:
             logger.info(f'Updating Timeout error status, cbc ID : {campaign_builder_campaign_id}')
             update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
                                S3DataRefreshStatus="TIMEOUT")
+        elif task_data["status"] in [AsyncJobStatus.EMPTY_SEGMENT.value]:
+            logger.info(f'Updating Timeout error status, cbc ID : {campaign_builder_campaign_id}')
+            update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
+                               S3DataRefreshStatus="EMPTY_SEGMENT", S3Path=None)
         else:
             update_dict = dict(S3Path=task_data["response"]["s3_url"],
                                S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
                                S3DataRefreshStatus="SUCCESS")
-
+        update_camp_query_executor_callback_for_retry(task_data, campaign_builder_campaign_id)
         upd_resp = CEDCampaignBuilderCampaign().bulk_update_segment_data_for_cbc_ids(cbcs_ids_for_ab, update_dict)
         if upd_resp["success"] is False:
             logger.error(
@@ -300,18 +307,16 @@ def update_campaign_execution_progress_for_query_execution_retry(task_data, camp
         details_message = f"Retry Count: {retry_count}, Received {task_data['status']} during query execution at {str(datetime.datetime.now())}, Expected query retrial at {str(expected_retry_time)}"
 
     camp_execution_entity = CEDCampaignExecutionProgress().fetch_entity_by_campaign_id(campaign_id)
-    if camp_execution_entity.extra is None:
-        extra = {}
-    else:
-        extra = json.loads(camp_execution_entity.extra)
+    extra = {} if camp_execution_entity.extra is None else json.loads(camp_execution_entity.extra)
     query_execution_status = extra.get("query_execution_status", None)
-    if query_execution_status is None:
-        query_execution_status = details_message
-    else:
-        query_execution_status = query_execution_status + "\n " + details_message
-    extra["query_execution_status"] = query_execution_status
+    extra["query_execution_status"] = details_message if query_execution_status is None else query_execution_status + "\n " + details_message
     CEDCampaignExecutionProgress().update_campaign_status_and_extra(campaign_id, camp_execution_status, json.dumps(extra), error_message)
 
+    # Trigger telegram alert:
+    project_id = CEDCampaignSchedulingSegmentDetails().fetch_project_id_by_campaign_id(campaign_id)
+    alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
+                                                          message_text=details_message,
+                                                          feature_section="NOTIFICATION")
 
 def update_cbc_instance_for_s3_callback(task_data: dict, where_dict: dict, campaign_builder_campaign_id: str) -> dict:
     if task_data["status"] in [AsyncJobStatus.ERROR.value]:

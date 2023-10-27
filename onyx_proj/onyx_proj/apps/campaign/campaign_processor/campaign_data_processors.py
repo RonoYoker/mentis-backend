@@ -1340,6 +1340,10 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
             logger.error(f"method_name :: {method_name}, Segment has 0 records")
             CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id,
                                                         "Segment has 0 records")
+            alerting_text = f'Campaign Name: {campaign_builder_entity.name}, Campaign ID : {campaign_builder_entity.id}, ERROR : Segment has 0 records.'
+            alert_resp = TelegramUtility().process_telegram_alert(project_id=segment_entity.project_id, message_text=alerting_text,
+                                                                  feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get(
+                                                                      "CAMPAIGN", "DEFAULT"))
             generate_campaign_approval_status_mail(
                 {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
             raise ValidationFailedException(method_name=method_name, reason="Segment records not found")
@@ -3619,10 +3623,19 @@ def proceed_to_change_approved_campaign_time(cbc_id, start_time, end_time, sourc
         # Update cssd retry count as  0
         CEDCampaignSchedulingSegmentDetails().reset_s3_segment_refresh_attempts(cssd_entity.id)
         # Update Camp execution progress status as scheduled
-        CEDCampaignExecutionProgress().update_campaign_status(CampaignExecutionProgressStatus.SCHEDULED.value,
-                                                              cssd_entity.id)
+        details_message = f"Campaign replayed after ERROR by {Session().get_user_session_object().user.user_name}"
+        camp_execution_entity = CEDCampaignExecutionProgress().fetch_entity_by_campaign_id(cssd_entity.id)
+        extra = {} if camp_execution_entity.extra is None else json.loads(camp_execution_entity.extra)
+        query_execution_status = extra.get("query_execution_status", None)
+        extra["query_execution_status"] = details_message if query_execution_status is None else query_execution_status + "\n " + details_message
+        CEDCampaignExecutionProgress().update_campaign_status_and_extra(cssd_entity.id, CampaignExecutionProgressStatus.SCHEDULED.value,
+                                                                        json.dumps(extra), "")
+
         # Trigger telegram alert for replay error campaign
-        # TODO
+        # project_id = CEDCampaignSchedulingSegmentDetails().fetch_project_id_by_campaign_id(cssd_entity.id)
+        # alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
+        #                                                       message_text=details_message,
+        #                                                       feature_section="NOTIFICATION")
 
         # Create Activity log
         activity_log_entity = CED_ActivityLog()

@@ -330,8 +330,7 @@ def process_segment_data_callback(body):
         alerting_text = f'Segment refresh success, Segment Name : {segment_name}, Segment ID : {segment_entity.id}, Refresh Time : {str(datetime.datetime.utcnow())}'
         alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id,
                                                               message_text=alerting_text,
-                                                              feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get(
-                                                                  "SEGMENT", "DEFAULT"))
+                                                              feature_section="NOTIFICATION")
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                     details_message=f"Count and headers updated for segment_id: {segment_id}.")
 

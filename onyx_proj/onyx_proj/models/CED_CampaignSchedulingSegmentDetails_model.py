@@ -59,3 +59,8 @@ class CEDCampaignSchedulingSegmentDetails:
         ]
         update_dict = {"s3_segment_refresh_attempts":0, "scheduling_status": None}
         return update(self.engine, self.table, filter, update_dict)
+
+    def fetch_project_id_by_campaign_id(self, campaign_id):
+        query = f"SELECT seg.ProjectId as project_id FROM CED_CampaignSchedulingSegmentDetails cssd JOIN CED_Segment seg on cssd.SegmentId = seg.UniqueId WHERE cssd.Id = {campaign_id}"
+        res = execute_query(self.engine, query)
+        return None if not res or len(res) <= 0 or not res[0].get('project_id') else res[0].get('project_id')
