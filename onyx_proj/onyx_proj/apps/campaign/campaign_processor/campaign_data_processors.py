@@ -720,18 +720,24 @@ def filter_list(request, session_id):
 
     for one_cbc_row in data:
         try:
-        #     Set Flag for Ready to go To Campaigns
+            # Set Flag for Ready to go To Campaigns
             one_cbc_row.setdefault('validation', 'Not Validated')
-            if one_cbc_row.get("test_campaign_state") != "VALIDATED":
-                if int(one_cbc_row.get("is_manual_validation_mandatory", 1)) == 1:
-                    logger.error(
-                        f'Campaign needs to be manually validated cbc : {one_cbc_row.get("unique_id")}')
-                    continue
-                if int(one_cbc_row.get("is_validated_system", 0)) == 0:
-                    logger.error(
-                        f'Campaign needs to be system validated or Manually Validated cbc : {one_cbc_row.get("unique_id")}')
-                    continue
-            one_cbc_row.update({"validation": "Validated"})
+            state_list = one_cbc_row.get("test_campaign_state_list", "").split(",")
+            not_validated_flag_count = 0
+            for curr_cbc_state in state_list:
+                if curr_cbc_state != "VALIDATED":
+                    if int(one_cbc_row.get("is_manual_validation_mandatory", 1)) == 1:
+                        logger.error(
+                            f'Campaign needs to be manually validated cbc : {one_cbc_row.get("unique_id")}')
+                        not_validated_flag_count+=1
+                        continue
+                    if int(one_cbc_row.get("is_validated_system", 0)) == 0:
+                        not_validated_flag_count+=1
+                        logger.error(
+                            f'Campaign needs to be system validated or Manually Validated cbc : {one_cbc_row.get("unique_id")}')
+                        continue
+            if not_validated_flag_count == 0:
+                one_cbc_row.update({"validation": "Validated"})
         except Exception as ex:
             logger.error(f'Some issue in setting validation flag for campaign listing page, cb: {one_cbc_row.get("unique_id")}, {ex}')
 

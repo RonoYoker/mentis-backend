@@ -44,7 +44,7 @@ class CEDCampaignBuilder:
         approved_by, cb.RecordsInSegment AS segment_records, cb.Type AS type, cb.IsActive as active, cb.CampaignCategory
          as campaign_category , cb.IsRecurring AS is_recurring, cb.RecurringDetail AS recurring_details, cb.IsStarred as
           is_starred, cbc.ContentType AS channel, COUNT(*) AS instance_count, cb.Description as description, cb.IsManualValidationMandatory as 
-        is_manual_validation_mandatory, cbc.IsValidatedSystem as is_validated_system, cbc.TestCampignState as test_campaign_state FROM 
+        is_manual_validation_mandatory, cbc.IsValidatedSystem as is_validated_system, GROUP_CONCAT(cbc.TestCampignState separator ',') as test_campaign_state_list FROM 
           CED_CampaignBuilder cb LEFT JOIN CED_Segment cs ON cs.UniqueId = cb.SegmentId JOIN CED_CampaignBuilderCampaign
            cbc ON cb.UniqueId = cbc.CampaignBuilderId WHERE % s GROUP BY 1, 2, 3, 4, 5 order by cb.Id DESC""" % filters
         return dict_fetch_query_all(self.curr, baseQuery)
