@@ -1363,8 +1363,7 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
             if campaign_builder_entity.campaign_category in [CampaignCategory.AB_Segment.value,
                                                              CampaignCategory.AB_Content.value]:
                 # fetch segment details
-                segment_entity = validate_segment_status(campaign.segment_id,
-                                                         SegmentStatus.APPROVED.value)
+                segment_entity = validate_segment_status(campaign.segment_id, None)
 
                 if segment_entity.records is None or segment_entity.records <= 0:
                     logger.error(f"method_name :: {method_name}, Segment has 0 records")
