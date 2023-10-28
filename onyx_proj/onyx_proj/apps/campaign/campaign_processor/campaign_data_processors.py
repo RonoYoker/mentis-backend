@@ -3902,6 +3902,10 @@ def prepare_seg_based_campaign_list(data, recurring_detail):
                     cbc["input_start_date_time"] = datetime.datetime.combine(rec_data.get("date"), datetime.datetime.strptime(variant_dict["start_time"], '%H:%M:%S').time())
                     cbc["input_end_date_time"] = datetime.datetime.combine(rec_data.get("date"), datetime.datetime.strptime(variant_dict["end_time"], '%H:%M:%S').time())
 
+                    if cbc["input_start_date_time"] >= cbc["input_end_date_time"]:
+                        raise BadRequestException(method=method_name,
+                                                  reason="End date time should be greater then start start date time.")
+
                     if variant_dict.get("tbd", False):
                         cbc_list = make_split_camp_detail(cbc)
                         for cbc_dict in cbc_list:
@@ -3986,6 +3990,10 @@ def prepare_template_based_campaign_list(data, recurring_detail):
                     cbc = copy.deepcopy(variant)
                     cbc["input_start_date_time"] = datetime.datetime.combine(rec_data.get("date"), datetime.datetime.strptime(variant_dict["start_time"], '%H:%M:%S').time())
                     cbc["input_end_date_time"] = datetime.datetime.combine(rec_data.get("date"), datetime.datetime.strptime(variant_dict["end_time"], '%H:%M:%S').time())
+
+                    if cbc["input_start_date_time"] >= cbc["input_end_date_time"]:
+                        raise BadRequestException(method=method_name,
+                                                  reason="End date time should be greater then start start date time.")
 
                     if variant_dict.get("tbd", False):
                         cbc_list = make_split_camp_detail(cbc)
