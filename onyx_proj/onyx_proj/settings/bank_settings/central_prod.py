@@ -34,6 +34,7 @@ HYPERION_LOCAL_DOMAIN = {
     "YBL_CLE_Ethera": "http://m-prod-ybl-hyp-elb-173392471.ap-south-1.elb.amazonaws.com/",
     "YBL_CC_UPG": "http://m-prod-ybl-hyp-elb-173392471.ap-south-1.elb.amazonaws.com/",
     "YBL_ACQ": "http://m-prod-ybl-hyp-elb-173392471.ap-south-1.elb.amazonaws.com/",
+    "YBL_TXN_TO_EMI": "http://m-prod-ybl-hyp-elb-173392471.ap-south-1.elb.amazonaws.com/",
     "ABL_Ethera": "http://m-prod-abl-hyp-elb-1486215713.ap-south-1.elb.amazonaws.com/"
 }
 
@@ -56,6 +57,7 @@ ONYX_LOCAL_DOMAIN = {
     "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd": "http://m-prod-onyxlocal-elb-263941227.ap-south-1.elb.amazonaws.com",
     "yblclejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
     "yblacqjlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
+    "ybltxntoemimablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
     "yblccujlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
     "ablethjlsdsmablpxpqcloaxlnifyewmveqlhiacldjplapyndmenfn44nausprj": "http://m-prod-onyxlocal-elb-961447055.ap-south-1.elb.amazonaws.com"
 }
@@ -78,6 +80,7 @@ ONYX_LOCAL_CAMP_VALIDATION = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapra
                               "yblclejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                               "yblccujlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                               "yblacqjlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
+                              "ybltxntoemimablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                               "ibldcljlsdsmablpxpqclospknifyewmenblhiqxtdjplapyndmenfn11nausprj",
                               "ablethjlsdsmablpxpqcloaxlnifyewmveqlhiacldjplapyndmenfn44nausprj",
                               "iblcoljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
