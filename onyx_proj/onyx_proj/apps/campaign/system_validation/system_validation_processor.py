@@ -29,6 +29,7 @@ def trigger_campaign_system_validation_processor(campaign_builder_id, execution_
     cv_entity = CEDCampaignSystemValidation().get_campaign_validation_entity(campaign_builder_id, execution_config_id, ["PUSHED", "IN_PROGRESS", "READY_TO_SEND_FOR_APPROVAL", "READY_TO_APPROVE"])
     cv_entity.retry_count = cv_entity.retry_count + 1
     cv_entity.execution_status = "IN_PROGRESS"
+    cv_entity.clicked_status = "INVALID"
     process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
     cv_entity = CEDCampaignSystemValidation().get_campaign_validation_entity(campaign_builder_id, execution_config_id, ["PUSHED", "IN_PROGRESS"])
     if cv_entity is None:
@@ -158,7 +159,12 @@ def trigger_campaign_system_validation_processor(campaign_builder_id, execution_
     logger.info(f'Test instance selected to capture all statuses is : {current_test_campaign_instance}')
     content_text = current_test_campaign_instance.get("contentText","")
 
-    preview_data_obj = fetch_content_details_for_cbc(cbc_dict.get("unique_id"), content_text)
+    try:
+        content_text_url = json.loads(current_test_campaign_instance.get("messageLandingUrl", "[]"))[0]
+    except Exception as ex:
+        logger.error(f'Unable to fetch URL to be clicked!, {ex}')
+        content_text_url = None
+    preview_data_obj = fetch_content_details_for_cbc(cbc_dict.get("unique_id"), content_text, content_text_url)
 
     cv_entity.test_campaign_id = current_test_campaign_instance.get("campaignId")
     cv_entity.preview_data = json.dumps(preview_data_obj, default=str)
@@ -244,36 +250,36 @@ def trigger_campaign_system_validation_processor(campaign_builder_id, execution_
 
     process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
 
-    step_name = "clicked"
-    if cv_entity.clicked_status in ["IN_PROGRESS"] and cv_entity.clicked_status not in ["INVALID"]:
-        if preview_data_obj.get("url_present", True) is False:
-            cv_entity.clicked_status = "INVALID"
-        elif cv_entity.clicked_count > STEP_RETRIAL_COUNT[step_name]:
-            cv_entity.execution_status = "FAILED"
-            cv_entity.clicked_status = "FAILED"
-            process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
-            logger.info(f'Retry Stopped due to {step_name} failure, campaign_builder_id = {campaign_builder_id}, execution_config_id = {execution_config_id}')
-        else:
-            cv_entity.clicked_count = cv_entity.clicked_count + 1
-            cv_entity.clicked_last_execution_time = datetime.datetime.now()
-            test_campaign_validation_request_params = {
-                "body":{
-                    "campaign_builder_campaign_id": cbc_dict.get("unique_id"),
-                    "test_campaign_mode": "system",
-                    "user_data": json.loads(cv_entity.meta)
-                }
-            }
-            test_campaign_click_data = fetch_test_campaign_validation_status(test_campaign_validation_request_params)
-            logger.info(test_campaign_click_data)
-            if test_campaign_click_data.get("data", {}).get("system_validated", False) is True:
-                cv_entity.clicked_status = "COMPLETED"
-            else:
-                process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
-                trigger_campaign_system_validation.apply_async(queue="celery_campaign_approval",
-                                                               kwargs={"campaign_builder_id": campaign_builder_id,
-                                                                       "execution_config_id": execution_config_id}, countdown=STEP_DELAY_TIMEDELTA.get(step_name, 10))
-                logger.info(f'Retry pushed due to {step_name} failure, campaign_builder_id = {campaign_builder_id}, execution_config_id = {execution_config_id}')
-                return
+    # step_name = "clicked"
+    # if cv_entity.clicked_status in ["IN_PROGRESS"] and cv_entity.clicked_status not in ["INVALID"]:
+    #     if preview_data_obj.get("url_present", True) is False:
+    #         cv_entity.clicked_status = "INVALID"
+    #     elif cv_entity.clicked_count > STEP_RETRIAL_COUNT[step_name]:
+    #         cv_entity.execution_status = "FAILED"
+    #         cv_entity.clicked_status = "FAILED"
+    #         process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
+    #         logger.info(f'Retry Stopped due to {step_name} failure, campaign_builder_id = {campaign_builder_id}, execution_config_id = {execution_config_id}')
+    #     else:
+    #         cv_entity.clicked_count = cv_entity.clicked_count + 1
+    #         cv_entity.clicked_last_execution_time = datetime.datetime.now()
+    #         test_campaign_validation_request_params = {
+    #             "body":{
+    #                 "campaign_builder_campaign_id": cbc_dict.get("unique_id"),
+    #                 "test_campaign_mode": "system",
+    #                 "user_data": json.loads(cv_entity.meta)
+    #             }
+    #         }
+    #         test_campaign_click_data = fetch_test_campaign_validation_status(test_campaign_validation_request_params)
+    #         logger.info(test_campaign_click_data)
+    #         if test_campaign_click_data.get("data", {}).get("system_validated", False) is True:
+    #             cv_entity.clicked_status = "COMPLETED"
+    #         else:
+    #             process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
+    #             trigger_campaign_system_validation.apply_async(queue="celery_campaign_approval",
+    #                                                            kwargs={"campaign_builder_id": campaign_builder_id,
+    #                                                                    "execution_config_id": execution_config_id}, countdown=STEP_DELAY_TIMEDELTA.get(step_name, 10))
+    #             logger.info(f'Retry pushed due to {step_name} failure, campaign_builder_id = {campaign_builder_id}, execution_config_id = {execution_config_id}')
+    #             return
 
     process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
 
@@ -467,7 +473,7 @@ def process_system_validation_entry(campaign_builder_id=None, force = False, use
         logger.info(f'Marking all Running instances of system validation to stopped for CB ID : {campaign_builder_id}')
         CEDCampaignSystemValidation().update_running_system_validation_entries(campaign_builder_id)
 
-    cv_entity = CEDCampaignSystemValidation().get_system_validation_data_for_cb(campaign_builder_id, ["PUSHED", "IN_PROGRESS"])
+    cv_entity = CEDCampaignSystemValidation().get_system_validation_data_for_cb(campaign_builder_id, ["PUSHED", "IN_PROGRESS", "READY_TO_SEND_FOR_APPROVAL", "READY_TO_APPROVE", "COMPLETED"])
     if cv_entity is not None and len(cv_entity) > 0:
         return {"success": True, "task_pushed_status": False,  "error": "System validation already in progress do you wish to kill previous run and initialize new?"}
     return create_system_validation_entries(campaign_builder_id, force, user_dict)

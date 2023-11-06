@@ -35,26 +35,26 @@ ALL_STEP_COLUMN_CONFIG = [
     }
 ]
 
-SYSTEM_VALIDATION_MAX_RETRIAL_COUNT = 3
+SYSTEM_VALIDATION_MAX_RETRIAL_COUNT = 15
 
 STEP_RETRIAL_COUNT = {
     "segment_refresh_triggered": 1,
-    "segment_refreshed": 3,
+    "segment_refreshed": 30,
     "trigger_test_campaign": 3,
-    "prepare_content": 3,
-    "sent": 1,
-    "delivered": 3,
+    "prepare_content": 30,
+    "sent": 3,
+    "delivered": 30,
     "clicked": 5,
     "url_response_received": 2
 }
 
 STEP_DELAY_TIMEDELTA = {
     "segment_refresh_triggered": 10,
-    "segment_refreshed": 180,
+    "segment_refreshed": 30,
     "trigger_test_campaign": 10,
-    "prepare_content": 180,
+    "prepare_content": 30,
     "sent": 10,
-    "delivered": 180,
+    "delivered": 30,
     "clicked": 60,
     "url_response_received": 10
 }

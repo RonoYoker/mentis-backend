@@ -210,8 +210,8 @@ MAX_ALLOWED_CAMPAIGN_RETRY_FOR_QUERY_EXECUTOR = 4
 
 HYPERION_CENTRAL_API_CALL = {
     "test_campaign_status": {
-        "url": "http://uatdev.hyperiontool.com/hyperioncampaigntooldashboard/centerdb/testcampaignstatus",
-        "referer": "http://uatdev.hyperiontool.com/"
+        "url": "https://uatdev.hyperiontool.com/hyperioncampaigntooldashboard/centerdb/testcampaignstatus",
+        "referer": "https://uatdev.hyperiontool.com/"
     }
 }
 

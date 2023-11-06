@@ -29,11 +29,12 @@ from django.conf import settings
 CONTENT_VARIABLE_REGULAR_EXPRESSION = r'{#var[0-9]*#}'
 
 
-def fetch_content_details_for_cbc(campaign_builder_campaign_id, actual_text=""):
+def fetch_content_details_for_cbc(campaign_builder_campaign_id, actual_text="", content_text_url=None):
     cbc_dict = CEDCampaignBuilderCampaign().get_campaign_builder_details_by_id(unique_id=campaign_builder_campaign_id)
     channel = cbc_dict.get("content_type")
     preview_data_dict = {}
     preview_data_dict.update({'url_present': True})
+    logger.info(f'Input url captured for cbc : {campaign_builder_campaign_id} is {content_text_url}')
     if channel == "EMAIL":
         cbc_content = CEDCampaignBuilderEmail().fetch_all_content_from_cbc_id(campaign_builder_campaign_id)
         preview_data_dict.setdefault("content", {}).setdefault("channel", "EMAIL")
@@ -47,7 +48,8 @@ def fetch_content_details_for_cbc(campaign_builder_campaign_id, actual_text=""):
                     f"fetch_content_data :: unable to fetch content data for cbc: {campaign_builder_campaign_id}")
                 return preview_data_dict
 
-            processed_url = fetch_url_from_input_variables(campaign_content_entity.get("variables"), campaign_content_entity.get("content_text", ""), actual_text)
+            # No check required until complete content of email is fetched.
+            processed_url = content_text_url
             if processed_url is not None and processed_url.startswith('http') is False:
                 processed_url = settings.WEB_PROTOCOL + processed_url
             preview_data_dict.setdefault("url", processed_url)
@@ -84,7 +86,10 @@ def fetch_content_details_for_cbc(campaign_builder_campaign_id, actual_text=""):
                 logger.error(
                     f"fetch_content_data :: unable to fetch content data for cbc: {campaign_builder_campaign_id}")
                 return preview_data_dict
-            processed_url = fetch_url_from_input_variables(campaign_content_entity.get("variables"), campaign_content_entity.get("content_text", ""), actual_text)
+            if check_url_in_actual_text(actual_text, content_text_url).get("success", False) is True:
+                processed_url = content_text_url
+            else:
+                processed_url = None
             if processed_url is not None and processed_url.startswith('http') is False:
                 processed_url = settings.WEB_PROTOCOL + processed_url
             preview_data_dict.setdefault("url", processed_url)
@@ -108,7 +113,10 @@ def fetch_content_details_for_cbc(campaign_builder_campaign_id, actual_text=""):
                     f"fetch_content_data :: unable to fetch content data for cbc: {campaign_builder_campaign_id}")
                 return preview_data_dict
 
-            processed_url = fetch_url_from_input_variables(campaign_content_entity.get("variables"), campaign_content_entity.get("content_text", ""), actual_text)
+            if check_url_in_actual_text(actual_text, content_text_url).get("success", False) is True:
+                processed_url = content_text_url
+            else:
+                processed_url = None
             if processed_url is not None and processed_url.startswith('http') is False:
                 processed_url = settings.WEB_PROTOCOL + processed_url
             preview_data_dict.setdefault("url", processed_url)
@@ -116,6 +124,15 @@ def fetch_content_details_for_cbc(campaign_builder_campaign_id, actual_text=""):
         else:
             preview_data_dict.update({'url_present': False})
     return preview_data_dict
+
+
+def check_url_in_actual_text(actual_text="", content_text_url=None):
+    try:
+        if actual_text.find(content_text_url) >= 0:
+            return {"success": True}
+    except Exception as ex:
+        logger.error(f'check_url_in_actual_text, Exception: {ex}')
+    return {"success": False}
 
 def fetch_url_from_input_variables(variable_list=[], content_text ="", actual_text=""):
     url_variable_pattern = None
