@@ -3895,7 +3895,7 @@ def prepare_seg_based_campaign_list(data, recurring_detail):
                     variant['filter_json'] = json.dumps(variant_dict["filter_json"]["segment_filter"])
                     variant['segment_id'] = variant_dict["filter_json"]["sub_segment_id"]
 
-                recurring_dates = generate_schedule(recurring_detail, "03:30:00", "03:30:00")
+                recurring_dates = generate_schedule(recurring_detail, variant_dict["start_time"], variant_dict["end_time"])
                 if len(recurring_dates) < 1:
                     raise InternalServerError(method_name=method_name, reason="Enable to find date.")
                 for rec_data in recurring_dates:
@@ -3984,7 +3984,7 @@ def prepare_template_based_campaign_list(data, recurring_detail):
                     variant['filter_json'] = json.dumps(variant_dict["filter_json"]["segment_filter"])
                     variant['segment_id'] = variant_dict["filter_json"]["sub_segment_id"]
 
-                recurring_dates = generate_schedule(recurring_detail, "03:30:00", "03:30:00")
+                recurring_dates = generate_schedule(recurring_detail, variant_dict["start_time"], variant_dict["end_time"])
                 if len(recurring_dates) < 1:
                     raise InternalServerError(method_name=method_name, reason="Enable to find date.")
                 for rec_data in recurring_dates:
