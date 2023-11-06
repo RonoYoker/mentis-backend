@@ -2401,6 +2401,7 @@ def set_followup_sms_details(campaign_list):
                 sms_id = follow_up_sms.get("sms_id")
                 url_id = follow_up_sms.get("url_id")
                 sender_id = follow_up_sms.get("sender_id")
+                vendor_config_id = follow_up_sms.get("vendor_config_id", "")
 
                 ivr_follow_up_details = CED_CampaignContentFollowUPSmsMapping()
                 ivr_follow_up_details.content_id = ivr_id
@@ -2408,8 +2409,8 @@ def set_followup_sms_details(campaign_list):
                 ivr_follow_up_details.follow_up_sms_type = type
                 ivr_follow_up_details.sms_id = sms_id
                 ivr_follow_up_details.sender_id = sender_id
-                ivr_follow_up_details.url_id = url_id
-                ivr_follow_up_details.vendor_config_id = follow_up_sms.get("vendor_config_id", "")
+                ivr_follow_up_details.url_id = url_id if url_id else ""
+                ivr_follow_up_details.vendor_config_id = vendor_config_id if vendor_config_id else ""
                 db_res = CEDCampaignContentFollowUPSmsMapping().update_content_follow_up_sms_mapping(ivr_follow_up_details)
                 if not db_res.get("status"):
                     raise BadRequestException(method_name=method_name,
@@ -2417,9 +2418,9 @@ def set_followup_sms_details(campaign_list):
 
                 campaign_follow_up_mapping = CED_CampaignFollowUPMapping()
                 campaign_follow_up_mapping.sms_id = sms_id
-                campaign_follow_up_mapping.url_id = url_id
+                campaign_follow_up_mapping.url_id = url_id if url_id else ""
                 campaign_follow_up_mapping.sender_id = sender_id
-                campaign_follow_up_mapping.vendor_config_id = follow_up_sms.get("vendor_config_id", "")
+                campaign_follow_up_mapping.vendor_config_id = vendor_config_id if vendor_config_id else ""
                 campaign_follow_up_mapping.campaign_builder_campaign_id = campaign.get("unique_id", "")
                 db_res = CEDCampaignContentFollowUPSmsMapping().get_ivr_follow_up_sms_mapping_id(ivr_id, type)
                 if not db_res.get("status") or db_res.get("response") is None:
