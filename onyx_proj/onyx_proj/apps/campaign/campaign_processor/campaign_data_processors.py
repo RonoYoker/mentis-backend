@@ -572,6 +572,7 @@ def validate_campaign(request_data):
     created_by = resp[0].get("CreatedBy")
     maker_validator = resp[0].get("MakerValidator", None)
     execution_config_id = resp[0].get("ExecutionConfigId")
+    cb_status = resp[0].get("Status",CampaignBuilderStatus.SAVED.value)
     campaign_category = resp[0].get("CampaignCategory")
     is_recurring = resp[0].get("IsRecurring")
     channel = resp[0].get("ContentType")
@@ -591,7 +592,11 @@ def validate_campaign(request_data):
 
 
     if test_camp_statuses[0].get("camp_status") == TestCampStatus.NOT_DONE.value:
-        update_resp = CEDCampaignBuilderCampaign().maker_validate_campaign_builder_campaign(cb_id,TestCampStatus.MAKER_VALIDATED.value,
+        if cb_status in [CampaignBuilderStatus.APPROVED.value,CampaignBuilderStatus.APPROVAL_PENDING.value]:
+            status_to_mark = TestCampStatus.VALIDATED.value
+        else:
+            status_to_mark = TestCampStatus.MAKER_VALIDATED.value
+        update_resp = CEDCampaignBuilderCampaign().maker_validate_campaign_builder_campaign(cb_id,status_to_mark,
                                                                                             user_name,cbc_ids)
         if update_resp is True:
             data['validated'] = True

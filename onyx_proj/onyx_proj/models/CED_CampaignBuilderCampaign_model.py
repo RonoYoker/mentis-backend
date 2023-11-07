@@ -87,7 +87,7 @@ class CEDCampaignBuilderCampaign:
         return True if result.get("row_count", 0) > 0 else False
 
     def get_cb_id_is_rec_by_cbc_id(self, cbc_id):
-        query = f"""SELECT cbc.ContentType ,cb.UniqueId, cb.IsRecurring, cb.CreatedBy, cbc.MakerValidator , cbc.ExecutionConfigId , cb.CampaignCategory FROM CED_CampaignBuilder cb 
+        query = f"""SELECT cbc.ContentType ,cb.UniqueId, cb.IsRecurring, cb.CreatedBy , cb.Status , cbc.MakerValidator , cbc.ExecutionConfigId , cb.CampaignCategory FROM CED_CampaignBuilder cb 
         JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId WHERE cbc.UniqueId = '{cbc_id}'"""
         resp = dict_fetch_query_all(self.curr, query)
         if resp is None:
