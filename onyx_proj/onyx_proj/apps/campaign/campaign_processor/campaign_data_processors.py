@@ -761,7 +761,7 @@ def parse_data_acc_to_campaign_category(camp_data):
             recurring_details = data.get('recurring_details')
             if recurring_details is not None:
                 recurring_details = json.loads(recurring_details)
-                camp_info = recurring_details['camp_info']
+                camp_info = recurring_details.get('camp_info',[])
                 for camp_meta in camp_info:
                     seg_name_list.append(camp_meta['segment_title'])
             data['segment_records'] = None
