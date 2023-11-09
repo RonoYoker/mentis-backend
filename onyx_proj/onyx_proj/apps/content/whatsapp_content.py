@@ -5,17 +5,19 @@ import uuid
 from onyx_proj.apps.content.base import Content
 from onyx_proj.common.constants import TAG_FAILURE, \
     TAG_SUCCESS, CampaignContentStatus, DataSource, SubDataSource, ContentType, DYNAMIC_VARIABLE_URL_NAME, \
-    MASTER_COLUMN_NAME_URL, CampaignContentLanguage, TextualContentType
+    MASTER_COLUMN_NAME_URL, CampaignContentLanguage, TextualContentType, CTAType
 from onyx_proj.common.logging_helper import log_entry
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException, InternalServerError
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.models.CED_ActivityLog_model import CEDActivityLog
+from onyx_proj.models.CED_CampaignContentCtaMapping_model import CEDCampaignContentCtaMapping
 from onyx_proj.models.CED_CampaignContentMediaMapping_model import CEDCampaignContentMediaMapping
 from onyx_proj.models.CED_CampaignContentTextualMapping_model import CEDCampaignContentTextualMapping
 from onyx_proj.models.CED_CampaignContentUrlMapping_model import CEDCampaignContentUrlMapping
 from onyx_proj.models.CED_CampaignContentVariableMapping_model import CEDCampaignContentVariableMapping
 from onyx_proj.models.CED_CampaignWhatsAppContent_model import CEDCampaignWhatsAppContent
 from onyx_proj.models.CED_EntityTagMapping import CEDEntityTagMapping
+from onyx_proj.models.CED_HIS_CampaignContentCtaMapping_model import CED_HISCampaignContentCtaMapping
 from onyx_proj.models.CED_HIS_CampaignContentMediaMapping_model import CED_HISCampaignContentMediaMapping
 from onyx_proj.models.CED_HIS_CampaignContentTextualMapping_model import CED_HISCampaignContentTextualMapping
 from onyx_proj.models.CED_HIS_CampaignContentUrlMapping_model import CED_HISCampaignContentUrlMapping
@@ -24,12 +26,14 @@ from onyx_proj.models.CED_HIS_CampaignContentVariableMapping_model import CED_HI
 from onyx_proj.models.CED_HIS_CampaignWhatsAppContent_model import CED_HISCampaignWhatsAppContent
 from onyx_proj.models.CED_HIS_EntityTagMapping_model import CED_HISEntityTagMapping
 from onyx_proj.orm_models.CED_ActivityLog_model import CED_ActivityLog
+from onyx_proj.orm_models.CED_CampaignContentCtaMapping_model import CED_CampaignContentCtaMapping
 from onyx_proj.orm_models.CED_CampaignContentMediaMapping_model import CED_CampaignContentMediaMapping
 from onyx_proj.orm_models.CED_CampaignContentTextualMapping_model import CED_CampaignContentTextualMapping
 from onyx_proj.orm_models.CED_CampaignContentUrlMapping_model import CED_CampaignContentUrlMapping
 from onyx_proj.orm_models.CED_CampaignContentVariableMapping_model import CED_CampaignContentVariableMapping
 from onyx_proj.orm_models.CED_CampaignWhatsAppContent_model import CED_CampaignWhatsAppContent
 from onyx_proj.orm_models.CED_EntityTagMapping_model import CED_EntityTagMapping
+from onyx_proj.orm_models.CED_HIS_CampaignContentCtaMapping_model import CED_HIS_CampaignContentCtaMapping
 from onyx_proj.orm_models.CED_HIS_CampaignContentMediaMapping_model import CED_HIS_CampaignContentMediaMapping
 from onyx_proj.orm_models.CED_HIS_CampaignContentTextualMapping_model import CED_HIS_CampaignContentTextualMapping
 from onyx_proj.orm_models.CED_HIS_CampaignContentUrlMapping_model import CED_HIS_CampaignContentUrlMapping
@@ -46,7 +50,6 @@ class WhatsAppContent(Content):
         self.master_id_details = master_id_details
         self.fixed_header_details = fixed_header_details
 
-
     def prepare_and_save_content_data(self, content_data):
         method_name = "prepare_and_save_content_data"
         log_entry(content_data)
@@ -56,8 +59,10 @@ class WhatsAppContent(Content):
         strength = content_data.get('strength')
         contain_url = content_data.get('contain_url', False)
         is_contain_media = content_data.get('is_contain_media', False)
+        is_contain_cta = content_data.get('is_contain_cta', False)
         is_contain_header = content_data.get('is_contain_header', False)
         is_contain_footer = content_data.get('is_contain_footer', False)
+        cta_type = content_data.get('cta_type')
         vendor_mapping_enabled = content_data.get('vendor_mapping_enabled')
         language_name = content_data.get('language_name', CampaignContentLanguage.ENGLISH.value)
         extra = content_data.get('extra')
@@ -94,6 +99,8 @@ class WhatsAppContent(Content):
         wa_content.is_contain_media = is_contain_media
         wa_content.is_contain_header = is_contain_header
         wa_content.is_contain_footer = is_contain_footer
+        wa_content.is_contain_cta = is_contain_cta
+        wa_content.cta_type = cta_type
         wa_content.language_name = language_name
         wa_content.created_by = user_name
         wa_content.vendor_mapping_enabled = vendor_mapping_enabled
@@ -168,6 +175,11 @@ class WhatsAppContent(Content):
             self.validate_content_header_mapping(content_data.get('header_mapping'), content_data.get('project_id'))
         if content_data.get('is_contain_footer', False):
             self.validate_content_footer_mapping(content_data.get('footer_mapping'), content_data.get('project_id'))
+        if content_data.get('is_contain_cta', False):
+            self.validate_content_cta_mapping(content_data.get('cta_mapping'), content_data.get('cta_type'), content_data.get('project_id'))
+        if (content_data.get('is_contain_cta', False) and content_data.get('contain_url', False) and
+                content_data.get('cta_type', "") == CTAType.DYNAMIC_URL.value):
+            self.validate_content_cta_and_url_mapping(content_data.get('url_mapping'), content_data.get('cta_mapping'))
 
     def validate_content_edit_config(self, unique_id):
         wa_content_entity_db = CEDCampaignWhatsAppContent().get_whatsapp_content_data_by_unique_id_and_status(unique_id, [])
@@ -260,6 +272,7 @@ class WhatsAppContent(Content):
         if unique_id is not None:
             CEDCampaignContentVariableMapping().delete_content_var_mapping(unique_id)
             CEDCampaignContentUrlMapping().delete_content_url_mapping(unique_id)
+            CEDCampaignContentCtaMapping().delete_content_cta_mapping(unique_id)
             CEDCampaignContentMediaMapping().delete_content_media_mapping(unique_id)
             CEDEntityTagMapping().delete_content_tag_mapping(unique_id, DataSource.CONTENT.value,
                                                              ContentType.WHATSAPP.value)
@@ -267,6 +280,8 @@ class WhatsAppContent(Content):
 
         if wa_content.contain_url:
             self.save_whatsapp_content_url_mapping_and_history(wa_content, content_data.get("url_mapping", None))
+        if wa_content.is_contain_cta:
+            self.save_whatsapp_content_cta_mapping_and_history(wa_content, wa_content.cta_type, content_data.get("cta_mapping", None))
         if wa_content.is_contain_media:
             self.save_whatsapp_content_media_mapping_and_history(wa_content, content_data.get("media_mapping"))
         if wa_content.is_contain_header:
@@ -346,6 +361,37 @@ class WhatsAppContent(Content):
         except Exception as e:
             logger.error(f"Error while Prepare and save content url mapping  data ::{e}")
             raise e
+
+    def save_whatsapp_content_cta_mapping_and_history(self, wa_content, cta_type, cta_mapping):
+        method_name = "save_whatsapp_content_cta_mapping_and_history"
+        if cta_mapping is None:
+            raise BadRequestException(method_name=method_name,
+                                      reason="CTA mapping not found")
+        if cta_type == CTAType.DYNAMIC_URL.value:
+            try:
+                for cta_map in cta_mapping:
+                    # Prepare and save content url mapping
+                    cta_mapping_detail = CED_CampaignContentCtaMapping(cta_map)
+                    cta_mapping_detail.content_id = wa_content.unique_id
+                    cta_mapping_detail.unique_id = uuid.uuid4().hex
+                    cta_mapping_detail.content_type = ContentType.WHATSAPP.value
+                    resp = CEDCampaignContentCtaMapping().save_or_update_content_cta_mapping_details(cta_mapping_detail)
+                    if not resp.get('status'):
+                        raise InternalServerError(method_name=method_name,
+                                                  reason="Unable to save campaign content cta mapping details")
+
+                    # Prepare and Save history data
+                    his_content_cta_mapping = CED_HIS_CampaignContentCtaMapping(cta_mapping_detail._asdict())
+                    his_content_cta_mapping.unique_id = uuid.uuid4().hex
+                    his_content_cta_mapping.cta_mapping_id = cta_mapping_detail.unique_id
+                    his_content_cta_mapping.content_id = wa_content.history_id
+                    CED_HISCampaignContentCtaMapping().save_or_update_his_camp_content_cta_mapping(his_content_cta_mapping)
+            except InternalServerError as ey:
+                logger.error(f"Error while Prepare and save content cta mapping  data InternalServerError ::{ey.reason}")
+                raise ey
+            except Exception as e:
+                logger.error(f"Error while Prepare and save content cta mapping  data ::{e}")
+                raise e
 
     def save_whatsapp_content_media_mapping_and_history(self, wa_content, media_mapping):
         method_name = "save_whatsapp_content_media_mapping_and_history"

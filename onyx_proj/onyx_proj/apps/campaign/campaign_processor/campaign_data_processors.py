@@ -41,6 +41,7 @@ from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.models.CED_ActivityLog_model import CEDActivityLog
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
 from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
+from onyx_proj.models.CED_CampaignContentCtaMapping_model import CEDCampaignContentCtaMapping
 from onyx_proj.models.CED_CampaignContentFollowUPSmsMapping_model import CEDCampaignContentFollowUPSmsMapping
 from onyx_proj.models.CED_CampaignContentMediaMapping_model import CEDCampaignContentMediaMapping
 from onyx_proj.models.CED_CampaignContentSenderIdMapping_model import CEDCampaignContentSenderIdMapping
@@ -1989,6 +1990,15 @@ def prepare_whatsapp_related_data(cbc_entity, campaign_segment_entity, is_test=F
             if url_mapping['url'].get('url', None) is not None:
                 url_mapping['url']['content_text'] = url_mapping['url']['url']
 
+    if cbc_entity.whatsapp_campaign.cta_id and (campaign_whatsapp_content_entity.cta_mapping is None or len(
+            campaign_whatsapp_content_entity.cta_mapping) <= 0):
+        raise NotFoundException(method_name=method_name, reason="CTA id mapping for WHATSAPP campaign not found")
+
+    for cta_mapping in campaign_whatsapp_content_entity_dict['cta_mapping']:
+        if cta_mapping is not None and cta_mapping.get('url', None) is not None and len(cta_mapping.get('url')) > 0:
+            if cta_mapping['url'].get('url', None) is not None:
+                cta_mapping['url']['content_text'] = cta_mapping['url']['url']
+
     campaign_segment_entity.campaign_whatsapp_content_entity = campaign_whatsapp_content_entity_dict
 
     log_exit()
@@ -2786,6 +2796,7 @@ def prepare_and_save_campaign_builder_whatsapp(campaign, campaign_entity, user_n
     whatsapp_campaign_entity.media_id = whatsapp_campaign.get("media_id")
     whatsapp_campaign_entity.header_id = whatsapp_campaign.get("header_id")
     whatsapp_campaign_entity.footer_id = whatsapp_campaign.get("footer_id")
+    whatsapp_campaign_entity.cta_id = whatsapp_campaign.get("cta_id")
     try:
         CEDCampaignBuilderWhatsApp().save_or_update_sms_campaign_details(whatsapp_campaign_entity)
         return whatsapp_campaign_entity
@@ -3053,6 +3064,29 @@ def validate_content_status(campaign):
                 else:
                     if db_res.get("response") is None or len(db_res.get("response")) == 0:
                         return dict(result=TAG_FAILURE, details_message="Footer Mapping not found")
+        if (campaign_whatsapp_content[0].get("is_contain_cta") is not None and
+                campaign_whatsapp_content[0].get("is_contain_cta") == 1 and
+                campaign_whatsapp_content[0].get("cta_type") == CTAType.DYNAMIC_URL.value):
+            cta_id = whatsapp_campaign.get("cta_id")
+            if cta_id is None:
+                return dict(result=TAG_FAILURE, details_message="CTA Url Id is missing")
+            else:
+                db_res = CEDCampaignContentCtaMapping().get_content_and_cta_mapping_data(whatsapp_content_id,
+                                                                                                 cta_id,
+                                                                                                 CampaignBuilderCampaignContentType.WHATSAPP.value)
+                if not db_res.get("status"):
+                    return dict(result=TAG_FAILURE, details_message="Not able to fetch content cta mapping")
+                else:
+                    if db_res.get("response") is None or len(db_res.get("response")) == 0:
+                        return dict(result=TAG_FAILURE, details_message="Cta Mapping not found")
+        if (campaign_whatsapp_content[0].get("is_contain_cta") is not None and
+                campaign_whatsapp_content[0].get("is_contain_cta") == 1 and
+                campaign_whatsapp_content[0].get("contain_url") is not None and
+                campaign_whatsapp_content[0].get("contain_url") == 1 and campaign_whatsapp_content[0].get("cta_type")
+                == CTAType.DYNAMIC_URL.value):
+            if whatsapp_campaign.get("cta_id", "") != whatsapp_campaign.get("url_id", " "):
+                return dict(result=TAG_FAILURE, details_message="CTA dynamic URL and landing URL must be same.")
+
         return dict(result=TAG_SUCCESS, details_message="Whatsapp associated mapping found")
 
     else:

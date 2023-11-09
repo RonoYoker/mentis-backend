@@ -16,6 +16,8 @@ class CED_CampaignWhatsAppContent(Base, Orm_helper):
     is_contain_media = Column("IsContainMedia", Boolean, default=False)
     is_contain_header = Column("IsContainHeader", Boolean, default=False)
     is_contain_footer = Column("IsContainFooter", Boolean, default=False)
+    is_contain_cta = Column("IsContainCta", Boolean, default=False)
+    cta_type = Column("CtaType", String)
     language_name = Column("LanguageName", String)
     is_active = Column("IsActive", Boolean, default=True)
     rejection_reason = Column("RejectionReason", String)
@@ -36,6 +38,7 @@ class CED_CampaignWhatsAppContent(Base, Orm_helper):
     tag_mapping = relationship("CED_EntityTagMapping")
     url_mapping = relationship("CED_CampaignContentUrlMapping")
     media_mapping = relationship("CED_CampaignContentMediaMapping")
+    cta_mapping = relationship("CED_CampaignContentCtaMapping")
     header_mapping = relationship("CED_CampaignContentTextualMapping",
                                   secondary=CED_CampaignContentTextualMapping.__tablename__,
                                   secondaryjoin="CED_CampaignContentTextualMapping.sub_content_type=='HEADER'",

@@ -853,6 +853,7 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     'is_contain_media': 'containsMedia',
     'is_contain_header': 'containsHeader',
     'is_contain_footer': 'containsFooter',
+    'is_contain_cta': 'containsCta',
     'contain_url': 'containsURL',
     'rejection_reason': 'rejectionReason',
     'vendor_template_id': 'vendorTemplateId',
@@ -873,6 +874,7 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     'name': 'name',
     'short_name': 'shortName',
     'url_mapping': 'urlMapping',
+    'cta_mapping': 'ctaMapping',
     'media_mapping': 'mediaMapping',
     'header_mapping': 'headerMapping',
     'footer_mapping': 'footerMapping',
@@ -885,7 +887,9 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     'media_id': 'mediaId',
     'header_id': 'headerId',
     'footer_id': 'footerId',
+    'cta_id': 'ctaId',
     'textual_id': 'textualId',
+    'cta_type': 'ctaType',
     'url': 'url',
     'media': 'media',
     'textual': 'textual',
@@ -1152,6 +1156,9 @@ CAMPAIGN_CONTENT_MAPPING_TABLE_DICT = {
 
 class MediaType(Enum):
     STATIC_IMAGE = "STATIC_IMAGE"
+
+class CTAType(Enum):
+    DYNAMIC_URL = "DYNAMIC_URL"
 
 
 MIN_ALLOWED_REJECTION_REASON_LENGTH = 0

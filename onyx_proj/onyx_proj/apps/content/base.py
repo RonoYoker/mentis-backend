@@ -10,7 +10,7 @@ from onyx_proj.common.constants import TAG_SUCCESS, VAR_MAPPING_REGEX, DYNAMIC_V
     ContentType, CONTENT_VAR_NAME_REGEX, MAX_ALLOWED_CONTENT_NAME_LENGTH, \
     MIN_ALLOWED_CONTENT_NAME_LENGTH, MIN_ALLOWED_DESCRIPTION_LENGTH, MAX_ALLOWED_DESCRIPTION_LENGTH, DataSource, \
     TAG_FAILURE, CampaignContentStatus, MIN_ALLOWED_REJECTION_REASON_LENGTH, MAX_ALLOWED_REJECTION_REASON_LENGTH, Roles, \
-    TextualContentType
+    TextualContentType, CTAType
 from onyx_proj.common.decorators import UserAuth
 from onyx_proj.common.logging_helper import log_entry
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException, InternalServerError
@@ -175,6 +175,53 @@ class Content(ABC):
                                           reason="Same url mapped more than one time")
 
             mapped_url_id_list.append(url_detail.get('url_id'))
+
+    def validate_content_cta_and_url_mapping(self, url_mapping, cta_mapping):
+        method_name = "validate_content_cta_and_url_mapping"
+        log_entry()
+
+        if url_mapping is None or len(url_mapping) < 1 or cta_mapping is None or len(cta_mapping) < 1:
+            raise BadRequestException(method_name=method_name, reason="URL mapping is not provided")
+
+        set_url_mapping = [frozenset(d.items()) for d in url_mapping]
+        set_cta_mapping = [frozenset(d.items()) for d in cta_mapping]
+
+        if set(set_url_mapping) != set(set_cta_mapping):
+            raise BadRequestException(method_name=method_name,
+                                      reason="Dynamic CTA URL and Landing URL mapping must be same")
+
+    def validate_content_cta_mapping(self, cta_mapping, cta_type, project_id):
+        method_name = "validate_content_cta_mapping"
+        log_entry(project_id)
+
+        if cta_mapping is None or len(cta_mapping) < 1:
+            raise BadRequestException(method_name=method_name, reason="CTA mapping is not provided")
+
+        if cta_type == CTAType.DYNAMIC_URL.value:
+            url_id_list = []
+            mapped_url_id_list = []
+            url_ids = CEDCampaignURLContent().get_content_list_by_project_id_status(project_id)
+
+            for url_id in url_ids:
+                url_id_list.append(url_id.get('unique_id'))
+
+            for url_detail in cta_mapping:
+                if url_detail.get('url_id') is None or url_detail.get('url_id') == "":
+                    raise BadRequestException(method_name=method_name,
+                                              reason="CTA URL id is not provided")
+
+                if url_detail.get('url_id') not in url_id_list:
+                    raise BadRequestException(method_name=method_name,
+                                              reason="CTA URL details is not valid")
+
+                if url_detail.get('url_id') in mapped_url_id_list:
+                    raise BadRequestException(method_name=method_name,
+                                              reason="Same CTA url mapped more than one time")
+
+                mapped_url_id_list.append(url_detail.get('url_id'))
+        else:
+            raise BadRequestException(method_name=method_name,
+                                      reason="CTA type is incorrect")
 
     def validate_content_media_mapping(self, media_mapping, project_id):
         method_name = "validate_content_media_mapping"
