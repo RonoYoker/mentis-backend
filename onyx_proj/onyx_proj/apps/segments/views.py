@@ -173,7 +173,7 @@ def get_segments_from_campaign(request):
 
 
 @csrf_exempt
-@UserAuth.user_authentication()
+# @UserAuth.user_authentication()
 def custom_segment_callback(request):
     # request_body = request.body.decode("utf-8")
     request_body = json.loads(request.body.decode("utf-8"))
@@ -183,7 +183,7 @@ def custom_segment_callback(request):
 
 
 @csrf_exempt
-@UserAuth.user_authentication()
+# @UserAuth.user_authentication()
 def update_segment_callback(request):
     # request_body = request.body.decode("utf-8")
     request_body = json.loads(request.body.decode("utf-8"))
