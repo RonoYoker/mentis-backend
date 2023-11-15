@@ -443,5 +443,6 @@ def validate_session_and_inc_session(request_data):
     if not db_resp.get("status"):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Unable to update expire_time in session table")
+    logger.info(f"Expiry Time Updated for SessionId::{session_id}")
     logger.debug(f"LOG_EXIT function name : {method_name}")
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=dict(validate_session=True))
