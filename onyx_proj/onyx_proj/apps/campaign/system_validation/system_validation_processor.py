@@ -31,7 +31,6 @@ def trigger_campaign_system_validation_processor(campaign_builder_id, execution_
     cv_entity.execution_status = "IN_PROGRESS"
     cv_entity.clicked_status = "INVALID"
     process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
-    cv_entity = CEDCampaignSystemValidation().get_campaign_validation_entity(campaign_builder_id, execution_config_id, ["PUSHED", "IN_PROGRESS"])
     if cv_entity is None:
         logger.error(f'Unable to fetch Campaign validation entity for input data : {campaign_builder_id}, {execution_config_id} from database.')
         return
