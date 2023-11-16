@@ -41,7 +41,7 @@ def test_campaign_process(request: dict):
     # fetch user data
     if request.get("test_campaign_mode", "manual") == "system":
         user_dict = dict(first_name=request.get("user_data", {}).get("first_name", None), mobile_number=request.get("user_data", {}).get("mobile_number", None),
-                         email=request.get("user_data", {}).get("email_id", None))
+                         email=request.get("user_data", {}).get("email", None))
     else:
         user = CEDUserSession().get_user_personal_data_by_session_id(request["auth_token"])
         user_dict = dict(first_name=user[0].get("FirstName", None), mobile_number=user[0].get("MobileNumber", None),
