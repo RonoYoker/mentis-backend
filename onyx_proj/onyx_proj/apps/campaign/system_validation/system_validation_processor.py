@@ -96,6 +96,8 @@ def trigger_campaign_system_validation_processor(campaign_builder_id, execution_
 
     process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
 
+    user_data = json.loads(cv_entity.meta)
+
     step_name = "trigger_test_campaign"
     if cv_entity.trigger_test_campaign_status in ["IN_PROGRESS"] and cv_entity.trigger_test_campaign_status not in ["INVALID"]:
         if cv_entity.trigger_test_campaign_count > STEP_RETRIAL_COUNT[step_name]:
@@ -111,7 +113,7 @@ def trigger_campaign_system_validation_processor(campaign_builder_id, execution_
             step_3_payload = {
                 "campaign_id": cbc_dict.get("unique_id"),
                 "test_campaign_mode": "system",
-                "user_data": json.loads(cv_entity.meta)
+                "user_data": user_data
             }
         except Exception as ex:
             logger.error(f'JSON Loads Error loading System validation Entity Meta, {campaign_builder_id}, {execution_config_id}')
@@ -125,6 +127,12 @@ def trigger_campaign_system_validation_processor(campaign_builder_id, execution_
         logger.info(f'Response for step - {step_name} is {step_3_resp}')
         if step_3_resp.get("result", "FAILURE") == "SUCCESS":
             cv_entity.trigger_test_campaign_status = "COMPLETED"
+            cv_entity.test_campaign_id = step_3_resp.get('cssd_test_id', None)
+            logger.info(
+                f'test campaign id captured is 1 : {cv_entity.test_campaign_id}, step resp captured is {step_3_resp}, cv_entity: {cv_entity._asdict()}')
+            process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""),
+                                                        cb_dict.get("ProjectId", ""))
+            logger.info(f'test campaign id captured is 1 : {cv_entity.test_campaign_id}, step resp captured is {step_3_resp}, cv_entity: {cv_entity._asdict()}')
         else:
             process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
             trigger_campaign_system_validation.apply_async(queue="celery_campaign_approval",
@@ -149,10 +157,16 @@ def trigger_campaign_system_validation_processor(campaign_builder_id, execution_
     try:
         for test_instance in json.loads(test_campaign_status_response.text).get("data", []):
             request_time = test_instance.get("requestTime")
-            # if request_time is not None and datetime.datetime.strptime(request_time, "%b %d, %Y, %H:%M:%S %p") > cv_entity.creation_date:
-            if request_time is not None:
-                current_test_campaign_instance = test_instance
-                break
+            test_campaign_id = test_instance.get("campaignId", None)
+            try:
+                if test_campaign_id is not None and int(test_campaign_id) == int(cv_entity.test_campaign_id):
+                    if request_time is not None:
+                        current_test_campaign_instance = test_instance
+                        break
+            except Exception as exp:
+                logger.error(f'Unable to Fetch Test Campaign ID from test_Campaign_Status_response campaign builder id = {campaign_builder_id} {exp}')
+                # if request_time is not None and datetime.datetime.strptime(request_time, "%b %d, %Y, %H:%M:%S %p") > cv_entity.creation_date:
+                    # pass
     except Exception as ex:
         logger.error(f'Error encountered during processing response from Hyperion Local : {ex}')
 
@@ -166,7 +180,6 @@ def trigger_campaign_system_validation_processor(campaign_builder_id, execution_
         content_text_url = None
     preview_data_obj = fetch_content_details_for_cbc(cbc_dict.get("unique_id"), content_text, content_text_url)
 
-    cv_entity.test_campaign_id = current_test_campaign_instance.get("campaignId")
     cv_entity.preview_data = json.dumps(preview_data_obj, default=str)
     process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
 
@@ -205,7 +218,7 @@ def trigger_campaign_system_validation_processor(campaign_builder_id, execution_
             cv_entity.sent_count = cv_entity.sent_count + 1
             cv_entity.sent_last_execution_time = datetime.datetime.now()
             delivery_status = current_test_campaign_instance.get("deliveryStatus", "")
-            if delivery_status.lower() in ["sent", "delivered"]:
+            if delivery_status.lower() in STATUS_ENUMS.get("sent", []):
                 cv_entity.sent_status = "COMPLETED"
             else:
                 process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
@@ -238,8 +251,11 @@ def trigger_campaign_system_validation_processor(campaign_builder_id, execution_
             except Exception as ex:
                 logger.error(f'Exception captured for requesting short URL : processed_url : {processed_url}, {ex}')
                 response = None
-            if response is not None and response.status_code == 200:
-                cv_entity.url_response_received_status = "COMPLETED"
+            if response is not None and response.status_code == 200 and preview_data_obj.get("long_url", None) is not None:
+                if response.url is not None and response.url.startswith(preview_data_obj['long_url']) is True:
+                    cv_entity.url_response_received_status = "COMPLETED"
+                else:
+                    cv_entity.url_response_received_status = "FAILED"
             else:
                 process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
                 trigger_campaign_system_validation.apply_async(queue="celery_campaign_approval",
@@ -284,6 +300,20 @@ def trigger_campaign_system_validation_processor(campaign_builder_id, execution_
     process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
 
     step_name = "delivered"
+    # zz
+    step_7_req = {
+        "body": {
+            "campaign_builder_campaign_id": cbc_dict.get("unique_id"),
+            "test_campaign_mode": "system",
+            "user_data": user_data,
+            "test_campaign_id": cv_entity.test_campaign_id
+        }
+    }
+    try:
+        step_7_resp = fetch_test_campaign_validation_status(step_7_req)
+    except Exception as expe:
+        logger.error(f'Error while fetch_test_campaign_validation_status, {expe}, {step_7_req}')
+    logger.info(f'step 7 response : {step_7_resp}')
     if cv_entity.delivered_status in ["IN_PROGRESS"] and cv_entity.delivered_status not in ["INVALID"]:
         if cv_entity.delivered_count > STEP_RETRIAL_COUNT[step_name]:
             # cv_entity.execution_status = "FAILED"
@@ -294,7 +324,16 @@ def trigger_campaign_system_validation_processor(campaign_builder_id, execution_
             cv_entity.delivered_count = cv_entity.delivered_count + 1
             cv_entity.delivered_last_execution_time = datetime.datetime.now()
             delivery_status = current_test_campaign_instance.get("deliveryStatus", "")
-            if delivery_status.lower() in ["delivered"]:
+
+            delivery_status = False
+            for validation_item in step_7_resp.get("validation_details", []):
+                if validation_item.get("flag_text", None) is not None and "DELIVERED" in validation_item.get("flag_text", None):
+                    if validation_item.get("validation_flag", False) is True:
+                        delivery_status = True
+                    else:
+                        logger.info(f'validation_flag invalid for delivery')
+
+            if delivery_status is True:
                 cv_entity.delivered_status = "COMPLETED"
             else:
                 process_system_validation_completion_status(cbc_dict, cv_entity, cb_dict.get("Name", ""), cb_dict.get("ProjectId", ""))
@@ -475,7 +514,8 @@ def process_system_validation_entry(campaign_builder_id=None, force = False, use
 
     cv_entity = CEDCampaignSystemValidation().get_system_validation_data_for_cb(campaign_builder_id, ["PUSHED", "IN_PROGRESS", "READY_TO_SEND_FOR_APPROVAL", "READY_TO_APPROVE", "COMPLETED"])
     if cv_entity is not None and len(cv_entity) > 0:
-        return {"success": True, "task_pushed_status": False,  "error": "System validation already in progress do you wish to kill previous run and initialize new?"}
+        if force is None or force is False:
+            return {"success": True, "task_pushed_status": False,  "error": "System validation already in progress do you wish to kill previous run and initialize new?"}
     return create_system_validation_entries(campaign_builder_id, force, user_dict)
 
 

@@ -162,7 +162,7 @@ def test_campaign_process(request: dict):
 
     if project_details_object["success"] is False:
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
-                    details_message=project_details_object["details_message"])
+                    details_message=project_details_object["details_message"], cssd_test_id=cssd_test_id)
     else:
         project_details_object = project_details_object["data"]
 
@@ -177,7 +177,7 @@ def test_campaign_process(request: dict):
                                   mode=AES.MODE_CBC).decrypt_aes_cbc(segment_data.get("extra", "")))
         if extra_data is None or extra_data == "":
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Segment data seems to be empty! Please check segment.")
+                        details_message="Segment data seems to be empty! Please check segment.", cssd_test_id=cssd_test_id)
         else:
             try:
                 sample_data = json.loads(extra_data.get("sample_data", ""))
@@ -185,10 +185,10 @@ def test_campaign_process(request: dict):
                 sample_data = extra_data.get("sample_data", [])
             test_campaign_data = sample_data[0]
             request_body = dict(is_test_campaign=True, project_details_object=project_details_object,
-                                segment_data=segment_data, user_data=user_dict, cached_test_campaign_data=test_campaign_data)
+                                segment_data=segment_data, user_data=user_dict, cached_test_campaign_data=test_campaign_data, cssd_test_id=cssd_test_id)
     else:
         request_body = dict(is_test_campaign=True, project_details_object=project_details_object,
-                            segment_data=segment_data, user_data=user_dict)
+                            segment_data=segment_data, user_data=user_dict, cssd_test_id=cssd_test_id)
 
     # call local API to populate data or the given test_campaign in local db tables
     rest_object = RequestClient()
@@ -206,7 +206,7 @@ def test_campaign_process(request: dict):
         campaign_execution_progress_entity_final.error_message = request_response.get("details_message", None)
         save_or_update_campaign_progress_entity(campaign_execution_progress_entity_final)
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
-                    details_message="Error while populating data in bank's database")
+                    details_message="Error while populating data in bank's database", cssd_test_id=cssd_test_id)
     else:
         logger.debug(f"{method_name} :: Successfully created entries in Bank's infra and "
                      f"pushed packet to SNS of Campaign Segment Evaluator.")
@@ -218,4 +218,4 @@ def test_campaign_process(request: dict):
         save_or_update_campaign_progress_entity(campaign_execution_progress_entity_final)
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
-                details_message="Test campaign has been initiated! Please wait while you receive the communication.")
+                details_message="Test campaign has been initiated! Please wait while you receive the communication.", cssd_test_id=cssd_test_id)

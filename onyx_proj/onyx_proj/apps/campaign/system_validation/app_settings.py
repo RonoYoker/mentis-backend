@@ -94,3 +94,8 @@ STEPS_COMPLETED = {
     "IVR": ["segment_refresh_triggered", "segment_refreshed", "trigger_test_campaign", "prepare_content", "sent", "delivered", "url_response_received", "clicked"],
     "DEFAULT": ["segment_refresh_triggered", "segment_refreshed", "trigger_test_campaign", "prepare_content", "sent", "delivered", "url_response_received", "clicked"]
 }
+
+STATUS_ENUMS = {
+    "sent": ["sent", "delivered", "opened", "clicked", "unsubscribed", "read", "posted"],
+    "delivered": ["delivered", "opened", "clicked", "unsubscribed", "read", "posted"]
+}

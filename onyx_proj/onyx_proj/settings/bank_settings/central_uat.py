@@ -79,7 +79,7 @@ ONYX_LOCAL_CAMP_VALIDATION = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyn
                               "yblacqjlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj","ablhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                               "ybltxntoemimabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj", "iblspllimdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj"]
 
-HYPERION_TEST_CAMPAIGN_URL = "http://uatdev.hyperiontool.com/hyperioncampaigntooldashboard/campaignbuilder/testcampaign/"
+HYPERION_TEST_CAMPAIGN_URL = "https://uatdev.hyperiontool.com/hyperioncampaigntooldashboard/campaignbuilder/testcampaign/"
 
 JWT_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["JWT_ENCRYPTION_KEY"]
 # RSA_ENCRYPTION_KEY = INFRA_CONF["ENCRYPTION_KEY"]["RSA_KEYS"]
@@ -159,7 +159,13 @@ TEST_CAMPAIGN_ENABLED = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenf
                          "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                          "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                          "ablhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
-                         "iblspllimdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj"]
+                         "iblaocjlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                         "iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                         "ablhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                         "iblspllimdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                         "yblclejlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                         "yblacqjlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                         "yblccujlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj"]
 
 
 OTP_APP_USER_MAPPING = {

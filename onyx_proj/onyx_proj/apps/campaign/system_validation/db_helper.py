@@ -16,6 +16,7 @@ from onyx_proj.models.CED_CampaignIvrContent_model import CEDCampaignIvrContent
 from onyx_proj.models.CED_CampaignSMSContent_model import CEDCampaignSMSContent
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetails_model import CEDCampaignSchedulingSegmentDetails
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetailsTest_model import CEDCampaignSchedulingSegmentDetailsTest
+from onyx_proj.models.CED_CampaignURLContent_model import CEDCampaignURLContent
 from onyx_proj.models.CED_CampaignSubjectLineContent_model import CEDCampaignSubjectLineContent
 import re
 from onyx_proj.models.CED_CampaignIvrContent_model import CEDCampaignIvrContent
@@ -40,6 +41,15 @@ def fetch_content_details_for_cbc(campaign_builder_campaign_id, actual_text="", 
         preview_data_dict.setdefault("content", {}).setdefault("channel", "EMAIL")
         preview_data_dict.setdefault("content", {}).setdefault("body", actual_text)
         if cbc_content.get("url_id", "") is not None and len(cbc_content.get("url_id", "")) > 0:
+            campaign_url_entity = CEDCampaignURLContent().fetch_content_data(content_id=cbc_content.get("url_id", ""))
+            if campaign_url_entity is not None and len(campaign_url_entity) > 0:
+                campaign_url_entity = campaign_url_entity[0]
+            else:
+                logger.error(
+                    f"fetch_content_data :: unable to fetch URL for cbc: {campaign_builder_campaign_id}")
+                return preview_data_dict
+            preview_data_dict.setdefault('long_url', campaign_url_entity.get('url'))
+
             campaign_content_entity = CEDCampaignSubjectLineContent().fetch_content_data(cbc_content.get("subject_line_id"))
             if campaign_content_entity is not None and len(campaign_content_entity) > 0:
                 campaign_content_entity = campaign_content_entity[0]
@@ -79,6 +89,16 @@ def fetch_content_details_for_cbc(campaign_builder_campaign_id, actual_text="", 
         preview_data_dict.setdefault("content", {}).setdefault("body", actual_text)
         cbc_content = CEDCampaignBuilderSMS().fetch_all_content_from_cbc_id(campaign_builder_campaign_id)
         if cbc_content.get("url_id", "") is not None and len(cbc_content.get("url_id", "")) > 0:
+
+            campaign_url_entity = CEDCampaignURLContent().fetch_content_data(content_id=cbc_content.get("url_id", ""))
+            if campaign_url_entity is not None and len(campaign_url_entity) > 0:
+                campaign_url_entity = campaign_url_entity[0]
+            else:
+                logger.error(
+                    f"fetch_content_data :: unable to fetch URL for cbc: {campaign_builder_campaign_id}")
+                return preview_data_dict
+            preview_data_dict.setdefault('long_url', campaign_url_entity.get('url'))
+
             campaign_content_entity = CEDCampaignSMSContent().fetch_content_data(cbc_content.get("sms_id"))
             if campaign_content_entity is not None and len(campaign_content_entity) > 0:
                 campaign_content_entity = campaign_content_entity[0]
@@ -105,6 +125,16 @@ def fetch_content_details_for_cbc(campaign_builder_campaign_id, actual_text="", 
         preview_data_dict.setdefault("content", {}).setdefault("textual_footer", "")
 
         if cbc_content.get("url_id", "") is not None and len(cbc_content.get("url_id", "")) > 0:
+
+            campaign_url_entity = CEDCampaignURLContent().fetch_content_data(content_id=cbc_content.get("url_id", ""))
+            if campaign_url_entity is not None and len(campaign_url_entity) > 0:
+                campaign_url_entity = campaign_url_entity[0]
+            else:
+                logger.error(
+                    f"fetch_content_data :: unable to fetch URL for cbc: {campaign_builder_campaign_id}")
+                return preview_data_dict
+            preview_data_dict.setdefault('long_url', campaign_url_entity.get('url'))
+
             campaign_content_entity = CEDCampaignWhatsAppContent().fetch_content_data(cbc_content.get("whats_app_content_id"))
             if campaign_content_entity is not None and len(campaign_content_entity) > 0:
                 campaign_content_entity = campaign_content_entity[0]

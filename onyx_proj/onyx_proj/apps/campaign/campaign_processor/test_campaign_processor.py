@@ -307,7 +307,7 @@ def fetch_test_campaign_validation_status(request_data) -> json:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Onyx Local domain not found")
 
-    # Only fetch test campaigns for the last 30 minutes
+    # Only fetch test campaigns for the last 60 minutes
     start_time = (datetime.datetime.utcnow() - datetime.timedelta(
         minutes=TEST_CAMPAIGN_VALIDATION_DURATION_MINUTES)).strftime("%Y-%m-%d %H:%M:%S")
     # Fetch campaign ids corresponding to cbc_id
@@ -315,10 +315,7 @@ def fetch_test_campaign_validation_status(request_data) -> json:
                                                                                    start_time)
     if cssd_ids is None or len(cssd_ids) <= 0:
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result,
-                    details_message="No test campaign in last 30 minutes")
-
-    # create dict of cssd ids:
-    cssd_ids_dict = {str(cssd["Id"]): cssd for cssd in cssd_ids}
+                    details_message="No test campaign in last 60 minutes")
 
     channel = campaign_details.get("ContentType", None)
     if channel is None:
@@ -326,10 +323,17 @@ def fetch_test_campaign_validation_status(request_data) -> json:
                     details_message=f"Hyperion central campaign details not found, Campaign Builder Campaign Id: {campaign_builder_campaign_id}.")
 
     campaign_builder_channel_table, contact = CHANNEL_CAMPAIGN_BUILDER_TABLE_MAPPING[channel]
+
     if body.get("test_campaign_mode", "manual") == "system":
+        test_campaign_id = body.get("test_campaign_id")
         contact_details = body.get("user_data", {}).get("email", "") if contact == "EmailId" else body.get("user_data", {}).get("mobile_number", "")
+        cssd_ids = [cssd for cssd in cssd_ids if cssd["Id"] == test_campaign_id]
+        logger.info(f'Updated cssd_ids list to retrict to a single Test Campaign ID')
     else:
         contact_details = user_session.user.email_id if contact == "EmailId" else user_session.user.mobile_number
+
+    # create dict of cssd ids:
+    cssd_ids_dict = {str(cssd["Id"]): cssd for cssd in cssd_ids}
 
     if channel == "IVR":
         urlid = None
