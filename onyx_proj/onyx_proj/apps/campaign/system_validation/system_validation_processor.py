@@ -325,7 +325,7 @@ def trigger_campaign_system_validation_processor(campaign_builder_id, execution_
             delivery_status = current_test_campaign_instance.get("deliveryStatus", "")
 
             delivery_status = False
-            for validation_item in step_7_resp.get("validation_details", []):
+            for validation_item in step_7_resp.get("data", {}).get("validation_details", []):
                 if validation_item.get("flag_text", None) is not None and "DELIVERED" in validation_item.get("flag_text", None):
                     if validation_item.get("validation_flag", False) is True:
                         delivery_status = True
