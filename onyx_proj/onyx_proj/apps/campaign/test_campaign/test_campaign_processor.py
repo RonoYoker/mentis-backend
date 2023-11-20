@@ -189,8 +189,8 @@ def test_campaign_process(request: dict):
                 test_campaign_data = sample_data[0]
             else:
                 logger.debug(f"headers::{headers_list}")
-                test_campaign_data = {header["headerName"]: header.get("defaultValue") for header in headers_list if header.get("encrypted",False) is False}
-                test_camp_data_enc = {header["headerName"]: header.get("defaultValue") for header in headers_list if header.get("encrypted",False) is True}
+                test_campaign_data = {header["headerName"]: header.get("defaultValue") for header in headers_list if header.get("encrypted",False) == 0}
+                test_camp_data_enc = {header["headerName"]: header.get("defaultValue") for header in headers_list if header.get("encrypted",False) == 1}
 
                 logger.debug(f"headers::{headers_list}")
                 logger.debug(f"test_campaign_data::{test_campaign_data}")
