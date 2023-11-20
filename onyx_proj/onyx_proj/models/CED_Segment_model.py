@@ -23,7 +23,7 @@ class CEDSegment:
         base_query = """SELECT seg.ApprovedBy as approved_by, seg.CreatedBy as created_by, seg.CreationDate as 
         creation_date, seg.DataId as data_id, seg.everScheduled as ever_scheduled, seg.Id as id, seg.IncludeAll as 
         include_all, seg.MappingId as mapping_id, seg.Records as records, seg.ProjectId as project_id, seg.Records as 
-        records, seg.RefreshDate as refresh_date, seg.Status as status, seg.CountRefreshEndDate as count_refresh_date, 
+        records, seg.RefreshDate as refresh_date, seg.Status as status, seg.ExpectedCount as expectedCount, seg.CountRefreshEndDate as count_refresh_date, 
         seg.Title as title, seg.UniqueId as unique_id, seg.Type as type, seg.UpdationDate as updation_date, 
         cct.UniqueId as tag_id, cct.Name as tag_name, cct.ShortName as short_name from CED_Segment seg LEFT JOIN 
         CED_EntityTagMapping ctm on seg.UniqueId = ctm.EntityId LEFT JOIN CED_CampaignContentTag cct on 
@@ -61,8 +61,13 @@ class CEDSegment:
         return update_row(cursor=self.curr, table=self.table_name, q_data=params_dict, u_data=update_dict)
 
     def get_segment_count_by_unique_id(self, unique_id):
-        result = dict_fetch_one(self.curr, self.table_name, {"UniqueId": unique_id}, ["Records"])
-        return int(result.get("Records", 0)) if result is not None else 0
+        result = dict_fetch_one(self.curr, self.table_name, {"UniqueId": unique_id}, ["Records","ExpectedCount"])
+        if result is None:
+            return 0
+        elif int(result.get("Records",0)) == 0:
+            return int(result.get("ExpectedCount",0))
+        else:
+            return int(result.get("Records",0))
 
     def get_project_id_by_segment_id(self, unique_id):
         result = dict_fetch_one(self.curr, self.table_name, {"UniqueId": unique_id}, ["ProjectId"])

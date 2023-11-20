@@ -28,8 +28,8 @@ def check_validity_flag(sample_data_node, last_refresh_date, expire_time=15):
     sample_data = json.loads(AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
                                                iv=settings.SEGMENT_AES_KEYS["AES_IV"],
                                                mode=AES.MODE_CBC).decrypt_aes_cbc(sample_data_node))
-    if len(sample_data.get("sample_data", [])) == 0:
-        return validity_flag
+    # if len(sample_data.get("sample_data", [])) == 0:
+    #     return validity_flag
 
     time_difference = datetime.datetime.utcnow() - datetime.datetime.strptime(str(last_refresh_date),
                                                                               "%Y-%m-%d %H:%M:%S")

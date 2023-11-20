@@ -183,7 +183,12 @@ def test_campaign_process(request: dict):
                 sample_data = json.loads(extra_data.get("sample_data", ""))
             except TypeError:
                 sample_data = extra_data.get("sample_data", [])
-            test_campaign_data = sample_data[0]
+            headers_list = extra_data.get("headers_list", [])
+            if len(sample_data) > 0:
+                test_campaign_data = sample_data[0]
+            else:
+                test_campaign_data = {header["headerName"]: header.get("defaultValue") for header in headers_list}
+
             request_body = dict(is_test_campaign=True, project_details_object=project_details_object,
                                 segment_data=segment_data, user_data=user_dict, cached_test_campaign_data=test_campaign_data, cssd_test_id=cssd_test_id)
     else:

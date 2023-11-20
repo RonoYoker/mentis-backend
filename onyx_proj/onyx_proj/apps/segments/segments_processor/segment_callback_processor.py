@@ -8,6 +8,7 @@ from django.conf import settings
 from django.conf import settings
 from onyx_proj.apps.content.content_procesor import content_headers_processor
 from onyx_proj.apps.segments.app_settings import QueryKeys, AsyncTaskRequestKeys, SegmentStatusKeys
+from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS
 from onyx_proj.apps.async_task_invocation.app_settings import AsyncJobStatus
@@ -220,6 +221,22 @@ def process_segment_callback(body):
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
                     details_message=str(e))
 
+def process_segment_expected_count(body):
+    segment_id = body.get("segment_id", None)
+    count = body.get("count")
+    if segment_id is None or count is None or count == 0:
+        raise ValidationFailedException(reason="Invalid params present")
+
+    update_dict={"ExpectedCount":count}
+    db_resp = CEDSegment().update_segment(dict(UniqueId=segment_id), update_dict)
+
+    if db_resp.get("row_count") <= 0 or not db_resp:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Unable to update Segment Count")
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                details_message=f"Expected Count updated for segment_id: {segment_id}.")
+
 
 def process_segment_data_callback(body):
     """
@@ -353,4 +370,10 @@ def extra_data_parser(data: dict, project_id):
     if len(data_object) == 0:
         return dict(error=True, reason="no data in segment")
     headers_list = [*data_object[0]]
-    return dict(headers_list=content_headers_processor(headers_list, project_id), sample_data=data.get("response", []))
+
+    if all(x is None for x in list(data_object[0].values())):
+        sample_data = []
+    else:
+        sample_data = data.get("response", [])
+
+    return dict(headers_list=content_headers_processor(headers_list, project_id), sample_data=sample_data)

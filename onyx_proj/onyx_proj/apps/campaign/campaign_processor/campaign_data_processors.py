@@ -1381,9 +1381,9 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
                 # fetch segment details
                 segment_entity = validate_segment_status(campaign.segment_id, None)
 
-                if segment_entity.records is None or segment_entity.records <= 0:
-                    logger.error(f"method_name :: {method_name}, Segment has 0 records")
-                    raise ValidationFailedException(method_name=method_name, reason="Segment has 0 records")
+                # if segment_entity.records is None or segment_entity.records <= 0:
+                #     logger.error(f"method_name :: {method_name}, Segment has 0 records")
+                #     raise ValidationFailedException(method_name=method_name, reason="Segment has 0 records")
 
                 if not segment_entity.data_id:
                     raise NotFoundException(method_name=method_name, reason="Segment data id not found")

@@ -72,6 +72,21 @@ def execute_output_file_query(engine, query):
         return {"error": True, "exception": e}
 
 
+def fetch_all_with_headers(engine, query):
+    try:
+        with engine.connect() as cursor:
+            resp = cursor.execute(text(query))
+            desc = resp.cursor.description
+            response_rows = resp.fetchall()
+            result = [dict(zip([col[0] for col in desc], row)) for row in response_rows] if len(response_rows) > 0 else [dict(zip([col[0] for col in desc], [None]*len(desc)))]
+            return {"error": False, "result": result}
+    except Exception as e:
+        logging.error({
+            'error': 'mysql thrown exception while fetching dict one.', 'exception': e.__cause__, 'logkey': 'mysql_helper'
+        })
+        return {"error": True, "exception": e}
+
+
 def insert_multiple_rows(engine, table_name, data_dict):
     placeholder = ', '.join(['%s'] * len(data_dict["columns"]))
     columns = ', '.join(data_dict["columns"])

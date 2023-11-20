@@ -13,6 +13,7 @@ urlpatterns = [
     path("get_sample_data/", views.fetch_sample_data),
     path("process_save_segment_callback/", views.custom_segment_callback),
     path("update_segment_data/", views.update_segment_callback),
+    path("update_segment_expected_count/", views.update_segment_exp_count),
     path("segment_records_count/", views.segment_records_count),
     path("fetch_segment_list/", views.fetch_segments_list),
     path("fetch_main_segment_list_from_campaign/", views.get_segments_from_campaign),

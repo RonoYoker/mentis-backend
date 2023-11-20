@@ -163,13 +163,12 @@ def fetch_test_campaign_data(request_data) -> json:
         except TypeError:
             record = records_data.get("sample_data", [])
 
+        headers_list = records_data.get("headers_list", [])
         if len(record) == 0:
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message=f"Segment has no records, please check segment!")
+            record = {header["headerName"] : header.get("defaultValue") for header in headers_list}
         else:
             record = record[0]
 
-        headers_list = records_data.get("headers_list", [])
         record_list = decrypt_test_segment_data([record], headers_list, segment_data.get("ProjectId"))
         record = record_list[0]
         header_name_list = [header["headerName"].lower() for header in headers_list]

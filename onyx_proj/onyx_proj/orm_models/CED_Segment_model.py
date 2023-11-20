@@ -17,6 +17,7 @@ class CED_Segment(Base, Orm_helper):
     data_image_sql_query = Column("DataImageSqlQuery", String)
     test_campaign_sql_query = Column("TestCampaignSqlQuery", String)
     records = Column("Records", Integer)
+    expected_count = Column("ExpectedCount", Integer)
     status = Column("Status", String)
     mapping_id = Column("MappingId", String)
     created_by = Column("CreatedBy", String)

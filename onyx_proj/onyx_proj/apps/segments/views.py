@@ -8,7 +8,8 @@ from onyx_proj.apps.segments.segment_query_builder.segment_query_builder_process
 from onyx_proj.apps.segments.segments_processor.segment_fetcher import fetch_segment_by_id, fetch_segments
 from onyx_proj.apps.segments.segments_processor.segment_headers_processor import \
     check_headers_compatibility_with_content_template, check_seg_header_compatibility_with_template
-from onyx_proj.apps.segments.segments_processor.segment_callback_processor import process_segment_callback, process_segment_data_callback
+from onyx_proj.apps.segments.segments_processor.segment_callback_processor import process_segment_callback, \
+    process_segment_data_callback, process_segment_expected_count
 from django.views.decorators.csrf import csrf_exempt
 from onyx_proj.apps.segments.segments_processor.segment_processor import deactivate_segment_by_segment_id
 from onyx_proj.apps.segments.segments_processor.segment_processor import update_segment_count, trigger_update_segment_count
@@ -188,6 +189,16 @@ def update_segment_callback(request):
     # request_body = request.body.decode("utf-8")
     request_body = json.loads(request.body.decode("utf-8"))
     data = process_segment_data_callback(request_body)
+    status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def update_segment_exp_count(request):
+    # request_body = request.body.decode("utf-8")
+    request_body = json.loads(request.body.decode("utf-8"))
+    data = process_segment_expected_count(request_body)
     status_code = data.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
 

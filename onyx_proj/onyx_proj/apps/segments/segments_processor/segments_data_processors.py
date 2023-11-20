@@ -168,6 +168,7 @@ def save_or_update_subsegment(request_body):
     segment_id = request_body.get("segment_id")
     filters = request_body.get("filters")
     sub_segment_id = request_body.get("sub_segment_id")
+    expected_count = request_body.get("expected_count")
 
     if sub_segment_id is not None:
         sub_segment_res = CEDSegment().get_segment_data(segment_id=sub_segment_id,return_type='entity')
@@ -219,6 +220,7 @@ def save_or_update_subsegment(request_body):
     sub_segment.updation_date = datetime.utcnow()
     sub_segment.parent_id = segment_id
     sub_segment.type = SegmentType.DERIVED.value
+    sub_segment.expected_count = expected_count
 
     CEDSegment().save_segment(sub_segment)
     request_body = dict(

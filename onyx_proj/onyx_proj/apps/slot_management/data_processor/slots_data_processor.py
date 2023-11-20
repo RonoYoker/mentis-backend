@@ -323,6 +323,8 @@ def fetch_valid_project_campaigns(content_date_keys_to_validate, dates_to_valida
         if campaign.get("StartDateTime") is None or campaign.get("EndDateTime") is None:
             continue
         count = campaign.get("sub_seg_records") if campaign.get("sub_seg_records") is not None else campaign.get("Records",0)
+        if count == 0:
+            count = campaign.get("SubExpectedCount") if campaign.get("SubExpectedCount") is not None else campaign.get("ExpectedCount",0)
         campaign = {
             "start": campaign.get("StartDateTime"),
             "end": campaign.get("EndDateTime"),
