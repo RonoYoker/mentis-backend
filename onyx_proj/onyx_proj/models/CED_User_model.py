@@ -64,3 +64,8 @@ class CEDUser:
         query = f"SELECT EmailId from {self.table_name} where UserName = '{user_name}' and IsActive = 1 and IsDeleted = 0"
         res = execute_query(self.engine, query)
         return None if not res or len(res) <= 0 or not res[0].get('EmailId') else res[0].get('EmailId')
+
+
+    def get_user_personal_data_by_user_name(self, user_name):
+        query = f"SELECT cu.FirstName, cu.LastName, cu.MobileNumber, cu.EmailId FROM CED_User cu WHERE cu.UserName = '{user_name}' AND cu.State not in ('Deleted', 'Blocked', 'Dormant') "
+        return dict_fetch_query_all(self.curr, query)

@@ -12,7 +12,7 @@ from onyx_proj.apps.campaign.campaign_processor.campaign_content_processor impor
     update_campaign_segment_data
 from onyx_proj.apps.campaign.campaign_monitoring.campaign_stats_processor import get_filtered_campaign_stats, \
     update_campaign_stats_to_central_db, get_filtered_campaign_stats_v2, get_filtered_campaign_stats_variants
-
+from onyx_proj.common.utils.telegram_utility import TelegramUtility
 from onyx_proj.common.decorators import *
 from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import save_or_update_campaign_data, \
     get_filtered_dashboard_tab_data, get_min_max_date_for_scheduler, get_time_range_from_date, \
@@ -28,6 +28,8 @@ from onyx_proj.apps.campaign.system_validation.system_validation_processor impor
 from onyx_proj.celery_app.tasks import trigger_eng_data, trigger_campaign_system_validation
 from onyx_proj.apps.campaign.campaign_processor.campaign_content_processor import process_favourite
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
+from onyx_proj.models.CED_User_model import CEDUser
+from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 
 @csrf_exempt
 @UserAuth.user_authentication()
@@ -459,19 +461,39 @@ def trigger_system_validation(request):
     status_code = http.HTTPStatus.BAD_REQUEST
     request_headers = request.headers
     auth_token = request_headers.get('X-Authtoken', '')
+    campaign_builder_id = request_body.get("campaign_builder_id", None)
+    force = request_body.get("force", False)
+    data = {}
+
+    if campaign_builder_id is None:
+        return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
+    cb_dict = CEDCampaignBuilder().fetch_campaign_builder_by_unique_id(unique_id=campaign_builder_id)
+
     user = CEDUserSession().get_user_personal_data_by_session_id(auth_token)
+
+    if request_body.get("test_campaign_mode", "manual") == "system":
+        user = CEDUser().get_user_personal_data_by_user_name(cb_dict["CreatedBy"])
+
+    if user is None or len(user) == 0:
+        logger.error(f'Unable to fetch user to trigger system Validation On.')
+        try:
+            alerting_text = f'Unable to trigger system validation due to user not available for request: {request_body}'
+            alert_resp = TelegramUtility().process_telegram_alert(project_id=cb_dict.get("ProjectId", ""),
+                                                                  message_text=alerting_text,
+                                                                  feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get(
+                                                                      "SYSTEM_VALIDATION", "DEFAULT"))
+            logger.info(f'Telegram Alert Triggered Response : {alert_resp}, method_name : trigger_system_validation')
+        except Exception as ex:
+            logger.error(f'Unable to process telegram alerting, method_name: trigger_system_validation, Exp : {ex}')
+
     user_dict = dict(first_name=user[0].get("FirstName", None), mobile_number=user[0].get("MobileNumber", None),
                      email=user[0].get("EmailId", None))
 
-    data = {}
     """
     Create entry for system validation in respective table in Pushed state.
     IF entry already found, then return error msg in response accordingly.
     """
-    campaign_builder_id = request_body.get("campaign_builder_id", None)
-    force = request_body.get("force", False)
-    if campaign_builder_id is None:
-        return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
 
     if request_body.get("mode", "campaign") == "campaign":
         data = process_system_validation_entry(campaign_builder_id=campaign_builder_id, force=force, user_dict = user_dict)
