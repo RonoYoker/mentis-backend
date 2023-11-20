@@ -188,14 +188,20 @@ def test_campaign_process(request: dict):
             if len(sample_data) > 0:
                 test_campaign_data = sample_data[0]
             else:
+                logger.debug(f"headers::{headers_list}")
                 test_campaign_data = {header["headerName"]: header.get("defaultValue") for header in headers_list if header.get("encrypted",False) is False}
                 test_camp_data_enc = {header["headerName"]: header.get("defaultValue") for header in headers_list if header.get("encrypted",False) is True}
 
+                logger.debug(f"headers::{headers_list}")
+                logger.debug(f"test_campaign_data::{test_campaign_data}")
+                logger.debug(f"test_camp_data_enc::{test_camp_data_enc}")
                 keys_to_enc = list(test_camp_data_enc.keys())
                 val_to_enc = list(test_camp_data_enc.values())
                 val_to_enc = encrypt_pi_data(val_to_enc,project_id)
                 test_camp_data_enc = dict(zip(keys_to_enc,val_to_enc))
                 test_campaign_data.update(test_camp_data_enc)
+                logger.debug(f"test_campaign_data::{test_campaign_data}")
+                logger.debug(f"test_camp_data_enc::{test_camp_data_enc}")
 
             request_body = dict(is_test_campaign=True, project_details_object=project_details_object,
                                 segment_data=segment_data, user_data=user_dict, cached_test_campaign_data=test_campaign_data, cssd_test_id=cssd_test_id)

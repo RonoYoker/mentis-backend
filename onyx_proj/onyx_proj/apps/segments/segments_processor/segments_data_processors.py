@@ -17,6 +17,7 @@ from onyx_proj.common.constants import FIXED_HEADER_MAPPING_COLUMN_DETAILS, File
     SegmentType
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt,AES
+from onyx_proj.common.utils.logging_helpers import log_exit, log_entry
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException, ValidationFailedException, \
     InternalServerError
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
@@ -442,6 +443,7 @@ def get_relative_date_query(filter,column_name,master_header_mapping,project_id)
 
 
 def encrypt_pi_data(data_list,project_id):
+    log_entry(data_list)
     domain = settings.ONYX_LOCAL_DOMAIN.get(project_id)
     project_data = CEDProjects().get_project_data_by_project_id(project_id=project_id)
     project_data = project_data[0]
@@ -452,6 +454,7 @@ def encrypt_pi_data(data_list,project_id):
     if encrypted_data_resp["success"] != True:
         raise ValidationFailedException(method_name="", reason="Unable to Decrypt Data")
     encrypted_data = encrypted_data_resp["data"]["data"]
+    log_exit(encrypted_data)
     return encrypted_data
 
 
