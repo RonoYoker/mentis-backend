@@ -443,7 +443,6 @@ def get_relative_date_query(filter,column_name,master_header_mapping,project_id)
 
 
 def encrypt_pi_data(data_list,project_id):
-    log_entry(data_list)
     domain = settings.ONYX_LOCAL_DOMAIN.get(project_id)
     project_data = CEDProjects().get_project_data_by_project_id(project_id=project_id)
     project_data = project_data[0]
@@ -454,7 +453,6 @@ def encrypt_pi_data(data_list,project_id):
     if encrypted_data_resp["success"] != True:
         raise ValidationFailedException(method_name="", reason="Unable to Decrypt Data")
     encrypted_data = encrypted_data_resp["data"]["data"]
-    log_exit(encrypted_data)
     return encrypted_data
 
 
