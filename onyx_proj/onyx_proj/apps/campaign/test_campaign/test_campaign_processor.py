@@ -7,6 +7,7 @@ import requests
 from Crypto.Cipher import AES
 from django.conf import settings
 
+from onyx_proj.apps.segments.segments_processor.segments_data_processors import encrypt_pi_data
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT
@@ -61,11 +62,11 @@ def test_campaign_process(request: dict):
         validation_object = validation_object["data"]
 
     # check if segment data is fresh and records != 0, else return with data stale message
-    if validation_object["campaign_builder_data"]["segment_data"]["records"] == 0 or \
-            get_time_difference(
-                validation_object["campaign_builder_data"]["segment_data"]["count_refresh_end_date"]) > 30:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Data is stale, need to refresh data to process test campaign for the given instance.")
+    # if validation_object["campaign_builder_data"]["segment_data"]["records"] == 0 or \
+    #         get_time_difference(
+    #             validation_object["campaign_builder_data"]["segment_data"]["count_refresh_end_date"]) > 30:
+    #     return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+    #                 details_message="Data is stale, need to refresh data to process test campaign for the given instance.")
 
     # if data is not stale, proceed with flow
 
@@ -187,7 +188,14 @@ def test_campaign_process(request: dict):
             if len(sample_data) > 0:
                 test_campaign_data = sample_data[0]
             else:
-                test_campaign_data = {header["headerName"]: header.get("defaultValue") for header in headers_list}
+                test_campaign_data = {header["headerName"]: header.get("defaultValue") for header in headers_list if header.get("encrypted",False) is False}
+                test_camp_data_enc = {header["headerName"]: header.get("defaultValue") for header in headers_list if header.get("encrypted",False) is True}
+
+                keys_to_enc = list(test_camp_data_enc.keys())
+                val_to_enc = list(test_camp_data_enc.values())
+                val_to_enc = encrypt_pi_data(val_to_enc,project_id)
+                test_camp_data_enc = dict(zip(keys_to_enc,val_to_enc))
+                test_campaign_data.update(test_camp_data_enc)
 
             request_body = dict(is_test_campaign=True, project_details_object=project_details_object,
                                 segment_data=segment_data, user_data=user_dict, cached_test_campaign_data=test_campaign_data, cssd_test_id=cssd_test_id)

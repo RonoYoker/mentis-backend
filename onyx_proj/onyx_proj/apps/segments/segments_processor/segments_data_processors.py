@@ -188,6 +188,11 @@ def save_or_update_subsegment(request_body):
         raise BadRequestException(reason="Invalid Segment Id")
     segment = segment[0]
 
+    if expected_count is not None and expected_count > segment.expected_count:
+        raise ValidationFailedException(reason="Expected Count of Segment cannot be greater than expected "
+                                               "count of Parent Segment")
+
+
     project_list = CEDProjects().get_active_project_id_entity_alchemy(segment.project_id)
     if project_list is None or len(project_list) != 1:
         raise ValidationFailedException(reason="Invalid ProjectId")
