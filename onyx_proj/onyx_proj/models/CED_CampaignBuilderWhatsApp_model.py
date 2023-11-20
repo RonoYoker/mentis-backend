@@ -52,3 +52,9 @@ class CEDCampaignBuilderWhatsApp:
         ]
         res = fetch_one_row(self.engine, self.table, filter_list, return_type='dict')
         return res
+
+    def fetch_url_and_cta_details_by_cbc_id(self, cbc_id):
+        query = (f"SELECT cbw.UrlId as url_id, cbw.CtaId as cta_id, cwc.CtaType as cta_type FROM {self.table_name} cbw "
+                 f"JOIN CED_CampaignWhatsAppContent cwc ON cbw.WhatsAppContentId = cwc.UniqueId WHERE cbw.MappingId "
+                 f"= '{cbc_id}'")
+        return query_executor(self.curr, query)

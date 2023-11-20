@@ -11,6 +11,7 @@ from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
+from onyx_proj.models.CED_CampaignBuilderWhatsApp_model import CEDCampaignBuilderWhatsApp
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetailsTest_model import CEDCampaignSchedulingSegmentDetailsTest
 from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import hyperion_local_async_rest_call, \
@@ -335,12 +336,17 @@ def fetch_test_campaign_validation_status(request_data) -> json:
     cssd_ids_dict = {str(cssd["Id"]): cssd for cssd in cssd_ids}
 
     if channel == "IVR":
-        urlid = None
+        url_id = None
+    elif channel.upper() == "WHATSAPP":
+        url_details = CEDCampaignBuilderWhatsApp().fetch_url_and_cta_details_by_cbc_id(campaign_builder_campaign_id)
+        url_id = url_details[0][0]
+        if not url_id and url_details[0][1] and url_details[0][2] == "DYNAMIC_URL":
+            url_id = url_details[0][1]
     else:
-        urlid = campaign_builder_channel_table().fetch_url_id_from_cbc_id(campaign_builder_campaign_id)[0][0]
+        url_id = campaign_builder_channel_table().fetch_url_id_from_cbc_id(campaign_builder_campaign_id)[0][0]
 
     data = {
-        "url_exist": True if urlid is not None else False,
+        "url_exist": True if url_id is not None else False,
         "campaign_builder_campaign_id": campaign_builder_campaign_id,
         "campaign_id": list(cssd_ids_dict.keys()),
         "content_type": channel,
