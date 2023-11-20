@@ -455,6 +455,7 @@ def update_segment_count_and_status_for_campaign(request_data):
     status = data.get("status")
     is_test = data.get("is_test", False)
     trigger_count = data.get("trigger_count")
+    error_msg = data.get("error", None)
     curr_date_time = datetime.datetime.utcnow()
     resp = {
         "upd_segment_table": False,
@@ -515,9 +516,16 @@ def update_segment_count_and_status_for_campaign(request_data):
             resp["upd_sched_table"] = True
 
     if status is not None:
-        upd_resp = CEDCampaignExecutionProgress().update_campaign_status(campaign_id=campaign_id, status=status)
+        upd_resp = CEDCampaignExecutionProgress().update_campaign_status(campaign_id=campaign_id, status=status, error_msg=error_msg)
         if upd_resp is not None and upd_resp.get("row_count", 0) > 0:
             resp["upd_campaign_status"] = True
+        if error_msg is not None:
+            from onyx_proj.common.decorators import fetch_project_id_from_conf_from_given_identifier
+            project_id = fetch_project_id_from_conf_from_given_identifier("CAMPAIGNID", campaign_id)
+            alerting_text = f'Hyperion Campaign instance ID : {campaign_id}, Status : {status}, {error_msg}'
+            alert_resp = TelegramUtility().process_telegram_alert(project_id=project_id, message_text=alerting_text,
+                                                                  feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get(
+                                                                      "CAMPAIGN", "DEFAULT"))
 
     logger.debug(f"API Resp ::{resp}")
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
