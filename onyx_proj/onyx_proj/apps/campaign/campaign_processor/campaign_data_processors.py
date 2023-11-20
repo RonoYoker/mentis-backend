@@ -1350,17 +1350,17 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
                                                         "Error while fetching segment entity")
             raise BadRequestException(method_name=method_name, reason="Segment entity not found")
 
-        if segment_entity.records is None or segment_entity.records <= 0:
-            logger.error(f"method_name :: {method_name}, Segment has 0 records")
-            CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id,
-                                                        "Segment has 0 records")
-            alerting_text = f'Campaign Name: {campaign_builder_entity.name}, Campaign ID : {campaign_builder_entity.id}, ERROR : Segment has 0 records.'
-            alert_resp = TelegramUtility().process_telegram_alert(project_id=segment_entity.project_id, message_text=alerting_text,
-                                                                  feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get(
-                                                                      "CAMPAIGN", "DEFAULT"))
-            generate_campaign_approval_status_mail(
-                {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
-            raise ValidationFailedException(method_name=method_name, reason="Segment records not found")
+        # if segment_entity.records is None or segment_entity.records <= 0:
+        #     logger.error(f"method_name :: {method_name}, Segment has 0 records")
+        #     CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id,
+        #                                                 "Segment has 0 records")
+        #     alerting_text = f'Campaign Name: {campaign_builder_entity.name}, Campaign ID : {campaign_builder_entity.id}, ERROR : Segment has 0 records.'
+        #     alert_resp = TelegramUtility().process_telegram_alert(project_id=segment_entity.project_id, message_text=alerting_text,
+        #                                                           feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get(
+        #                                                               "CAMPAIGN", "DEFAULT"))
+        #     generate_campaign_approval_status_mail(
+        #         {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
+        #     raise ValidationFailedException(method_name=method_name, reason="Segment records not found")
 
         if not segment_entity.data_id:
             raise NotFoundException(method_name=method_name, reason="Segment data id not found")
