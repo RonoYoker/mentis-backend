@@ -3632,8 +3632,7 @@ def proceed_to_change_approved_campaign_time(cbc_id, start_time, end_time, sourc
         logger.error(f"method_name: {method_name}, Error while validating OTP, Error: {ex}")
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Slots you are trying to book are not available")
-    cb_entity = CEDCampaignBuilder().get_campaign_builder_entity_by_unique_id(cbc_entity.campaign_builder_id)
-    # update data in local table
+
     project_id = cb_entity.project_id
     request_payload = {"campaign_uuid": cbc_entity.unique_id,
                        "start_date_time": str(start_date_time),
