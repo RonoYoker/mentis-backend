@@ -3608,6 +3608,7 @@ def proceed_to_change_approved_campaign_time(cbc_id, start_time, end_time, sourc
     # check slot availability
     slot_availability_request = {
         "segmentId": cb_entity.segment_id,
+        "projectId":cb_entity.project_id,
         "campaigns": [{"startDateTime": str(start_date_time),
                        "endDateTime": str(end_date_time),
                        "contentType": cbc_entity.content_type}]}
