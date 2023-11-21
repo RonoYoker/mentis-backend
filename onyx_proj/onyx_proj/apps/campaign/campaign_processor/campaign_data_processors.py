@@ -3611,6 +3611,8 @@ def proceed_to_change_approved_campaign_time(cbc_id, start_time, end_time, sourc
         "projectId":cb_entity.project_id,
         "campaigns": [{"startDateTime": str(start_date_time),
                        "endDateTime": str(end_date_time),
+                       "segment_id":cbc_entity.segment_id,
+                       "split_details": cbc_entity.split_details,
                        "contentType": cbc_entity.content_type}]}
     slot_status = vaildate_campaign_for_scheduling({"body": slot_availability_request})
     if slot_status.get("result") == TAG_FAILURE:
