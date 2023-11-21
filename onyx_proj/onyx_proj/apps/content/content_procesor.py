@@ -7,7 +7,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import deactivate_campaign_by_campaign_id
 from onyx_proj.apps.content import app_settings
-from onyx_proj.apps.content.app_settings import FETCH_CONTENT_MODE_FILTERS, CONTENT_TABLE_MAPPING
+from onyx_proj.apps.content.app_settings import FETCH_CONTENT_MODE_FILTERS, CONTENT_TABLE_MAPPING, \
+    CAMPAIGN_CONTENT_DATA_CHANNEL_LIST
 from onyx_proj.common.utils.logging_helpers import log_entry, log_exit
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException, ValidationFailedException, \
     NotFoundException
@@ -24,7 +25,8 @@ from onyx_proj.models.CED_CampaignTagContent_model import CEDCampaignTagContent
 from onyx_proj.models.CED_CampaignURLContent_model import CEDCampaignURLContent
 from onyx_proj.common.constants import CHANNELS_LIST, TAG_FAILURE, TAG_SUCCESS, FETCH_CAMPAIGN_QUERY, \
     CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, Roles, ContentFetchModes, \
-    CAMPAIGN_CONTENT_MAPPING_TABLE_DICT, FETCH_RELATED_CONTENT_IDS, INSERT_CONTENT_PROJECT_MIGRATION
+    CAMPAIGN_CONTENT_MAPPING_TABLE_DICT, FETCH_RELATED_CONTENT_IDS, INSERT_CONTENT_PROJECT_MIGRATION, \
+    MIN_ALLOWED_DESCRIPTION_LENGTH, MAX_ALLOWED_DESCRIPTION_LENGTH
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.common.constants import CHANNELS_LIST, TAG_FAILURE, TAG_SUCCESS, FETCH_CAMPAIGN_QUERY, Roles, \
     CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, CampaignContentStatus, ContentType, \
@@ -600,13 +602,14 @@ def add_or_remove_url_and_subject_line_from_content(request_body, request_header
     content_type = request_body.get("content_type")
     url_list = request_body.get("url_list")
     subject_line_list = request_body.get("subject_line_list")
+    description = request_body.get("description")
     add_url_list = None
     remove_url_list = None
     add_subject_line_list = None
     remove_subject_line_list = None
 
     # Validate content type
-    if content_type.upper() not in ["SMS", "WHATSAPP", "EMAIL"]:
+    if content_type.upper() not in CAMPAIGN_CONTENT_DATA_CHANNEL_LIST:
         logger.error(f"{method_name} :: Invalid content type provided: {content_type}")
         raise ValidationFailedException(method_name=method_name, reason="Invalid content type")
 
@@ -635,6 +638,8 @@ def add_or_remove_url_and_subject_line_from_content(request_body, request_header
             add_url_list, remove_url_list = validate_url_details_for_content_edit(url_list, content_id, content_type)
         if subject_line_list is not None and len(subject_line_list) > 0 and content_type.upper() == "EMAIL":
             add_subject_line_list, remove_subject_line_list = validate_subject_line_details_for_content_edit(subject_line_list, content_id)
+        if description is not None:
+            validate_and_update_description(description, content_id, content_type, content_details[0])
     except ValidationFailedException as ex:
         logger.error(f"{method_name} :: reason: {ex.reason}")
         raise ex
@@ -655,6 +660,39 @@ def add_or_remove_url_and_subject_line_from_content(request_body, request_header
     else:
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                     urls_added=add_url_list, urls_removed=remove_url_list)
+
+
+def validate_and_update_description(description, content_id, content_type, content_details):
+    log_entry()
+
+    validate_description(description)
+
+    CONTENT_TABLE_MAPPING[content_type.upper()]().update_description_by_unique_id(content_id, dict(description=description))
+    user_session = Session().get_user_session_object()
+
+    # Prepare and save activity logs
+    create_content_activity_log({"unique_id": uuid.uuid4().hex,
+                                 "data_source": "CONTENT",
+                                 "sub_data_source": f"{content_type.upper()}_CONTENT",
+                                 "data_source_id": content_details["unique_id"],
+                                 "filter_id": content_details["project_id"],
+                                 "comment": f"Description for <strong>{content_type.upper()}</strong> content with ID <strong>{content_details['id']}</strong> has been updated by {user_session.user.user_name}",
+                                 "created_by": user_session.user.user_name,
+                                 "updated_by": user_session.user.user_name,
+                                 })
+
+    log_exit()
+
+
+def validate_description(description):
+    method_name = "validate_description"
+    if description is not None:
+        if len(description) < MIN_ALLOWED_DESCRIPTION_LENGTH or\
+                len(description) > MAX_ALLOWED_DESCRIPTION_LENGTH:
+            raise ValidationFailedException(method_name=method_name, reason=f"Description length must be in between"
+                                                                      f" {MIN_ALLOWED_DESCRIPTION_LENGTH} to"
+                                                                      f" {MAX_ALLOWED_DESCRIPTION_LENGTH}")
+
 
 def validate_url_details_for_content_edit(url_list, content_id, content_type):
     """

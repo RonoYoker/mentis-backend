@@ -250,6 +250,15 @@ def update_custom_segment_process(data) -> dict:
     user_session = Session().get_user_session_object()
     user_name = user_session.user.user_name
 
+    if segment_id is not None:
+        segment_entity = CEDSegment().get_segment_data_by_unique_id(segment_id)
+        if len(segment_entity) == 0:
+            pass
+        else:
+            CEDSegment().update_description_by_unique_id(segment_id, dict(description=description))
+            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                        details_message="Segment description update success")
+
     if not sql_query or not segment_id or not title or not project_id:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Request body has missing fields.")

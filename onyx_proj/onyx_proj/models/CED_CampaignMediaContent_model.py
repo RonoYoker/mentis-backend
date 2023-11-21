@@ -95,3 +95,10 @@ class CEDCampaignMediaContent:
         ]
         res = fetch_rows(self.engine, self.table, filter_list)
         return res
+
+    def update_description_by_unique_id(self, unique_id, update_dict):
+        filter_list = [
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        ]
+        res = update(self.engine, self.table, filter_list, update_dict)
+        return res

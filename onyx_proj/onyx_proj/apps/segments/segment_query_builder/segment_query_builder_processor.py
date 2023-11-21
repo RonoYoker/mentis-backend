@@ -139,6 +139,10 @@ class SegmentQueryBuilder:
             old_segment_entity = CEDSegment().get_segment_data(old_segment_unique_id)
             if old_segment_entity is None or len(old_segment_entity) != 1:
                 raise ValidationFailedException(reason="Invalid Segment Id")
+            if old_segment_entity["status"] in ["APPROVAL_PENDING", "APPROVED"] and request.get("description", None) is not None:
+                CEDSegment().update_description_by_unique_id(old_segment_unique_id, dict(description=request.get("description")))
+                return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                            details_message="Segment description update success")
             old_segment_entity = old_segment_entity[0]
             old_history_id = old_segment_entity["history_id"]
             old_id = old_segment_entity["id"]

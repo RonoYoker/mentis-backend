@@ -220,3 +220,10 @@ class CEDSegment:
         seg_ids_str = ",".join([f"'{idx}'" for idx in segment_ids])
         sql_query = f"select UniqueId, Records from CED_Segment where UniqueId in ( %s )" % seg_ids_str
         return execute_query(self.engine, sql_query)
+
+    def update_description_by_unique_id(self, unique_id, update_dict):
+        filter_list = [
+            {"column": "unique_id", "value": unique_id, "op": "=="}
+        ]
+        res = update(self.engine, self.table, filter_list, update_dict)
+        return res

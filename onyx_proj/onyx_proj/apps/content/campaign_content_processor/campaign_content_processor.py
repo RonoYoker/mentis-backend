@@ -76,6 +76,7 @@ def fetch_user_campaign_data(body):
     # add one day to date
     updated_end_date = (end_date_obj + timedelta(days=1)).strftime("%Y-%m-%d")
 
+    #TODO for IVR also
     if channel == "SMS":
         query_result_main_table = CEDSMSResponse().fetch_sms_campaign_data(account_id, start_date, updated_end_date)
         query_result_all_table = CEDSMSResponse().fetch_sms_campaign_data_all_table(account_id, start_date, updated_end_date)
@@ -85,6 +86,8 @@ def fetch_user_campaign_data(body):
     elif channel == "WHATSAPP":
         query_result_main_table = CEDWHATSAPPResponse().fetch_whatsapp_campaign_data(account_id, start_date, updated_end_date)
         query_result_all_table = CEDWHATSAPPResponse().fetch_whatsapp_campaign_data_all_table(account_id, start_date, updated_end_date)
+    else:
+        raise ValidationFailedException(method_name=method_name, reason="Channel is not valid")
     query_result = aggregate_all_and_main_table_result_for_user_campaign_data(query_result_all_table, query_result_main_table)
 
     try:
