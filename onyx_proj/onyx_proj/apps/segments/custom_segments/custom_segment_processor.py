@@ -339,7 +339,7 @@ def query_validation_check(sql_query: str) -> dict:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Custom query should begin with SELECT keyword.")
 
-    sql_query = re.sub('[^A-Za-z0-9]+', ' ', sql_query)
+    sql_query = re.sub('[^A-Za-z0-9_.]+', ' ', sql_query)
     for key in CUSTOM_QUERY_FORBIDDEN_KEYWORDS:
         for word in sql_query.lower().split():
             if key == word:
