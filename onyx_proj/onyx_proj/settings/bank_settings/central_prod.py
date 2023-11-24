@@ -178,7 +178,9 @@ USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN = ["vstethjlsdsmablpxpqclospkni88ewmv
                                               "cmdhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                                               "aiahwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                                               "hsbcwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                                              "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd"]
+                                              "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd",
+                                              "ybltxntoemimablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
+                                              "iblsplitlimitblpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd"]
 
 TEST_CAMPAIGN_ENABLED = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj",
                          "iblaocjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
@@ -198,7 +200,9 @@ TEST_CAMPAIGN_ENABLED = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenf
                          "cmdhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                          "aiahwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                          "hsbcwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                         "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd"
+                         "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd",
+                         "ybltxntoemimablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
+                         "iblsplitlimitblpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd"
                          ]
 
 HYPERION_TEST_CAMPAIGN_URL = "https://hyperiontool.com/hyperioncampaigntooldashboard/campaignbuilder/testcampaign/"
