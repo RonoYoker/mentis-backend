@@ -137,7 +137,7 @@ jobs:
           image: ${{ env.ECR_REPO_URL }}/${{ env.ECR_REPOSITORY }}:${{ steps.get_version.outputs.VERSION }}
 
       - name: Deploy Amazon ECS task definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1.4.10
+        uses: aws-actions/amazon-ecs-deploy-task-definition@master
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: ${{ env.ECS_SERVICE }}
@@ -161,7 +161,7 @@ jobs:
           image: ${{ env.ECR_REPO_URL }}/${{ env.ECR_REPOSITORY }}:${{ steps.get_version.outputs.VERSION }}
 
       - name: Deploy Amazon ECS task definition 2
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1.4.10
+        uses: aws-actions/amazon-ecs-deploy-task-definition@master
         with:
           task-definition: ${{ steps.task-def-2.outputs.task-definition }}
           service: ${{ env.ECS_SERVICE_2 }}
