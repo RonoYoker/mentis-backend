@@ -23,5 +23,7 @@ class CED_Projects(Base, Orm_helper):
     vendor_config = Column("VendorConfig", String)
     validation_config = Column("ValidationConfig", String)
 
+    file_dependency_configs = relationship("CED_ProjectDependencyConfigs")
+
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)

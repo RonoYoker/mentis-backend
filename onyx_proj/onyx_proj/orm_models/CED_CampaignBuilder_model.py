@@ -19,6 +19,7 @@ class CED_CampaignBuilder(Base, Orm_helper):
     is_active = Column("IsActive", Boolean, default=True)
     rejection_reason = Column("RejectionReason", String)
     is_deleted = Column("IsDeleted", Boolean, default=False)
+    file_dependency_config = Column("FileDependencyConfig", String)
     error_msg = Column("ErrorMsg", String)
     type = Column("Type", String, default="AUTOMATION")
     is_recurring = Column("IsRecurring", String, default=0)

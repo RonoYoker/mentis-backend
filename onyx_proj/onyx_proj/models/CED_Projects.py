@@ -1,3 +1,5 @@
+import datetime
+
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import *
 
@@ -70,3 +72,11 @@ class CEDProjects:
                 {"column": "deleted", "value": "0", "op": "=="}
             ]
         return fetch_rows(self.engine, self.table, filter_list)
+
+    def get_all_project_entity_with_bank(self, bank):
+        filter_list = [
+            {"column": "deleted", "value": "0", "op": "=="},
+            {"column": "active", "value": "1", "op": "=="},
+            {"column": "bank_name", "value": bank, "op": "=="}
+        ]
+        return fetch_rows_limited(self.engine, table=self.table, filter_list=filter_list,relationships=["file_dependency_configs.files"])

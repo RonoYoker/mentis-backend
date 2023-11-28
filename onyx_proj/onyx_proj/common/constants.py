@@ -1270,3 +1270,8 @@ class SegmentABTypes(Enum):
 class TemplateABTypes(Enum):
     SINGLE_SEG = "SINGLE_SEG"
     MULTI_SEG = "MULTI_SEG"
+
+
+
+class ProjectValidationConf(Enum):
+    DATA_SYNC_REQUIRED = "DATA_SYNC_REQUIRED"

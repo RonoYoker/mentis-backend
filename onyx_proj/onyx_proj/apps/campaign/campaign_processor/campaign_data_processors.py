@@ -1,5 +1,7 @@
 import copy
 import datetime
+import hashlib
+import pprint
 from datetime import timedelta
 import http
 import json
@@ -2217,7 +2219,6 @@ def generate_campaign_approval_status_mail(data: dict):
 def save_campaign_details(request_data):
     method_name = "save_campaign_details"
     body = request_data.get("body", {})
-    headers = request_data.get("headers", {})
     unique_id = body.get("unique_id", None)
     name = body.get("name", None)
     segment_id = body.get("segment_id", None)
@@ -2230,11 +2231,13 @@ def save_campaign_details(request_data):
     campaign_list = body.get("campaign_list", [])
     description = body.get("description", None)
     camp_project_id = body.get("project_id", None)
+    file_dependency_config = body.get("file_dependency_config", None)
     is_split = body.get("is_split", False)
     campaign_category = body.get("campaign_category", CampaignCategory.Recurring.value)
     user_session = Session().get_user_session_object()
     user_name = user_session.user.user_name
     is_manual_validation_mandatory = body.get("is_manual_validation_mandatory", True)
+
 
     segment_entity = None
 
@@ -2271,6 +2274,12 @@ def save_campaign_details(request_data):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Project is not in Valid state")
 
+    project_conf = json.loads(project_entity[0]["validation_config"])
+
+    if file_dependency_config is None and project_conf.get(ProjectValidationConf.DATA_SYNC_REQUIRED.value,False):
+        hash_val = hashlib.md5(pprint.pformat(body).encode("utf-8")).hexdigest()
+        check_otp_status(hash_val, OtpAppName.FILE_DEPENDENCY_OVERRIDE.value)
+
     if unique_id is not None:
         validated_old_camp = validate_campaign_edit_config(unique_id)
         if validated_old_camp.get("result") == TAG_FAILURE:
@@ -2291,6 +2300,7 @@ def save_campaign_details(request_data):
     campaign_builder.start_date_time = start_date_time
     campaign_builder.end_date_time = end_date_time
     campaign_builder.recurring_detail = recurring_detail
+    campaign_builder.file_dependency_config = file_dependency_config
     campaign_builder.type = type
     campaign_builder.is_recurring = is_recurring
     campaign_builder.description = description

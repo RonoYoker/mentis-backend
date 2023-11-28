@@ -279,7 +279,7 @@ def test_campaign_validator(request):
 def save_campaign(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
-    data = dict(body=request_body, headers=request_headers)
+    data = dict(body=request_body)
     # process and save campaign data
     response = save_campaign_details(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)

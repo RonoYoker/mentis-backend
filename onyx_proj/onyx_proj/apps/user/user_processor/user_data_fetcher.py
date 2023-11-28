@@ -62,6 +62,7 @@ def get_user_data(request_data):
         return dict(status_code=http.HTTPStatus.OK, data=user_data[0])
 
     user_data = user_data[0]
+    user_data["current_date"] = datetime.datetime.utcnow().strftime("%Y-%m-%d")
     user_data["user_project_role_mapping_list"] = user_project_role_data
 
     if user_session_data[0].get("project_id", None):
@@ -97,7 +98,6 @@ def get_user_data(request_data):
                 permissions_list.append(value)
 
         user_data["permissions"] = permissions_list
-
     logger.debug(f"LOG_EXIT function name : {method_name}")
     return dict(status_code=http.HTTPStatus.OK, data=user_data)
 

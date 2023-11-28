@@ -287,3 +287,7 @@ def update_segment_data_encrypted(segment_data):
     CEDSegment().update_segment(dict(UniqueId=segment_data["UniqueId"]), dict(Extra=segment_data["Extra"]))
 
 
+@task
+def task_resolve_data_dependency_callback_for_project(dependency_config_id=None):
+    from onyx_proj.apps.project.project_processor import resolve_data_dependency_callback_for_project
+    resolve_data_dependency_callback_for_project(dependency_config_id)
