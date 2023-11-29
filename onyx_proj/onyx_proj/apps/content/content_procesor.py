@@ -555,7 +555,7 @@ def check_valid_whatsapp_content_for_campaign_creation(campaign_builder_whatsapp
     whatsapp_content_id = campaign_builder_whatsapp_entity.whats_app_content_id
     try:
         whatsapp_content_entity = CEDCampaignWhatsAppContent().get_whatsapp_content_data_by_unique_id_and_status(
-            whatsapp_content_id, status_list)
+            whatsapp_content_id, status_list,[])
 
         if not whatsapp_content_entity:
             raise NotFoundException(method_name=method_name, reason="Whatsapp content not found")

@@ -66,7 +66,26 @@ class CEDCampaignWhatsAppContent:
     def get_content_data_by_content_id(self, content_id):
         return dict_fetch_all(self.curr, self.table_name, {"UniqueId": content_id})
 
-    def get_whatsapp_content_data_by_unique_id_and_status(self, unique_id, status_list):
+    def get_whatsapp_content_data_by_unique_id_and_status(self, unique_id, status_list, relationships=None):
+        filter_list = [
+            {"column": "unique_id", "value": unique_id, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "is_active", "value": 1, "op": "=="},
+            # {"column": "status", "value": status_list, "op": "IN"}
+        ]
+
+        if len(status_list) > 0:
+            filter_list.append({"column": "status", "value": status_list, "op": "IN"})
+        if relationships is None:
+            relationships = ["variables.master_header", "url_mapping.url.variables", "url_mapping.url",
+                                                                            "media_mapping.media", "header_mapping.textual", "cta_mapping.url", "footer_mapping.textual"]
+
+        res = fetch_rows_limited(self.engine, self.table, filter_list, [], relationships)
+        if res is None or len(res) <= 0:
+            return None
+        return res[0]
+
+    def fetch_whatsapp_content_data_by_unique_id_and_status(self, unique_id, status_list):
         filter_list = [
             {"column": "unique_id", "value": unique_id, "op": "=="},
             {"column": "is_deleted", "value": 0, "op": "=="},
@@ -77,8 +96,7 @@ class CEDCampaignWhatsAppContent:
         if len(status_list) > 0:
             filter_list.append({"column": "status", "value": status_list, "op": "IN"})
 
-        res = fetch_rows_limited(self.engine, self.table, filter_list, [], ["variables.master_header", "url_mapping.url.variables", "url_mapping.url",
-                                                                            "media_mapping.media", "header_mapping.textual", "cta_mapping.url", "footer_mapping.textual"])
+        res = fetch_rows(self.engine, self.table, filter_list)
         if res is None or len(res) <= 0:
             return None
         return res[0]

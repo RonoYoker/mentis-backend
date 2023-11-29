@@ -1376,10 +1376,6 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
         if project_entity is None:
             raise NotFoundException(method_name=method_name, reason="Project entity not found")
 
-    # update campaign status as approved
-    CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity.unique_id,
-                                                        CampaignStatus.APPROVED.value, input_is_manual_validation_mandatory=1)
-
     for campaign in campaign_builder_entity.campaign_list:
         try:
             if not campaign.content_type or campaign.content_type not in ContentType._value2member_map_:
@@ -1432,6 +1428,11 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
             scheduling_segment_entity.campaign_category = campaign_category
             start_trigger_schedule_lambda_processing(scheduling_segment_entity, uuid.uuid4().hex, channel,
                                                      project_entity, segment_entity,is_instant=is_instant)
+
+            # update campaign status as approved
+            CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity.unique_id,
+                                                                CampaignStatus.APPROVED.value,
+                                                                input_is_manual_validation_mandatory=1)
         except NotFoundException as ex:
             logger.debug(f"method_name: {method_name}, error: {ex.reason}")
             CEDCampaignBuilderCampaign().update_cbc_status(campaign.unique_id, CampaignStatus.ERROR.value)
@@ -1984,24 +1985,24 @@ def prepare_whatsapp_related_data(cbc_entity, campaign_segment_entity, is_test=F
         raise NotFoundException(method_name=method_name, reason="Campaign Whatsapp content details not found")
 
     # Fetch whatsapp content entity
-    campaign_whatsapp_content_entity = CEDCampaignWhatsAppContent().get_whatsapp_content_data_by_unique_id_and_status(cbc_entity.whatsapp_campaign.whats_app_content_id, status_list)
+    campaign_whatsapp_content_entity = CEDCampaignWhatsAppContent().fetch_whatsapp_content_data_by_unique_id_and_status(cbc_entity.whatsapp_campaign.whats_app_content_id, status_list)
     if not campaign_whatsapp_content_entity:
         raise NotFoundException(method_name=method_name, reason="Campaign Whatsapp Content entity not found")
 
     # Set the url mapping
-    if cbc_entity.whatsapp_campaign.url_id and (campaign_whatsapp_content_entity.url_mapping is None or len(
-            campaign_whatsapp_content_entity.url_mapping) <= 0):
+    if cbc_entity.whatsapp_campaign.url_id and (campaign_whatsapp_content_entity["url_mapping"] is None or len(
+            campaign_whatsapp_content_entity["url_mapping"]) <= 0):
         raise NotFoundException(method_name=method_name, reason="Url id mapping for WHATSAPP campaign not found")
 
-    campaign_whatsapp_content_entity_dict = campaign_whatsapp_content_entity._asdict(["url_mapping"], fetch_loaded_only=True)
+    campaign_whatsapp_content_entity_dict = campaign_whatsapp_content_entity
 
     for url_mapping in campaign_whatsapp_content_entity_dict['url_mapping']:
         if url_mapping is not None and url_mapping.get('url', None) is not None and len(url_mapping.get('url')) > 0:
             if url_mapping['url'].get('url', None) is not None:
                 url_mapping['url']['content_text'] = url_mapping['url']['url']
 
-    if cbc_entity.whatsapp_campaign.cta_id and (campaign_whatsapp_content_entity.cta_mapping is None or len(
-            campaign_whatsapp_content_entity.cta_mapping) <= 0):
+    if cbc_entity.whatsapp_campaign.cta_id and (campaign_whatsapp_content_entity["cta_mapping"] is None or len(
+            campaign_whatsapp_content_entity["cta_mapping"]) <= 0):
         raise NotFoundException(method_name=method_name, reason="CTA id mapping for WHATSAPP campaign not found")
 
     for cta_mapping in campaign_whatsapp_content_entity_dict['cta_mapping']:
