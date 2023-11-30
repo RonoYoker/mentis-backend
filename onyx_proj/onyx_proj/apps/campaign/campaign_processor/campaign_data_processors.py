@@ -3156,7 +3156,8 @@ def validate_schedule(campaign_list, segment_id, unique_id, campaign_id,is_split
         start_date_time = campaign.get("input_start_date_time", "")
         end_date_time = campaign.get("input_end_date_time", "")
         sub_segment_id = campaign.get("segment_id")
-        campaign_data.append({"contentType": content_type, "startDateTime": start_date_time, "endDateTime": end_date_time, "campaignId": campaign_id,"segment_id":sub_segment_id})
+        split_details = campaign.get("split_details")
+        campaign_data.append({"contentType": content_type, "startDateTime": start_date_time, "endDateTime": end_date_time, "campaignId": campaign_id,"segment_id":sub_segment_id, "split_details": split_details})
     if campaign_builder.campaign_category not in [CampaignCategory.AB_Segment.value, CampaignCategory.AB_Content.value]:
         request_data = {"body": {"segmentId": segment_id, "campaigns": campaign_data, "is_split":is_split }}
     else:
@@ -3930,11 +3931,13 @@ def prepare_seg_based_campaign_list(data, recurring_detail):
 
     final_cbc_list = []
     slot_availability_list = []
+    slot_check_cbc_list = []
     try:
         for seg_variants in variants:
             percentage = 0
             for i, variant_dict in enumerate(seg_variants):
                 campaign_builder_campaign_list = []
+                variant_cbc_list = copy.deepcopy(slot_check_cbc_list)
                 variant = copy.deepcopy(CBC_DICT)
                 resp = make_content_conf(variant_dict["template_info"], variant_dict["channel"])
                 variant[resp.get("key")] = resp.get("data")
@@ -3978,13 +3981,16 @@ def prepare_seg_based_campaign_list(data, recurring_detail):
                         cbc["input_start_date_time"] = cbc["input_start_date_time"].strftime("%Y-%m-%d %H:%M:%S")
                         cbc["input_end_date_time"] = cbc["input_end_date_time"].strftime("%Y-%m-%d %H:%M:%S")
                         campaign_builder_campaign_list.append(cbc)
-                resp = validate_ab_schedule_slots(campaign_builder_campaign_list, segment_id, campaign_id, False)
+                variant_cbc_list.extend(campaign_builder_campaign_list)
+                resp = validate_ab_schedule_slots(variant_cbc_list, segment_id, campaign_id, False)
                 if resp.get("result") != TAG_SUCCESS:
                     raise InternalServerError(method_name=method_name, reason="Enable to check slots availability")
                 valid_schedule = True
                 for slots_data in resp.get("data"):
                     if not slots_data.get("valid_schedule"):
                         valid_schedule = False
+                if valid_schedule:
+                    slot_check_cbc_list.extend(campaign_builder_campaign_list)
                 slot_dict = {
                     "execution_config_id": variant_dict["execution_config_id"],
                     "valid_schedule": valid_schedule
@@ -4018,12 +4024,14 @@ def prepare_template_based_campaign_list(data, recurring_detail):
     campaign_id = data.get("campaign_id")
     final_cbc_list = []
     slot_availability_list = []
+    slot_check_cbc_list = []
     try:
         for seg_variants in variants:
             percentage = 0
             for i, variant_dict in enumerate(seg_variants):
                 segment_type = variant_dict["segment_type"]
                 campaign_builder_campaign_list = []
+                variant_cbc_list = copy.deepcopy(slot_check_cbc_list)
                 variant = copy.deepcopy(CBC_DICT)
                 resp = make_content_conf(template_info, channel)
                 variant[resp.get("key")] = resp.get("data")
@@ -4067,13 +4075,16 @@ def prepare_template_based_campaign_list(data, recurring_detail):
                         cbc["input_start_date_time"] = cbc["input_start_date_time"].strftime("%Y-%m-%d %H:%M:%S")
                         cbc["input_end_date_time"] = cbc["input_end_date_time"].strftime("%Y-%m-%d %H:%M:%S")
                         campaign_builder_campaign_list.append(cbc)
-                resp = validate_ab_schedule_slots(campaign_builder_campaign_list, variant_dict["segment_id"], campaign_id, False)
+                variant_cbc_list.extend(campaign_builder_campaign_list)
+                resp = validate_ab_schedule_slots(variant_cbc_list, variant_dict["segment_id"], campaign_id, False)
                 if resp.get("result") != TAG_SUCCESS:
                     raise InternalServerError(method_name=method_name, reason="Enable to check slots availability")
                 valid_schedule = True
                 for slots_data in resp.get("data"):
                     if not slots_data.get("valid_schedule"):
                         valid_schedule = False
+                if valid_schedule:
+                    slot_check_cbc_list.extend(campaign_builder_campaign_list)
                 slot_dict = {
                     "execution_config_id": variant_dict["execution_config_id"],
                     "valid_schedule": valid_schedule

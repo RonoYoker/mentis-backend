@@ -20,6 +20,8 @@ from django.conf import settings
 logger = logging.getLogger("apps")
 
 def vaildate_campaign_for_scheduling(request_data):
+    method_name = "vaildate_campaign_for_scheduling"
+    logger.debug(f"{method_name} :: request_data: {request_data}")
 
     body = request_data.get("body", {})
     headers = request_data.get("headers", {})
@@ -171,8 +173,12 @@ def split_seg_count_by_split_detail(campaigns_list):
         if campaign.get("segment_id") is not None:
             count = seg_id_count[campaign.get("segment_id")]
             if campaign.get("split_details") is not None:
-                count = get_count_by_split_details(json.loads(campaign.get("split_details")), count)
-                campaign['count'] = count
+                if count is not None:
+                    count = get_count_by_split_details(json.loads(campaign.get("split_details")), count)
+                    campaign['count'] = count
+                else:
+                    return dict(status_code=400, result=TAG_FAILURE,
+                                response={"error": "Segment is under process, Please try after sometime."})
             else:
                 campaign['count'] = count
 
