@@ -7,9 +7,11 @@ from onyx_proj.common.logging_helper import log_entry
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException , InternalServerError
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.models.CED_ConfigFileDependency import  CEDConfigFileDependency
+from onyx_proj.models.CED_FileDependencyCallbacksLogs_model import CEDFileDependencyCallbacksLogs
 from onyx_proj.models.CED_ProjectDependencyConfigs import CEDProjectDependencyConfigs
 from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.celery_app.tasks import task_resolve_data_dependency_callback_for_project
+from onyx_proj.orm_models.CED_FileDependencyCallbacksLogs import CED_FileDependencyCallbacksLogs
 
 logger = logging.getLogger("apps")
 
@@ -49,6 +51,16 @@ def update_project_dependency_data(request_body):
 
     if bank is None or project_name is None or file_type is None:
         raise BadRequestException(reason="Missing mandatory Params")
+
+    callback_log = CED_FileDependencyCallbacksLogs()
+    callback_log.eth_file_type = file_type
+    callback_log.eth_project_name = project_name
+    callback_log.bank = bank
+    callback_log.status = "SUCCESS"
+
+    resp = CEDFileDependencyCallbacksLogs().insert_file_processing_callback(callback_log)
+    if resp["status"] is False:
+        raise BadRequestException(reason="Unable to create log entry")
 
     try:
         projects = CEDProjects().get_all_project_entity_with_bank(bank)
