@@ -255,21 +255,25 @@ OTP_APP_USER_MAPPING = {
         }
     },
     OtpAppName.FILE_DEPENDENCY_OVERRIDE.value:  {
-        "divyansh_jain": {
-            "display_name": "Divyansh Jain",
-            "mobile_number": 8929294241
+        "arsheen_gujral": {
+            "display_name": "Arsheen Gujral",
+            "mobile_number": 9990701692
         },
-        "ritik_saini": {
-            "display_name": "Ritik Saini",
-            "mobile_number": 9871880272
-        },
-        "sanjeev_juyal": {
-            "display_name": "Divyansh Jain",
-            "mobile_number": 8929294241
+        "abhishek_gupta": {
+            "display_name": "Abhishek Gupta",
+            "mobile_number": 9999913305
         },
         "devesh_satija": {
             "display_name": "Devesh Satija",
             "mobile_number": 9953095877
+        },
+        "ankur_srivastava": {
+            "display_name": "Ankur Srivastava",
+            "mobile_number": 7048909209
+        },
+        "vivek_phogat": {
+            "display_name": "Vivek Phogat",
+            "mobile_number": 9999332793
         }
     }
 }
