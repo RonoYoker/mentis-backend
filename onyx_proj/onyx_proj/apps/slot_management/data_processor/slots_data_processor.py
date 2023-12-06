@@ -291,7 +291,7 @@ def fetch_valid_bu_campaigns(content_date_keys_to_validate,dates_to_validate,bus
         campaign = {
             "start": campaign.get("StartDateTime"),
             "end": campaign.get("EndDateTime"),
-            "count": int(count)
+            "count": int(count if count is not None else 0)
         }
         if campaign.get("is_split",False) is True:
             split_details = json.loads(campaign["split_details"])
@@ -334,7 +334,7 @@ def fetch_valid_project_campaigns(content_date_keys_to_validate, dates_to_valida
         campaign = {
             "start": campaign.get("StartDateTime"),
             "end": campaign.get("EndDateTime"),
-            "count": int(count)
+            "count": int(count if count is not None else 0)
         }
         if campaign.get("is_split",False) is True:
             split_details = json.loads(campaign["split_details"])
