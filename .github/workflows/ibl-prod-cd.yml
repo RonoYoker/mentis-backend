@@ -118,12 +118,12 @@ jobs:
             echo "test case passed"
             TAG=$ECR_REPO_URL/$ECR_REPOSITORY:$IMAGE_TAG docker-compose --file $DOCKER_COMPOSE_FILE down
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.IBL_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.IBL_AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.PROD_AWS_Region }}
+#      - name: Configure AWS credentials
+#        uses: aws-actions/configure-aws-credentials@v1
+#        with:
+#          aws-access-key-id: ${{ secrets.IBL_AWS_ACCESS_KEY_ID }}
+#          aws-secret-access-key: ${{ secrets.IBL_AWS_SECRET_ACCESS_KEY }}
+#          aws-region: ${{ secrets.PROD_AWS_Region }}
 
       - name: Login to Amazon ECR
         id: login-ecr
