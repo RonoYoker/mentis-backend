@@ -293,6 +293,7 @@ def fetch_valid_bu_campaigns(content_date_keys_to_validate,dates_to_validate,bus
             "end": campaign.get("EndDateTime"),
             "count": int(count if count is not None else 0)
         }
+
         if campaign.get("is_split",False) is True:
             split_details = json.loads(campaign["split_details"])
             campaign["count"] = ceil(campaign["count"]/split_details["total_splits"])
