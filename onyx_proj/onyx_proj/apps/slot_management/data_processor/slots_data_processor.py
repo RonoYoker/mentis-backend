@@ -264,6 +264,7 @@ def validate_campaign_schedule(new_schedule, slot_limit_per_min,old_schedule):
         return False
 
 
+
 def fetch_valid_bu_campaigns(content_date_keys_to_validate,dates_to_validate,business_unit_id,campaign_id):
     bu_level_campaigns = None
     if campaign_id is not None:
