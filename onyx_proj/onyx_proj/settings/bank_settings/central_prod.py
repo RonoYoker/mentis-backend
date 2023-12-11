@@ -234,6 +234,18 @@ OTP_APP_USER_MAPPING = {
         "gagan_rajput": {
             "display_name": "Gagan Rajput",
             "mobile_number": 9999576578
+        },
+        "rajdeep_gottumukkala": {
+            "display_name": "Rajdeep Gottumukkala",
+            "mobile_number": 9444397336
+        },
+        "rashmi_mishra": {
+            "display_name": "Rashmi Mishra",
+            "mobile_number": 9987062389
+        },
+        "akanshi_gupta": {
+            "display_name": "Akanshi Gupta",
+            "mobile_number": 7838018747
         }
     },
     OtpAppName.CAMP_SCHEDULE_TIME_UPDATE.value: {
@@ -260,6 +272,18 @@ OTP_APP_USER_MAPPING = {
         "gagan_rajput": {
             "display_name": "Gagan Rajput",
             "mobile_number": 9999576578
+        },
+        "rajdeep_gottumukkala": {
+            "display_name": "Rajdeep Gottumukkala",
+            "mobile_number": 9444397336
+        },
+        "rashmi_mishra": {
+            "display_name": "Rashmi Mishra",
+            "mobile_number": 9987062389
+        },
+        "akanshi_gupta": {
+            "display_name": "Akanshi Gupta",
+            "mobile_number": 7838018747
         }
     },
     OtpAppName.FILE_DEPENDENCY_OVERRIDE.value:  {
@@ -286,6 +310,18 @@ OTP_APP_USER_MAPPING = {
         "gagan_rajput": {
             "display_name": "Gagan Rajput",
             "mobile_number": 9999576578
+        },
+        "rajdeep_gottumukkala": {
+            "display_name": "Rajdeep Gottumukkala",
+            "mobile_number": 9444397336
+        },
+        "rashmi_mishra": {
+            "display_name": "Rashmi Mishra",
+            "mobile_number": 9987062389
+        },
+        "akanshi_gupta": {
+            "display_name": "Akanshi Gupta",
+            "mobile_number": 7838018747
         }
     }
 }
