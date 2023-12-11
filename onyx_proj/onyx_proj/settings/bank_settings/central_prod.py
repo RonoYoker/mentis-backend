@@ -230,6 +230,10 @@ OTP_APP_USER_MAPPING = {
         "vivek_phogat": {
             "display_name": "Vivek Phogat",
             "mobile_number": 9999332793
+        },
+        "gagan_rajput": {
+            "display_name": "Gagan Rajput",
+            "mobile_number": 9999576578
         }
     },
     OtpAppName.CAMP_SCHEDULE_TIME_UPDATE.value: {
@@ -252,6 +256,10 @@ OTP_APP_USER_MAPPING = {
         "vivek_phogat": {
             "display_name": "Vivek Phogat",
             "mobile_number": 9999332793
+        },
+        "gagan_rajput": {
+            "display_name": "Gagan Rajput",
+            "mobile_number": 9999576578
         }
     },
     OtpAppName.FILE_DEPENDENCY_OVERRIDE.value:  {
@@ -274,6 +282,10 @@ OTP_APP_USER_MAPPING = {
         "vivek_phogat": {
             "display_name": "Vivek Phogat",
             "mobile_number": 9999332793
+        },
+        "gagan_rajput": {
+            "display_name": "Gagan Rajput",
+            "mobile_number": 9999576578
         }
     }
 }
