@@ -19,14 +19,13 @@ from onyx_proj.orm_models.eth_dnd_mobile_model import Eth_DndMobile
 logger = logging.getLogger("apps")
 
 
-# @ReqEncryptDecrypt(ApplicationName.PEGASUS.value, None)
+@ReqEncryptDecrypt(ApplicationName.PEGASUS.value, None)
 def update_dnd_data(body):
     """
     Method to update the dnd user list
     """
     method_name = "update_dnd_data"
-    # request_body = json.loads(body['body'])
-    request_body = body['body']
+    request_body = json.loads(body['body'])
     request_header = body['header']
     log_entry(request_body)
 
