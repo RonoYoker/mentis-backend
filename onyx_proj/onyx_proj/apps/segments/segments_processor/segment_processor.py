@@ -249,6 +249,10 @@ def trigger_update_segment_count_for_campaign_approval(cb_id, segment_id, retry_
     CEDCampaignBuilder().increment_approval_flow_retry_count(cb_id)
     campaign_builder_entity = CEDCampaignBuilder().get_campaign_builder_entity_by_unique_id(cb_id)
 
+    if campaign_builder_entity.is_active != 1 or campaign_builder_entity.is_deleted != 0:
+        logger.error(f"method_name :: {method_name}, error :: Campaign not in valid state")
+        raise ValidationFailedException(method_name=method_name, reason="Campaign not in valid state")
+
     if campaign_builder_entity.campaign_category in [CampaignCategory.AB_Segment.value,CampaignCategory.AB_Content.value]:
         schedule_campaign_using_campaign_builder_id(cb_id)
         return

@@ -1166,6 +1166,10 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
             if campaign_builder_entity_db.status != CampaignStatus.APPROVAL_PENDING.value:
                 raise BadRequestException(method_name=method_name, reason="Campaign Builder cannot be approved")
 
+            if campaign_builder_entity_db.is_active != 1 or campaign_builder_entity_db.is_deleted != 0:
+                logger.error(f"method_name :: {method_name}, error :: Campaign not in valid state")
+                raise ValidationFailedException(method_name=method_name, reason="Campaign not in valid state")
+
             # check for valid test campaign state in campaign builder
             for cbc in campaign_builder_entity_db.campaign_list:
                 if cbc.test_campign_state != TestCampStatus.VALIDATED.value:
