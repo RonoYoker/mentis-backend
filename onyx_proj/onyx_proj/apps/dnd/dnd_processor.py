@@ -61,25 +61,19 @@ def update_dnd_data(body):
     encryption_entity = AesEncryptDecrypt(key=settings.AES_ENCRYPTION_KEY["KEY"], iv=settings.AES_ENCRYPTION_KEY["IV"], mode=AES.MODE_CBC)
 
     if mode.upper() == DndMode.MOBILE_NUMBER.value:
-        dnd_table_column = "en_mobile_number"
-        table_model = Eth_DndMobile
         user_data_list_processed = [encryption_entity.encrypt_aes_cbc(user_data) for user_data in user_data_list]
     elif mode.upper() == DndMode.EMAIL_ID.value:
-        dnd_table_column = "en_email"
-        table_model = Eth_DndEmail
         user_data_list_processed = [encryption_entity.encrypt_aes_cbc(user_data) for user_data in user_data_list]
     else:
-        dnd_table_column = "account_number"
-        table_model = Eth_DndAccountNumber
         user_data_list_processed = user_data_list
     # prepare bulk list for inserting in db
-    dnd_data_entity_list = []
+    dnd_data_list = []
     for user_data in user_data_list_processed:
-        data_entity = table_model({dnd_table_column: user_data, "source": source, "project_id": project_id})
-        dnd_data_entity_list.append(data_entity)
+        data_entity = [user_data, source, '1']
+        dnd_data_list.append(data_entity)
 
     try:
-        DND_MODE_TABLE_MAPPING[mode]().bulk_insert_dnd_data(dnd_data_entity_list)
+        DND_MODE_TABLE_MAPPING[mode]().bulk_insert_dnd_data(dnd_data_list)
     except Exception as ex:
         logger.error(f"method_name :: {method_name}, Error while inserting dnd data in db, Exception: {ex}")
         raise InternalServerError(method_name=method_name, reason="Error while updating dnd data", error=ex)
