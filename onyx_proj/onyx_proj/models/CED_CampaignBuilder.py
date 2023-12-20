@@ -138,7 +138,7 @@ class CEDCampaignBuilder:
         filter = [
             {"column": "unique_id", "value": unique_id, "op": "=="}
         ]
-        update_dict = {"status": CampaignStatus.ERROR.value, "is_active": 0, "is_deleted": 1}
+        update_dict = {"status": CampaignStatus.ERROR.value, "is_active": 0}
         if reason:
             update_dict["error_msg"] = reason
         return update(self.engine, self.table, filter, update_dict)
