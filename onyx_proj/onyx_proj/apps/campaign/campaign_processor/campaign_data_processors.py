@@ -1433,15 +1433,12 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
             start_trigger_schedule_lambda_processing(scheduling_segment_entity, uuid.uuid4().hex, channel,
                                                      project_entity, segment_entity,is_instant=is_instant)
 
-            # update campaign status as approved
-            CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity.unique_id,
-                                                                CampaignStatus.APPROVED.value,
-                                                                input_is_manual_validation_mandatory=1)
         except NotFoundException as ex:
             logger.debug(f"method_name: {method_name}, error: {ex.reason}")
             CEDCampaignBuilderCampaign().update_cbc_status(campaign.unique_id, CampaignStatus.ERROR.value)
             CEDCampaignExecutionProgress().update_campaign_status(CampaignStatus.ERROR.value, campaign.unique_id,
                                                                   ex.reason)
+            CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id, "Error while scheduling campaign")
             generate_campaign_approval_status_mail(
                 {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
             raise NotFoundException(method_name=method_name, reason=ex.reason)
@@ -1450,6 +1447,7 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
             CEDCampaignBuilderCampaign().update_cbc_status(campaign.unique_id, CampaignStatus.ERROR.value)
             CEDCampaignExecutionProgress().update_campaign_status(CampaignStatus.ERROR.value, campaign.unique_id,
                                                                   ex.reason)
+            CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id, "Error while scheduling campaign")
             generate_campaign_approval_status_mail(
                 {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
             raise BadRequestException(method_name=method_name, reason=ex.reason)
@@ -1458,6 +1456,7 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
             CEDCampaignBuilderCampaign().update_cbc_status(campaign.unique_id, CampaignStatus.ERROR.value)
             CEDCampaignExecutionProgress().update_campaign_status(CampaignStatus.ERROR.value, campaign.unique_id,
                                                                   ex.reason)
+            CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id, "Error while scheduling campaign")
             generate_campaign_approval_status_mail(
                 {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
             raise ValidationFailedException(method_name=method_name, reason=ex.reason)
@@ -1466,10 +1465,15 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
             CEDCampaignBuilderCampaign().update_cbc_status(campaign.unique_id, CampaignStatus.ERROR.value)
             CEDCampaignExecutionProgress().update_campaign_status(CampaignStatus.ERROR.value, campaign.unique_id,
                                                                   ex.reason)
+            CEDCampaignBuilder().mark_campaign_as_error(campaign_builder_entity.unique_id, "Error while scheduling campaign")
             generate_campaign_approval_status_mail(
                 {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.ERROR.value})
             raise BadRequestException(method_name=method_name, reason="error while scheduling campaign")
 
+    # update campaign status as approved
+    CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity.unique_id,
+                                                        CampaignStatus.APPROVED.value,
+                                                        input_is_manual_validation_mandatory=1)
     generate_campaign_approval_status_mail(
         {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.APPROVED.value})
 
