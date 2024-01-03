@@ -260,6 +260,10 @@ OTP_APP_USER_MAPPING = {
         "akanshi_gupta": {
             "display_name": "Akanshi Gupta",
             "mobile_number": 7838018747
+        },
+        "navinder_rajput": {
+            "display_name": "Navinder Rajput",
+            "mobile_number": 9999248486
         }
     },
     OtpAppName.CAMP_SCHEDULE_TIME_UPDATE.value: {
@@ -298,6 +302,10 @@ OTP_APP_USER_MAPPING = {
         "akanshi_gupta": {
             "display_name": "Akanshi Gupta",
             "mobile_number": 7838018747
+        },
+        "navinder_rajput": {
+            "display_name": "Navinder Rajput",
+            "mobile_number": 9999248486
         }
     },
     OtpAppName.FILE_DEPENDENCY_OVERRIDE.value:  {
@@ -336,6 +344,10 @@ OTP_APP_USER_MAPPING = {
         "akanshi_gupta": {
             "display_name": "Akanshi Gupta",
             "mobile_number": 7838018747
+        },
+        "navinder_rajput": {
+            "display_name": "Navinder Rajput",
+            "mobile_number": 9999248486
         }
     }
 }
