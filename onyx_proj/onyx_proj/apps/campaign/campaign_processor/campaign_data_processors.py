@@ -4217,7 +4217,7 @@ def validate_seg_based_campaign(data, recurring_detail):
             [SegmentABTypes.ATTRIBUTE.value, SegmentABTypes.PERCENTAGE.value] or len(variants) < 1 or len(variants[0]) < 1):
         raise BadRequestException(method_name=method_name, reason="Mandatory params missing.")
 
-    segment_entity = CEDSegment().get_segment_data_by_unique_id(segment_id, ["APPROVAL_PENDING", "APPROVED", "SAVED"])
+    segment_entity = CEDSegment().get_segment_data_by_unique_id(segment_id, ["APPROVAL_PENDING", "APPROVED", "SAVED", "HOD_APPROVAL_PENDING"])
     if len(segment_entity) == 0:
         raise BadRequestException(method_name=method_name, reason="Segment is not in Valid state")
 

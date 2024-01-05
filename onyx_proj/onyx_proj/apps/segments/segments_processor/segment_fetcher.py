@@ -28,9 +28,9 @@ def fetch_segments(data) -> json:
                     details_message="Missing parameters project_id/data_id in request body.")
 
     if mode:
-        filter = f" seg.ProjectId='{project_id}' and seg.Type='{mode}' and seg.isActive=1 and seg.Status in ('APPROVED','APPROVAL_PENDING') "
+        filter = f" seg.ProjectId='{project_id}' and seg.Type='{mode}' and seg.isActive=1 and seg.Status in ('APPROVED','APPROVAL_PENDING', 'HOD_APPROVAL_PENDING') "
     else:
-        filter = f" seg.ProjectId='{project_id}' and seg.isActive=1 and seg.Status in ('APPROVED','APPROVAL_PENDING') "
+        filter = f" seg.ProjectId='{project_id}' and seg.isActive=1 and seg.Status in ('APPROVED','APPROVAL_PENDING', 'HOD_APPROVAL_PENDING') "
 
     try:
         db_res = CEDSegment().get_all_custom_segments(filter)

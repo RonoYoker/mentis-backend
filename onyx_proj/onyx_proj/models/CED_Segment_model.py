@@ -154,7 +154,7 @@ class CEDSegment:
 
     def get_segment_data_by_unique_id(self, segment_id, status_list=None):
         if status_list is None:
-            status_list = ["APPROVAL_PENDING", "APPROVED"]
+            status_list = ["APPROVAL_PENDING", "APPROVED", "HOD_APPROVAL_PENDING"]
         filter_list = [
             {"column": "unique_id", "value": segment_id, "op": "=="},
             {"column": "is_deleted", "value": 0, "op": "=="},

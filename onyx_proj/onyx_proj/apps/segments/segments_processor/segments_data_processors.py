@@ -71,7 +71,7 @@ def get_segment_list(request: dict, session_id=None):
             {"column": "creation_date", "value": start_time, "op": ">="},
             {"column": "creation_date", "value": end_date_time, "op": "<="},
             {"column": "project_id", "value": project_id, "op": "=="},
-            {"column": "status", "value": SegmentStatusKeys.APPROVAL_PENDING.value, "op": "=="}
+            {"column": "status", "value": [SegmentStatusKeys.APPROVAL_PENDING.value, SegmentStatusKeys.HOD_APPROVAL_PENDING.value], "op": "IN"}
         ]
     elif tab_name.lower() == SegmentList.MY_SEGMENT.value.lower():
         user = CEDUserSession().get_user_details(dict(SessionId=session_id))

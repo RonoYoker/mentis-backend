@@ -13,6 +13,7 @@ class SegmentStatusKeys(Enum):
     LOCALDB_EX = 'LOCALDB_EX'
     DIS_APPROVED = "DIS_APPROVED"
     SQL_QUERY_GENERATED = "SQL_QUERY_GENERATED"
+    HOD_APPROVAL_PENDING = "HOD_APPROVAL_PENDING"
 
 
 class AsyncTaskSourceKeys(Enum):

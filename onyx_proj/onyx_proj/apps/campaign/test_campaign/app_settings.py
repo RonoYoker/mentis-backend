@@ -16,8 +16,9 @@ class CampaignStatus(Enum):
 CAMPAIGN_BUILDER_CAMPAIGN_VALID_STATUS = [CampaignStatus.APPROVED.value, CampaignStatus.APPROVAL_PENDING.value,
                                           CampaignStatus.APPROVAL_IN_PROGRESS.value, CampaignStatus.SAVED.value, None]
 
-SEGMENT_STATUS_FOR_TEST_CAMPAIGN = [SegmentStatusKeys.APPROVED.value, SegmentStatusKeys.SAVED.value,
-                                    SegmentStatusKeys.APPROVAL_PENDING.value]
+SEGMENT_STATUS_FOR_TEST_CAMPAIGN = [SegmentStatusKeys.APPROVED.value,
+                                    SegmentStatusKeys.SAVED.value, SegmentStatusKeys.APPROVAL_PENDING.value,
+                                    SegmentStatusKeys.HOD_APPROVAL_PENDING.value]
 
 CAMP_SCHEDULING_TIME_UPDATE_ALLOWED_BUFFER = 45
 
