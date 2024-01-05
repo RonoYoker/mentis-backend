@@ -358,6 +358,10 @@ OtpAppName.SEGMENT_HOD_APPROVAL.value:  {
         "shravan_ganguli": {
             "display_name": "Shravan Ganguli",
             "mobile_number": 9353438931
+        },
+        "abhishek_gupta": {
+            "display_name": "Abhishek Gupta",
+            "mobile_number": 9999913305
         }
     }
 }
