@@ -164,7 +164,8 @@ def update_campaign_segment_data(request_data) -> json:
                         "query":sql_query,
                         "is_test": False,
                         "split_details": None,
-                        "segment_data_s3_path": task_data["response"]["s3_url"]
+                        "segment_data_s3_path": task_data["response"]["s3_url"],
+                        "segment_headers": task_data["response"]["headers_list"]
                     }]
         }
         api_response = json.loads(RequestClient(request_type="POST", url=settings.HYPERION_LOCAL_DOMAIN[project_name]
@@ -196,7 +197,8 @@ def update_campaign_segment_data(request_data) -> json:
         else:
             update_dict = dict(S3Path=task_data["response"]["s3_url"],
                                S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
-                               S3DataRefreshStatus="SUCCESS")
+                               S3DataRefreshStatus="SUCCESS",
+                               S3DataHeadersList=json.dumps(task_data["response"]["headers_list"]))
         update_camp_query_executor_callback_for_retry(task_data, campaign_builder_campaign_id)
         upd_resp = CEDCampaignBuilderCampaign().bulk_update_segment_data_for_cbc_ids(cbcs_ids_for_ab, update_dict)
         if upd_resp["success"] is False:
@@ -233,7 +235,8 @@ def update_campaign_segment_data(request_data) -> json:
                 else:
                     update_dict = dict(S3Path=task_data["response"]["s3_url"],
                                        S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
-                                       S3DataRefreshStatus="SUCCESS")
+                                       S3DataRefreshStatus="SUCCESS",
+                                       S3DataHeadersList=json.dumps(task_data["response"]["headers_list"]))
                 # if is_auto_time_split flag is 1 or True, fetch all CBC instances for the campaignBuilderId and bulk update them
                 cbc_ids_db_resp = CEDCampaignBuilderCampaign().get_all_cbc_ids_for_split_campaign(campaign_builder_campaign_id)
                 cbc_placeholder = ', '.join(f"'{ele['UniqueId']}'" for ele in cbc_ids_db_resp)
@@ -329,7 +332,8 @@ def update_cbc_instance_for_s3_callback(task_data: dict, where_dict: dict, campa
         update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()), S3DataRefreshStatus="EMPTY_SEGMENT")
     else:
         update_dict = dict(S3Path=task_data["response"]["s3_url"], S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
-                           S3DataRefreshStatus="SUCCESS")
+                           S3DataRefreshStatus="SUCCESS",
+                           S3DataHeadersList=json.dumps(task_data["response"]["headers_list"]))
     update_db_resp = CEDCampaignBuilderCampaign().update_campaign_builder_campaign_instance(update_dict, where_dict)
     if update_db_resp is False:
         logger.error(

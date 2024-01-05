@@ -7,7 +7,7 @@ from onyx_proj.apps.segments.segments_processor.get_sample_data import get_sampl
 from onyx_proj.apps.segments.segment_query_builder.segment_query_builder_processor import SegmentQueryBuilder
 from onyx_proj.apps.segments.segments_processor.segment_fetcher import fetch_segment_by_id, fetch_segments
 from onyx_proj.apps.segments.segments_processor.segment_headers_processor import \
-    check_headers_compatibility_with_content_template, check_seg_header_compatibility_with_template
+    check_headers_compatibility_with_content_template, check_seg_header_compatibility_with_template, approve_segment_hod
 from onyx_proj.apps.segments.segments_processor.segment_callback_processor import process_segment_callback, \
     process_segment_data_callback, process_segment_expected_count
 from django.views.decorators.csrf import csrf_exempt
@@ -322,5 +322,17 @@ def check_header_compatibility_with_template(request):
     data = json.loads(request.body.decode("utf-8"))
     # custom segments fetch call
     response = check_seg_header_compatibility_with_template(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def hod_approve_campaign(request):
+    data = json.loads(request.body.decode("utf-8"))
+    # custom segments fetch call
+    response = approve_segment_hod(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")

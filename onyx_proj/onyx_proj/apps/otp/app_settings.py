@@ -6,11 +6,13 @@ class OtpAppName(Enum):
     INSTANT_CAMPAIGN_APPROVAL = "INSTANT_CAMPAIGN_APPROVAL"
     CAMP_SCHEDULE_TIME_UPDATE = "CAMP_SCHEDULE_TIME_UPDATE"
     FILE_DEPENDENCY_OVERRIDE = "FILE_DEPENDENCY_OVERRIDE"
+    SEGMENT_HOD_APPROVAL = "SEGMENT_HOD_APPROVAL"
 
 
 OTP_APP_TEMPLATE_MAPPING = {
     OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value: "{#OTP#} is your OTP. - Clearmydues",
     OtpAppName.CAMP_SCHEDULE_TIME_UPDATE.value: "{#OTP#} is your OTP. - Clearmydues",
+    OtpAppName.SEGMENT_HOD_APPROVAL.value: "{#OTP#} is your OTP. - Clearmydues",
     OtpAppName.FILE_DEPENDENCY_OVERRIDE.value: "{#OTP#} is your OTP. - Clearmydues"
 }
 

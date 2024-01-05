@@ -4,10 +4,12 @@ import uuid
 from django.conf import settings
 from Crypto.Cipher import AES
 
+from onyx_proj.apps.otp.app_settings import OtpAppName
+from onyx_proj.apps.otp.otp_processor import check_otp_status
 from onyx_proj.apps.segments.custom_segments.custom_segment_processor import hyperion_local_rest_call
 from onyx_proj.apps.segments.segment_query_builder.segment_query_builder_processor import SegmentQueryBuilder
 from onyx_proj.common.constants import *
-from onyx_proj.exceptions.permission_validation_exception import InternalServerError
+from onyx_proj.exceptions.permission_validation_exception import InternalServerError, ValidationFailedException
 from onyx_proj.models.CED_CampaignEmailContent_model import *
 from onyx_proj.models.CED_CampaignIvrContent_model import *
 from onyx_proj.models.CED_CampaignSMSContent_model import *
@@ -289,3 +291,43 @@ def check_seg_header_compatibility_with_template(data):
 
     logger.debug(f"Exit: {method_name} :: result: {result}")
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result)
+
+
+
+def approve_segment_hod(request_data) -> json:
+    """
+    Method checks compatibility of custom segment headers with template
+    parameters: request data consisting of segment_id, content_id, template_type
+    returns: json ({
+                        "status_code": 200/400,
+                        "isCompatible": True/False (bool)
+                    })
+    """
+    method_name = "approve_segment_hod"
+    logger.debug(f"{method_name} :: request_data: {request_data}")
+
+    segment_id = request_data.get("segment_id", None)
+
+    if segment_id is None:
+        raise ValidationFailedException(reason="segment_id not present")
+
+    try:
+        segment = CEDSegment().get_segment_data(segment_id=segment_id)
+    except Exception as e:
+        raise ValidationFailedException(reason="Invalid Segment")
+    if len(segment) == 0:
+        raise ValidationFailedException(reason="Invalid Segment")
+    segment = segment[0]
+    if segment["status"] != "HOD_APPROVAL_PENDING":
+        raise ValidationFailedException(reason="Segment Status not appropriate")
+
+    check_otp_status(segment_id, OtpAppName.SEGMENT_HOD_APPROVAL.value)
+
+    resp = CEDSegment().update_segment(params_dict={"UniqueId":segment_id},update_dict={"Status":"APPROVED"})
+
+    if resp is None:
+        raise InternalServerError(reason="Unable to update segment Status")
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
+
+

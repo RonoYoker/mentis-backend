@@ -131,9 +131,9 @@ def query_executor(task_id: str):
                     logger.info(f"query_executor :: Query response is empty for the task_id: {task_id}.")
                     raise EmptySegmentException
                 headers_list = [*query_response.get("result", [])[0]]
-                headers_placeholder = ", ".join("'"+header+"'" for header in headers_list)
+                # headers_placeholder = ", ".join("'"+header+"'" for header in headers_list)
                 file_name = f"{task_id}"
-                output_query = f"""SELECT {headers_placeholder} UNION ALL {task_data["Query"]} INTO OUTFILE S3 's3://{settings.QUERY_EXECUTION_JOB_BUCKET}/{file_name}' FIELDS TERMINATED BY "|" LINES TERMINATED BY "\\n\" MANIFEST ON OVERWRITE ON"""
+                output_query = f"""{task_data["Query"]} INTO OUTFILE S3 's3://{settings.QUERY_EXECUTION_JOB_BUCKET}/{file_name}' FIELDS TERMINATED BY "|" LINES TERMINATED BY "\\n\" MANIFEST ON OVERWRITE ON"""
                 init_time = time.time()
                 output_query_response = CustomQueryExecution(db_conf_key=db_reader_config_key).execute_output_file_query(output_query)
                 query_execution_time = time.time() - init_time
@@ -146,7 +146,7 @@ def query_executor(task_id: str):
                     task_data["Status"] = AsyncJobStatus.SUCCESS.value
                     s3_url = S3Helper().get_s3_url(settings.QUERY_EXECUTION_JOB_BUCKET, file_name)
                     response_dict = dict(s3_url=s3_url, bucket_name=settings.QUERY_EXECUTION_JOB_BUCKET,
-                                         file_key=file_name)
+                                         file_key=file_name, headers_list=headers_list)
                     CEDQueryExecutionJob().update_query_response(json.dumps(response_dict), task_id)
 
             # update status to SUCCESS for the task

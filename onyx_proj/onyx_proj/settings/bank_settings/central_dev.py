@@ -151,6 +151,16 @@ OTP_APP_USER_MAPPING = {
             "display_name": "Devesh Satija",
             "mobile_number": 9953095877
         }
+    },
+    OtpAppName.SEGMENT_HOD_APPROVAL.value:  {
+        "arsheen_gujral": {
+            "display_name": "Arsheen Gujral",
+            "mobile_number": 9990701692
+        },
+        "shravan_ganguli": {
+            "display_name": "Shravan Ganguli",
+            "mobile_number": 9353438931
+        }
     }
 }
 

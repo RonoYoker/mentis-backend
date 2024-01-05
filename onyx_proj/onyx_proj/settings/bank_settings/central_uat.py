@@ -241,6 +241,16 @@ OTP_APP_USER_MAPPING = {
             "display_name": "Vivek Phogat",
             "mobile_number": 9999332793
         }
+    },
+    OtpAppName.SEGMENT_HOD_APPROVAL.value:  {
+        "ritik_saini": {
+            "display_name": "Ritik Saini",
+            "mobile_number": 9871880272
+        },
+        "sanjeev_juyal": {
+            "display_name": "Sanjeev Juyal",
+            "mobile_number": 7055146287
+        }
     }
 }
 
