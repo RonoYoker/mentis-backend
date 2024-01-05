@@ -756,6 +756,7 @@ class SegmentStatus(Enum):
     DIS_APPROVED = "DIS_APPROVED"
     SAVED = "SAVED"
     SQL_QUERY_GENERATED = "SQL_QUERY_GENERATED"
+    HOD_APPROVAL_PENDING = "HOD_APPROVAL_PENDING"
 
 
 class CampaignContentStatus(Enum):

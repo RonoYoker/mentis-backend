@@ -3852,7 +3852,7 @@ def fetch_and_validate_sub_segment_ids(segment_ids, mode="APPROVAL"):
     if len(resp) != len(main_segment_ids):
         raise ValidationFailedException(reason="Invalid Segment Ids found with CBC's")
 
-    valid_status = [SegmentStatus.APPROVED.value, SegmentStatus.APPROVAL_PENDING.value] if mode == "SAVE" \
+    valid_status = [SegmentStatus.APPROVED.value, SegmentStatus.APPROVAL_PENDING.value, SegmentStatus.HOD_APPROVAL_PENDING.value] if mode == "SAVE" \
         else [SegmentStatus.APPROVED.value]
     seg_detail_list = []
     for seg in resp:
