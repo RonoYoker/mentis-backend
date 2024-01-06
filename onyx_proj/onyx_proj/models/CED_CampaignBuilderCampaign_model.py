@@ -375,7 +375,7 @@ class CEDCampaignBuilderCampaign:
         return resp
 
     def bulk_update_segment_data_for_cbc_ids(self, cbc_ids: str, segment_data: dict):
-        query = f"""UPDATE CED_CampaignBuilderCampaign SET S3Path = '{segment_data["S3Path"]}', S3DataRefreshEndDate = '{segment_data["S3DataRefreshEndDate"]}', S3DataHeadersList = %s, S3DataRefreshStatus = '{segment_data["S3DataRefreshStatus"]} WHERE UniqueId IN (%s);""" % (cbc_ids, segment_data["S3DataHeadersList"])
+        query = f"""UPDATE CED_CampaignBuilderCampaign SET S3Path = '{segment_data["S3Path"]}', S3DataRefreshEndDate = '{segment_data["S3DataRefreshEndDate"]}', S3DataHeadersList = %s, S3DataRefreshStatus = '{segment_data["S3DataRefreshStatus"]} WHERE UniqueId IN (%s);""" % (segment_data["S3DataHeadersList"], cbc_ids)
         print("query: ", query)
         return execute_update_query(self.engine, query)
 
