@@ -86,6 +86,7 @@ def update_campaign_segment_data(request_data) -> json:
                     details_message="Invalid Payload.")
 
     is_split_flag_db_resp = CEDCampaignBuilderCampaign().get_is_split_flag_by_cbc_id(campaign_builder_campaign_id)
+    print("is_split_flag_db_resp: ", is_split_flag_db_resp)
     if len(is_split_flag_db_resp) == 0:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid CampaignBuilderCampaignId.")
@@ -101,6 +102,7 @@ def update_campaign_segment_data(request_data) -> json:
 
     cbc_ids_str = f"'{campaign_builder_campaign_id}'"
     cbc_resp = CEDCampaignBuilderCampaign().get_cbc_details_by_cbc_id(cbc_ids_str)
+    print("cbc_resp: ", cbc_resp)
     if cbc_resp is None:
         raise ValidationFailedException(reason="Invalid cbc Id")
     cbc = cbc_resp[0]
@@ -120,6 +122,7 @@ def update_campaign_segment_data(request_data) -> json:
             cbcs_ids_for_ab = ', '.join(f"'{ele['unique_id']}'" for ele in cbcs_to_update)
 
     task_data = request_data["tasks"]
+    print(task_data)
 
     is_instant = False
     if QueryKeys.SEGMENT_DATA.value in task_data:
@@ -130,7 +133,7 @@ def update_campaign_segment_data(request_data) -> json:
     else:
         raise ValidationFailedException(reason="Invalid Query Key Present")
     where_dict = dict(UniqueId=campaign_builder_campaign_id)
-
+    print("is_ab_camp_split: ", is_ab_camp_split)
     if is_instant:
         cbc_ids_str = f"'{campaign_builder_campaign_id}'"
         cbc_resp = CEDCampaignBuilderCampaign().get_cbc_details_by_cbc_id(cbc_ids_str)
@@ -183,6 +186,7 @@ def update_campaign_segment_data(request_data) -> json:
                 raise ValidationFailedException(reason=f"Unable tp update cssd scheduling status id::{cssd_resp.id}")
         return update_cbc_instance_for_s3_callback(task_data, where_dict, campaign_builder_campaign_id)
     elif is_ab_camp_split is True:
+        print("is_ab_camp_split: ", is_ab_camp_split)
         if task_data["status"] in [AsyncJobStatus.ERROR.value]:
             update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
                                S3DataRefreshStatus="ERROR")
@@ -199,6 +203,7 @@ def update_campaign_segment_data(request_data) -> json:
                                S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
                                S3DataRefreshStatus="SUCCESS",
                                S3DataHeadersList=json.dumps(task_data["response"]["headers_list"]))
+        print("update_dict: ", update_dict)
         update_camp_query_executor_callback_for_retry(task_data, campaign_builder_campaign_id)
         upd_resp = CEDCampaignBuilderCampaign().bulk_update_segment_data_for_cbc_ids(cbcs_ids_for_ab, update_dict)
         if upd_resp["success"] is False:
