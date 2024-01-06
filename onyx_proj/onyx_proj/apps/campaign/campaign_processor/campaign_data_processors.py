@@ -1878,6 +1878,21 @@ def prepare_sms_related_data(cbc_entity, campaign_segment_entity, is_test=False)
             if url_mapping['url'].get('url', None) is not None:
                 url_mapping['url']['content_text'] = url_mapping['url']['url']
 
+    fixed_headers = {
+        header["uniqueId"]: {
+            "unique_id": header["uniqueId"],
+            "column_name": header["columnName"],
+            "mapping_type": header["mappingType"],
+            "content_type": header["contentType"],
+            "header_name": header["headerName"],
+            "file_data_field_type": header["fileDataFieldType"],
+            "encrypted":False,
+        } for header in FIXED_HEADER_MAPPING_COLUMN_DETAILS}
+
+    for variable in campaign_sms_content_entity["variables"]:
+        if variable["master_id"] in fixed_headers:
+            variable["master_header"] = fixed_headers[variable["master_id"]]
+
     campaign_segment_entity.campaign_sms_content_entity = campaign_sms_content_entity_dict
 
     log_exit()
@@ -1925,8 +1940,25 @@ def prepare_email_related_data(cbc_entity, campaign_segment_entity, is_test=Fals
             if url_mapping['url'].get('url', None) is not None:
                 url_mapping['url']['content_text'] = url_mapping['url']['url']
 
+    fixed_headers = {
+        header["uniqueId"]: {
+            "unique_id": header["uniqueId"],
+            "column_name": header["columnName"],
+            "mapping_type": header["mappingType"],
+            "content_type": header["contentType"],
+            "header_name": header["headerName"],
+            "file_data_field_type": header["fileDataFieldType"],
+            "encrypted": False,
+        } for header in FIXED_HEADER_MAPPING_COLUMN_DETAILS}
+
+    for variable in campaign_email_content_entity_dict["variables"]:
+        if variable["master_id"] in fixed_headers:
+            variable["master_header"] = fixed_headers[variable["master_id"]]
+
     campaign_segment_entity.campaign_email_content_entity = campaign_email_content_entity_dict
     campaign_segment_entity.campaign_subjectline_content_entity = campaign_subjectline_content_entity
+
+
 
     log_exit()
     return campaign_segment_entity
@@ -1973,6 +2005,21 @@ def prepare_ivr_related_data(cbc_entity, campaign_segment_entity, is_test=False)
             follow_up_sms['sms']['sender_id_mapping'] = []
             follow_up_sms['sms']['url_mapping'] = []
 
+    fixed_headers = {
+        header["uniqueId"]: {
+            "unique_id": header["uniqueId"],
+            "column_name": header["columnName"],
+            "mapping_type": header["mappingType"],
+            "content_type": header["contentType"],
+            "header_name": header["headerName"],
+            "file_data_field_type": header["fileDataFieldType"],
+            "encrypted": False,
+        } for header in FIXED_HEADER_MAPPING_COLUMN_DETAILS}
+
+    for variable in campaign_ivr_content_entity_dict["variables"]:
+        if variable["master_id"] in fixed_headers:
+            variable["master_header"] = fixed_headers[variable["master_id"]]
+
     # set the ivr content entity
     campaign_segment_entity.campaign_ivr_content_entity = campaign_ivr_content_entity_dict
     log_exit()
@@ -2017,6 +2064,21 @@ def prepare_whatsapp_related_data(cbc_entity, campaign_segment_entity, is_test=F
         if cta_mapping is not None and cta_mapping.get('url', None) is not None and len(cta_mapping.get('url')) > 0:
             if cta_mapping['url'].get('url', None) is not None:
                 cta_mapping['url']['content_text'] = cta_mapping['url']['url']
+
+    fixed_headers = {
+        header["uniqueId"]: {
+            "unique_id": header["uniqueId"],
+            "column_name": header["columnName"],
+            "mapping_type": header["mappingType"],
+            "content_type": header["contentType"],
+            "header_name": header["headerName"],
+            "file_data_field_type": header["fileDataFieldType"],
+            "encrypted": False,
+        } for header in FIXED_HEADER_MAPPING_COLUMN_DETAILS}
+
+    for variable in campaign_whatsapp_content_entity_dict["variables"]:
+        if variable["master_id"] in fixed_headers:
+            variable["master_header"] = fixed_headers[variable["master_id"]]
 
     campaign_segment_entity.campaign_whatsapp_content_entity = campaign_whatsapp_content_entity_dict
 
