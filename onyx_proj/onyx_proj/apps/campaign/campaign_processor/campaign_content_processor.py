@@ -213,7 +213,7 @@ def update_campaign_segment_data(request_data) -> json:
                 logger.error(
                     f"update_campaign_segment_data :: Error while updating status in table CEDCampaignBuilderCampaign for request_id: {campaign_builder_campaign_id}")
                 return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE)
-            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
     elif is_split_flag == 0:
         update_camp_query_executor_callback_for_retry(task_data, campaign_builder_campaign_id)
         # if is split flag is 0 or False, update the data for the corresponding CBC id
@@ -257,7 +257,7 @@ def update_campaign_segment_data(request_data) -> json:
                         logger.error(
                             f"update_campaign_segment_data :: Error while updating status in table CEDCampaignBuilderCampaign for request_id: {campaign_builder_campaign_id}")
                         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE)
-                    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
+                return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
             else:
                 # only update the cbc instance
                 update_camp_query_executor_callback_for_retry(task_data, campaign_builder_campaign_id)
