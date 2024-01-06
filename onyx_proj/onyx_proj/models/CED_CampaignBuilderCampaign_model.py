@@ -376,6 +376,7 @@ class CEDCampaignBuilderCampaign:
 
     def bulk_update_segment_data_for_cbc_ids(self, cbc_ids: str, segment_data: dict):
         query = f"""UPDATE CED_CampaignBuilderCampaign SET S3Path = '{segment_data["S3Path"]}', S3DataRefreshEndDate = '{segment_data["S3DataRefreshEndDate"]}', S3DataHeadersList = '{segment_data["S3DataHeadersList"]}' WHERE UniqueId IN (%s);""" % cbc_ids
+        print("query: ", query)
         return execute_update_query(self.engine, query)
 
     def get_recurring_details_json(self, cbc_id: str):
