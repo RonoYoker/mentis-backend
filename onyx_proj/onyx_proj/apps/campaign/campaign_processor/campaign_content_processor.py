@@ -189,15 +189,15 @@ def update_campaign_segment_data(request_data) -> json:
         print("is_ab_camp_split: ", is_ab_camp_split)
         if task_data["status"] in [AsyncJobStatus.ERROR.value]:
             update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
-                               S3DataRefreshStatus="ERROR")
+                               S3DataRefreshStatus="ERROR", S3Path=None, S3DataHeadersList=None)
         elif task_data["status"] in [AsyncJobStatus.TIMEOUT.value]:
             logger.info(f'Updating Timeout error status, cbc ID : {campaign_builder_campaign_id}')
             update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
-                               S3DataRefreshStatus="TIMEOUT")
+                               S3DataRefreshStatus="TIMEOUT", S3Path=None, S3DataHeadersList=None)
         elif task_data["status"] in [AsyncJobStatus.EMPTY_SEGMENT.value]:
             logger.info(f'Updating Timeout error status, cbc ID : {campaign_builder_campaign_id}')
             update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
-                               S3DataRefreshStatus="EMPTY_SEGMENT", S3Path=None)
+                               S3DataRefreshStatus="EMPTY_SEGMENT", S3Path=None, S3DataHeadersList=None)
         else:
             update_dict = dict(S3Path=task_data["response"]["s3_url"],
                                S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
@@ -228,15 +228,15 @@ def update_campaign_segment_data(request_data) -> json:
             if recurring_details_json.get("is_auto_time_split", False) is True:
                 if task_data["status"] in [AsyncJobStatus.ERROR.value]:
                     update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
-                                       S3DataRefreshStatus="ERROR", S3Path=None)
+                                       S3DataRefreshStatus="ERROR", S3Path=None, S3DataHeadersList=None)
                 elif task_data["status"] in [AsyncJobStatus.TIMEOUT.value]:
                     logger.info(f'Updating Timeout error status, cbc ID : {campaign_builder_campaign_id}')
                     update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
-                                       S3DataRefreshStatus="TIMEOUT", S3Path=None)
+                                       S3DataRefreshStatus="TIMEOUT", S3Path=None, S3DataHeadersList=None)
                 elif task_data["status"] in [AsyncJobStatus.EMPTY_SEGMENT.value]:
                     logger.info(f'Updating Timeout error status, cbc ID : {campaign_builder_campaign_id}')
                     update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
-                                       S3DataRefreshStatus="EMPTY_SEGMENT", S3Path=None)
+                                       S3DataRefreshStatus="EMPTY_SEGMENT", S3Path=None, S3DataHeadersList=None)
                 else:
                     update_dict = dict(S3Path=task_data["response"]["s3_url"],
                                        S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
