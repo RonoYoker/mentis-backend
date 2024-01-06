@@ -1889,7 +1889,7 @@ def prepare_sms_related_data(cbc_entity, campaign_segment_entity, is_test=False)
             "encrypted":False,
         } for header in FIXED_HEADER_MAPPING_COLUMN_DETAILS}
 
-    for variable in campaign_sms_content_entity["variables"]:
+    for variable in campaign_sms_content_entity_dict["variables"]:
         if variable["master_id"] in fixed_headers:
             variable["master_header"] = fixed_headers[variable["master_id"]]
 
