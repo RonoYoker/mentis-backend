@@ -205,6 +205,7 @@ def update_campaign_segment_data(request_data) -> json:
                                S3DataHeadersList=json.dumps(task_data["response"]["headers_list"]))
         print("update_dict: ", update_dict)
         update_camp_query_executor_callback_for_retry(task_data, campaign_builder_campaign_id)
+        print("cbcs_ids_for_ab:", cbcs_ids_for_ab)
         upd_resp = CEDCampaignBuilderCampaign().bulk_update_segment_data_for_cbc_ids(cbcs_ids_for_ab, update_dict)
         if upd_resp["success"] is False:
             logger.error(
@@ -245,6 +246,7 @@ def update_campaign_segment_data(request_data) -> json:
                 # if is_auto_time_split flag is 1 or True, fetch all CBC instances for the campaignBuilderId and bulk update them
                 cbc_ids_db_resp = CEDCampaignBuilderCampaign().get_all_cbc_ids_for_split_campaign(campaign_builder_campaign_id)
                 cbc_placeholder = ', '.join(f"'{ele['UniqueId']}'" for ele in cbc_ids_db_resp)
+                print("cbc_placeholder: ", cbc_placeholder)
                 upd_resp = CEDCampaignBuilderCampaign().bulk_update_segment_data_for_cbc_ids(cbc_placeholder, update_dict)
                 update_camp_query_executor_callback_for_retry(task_data, campaign_builder_campaign_id)
                 if upd_resp["success"] is False:
