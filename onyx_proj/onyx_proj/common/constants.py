@@ -986,7 +986,8 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     's3_data_refresh_start_date': 's3DataRefreshStartDate',
     's3_data_refresh_end_date': 'S3DataRefreshEndDate',
     's3_data_refresh_status': 'S3DataRefreshStatus',
-    's3_segment_refresh_attempts': 'S3SegmentRefreshAttempts'
+    's3_segment_refresh_attempts': 'S3SegmentRefreshAttempts',
+    'mapping_type':"MappingType"
 }
 
 CAMPAIGN_APPROVAL_STATUS_SUBJECT_MAPPING = {
