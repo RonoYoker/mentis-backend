@@ -168,7 +168,7 @@ def update_campaign_segment_data(request_data) -> json:
                         "is_test": False,
                         "split_details": None,
                         "segment_data_s3_path": task_data["response"]["s3_url"],
-                        "segment_headers": task_data["response"]["headers_list"]
+                        "segment_headers": json.dumps(task_data["response"]["headers_list"])
                     }]
         }
         api_response = json.loads(RequestClient(request_type="POST", url=settings.HYPERION_LOCAL_DOMAIN[project_name]
