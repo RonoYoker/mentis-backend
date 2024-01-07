@@ -264,6 +264,10 @@ OTP_APP_USER_MAPPING = {
         "navinder_rajput": {
             "display_name": "Navinder Rajput",
             "mobile_number": 9999248486
+        },
+        "aman_bindal": {
+            "display_name": "Aman Bindal",
+            "mobile_number": 9004929159
         }
     },
     OtpAppName.CAMP_SCHEDULE_TIME_UPDATE.value: {
