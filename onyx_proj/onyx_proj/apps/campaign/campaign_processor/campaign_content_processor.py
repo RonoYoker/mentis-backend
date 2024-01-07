@@ -86,7 +86,7 @@ def update_campaign_segment_data(request_data) -> json:
                     details_message="Invalid Payload.")
 
     is_split_flag_db_resp = CEDCampaignBuilderCampaign().get_is_split_flag_by_cbc_id(campaign_builder_campaign_id)
-    print("is_split_flag_db_resp: ", is_split_flag_db_resp)
+
     if len(is_split_flag_db_resp) == 0:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid CampaignBuilderCampaignId.")
@@ -102,7 +102,7 @@ def update_campaign_segment_data(request_data) -> json:
 
     cbc_ids_str = f"'{campaign_builder_campaign_id}'"
     cbc_resp = CEDCampaignBuilderCampaign().get_cbc_details_by_cbc_id(cbc_ids_str)
-    print("cbc_resp: ", cbc_resp)
+
     if cbc_resp is None:
         raise ValidationFailedException(reason="Invalid cbc Id")
     cbc = cbc_resp[0]
@@ -122,7 +122,6 @@ def update_campaign_segment_data(request_data) -> json:
             cbcs_ids_for_ab = ', '.join(f"'{ele['unique_id']}'" for ele in cbcs_to_update)
 
     task_data = request_data["tasks"]
-    print(task_data)
 
     is_instant = False
     if QueryKeys.SEGMENT_DATA.value in task_data:
@@ -133,7 +132,29 @@ def update_campaign_segment_data(request_data) -> json:
     else:
         raise ValidationFailedException(reason="Invalid Query Key Present")
     where_dict = dict(UniqueId=campaign_builder_campaign_id)
-    print("is_ab_camp_split: ", is_ab_camp_split)
+
+    if task_data["response"].get("headers_list", []) is None or len(task_data["response"].get("headers_list", [])) == 0:
+        update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
+                           S3DataRefreshStatus="ERROR", S3Path=None, S3DataHeadersList=None)
+        update_db_resp = CEDCampaignBuilderCampaign().update_campaign_builder_campaign_instance(update_dict, where_dict)
+        if update_db_resp is False:
+            logger.error(
+                f"update_campaign_segment_data :: Error while updating status in table CEDCampaignBuilderCampaign for request_id: {campaign_builder_campaign_id}")
+        raise ValidationFailedException(
+            reason=f"Headers List not found for mentioned cbc ::{campaign_builder_campaign_id}")
+    else:
+        for header in task_data["response"]["headers_list"]:
+            if header == "" or header is None:
+                update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
+                                   S3DataRefreshStatus="ERROR", S3Path=None, S3DataHeadersList=None)
+                update_db_resp = CEDCampaignBuilderCampaign().update_campaign_builder_campaign_instance(update_dict,
+                                                                                                        where_dict)
+                if update_db_resp is False:
+                    logger.error(
+                        f"update_campaign_segment_data :: Error while updating status in table CEDCampaignBuilderCampaign for request_id: {campaign_builder_campaign_id}")
+                raise ValidationFailedException(
+                    reason=f"Headers Invalid (null or empty) for mentioned cbc ::{campaign_builder_campaign_id}")
+
     if is_instant:
         cbc_ids_str = f"'{campaign_builder_campaign_id}'"
         cbc_resp = CEDCampaignBuilderCampaign().get_cbc_details_by_cbc_id(cbc_ids_str)
@@ -152,6 +173,7 @@ def update_campaign_segment_data(request_data) -> json:
         segment_details = CEDCampaignBuilderCampaign().get_project_name_seg_query_from_campaign_builder_campaign_id(campaign_builder_campaign_id)
         if segment_details is None:
             raise ValidationFailedException(reason=f"Project not found for mentioned cbc ::{campaign_builder_campaign_id}")
+
         project_name = segment_details["project_name"]
         sql_query = segment_details["sql_query"]
 
@@ -186,7 +208,6 @@ def update_campaign_segment_data(request_data) -> json:
                 raise ValidationFailedException(reason=f"Unable tp update cssd scheduling status id::{cssd_resp.id}")
         return update_cbc_instance_for_s3_callback(task_data, where_dict, campaign_builder_campaign_id)
     elif is_ab_camp_split is True:
-        print("is_ab_camp_split: ", is_ab_camp_split)
         if task_data["status"] in [AsyncJobStatus.ERROR.value]:
             update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
                                S3DataRefreshStatus="ERROR", S3Path=None, S3DataHeadersList=None)
@@ -203,9 +224,9 @@ def update_campaign_segment_data(request_data) -> json:
                                S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
                                S3DataRefreshStatus="SUCCESS",
                                S3DataHeadersList=json.dumps(task_data["response"]["headers_list"]))
-        print("update_dict: ", update_dict)
+
         update_camp_query_executor_callback_for_retry(task_data, campaign_builder_campaign_id)
-        print("cbcs_ids_for_ab:", cbcs_ids_for_ab)
+
         for ele in cbcs_to_update:
             where_dict = dict(UniqueId=ele["unique_id"])
             update_db_resp = CEDCampaignBuilderCampaign().update_campaign_builder_campaign_instance(update_dict, where_dict)
@@ -247,7 +268,6 @@ def update_campaign_segment_data(request_data) -> json:
                 # if is_auto_time_split flag is 1 or True, fetch all CBC instances for the campaignBuilderId and bulk update them
                 cbc_ids_db_resp = CEDCampaignBuilderCampaign().get_all_cbc_ids_for_split_campaign(campaign_builder_campaign_id)
                 cbc_placeholder = ', '.join(f"'{ele['UniqueId']}'" for ele in cbc_ids_db_resp)
-                print("cbc_placeholder: ", cbc_placeholder)
                 update_camp_query_executor_callback_for_retry(task_data, campaign_builder_campaign_id)
                 for ele in cbcs_to_update:
                     where_dict = dict(UniqueId=ele["unique_id"])
