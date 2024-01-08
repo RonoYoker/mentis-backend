@@ -117,6 +117,7 @@ def update_campaign_segment_data(request_data) -> json:
                 {"column": "start_date_time", "value": datetime.datetime.utcnow().replace(hour=0,minute=0,second=0) + datetime.timedelta(days=1), "op": "<"},
             ]
             cbcs_to_update = CEDCampaignBuilderCampaign().get_campaign_builder_campaign_details_by_filters(filters)
+            cbcs_to_update = [ele["unique_id"] for ele in cbcs_to_update]
             if cbcs_to_update is None:
                 raise InternalServerError(error="Unable to find cbc list to update")
             cbcs_ids_for_ab = ', '.join(f"'{ele['unique_id']}'" for ele in cbcs_to_update)
@@ -228,7 +229,7 @@ def update_campaign_segment_data(request_data) -> json:
         update_camp_query_executor_callback_for_retry(task_data, campaign_builder_campaign_id)
 
         for ele in cbcs_to_update:
-            where_dict = dict(UniqueId=ele["unique_id"])
+            where_dict = dict(UniqueId=ele)
             update_db_resp = CEDCampaignBuilderCampaign().update_campaign_builder_campaign_instance(update_dict, where_dict)
             if update_db_resp is False:
                 logger.error(
@@ -270,7 +271,7 @@ def update_campaign_segment_data(request_data) -> json:
                 cbcs_to_update = [ele['UniqueId'] for ele in cbc_ids_db_resp]
                 update_camp_query_executor_callback_for_retry(task_data, campaign_builder_campaign_id)
                 for ele in cbcs_to_update:
-                    where_dict = dict(UniqueId=ele["unique_id"])
+                    where_dict = dict(UniqueId=ele)
                     update_db_resp = CEDCampaignBuilderCampaign().update_campaign_builder_campaign_instance(update_dict,
                                                                                                             where_dict)
                     if update_db_resp is False:
