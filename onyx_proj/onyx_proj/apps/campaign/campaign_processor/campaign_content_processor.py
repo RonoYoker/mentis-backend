@@ -267,7 +267,7 @@ def update_campaign_segment_data(request_data) -> json:
                                        S3DataHeadersList=json.dumps(task_data["response"]["headers_list"]))
                 # if is_auto_time_split flag is 1 or True, fetch all CBC instances for the campaignBuilderId and bulk update them
                 cbc_ids_db_resp = CEDCampaignBuilderCampaign().get_all_cbc_ids_for_split_campaign(campaign_builder_campaign_id)
-                cbc_placeholder = ', '.join(f"'{ele['UniqueId']}'" for ele in cbc_ids_db_resp)
+                cbcs_to_update = [ele['UniqueId'] for ele in cbc_ids_db_resp]
                 update_camp_query_executor_callback_for_retry(task_data, campaign_builder_campaign_id)
                 for ele in cbcs_to_update:
                     where_dict = dict(UniqueId=ele["unique_id"])
