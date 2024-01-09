@@ -120,7 +120,7 @@ def update_campaign_segment_data(request_data) -> json:
             cbcs_to_update = [ele["unique_id"] for ele in cbcs_to_update]
             if cbcs_to_update is None:
                 raise InternalServerError(error="Unable to find cbc list to update")
-            cbcs_ids_for_ab = ', '.join(f"'{ele['unique_id']}'" for ele in cbcs_to_update)
+            # cbcs_ids_for_ab = ', '.join(f"'{ele['unique_id']}'" for ele in cbcs_to_update)
 
     task_data = request_data["tasks"]
 
