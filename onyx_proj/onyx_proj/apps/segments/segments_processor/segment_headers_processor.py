@@ -24,6 +24,7 @@ from onyx_proj.models.CED_Projects import *
 from onyx_proj.models.CED_CampaignContentVariableMapping_model import *
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.orm_models.CED_Segment_Filter_model import CED_Segment_Filter
+from onyx_proj.middlewares.HttpRequestInterceptor import Session
 
 logger = logging.getLogger("apps")
 
@@ -305,6 +306,8 @@ def approve_segment_hod(request_data) -> json:
     """
     method_name = "approve_segment_hod"
     logger.debug(f"{method_name} :: request_data: {request_data}")
+    user_session = Session().get_user_session_object()
+    user_mobile = int(user_session.user.mobile_number)
 
     segment_id = request_data.get("segment_id", None)
 
@@ -320,8 +323,11 @@ def approve_segment_hod(request_data) -> json:
     segment = segment[0]
     if segment["status"] != "HOD_APPROVAL_PENDING":
         raise ValidationFailedException(reason="Segment Status not appropriate")
-
-    check_otp_status(segment_id, OtpAppName.SEGMENT_HOD_APPROVAL.value)
+    otp_approval_mobile_numbers = []
+    for key,data in settings.OTP_APP_USER_MAPPING[OtpAppName.SEGMENT_HOD_APPROVAL.value].items():
+        otp_approval_mobile_numbers.append(int(data["mobile_number"]))
+    if user_mobile not in otp_approval_mobile_numbers:
+        check_otp_status(segment_id, OtpAppName.SEGMENT_HOD_APPROVAL.value)
 
     resp = CEDSegment().update_segment(params_dict={"UniqueId":segment_id},update_dict={"Status":"APPROVED"})
 
