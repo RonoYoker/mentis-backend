@@ -131,19 +131,19 @@ class CEDCampaignBuilderCampaign:
             elif channel == ContentType.SMS.value:
                 sender_id = f"is null" if resp.get('SenderId') is None else f"= '{resp.get('SenderId')}'"
                 url_id = f"is null" if resp.get('UrlId') is None else f"= '{resp.get('UrlId')}'"
-                query = f"Select cbc.UniqueId, cbc2.UniqueId as cbc_id from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilderSMS as sms on sms.MappingId = cbc.UniqueId join CED_CampaignBuilderCampaign cbc2 on cbc2.CampaignBuilderId = cbc.CampaignBuilderId and cbc2.SegmentId = cbc.SegmentId WHERE cbc.UniqueId = '{cbc_id}' and sms.SmsId = '{resp.get('SmsId')}' and sms.SenderId {sender_id} and sms.UrlId {url_id}"
+                query = f"Select cbc.UniqueId, cbc2.UniqueId as cbc_id from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilderCampaign cbc2 on cbc2.CampaignBuilderId = cbc.CampaignBuilderId and cbc2.SegmentId = cbc.SegmentId join CED_CampaignBuilderSMS as sms on sms.MappingId = cbc2.UniqueId WHERE cbc.UniqueId = '{cbc_id}' and sms.SmsId = '{resp.get('SmsId')}' and sms.SenderId {sender_id} and sms.UrlId {url_id}"
             elif channel == ContentType.IVR.value:
-                query = f"Select cbc.UniqueId, cbc2.UniqueId as cbc_id from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilderIVR as ivr on ivr.MappingId = cbc.UniqueId join CED_CampaignBuilderCampaign cbc2 on cbc2.CampaignBuilderId = cbc.CampaignBuilderId and cbc2.SegmentId = cbc.SegmentId WHERE cbc.UniqueId = '{cbc_id}' and ivr.IvrId = '{resp.get('IvrId')}'"
+                query = f"Select cbc.UniqueId, cbc2.UniqueId as cbc_id from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilderCampaign cbc2 on cbc2.CampaignBuilderId = cbc.CampaignBuilderId and cbc2.SegmentId = cbc.SegmentId join CED_CampaignBuilderIVR as ivr on ivr.MappingId = cbc2.UniqueId WHERE cbc.UniqueId = '{cbc_id}' and ivr.IvrId = '{resp.get('IvrId')}'"
             elif channel == ContentType.EMAIL.value:
                 subject_line_id = f"is null" if resp.get('SubjectLineId') is None else f"= '{resp.get('SubjectLineId')}'"
                 url_id = f"is null" if resp.get('UrlId') is None else f"= '{resp.get('UrlId')}'"
-                query = f"Select cbc.UniqueId, cbc2.UniqueId as cbc_id from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilderEmail as email on email.MappingId = cbc.UniqueId join CED_CampaignBuilderCampaign cbc2 on cbc2.CampaignBuilderId = cbc.CampaignBuilderId and cbc2.SegmentId = cbc.SegmentId WHERE cbc.UniqueId = '{cbc_id}' and email.EmailId = '{resp.get('EmailId')}' and email.SubjectLineId {subject_line_id} and email.UrlId {url_id}"
+                query = f"Select cbc.UniqueId, cbc2.UniqueId as cbc_id from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilderCampaign cbc2 on cbc2.CampaignBuilderId = cbc.CampaignBuilderId and cbc2.SegmentId = cbc.SegmentId join CED_CampaignBuilderEmail as email on email.MappingId = cbc2.UniqueId WHERE cbc.UniqueId = '{cbc_id}' and email.EmailId = '{resp.get('EmailId')}' and email.SubjectLineId {subject_line_id} and email.UrlId {url_id}"
             elif channel == ContentType.WHATSAPP.value:
                 url_id = f"is null" if resp.get('UrlId') is None else f"= '{resp.get('UrlId')}'"
                 footer_id = f"is null" if resp.get('FooterId') is None else f"= '{resp.get('FooterId')}'"
                 media_id = f"is null" if resp.get('MediaId') is None else f"= '{resp.get('MediaId')}'"
                 header_id = f"is null" if resp.get('HeaderId') is None else f"= '{resp.get('HeaderId')}'"
-                query = f"Select cbc.UniqueId, cbc2.UniqueId as cbc_id from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilderWhatsApp as wa on wa.MappingId = cbc.UniqueId join CED_CampaignBuilderCampaign cbc2 on cbc2.CampaignBuilderId = cbc.CampaignBuilderId and cbc2.SegmentId = cbc.SegmentId WHERE cbc.UniqueId = '{cbc_id}' and wa.WhatsAppContentId = '{resp.get('WhatsAppContentId')}' and wa.FooterId {footer_id} and wa.HeaderId {header_id} and wa.MediaId {media_id} and wa.UrlId {url_id}"
+                query = f"Select cbc.UniqueId, cbc2.UniqueId as cbc_id from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilderCampaign cbc2 on cbc2.CampaignBuilderId = cbc.CampaignBuilderId and cbc2.SegmentId = cbc.SegmentId join CED_CampaignBuilderWhatsApp as wa on wa.MappingId = cbc2.UniqueId WHERE cbc.UniqueId = '{cbc_id}' and wa.WhatsAppContentId = '{resp.get('WhatsAppContentId')}' and wa.FooterId {footer_id} and wa.HeaderId {header_id} and wa.MediaId {media_id} and wa.UrlId {url_id}"
             else:
                 return None
         resp = dict_fetch_query_all(self.curr, query)
