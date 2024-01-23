@@ -37,6 +37,7 @@ HYPERION_LOCAL_DOMAIN = {
     "YBL_CC_UPG": "http://m-prod-ybl-hyp-elb-173392471.ap-south-1.elb.amazonaws.com/",
     "YBL_ACQ": "http://m-prod-ybl-hyp-elb-173392471.ap-south-1.elb.amazonaws.com/",
     "YBL_OVL": "http://m-prod-ybl-hyp-elb-173392471.ap-south-1.elb.amazonaws.com/",
+    "YBL_STE": "http://m-prod-ybl-hyp-elb-173392471.ap-south-1.elb.amazonaws.com/",
     "YBL_CC_ENBL": "http://m-prod-ybl-hyp-elb-173392471.ap-south-1.elb.amazonaws.com/",
     "YBL_TXN_TO_EMI": "http://m-prod-ybl-hyp-elb-173392471.ap-south-1.elb.amazonaws.com/",
     "ABL_Ethera": "http://m-prod-abl-hyp-elb-1486215713.ap-south-1.elb.amazonaws.com/"
@@ -64,6 +65,7 @@ ONYX_LOCAL_DOMAIN = {
     "yblclejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
     "yblacqjlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
     "yblovljlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
+    "yblstejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
     "yblccenbldsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
     "ybltxntoemimablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
     "yblccujlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
@@ -95,6 +97,7 @@ ONYX_LOCAL_CAMP_VALIDATION = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapra
                               "iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                               "iblsplitlimitblpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                               "yblccenbldsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
+                              "yblstejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                               "yblovljlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                               "ibldcupgsdsmablpxpqclospkniackwmveqlhlmztdjplapyndmenfn88nausprj"]
 
@@ -192,6 +195,7 @@ USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN = ["vstethjlsdsmablpxpqclospkni88ewmv
                                               "iblsplitlimitblpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                                               "yblccenbldsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                                               "yblovljlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
+                                              "yblstejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                                               "ibldcupgsdsmablpxpqclospkniackwmveqlhlmztdjplapyndmenfn88nausprj"]
 
 TEST_CAMPAIGN_ENABLED = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj",
@@ -217,6 +221,7 @@ TEST_CAMPAIGN_ENABLED = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenf
                          "iblsplitlimitblpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                          "yblccenbldsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                          "yblovljlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
+                         "yblstejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                          "ibldcupgsdsmablpxpqclospkniackwmveqlhlmztdjplapyndmenfn88nausprj"]
 
 HYPERION_TEST_CAMPAIGN_URL = "https://hyperiontool.com/hyperioncampaigntooldashboard/campaignbuilder/testcampaign/"
