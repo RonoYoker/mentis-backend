@@ -369,7 +369,7 @@ class CEDCampaignBuilderCampaign:
                     CED_CampaignBuilderCampaign
                 WHERE
                     UniqueId = '{cbc_id}')
-            AND cbc.StartDateTime > NOW();
+            AND cbc.EndDateTime > NOW();
         """
         resp = dict_fetch_query_all(self.curr, query)
         return resp
