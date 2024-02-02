@@ -2,6 +2,7 @@ import json
 import http
 from django.shortcuts import HttpResponse
 from django.conf import settings
+import datetime
 
 from onyx_proj.common.constants import Roles
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
@@ -30,6 +31,8 @@ from onyx_proj.apps.campaign.campaign_processor.campaign_content_processor impor
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from onyx_proj.models.CED_User_model import CEDUser
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
+from onyx_proj.models.CED_Projects import CEDProjects
+from onyx_proj.apps.campaign.app_settings import CAMPAIGN_ERROR_STATUS_CODES
 
 @csrf_exempt
 @UserAuth.user_authentication()
@@ -518,3 +521,50 @@ def get_validation_status(request):
 
     status_code = http.HTTPStatus.OK
     return HttpResponse(json.dumps(data, default=str), status=status_code, content_type="application/json")
+
+@csrf_exempt
+def campaign_error_alert(request):
+
+    projects = CEDProjects().get_all_project_entity_with_active_check(active_check=True)
+
+    if len(projects) == 0:
+        logger.info(f'No projects found, Time : {datetime.datetime.utcnow()}')
+        return HttpResponse(json.dumps({"message": "No projects found"}, default=str), status= http.HTTPStatus.BAD_REQUEST,content_type="application/json")
+
+    alerted_campaign_instance_ids = []
+
+    for project in projects:
+
+        data = {
+            "body": {
+                "project_id": project.get('unique_id'),
+                "filter_type": "ALL",
+                "start_date": datetime.datetime.utcnow().strftime('%Y-%m-%d'),
+                "end_date": datetime.datetime.utcnow().strftime('%Y-%m-%d')
+            }
+        }
+
+        # fetch campaign data for a project_id which are scheduled for current day
+        response = get_filtered_dashboard_tab_data(data)
+
+        if len(response.get('data')) == 0:
+            logger.info(f'No data found, Time : {datetime.datetime.utcnow()}')
+
+        for resp in response.get('data', []):
+            if resp.get('status') in CAMPAIGN_ERROR_STATUS_CODES:
+                alerted_campaign_instance_ids.append(resp)
+                telegram_alert_message = (f"Campaign Title - {resp.get('campaign_title')}\n"
+                                  f"Instance Id - {resp.get('campaign_instance_id')}\n"
+                                  f"Project Name - {project.get('name')}\n"
+                                  f"went into status - {resp.get('status')}\n"
+                                  f"Campaign start time - {resp.get('start_date_time')}\n"
+                                  f"Campaign end time - {resp.get('end_date_time')}\n")
+
+                try:
+                    TelegramUtility().process_telegram_alert(project.get('unique_id'), telegram_alert_message, "ERROR")
+                except Exception as e:
+                    logger.error(f"An error occurred while processing Telegram alert: {e}")
+
+    logger.info(f'Instance ID reported in Error group are : {alerted_campaign_instance_ids}, Time : {datetime.datetime.utcnow()}')
+                    
+    return HttpResponse(json.dumps(alerted_campaign_instance_ids, default=str), status=http.HTTPStatus.OK, content_type="application/json")

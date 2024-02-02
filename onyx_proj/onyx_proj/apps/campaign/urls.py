@@ -38,5 +38,6 @@ urlpatterns = [
     path("local/update_camp_scheduling_time_ccd/", views.update_camp_scheduling_time_in_campaign_creation_details),
     path("generate_campaign_builder_campaign/", views.generate_campaign_builder_campaign),
     path("replay_error_campaign/", views.replay_error_campaign),
-    path("local/check_campaign_processing/", views.check_campaign_status)
+    path("local/check_campaign_processing/", views.check_campaign_status),
+    path("campaign_error_alert/", views.campaign_error_alert),
 ]

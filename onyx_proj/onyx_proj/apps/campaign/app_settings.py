@@ -13,3 +13,4 @@ CBC_DICT = {
     "split_details": None
 }
 
+CAMPAIGN_ERROR_STATUS_CODES = ["SCHEDULER ERROR", "ERROR"]
