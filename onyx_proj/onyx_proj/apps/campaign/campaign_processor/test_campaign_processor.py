@@ -358,14 +358,14 @@ def fetch_test_campaign_validation_status(request_data) -> json:
     logger.info(f"method: {method_name}, local request response {response}")
 
     if response.get("success") is False:
-        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, data=result,
                     details_message="Onyx local API not working")
     response = response['data']
     if response.get("result", "FAILURE") != "SUCCESS":
-        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, data=result,
                     details_message=response.get('details_message', "Something Went Wrong"))
     elif response.get('data', None) is None:
-        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result,
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, data=result,
                     details_message=response.get('details_message', None))
     # case when no data found for campaign
     if response['data'].get('campaign_id', None) is None or cssd_ids_dict.get(str(response['data']["campaign_id"]),
