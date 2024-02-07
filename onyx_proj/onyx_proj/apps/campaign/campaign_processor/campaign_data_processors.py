@@ -4828,7 +4828,7 @@ def prepare_cjb_camp_campaign_list(data, recurring_detail):
     
 def validate_segment_parent_and_child(parent_id, child_id):
     method_name = "validate_segment_parent_and_child"
-    segment_entity = CEDSegment().get_segment_data_by_unique_id(child_id)
+    segment_entity = CEDSegment().get_active_data_by_unique_id(child_id)
     if len(segment_entity) == 0:
         raise BadRequestException(method=method_name, reason="Segment not in valid state.")
     if segment_entity[0].get("parent_id") != parent_id:
