@@ -4060,7 +4060,7 @@ def prepare_seg_based_campaign_list(data, recurring_detail):
                     variant['filter_json'] = json.dumps(variant_dict["filter_json"]["segment_filter"])
                     variant['segment_id'] = variant_dict["filter_json"]["sub_segment_id"]
                     if not validate_segment_parent_and_child(segment_id, variant_dict["filter_json"]["sub_segment_id"]):
-                        return BadRequestException(method=method_name, reason="Subsegment does not belong to parent.")
+                        raise BadRequestException(method=method_name, reason="Subsegment does not belong to parent.")
 
                 recurring_dates = generate_schedule(recurring_detail, variant_dict["start_time"], variant_dict["end_time"])
                 if len(recurring_dates) < 1:
@@ -4164,7 +4164,7 @@ def prepare_template_based_campaign_list(data, recurring_detail):
                         variant['filter_json'] = json.dumps(variant_dict["filter_json"]["segment_filter"])
                         campaign_segments_list.append(variant_dict["filter_json"]["sub_segment_id"])
                         if not validate_segment_parent_and_child(segment_id, variant_dict["filter_json"]["sub_segment_id"]):
-                            return BadRequestException(method=method_name,
+                            raise BadRequestException(method=method_name,
                                                        reason="Subsegment does not belong to parent.")
                 elif segment_type == SegmentABTypes.ATTRIBUTE.value:
                     execution_config_id = uuid.uuid4().hex
@@ -4174,7 +4174,7 @@ def prepare_template_based_campaign_list(data, recurring_detail):
                     variant['segment_id'] = variant_dict["filter_json"]["sub_segment_id"]
                     campaign_segments_list.append(variant_dict["filter_json"]["sub_segment_id"])
                     if not validate_segment_parent_and_child(segment_id, variant_dict["filter_json"]["sub_segment_id"]):
-                        return BadRequestException(method=method_name, reason="Subsegment does not belong to parent.")
+                        raise BadRequestException(method=method_name, reason="Subsegment does not belong to parent.")
 
                 recurring_dates = generate_schedule(recurring_detail, variant_dict["start_time"], variant_dict["end_time"])
                 if len(recurring_dates) < 1:
@@ -4628,7 +4628,7 @@ def prepare_recurring_camp_campaign_list(data, recurring_detail):
                     variant['filter_json'] = json.dumps(variant_dict["filter_json"]["segment_filter"])
                     variant['segment_id'] = variant_dict["filter_json"]["sub_segment_id"]
                     if not validate_segment_parent_and_child(segment_id, variant_dict["filter_json"]["sub_segment_id"]):
-                        return BadRequestException(method=method_name, reason="Subsegment does not belong to parent.")
+                        raise BadRequestException(method=method_name, reason="Subsegment does not belong to parent.")
 
                 recurring_dates = generate_schedule(recurring_detail, variant_dict["start_time"],
                                                     variant_dict["end_time"])
