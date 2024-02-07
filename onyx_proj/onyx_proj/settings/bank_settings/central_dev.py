@@ -197,3 +197,18 @@ TEMPLATE_VALIDATION_LINK = {
     "vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj": "vstp.in",
     "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "locl.in"
 }
+
+TEST_CAMPAIGN_ENABLED = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                         "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                         "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                         "ablhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                         "iblaocjlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                         "iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                         "ablhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                         "iblspllimdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                         "yblclejlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                         "yblacqjlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                         "yblccenbljlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nprj",
+                         "yblovljlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                         "yblccujlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                         "yblstejlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj"]

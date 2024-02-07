@@ -227,3 +227,13 @@ class CEDSegment:
         ]
         res = update(self.engine, self.table, filter_list, update_dict)
         return res
+
+    def get_multiple_segment_details(self, unique_id_list):
+        filter_list = [
+            {"column": "unique_id", "value": unique_id_list, "op": "IN"}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+
+        if res is None or len(res) <= 0:
+            return None
+        return res

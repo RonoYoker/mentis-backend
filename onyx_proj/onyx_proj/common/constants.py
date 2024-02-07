@@ -94,7 +94,8 @@ BASE_DASHBOARD_TAB_QUERY = """
 SELECT 
   cb.Id as campaign_id, 
   cb.Name as campaign_title, 
-  cb.UniqueId as campaign_builder_unique_id, 
+  cb.UniqueId as campaign_builder_unique_id,
+  cb.Version as version, 
   cbc.UniqueId as campaign_builder_campaign_unique_id, 
   cbc.ContentType as channel, 
   cbc.FilterJson as filter_json, 
@@ -989,7 +990,26 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     's3_data_refresh_end_date': 'S3DataRefreshEndDate',
     's3_data_refresh_status': 'S3DataRefreshStatus',
     's3_segment_refresh_attempts': 'S3SegmentRefreshAttempts',
-    'mapping_type':"MappingType"
+    'mapping_type':"MappingType",
+    'segment_data': 'SegmentData',
+    'segment_builder_id': 'SegmentBuilderId',
+    'include_all': 'IncludeAll',
+    'sql_query': 'SqlQuery',
+    'campaign_sql_query': 'CampaignSqlQuery',
+    'email_campaign_sql_query': 'EmailCampaignSqlQuery',
+    'data_image_sql_query': 'DataImageSqlQuery',
+    'test_campaign_sql_query': 'TestCampaignSqlQuery',
+    'expected_count': 'ExpectedCount',
+    'ever_scheduled': 'EverScheduled',
+    'last_campaign_date': 'LastCampaignDate',
+    'type': 'Type',
+    'refresh_date': 'RefreshDate',
+    'refresh_status': 'RefreshStatus',
+    'count_refresh_start_date': 'CountRefreshStartDate',
+    'count_refresh_end_date': 'CountRefreshEndDate',
+    'data_refresh_start_date': 'DataRefreshStartDate',
+    'data_refresh_end_date': 'DataRefreshEndDate',
+    'is_validated': 'isValidated'
 }
 
 CAMPAIGN_APPROVAL_STATUS_SUBJECT_MAPPING = {
@@ -1258,6 +1278,7 @@ class CampaignCategory(Enum):
     AB_Segment = "AB_Segment"
     AB_Content = "AB_Content"
     Recurring = "Recurring"
+    Recurring_new = "recurring_new"
     Campaign_Journey_Builder = "Campaign_Journey_Builder"
 
 

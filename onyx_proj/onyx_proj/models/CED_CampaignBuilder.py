@@ -42,7 +42,7 @@ class CEDCampaignBuilder:
         baseQuery = """SELECT cb.Id AS id, cb.UniqueId AS unique_id, cb.Name AS name, cb.SegmentName AS segment_name, 
         cb.Status AS status, cb.CreatedBy AS created_by, min(cbc.StartDateTime) AS start_date_time, cb.ApprovedBy AS 
         approved_by, cb.RecordsInSegment AS segment_records, cb.Type AS type, cb.IsActive as active, cb.ErrorMsg as error_message, cb.CampaignCategory
-         as campaign_category , cb.IsRecurring AS is_recurring, cb.RecurringDetail AS recurring_details, cb.IsStarred as
+         as campaign_category , cb.IsRecurring AS is_recurring, cb.Version as version, cb.RecurringDetail AS recurring_details, cb.IsStarred as
           is_starred, cbc.ContentType AS channel, COUNT(*) AS instance_count, cb.Description as description, cb.IsManualValidationMandatory as 
         is_manual_validation_mandatory, cbc.IsValidatedSystem as is_validated_system, GROUP_CONCAT(cbc.TestCampignState separator ',') as test_campaign_state_list FROM 
           CED_CampaignBuilder cb LEFT JOIN CED_Segment cs ON cs.UniqueId = cb.SegmentId JOIN CED_CampaignBuilderCampaign

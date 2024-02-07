@@ -455,6 +455,13 @@ def generate_campaign_builder_campaign(request):
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
 
+@csrf_exempt
+@UserAuth.user_authentication()
+def validate_campaign_and_slots(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    response = prepare_campaign_builder_campaign(request_body)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
 
 
 @csrf_exempt

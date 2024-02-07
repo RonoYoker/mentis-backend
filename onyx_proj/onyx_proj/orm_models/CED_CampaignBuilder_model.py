@@ -36,6 +36,8 @@ class CED_CampaignBuilder(Base, Orm_helper):
     campaign_list = relationship("CED_CampaignBuilderCampaign")
     segment_data = relationship("CED_Segment", uselist=False)
     is_starred = Column("IsStarred", Boolean,default=False)
+    request_meta = Column("RequestMeta", String)
+    version = Column("Version", String, default="V2")
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)

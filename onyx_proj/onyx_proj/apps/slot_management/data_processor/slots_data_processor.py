@@ -42,22 +42,22 @@ def vaildate_campaign_for_scheduling(request_data):
     if segment_id is not None:
         project_id = CEDSegment().get_project_id_by_segment_id(segment_id)
         if project_id is None:
-            return dict(status_code=200, result=TAG_FAILURE, response={"error": "Invalid ProjectId Associated"})
+            return dict(status_code=400, result=TAG_FAILURE, response={"error": "Invalid ProjectId Associated"})
 
         segment_count = CEDSegment().get_segment_count_by_unique_id(segment_id)
         if segment_count == 0:
-            return dict(status_code=200, result=TAG_FAILURE, response={"error": "No data found for this Segment"})
+            return dict(status_code=400, result=TAG_FAILURE, response={"error": "No data found for this Segment"})
 
 
     project_data = CEDProjects().get_project_bu_limits_by_project_id(project_id)
     if project_data is None:
-        return dict(status_code=200, result=TAG_FAILURE, response={"error": "No project data found for given project id"})
+        return dict(status_code=400, result=TAG_FAILURE, response={"error": "No project data found for given project id"})
     business_unit_id = project_data.get("business_unit_id",None)
     project_threshold = json.loads(project_data.get("project_limit",None))
     business_unit_threshold = json.loads(project_data.get("bu_limit", None))
     if business_unit_id is None or project_threshold is None or business_unit_threshold is None\
             or project_threshold == "" or business_unit_threshold == "":
-        return dict(status_code=200, result=TAG_FAILURE, response={"error": "Invalid project details Associated"})
+        return dict(status_code=400, result=TAG_FAILURE, response={"error": "Invalid project details Associated"})
 
     for campaign in campaigns_list:
         camp_date = datetime.strptime(campaign.get("startDateTime"),"%Y-%m-%d %H:%M:%S").date()
@@ -69,13 +69,13 @@ def vaildate_campaign_for_scheduling(request_data):
     valid_bu_campaigns = fetch_valid_bu_campaigns(content_date_keys_to_validate, dates_to_validate, business_unit_id,
                                                   campaign_id)
     if valid_bu_campaigns is None:
-        return dict(status_code=200, result=TAG_FAILURE,
+        return dict(status_code=400, result=TAG_FAILURE,
                     response={"error": "Unable to fetch BU campaigns for processing"})
 
     valid_project_campaigns = fetch_valid_project_campaigns(content_date_keys_to_validate, dates_to_validate, project_id,
                                                   campaign_id)
     if valid_project_campaigns is None:
-        return dict(status_code=200, result=TAG_FAILURE,
+        return dict(status_code=400, result=TAG_FAILURE,
                     response={"error": "Unable to fetch Project campaigns for processing"})
 
 
@@ -83,7 +83,11 @@ def vaildate_campaign_for_scheduling(request_data):
     campaign_validate_resp = []
     affected_campaigns = []
 
-    campaigns_list = split_seg_count_by_split_detail(campaigns_list)
+    campaigns_list_result = split_seg_count_by_split_detail(campaigns_list)
+    if campaigns_list_result["result"] != TAG_SUCCESS:
+        return dict(status_code=400, result=TAG_FAILURE,
+                    response=campaigns_list_result.get("response", {"error": "Unable to process segment"}))
+    campaigns_list = campaigns_list_result["data"]
 
     for campaign in campaigns_list:
         camp_date = datetime.strptime(campaign.get("startDateTime"),"%Y-%m-%d %H:%M:%S").date()
@@ -160,11 +164,11 @@ def split_seg_count_by_split_detail(campaigns_list):
             segment_ids.append(campaign.get("segment_id"))
 
     if len(segment_ids) < 1:
-        return campaigns_list
+        return dict(status_code=200, result=TAG_SUCCESS, data=campaigns_list)
 
     resp = CEDSegment().get_segment_count_by_unique_id_list(segment_ids)
     if resp is None or len(resp) < 1:
-        return dict(status_code=200, result=TAG_FAILURE,
+        return dict(status_code=400, result=TAG_FAILURE,
                     response={"error": "Unable to fetch Segment attribute counts."})
 
     seg_id_count = {val['UniqueId']: val['Records'] for val in resp}
@@ -182,7 +186,7 @@ def split_seg_count_by_split_detail(campaigns_list):
             else:
                 campaign['count'] = count
 
-    return campaigns_list
+    return dict(status_code=200, result=TAG_SUCCESS, data=campaigns_list)
 
 
 def get_count_by_split_details(split_detail, count):

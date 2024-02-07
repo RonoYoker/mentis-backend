@@ -56,6 +56,7 @@ ONYX_LOCAL_DOMAIN = {
     "vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyx-elb-1846785611.ap-south-1.elb.amazonaws.com",
     "iblcrdjlsdsmablpx55clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
     "iblaocjlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
+    "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
     "iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
     "ibldcuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
     "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",

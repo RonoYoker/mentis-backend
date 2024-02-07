@@ -127,3 +127,13 @@ class CEDCampaignSMSContent:
         except Exception as ex:
             return dict(status=False, message=str(ex))
         return dict(status=True, response=response)
+
+    def get_multiple_content_details(self, unique_id_list):
+        filter_list = [
+            {"column": "unique_id", "value": unique_id_list, "op": "IN"}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+
+        if res is None or len(res) <= 0:
+            return None
+        return res

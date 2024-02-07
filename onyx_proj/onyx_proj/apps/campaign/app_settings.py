@@ -8,7 +8,7 @@ CBC_DICT = {
     "input_start_date_time": "",
     "input_end_date_time": "",
     "vendor_config_id": "",
-    "segment_id": "",
+    "segment_id": None,
     "filter_json": None,
     "split_details": None
 }
