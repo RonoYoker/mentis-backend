@@ -192,7 +192,7 @@ class CEDSegment:
     def get_active_data_by_unique_id(self, uid):
         filter_list = [
             {"column": "unique_id", "value": uid, "op": "=="},
-            {"column": "is_active", "value": 1, "op": "=="}
+            {"column": "active", "value": 1, "op": "=="}
         ]
         res = fetch_rows(self.engine, self.table, filter_list)
         return res
