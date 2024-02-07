@@ -4762,7 +4762,7 @@ def prepare_cjb_camp_campaign_list(data, recurring_detail):
                 variant_dict["execution_config_id"] = execution_config_id
                 variant['content_type'] = variant_dict["channel"]
                 variant['vendor_config_id'] = variant_dict["template_info"]["vendor_config_id"]
-                variant['segment_id'] = segment_id
+                # variant['segment_id'] = segment_id
                 schedule_details = {
                     "campaign_type": "SCHEDULELATER",
                     "repeat_type": "ONE_TIME",
