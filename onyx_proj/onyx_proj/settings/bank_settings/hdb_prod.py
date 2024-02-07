@@ -47,3 +47,4 @@ SNS_SEGMENT_EVALUATOR = "PROD_HYP_DK_Campaign_Segment_Evaluator"
 QUERY_EXECUTION_JOB_BUCKET = "hdb-prod-async-query-execution-response"
 
 MKT_CLICKDATA_FLAG = False
+SANDESH_SEND_COMM = "http://internal-m-prod-sandesh-elb-880723889.ap-south-1.elb.amazonaws.com/api/send_communication"

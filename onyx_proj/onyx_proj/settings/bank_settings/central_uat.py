@@ -14,10 +14,10 @@ INFRA_CONF = fetch_secrets_from_secret_manager(secret_name, region_name)
 DATABASES = INFRA_CONF["DATABASE"]
 
 BANK_LEVEL_CAMPAIGN_THRESHOLDS_PER_MINUTE = {
-  "SMS": 200,
-  "EMAIL": 200,
-  "IVR": 200,
-  "WHATSAPP": 200
+    "SMS": 200,
+    "EMAIL": 200,
+    "IVR": 200,
+    "WHATSAPP": 200
 }
 
 ACTIVE_DATABASE = "creditascampaignengine"
@@ -75,6 +75,7 @@ ONYX_LOCAL_DOMAIN = {
     "iblspllimdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
 }
 
+
 ONYX_LOCAL_CAMP_VALIDATION = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj","ibldcuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                               "iblccuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj","iblocljlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                               "iblcrdjlsdsmablpx55clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj","iblaocjlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
@@ -100,7 +101,6 @@ SEGMENT_AES_KEYS = INFRA_CONF["SEGMENT_AES_KEYS"]
 ONYX_LOCAL_RSA_KEYS = INFRA_CONF["ONYX_LOCAL_RSA_KEYS"]
 ONYX_CENTRAL_RSA_KEY = INFRA_CONF["ONYX_CENTRAL_RSA_KEY"]
 
-
 CC_USER_EMAIL_ID = []
 BCC_USER_EMAIL_ID = []
 
@@ -110,7 +110,6 @@ BCC_CAMPAIGN_DEACTIVATE_EMAIL_ID = []
 
 CC_LIST = []
 BCC_LIST = []
-
 
 # *********** CELERY CONFIGURATION ********************************
 BROKER_URL = f"redis://{INFRA_CONF['BROKER_URL']}:6379/12"
@@ -157,7 +156,6 @@ VENDOR_CONFIG = {
     }
 }
 
-
 USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                                               "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                                               "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
@@ -177,7 +175,6 @@ TEST_CAMPAIGN_ENABLED = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenf
                          "yblovljlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                          "yblccujlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                          "yblstejlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj"]
-
 
 OTP_APP_USER_MAPPING = {
     OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value: {
@@ -224,7 +221,7 @@ OTP_APP_USER_MAPPING = {
             "mobile_number": 9999332793
         }
     },
-    OtpAppName.FILE_DEPENDENCY_OVERRIDE.value:  {
+    OtpAppName.FILE_DEPENDENCY_OVERRIDE.value: {
         "divyansh_jain": {
             "display_name": "Divyansh Jain",
             "mobile_number": 8929294241
@@ -246,7 +243,7 @@ OTP_APP_USER_MAPPING = {
             "mobile_number": 9999332793
         }
     },
-    OtpAppName.SEGMENT_HOD_APPROVAL.value:  {
+    OtpAppName.SEGMENT_HOD_APPROVAL.value: {
         "ritik_saini": {
             "display_name": "Ritik Saini",
             "mobile_number": 9871880272
@@ -268,3 +265,25 @@ HYPERION_CENTRAL_API_CALL = {
 }
 
 WEB_PROTOCOL = "http://"
+TEMPLATE_SANDESH_CALLBACK = "http://onyxuat.hyperiontool.com"
+
+# Template Validation Links
+TEMPLATE_VALIDATION_LINK = {
+    "iblcrdjlsdsmablpx55clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "uat.inbl.in",
+    "iblaocjlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "uat.inbl.in",
+    "iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "uat.inbl.in",
+    "ibldcuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "uat.inbl.in",
+    "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "uat.inbl.in",
+    "iblccuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "uat.inbl.in",
+    "iblocljlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "uat.inbl.in",
+    "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd": "bit.ly/2TDeg5K",
+    "yblclejlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "uat.ccybl.in",
+    "yblccujlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "uat.ccybl.in",
+    "yblacqjlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "uat.ccybl.in",
+    "yblovljlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "uat.ccybl.in",
+    "yblccenbljlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nprj": "uat.ccybl.in",
+    "ybltxntoemimabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "uat.ccybl.in",
+    "ablhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "https://uatpay.axisbank.com/",
+    "iblspllimdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "uat.inbl.in",
+    "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "uat.inbl.in"
+}

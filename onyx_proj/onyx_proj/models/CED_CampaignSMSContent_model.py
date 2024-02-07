@@ -4,6 +4,7 @@ from onyx_proj.common.constants import CampaignContentStatus, ContentFetchModes
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignSMSContent
 from onyx_proj.common.sqlalchemy_helper import *
+
 logger = logging.getLogger("apps")
 
 
@@ -67,13 +68,14 @@ class CEDCampaignSMSContent:
         if len(status_list) > 0:
             filter_list.append({"column": "status", "value": status_list, "op": "IN"})
 
-        res = fetch_rows_limited(self.engine, self.table, filter_list, [], ["variables.master_header", "tag_mapping", "url_mapping.url",
-                                                                            "sender_id_mapping.sender_id"])
+        res = fetch_rows_limited(self.engine, self.table, filter_list, [],
+                                 ["variables.master_header", "tag_mapping", "url_mapping.url",
+                                  "sender_id_mapping.sender_id"])
         if res is None or len(res) <= 0:
             return None
         return res[0]
 
-    def get_sms_content_by_unique_id(self,sms_id, status_list):
+    def get_sms_content_by_unique_id(self, sms_id, status_list):
         filter_list = [
             {"column": "unique_id", "value": sms_id, "op": "=="},
             {"column": "is_deleted", "value": 0, "op": "=="},
@@ -114,3 +116,14 @@ class CEDCampaignSMSContent:
         ]
         res = update(self.engine, self.table, filter_list, update_dict)
         return res
+
+    def update_isValidated(self, content_id, is_validated):
+        filter_list = [
+            {"column": "unique_id", "value": content_id, "op": "=="},
+        ]
+        update_dict = {"is_validated": is_validated}
+        try:
+            response = update(self.engine, self.table, filter_list=filter_list, update_dict=update_dict)
+        except Exception as ex:
+            return dict(status=False, message=str(ex))
+        return dict(status=True, response=response)

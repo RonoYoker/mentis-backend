@@ -49,3 +49,4 @@ QUERY_EXECUTION_JOB_BUCKET = "ibl-prod-async-query-execution-response"
 MKT_CLICKDATA_FLAG = True
 
 ETHERA_COMMONS_DOMAIN = "http://m-prod-ethera-commons-elb-245169720.ap-south-1.elb.amazonaws.com"
+SANDESH_SEND_COMM = "http://internal-m-prod-sandesh-ecs-elb-1908545515.ap-south-1.elb.amazonaws.com/api/send_communication"

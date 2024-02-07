@@ -1,14 +1,23 @@
 import copy
 import http
+import json
 import logging
+import random
+import string
 import uuid
+from datetime import datetime
 
+from celery.worker.state import requests
+from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import deactivate_campaign_by_campaign_id
+from onyx_proj.apps.campaign.test_campaign.app_settings import TEMPLATE_VALIDATION_LOCAL
 from onyx_proj.apps.content import app_settings
 from onyx_proj.apps.content.app_settings import FETCH_CONTENT_MODE_FILTERS, CONTENT_TABLE_MAPPING, \
     CAMPAIGN_CONTENT_DATA_CHANNEL_LIST
+from onyx_proj.common.request_helper import RequestClient
+from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.common.utils.logging_helpers import log_entry, log_exit
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException, ValidationFailedException, \
     NotFoundException
@@ -26,7 +35,7 @@ from onyx_proj.models.CED_CampaignURLContent_model import CEDCampaignURLContent
 from onyx_proj.common.constants import CHANNELS_LIST, TAG_FAILURE, TAG_SUCCESS, FETCH_CAMPAIGN_QUERY, \
     CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, Roles, ContentFetchModes, \
     CAMPAIGN_CONTENT_MAPPING_TABLE_DICT, FETCH_RELATED_CONTENT_IDS, INSERT_CONTENT_PROJECT_MIGRATION, \
-    MIN_ALLOWED_DESCRIPTION_LENGTH, MAX_ALLOWED_DESCRIPTION_LENGTH
+    MIN_ALLOWED_DESCRIPTION_LENGTH, MAX_ALLOWED_DESCRIPTION_LENGTH, TEMPLATE_SANDESH_CALLBACK_PATH
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.common.constants import CHANNELS_LIST, TAG_FAILURE, TAG_SUCCESS, FETCH_CAMPAIGN_QUERY, Roles, \
     CHANNEL_CONTENT_TABLE_DATA, FIXED_HEADER_MAPPING_COLUMN_DETAILS, CampaignContentStatus, ContentType, \
@@ -38,10 +47,14 @@ from onyx_proj.models.CED_CampaignSMSContent_model import CEDCampaignSMSContent
 from onyx_proj.models.CED_CampaignWhatsAppContent_model import CEDCampaignWhatsAppContent
 from onyx_proj.models.CED_MasterHeaderMapping_model import CEDMasterHeaderMapping
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
+from onyx_proj.models.TemplateLog import TemplateLog
 from onyx_proj.models.custom_query_execution_model import CustomQueryExecution
 from onyx_proj.orm_models.CED_ActivityLog_model import CED_ActivityLog
 from onyx_proj.orm_models.CED_CampaignContentEmailSubjectMapping_model import CED_CampaignContentEmailSubjectMapping
 from onyx_proj.orm_models.CED_CampaignContentUrlMapping_model import CED_CampaignContentUrlMapping
+from onyx_proj import settings
+from onyx_proj.orm_models.TemplateLog_model import Template_Log
+from onyx_proj.settings import TEMPLATE_VALIDATION_LINK
 
 logger = logging.getLogger("apps")
 
@@ -246,7 +259,7 @@ def get_content_list_v2(data) -> dict:
         fav_tag_list = []
         for row in fav_tag_db_resp:
             fav_tag_list.append({"tag_id": row.get("unique_id"), "name": row.get("short_name")})
-        campaign_entity_dict.update({"fav_tag_list":fav_tag_list})
+        campaign_entity_dict.update({"fav_tag_list": fav_tag_list})
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, response=campaign_entity_dict)
 
 
@@ -555,7 +568,7 @@ def check_valid_whatsapp_content_for_campaign_creation(campaign_builder_whatsapp
     whatsapp_content_id = campaign_builder_whatsapp_entity.whats_app_content_id
     try:
         whatsapp_content_entity = CEDCampaignWhatsAppContent().get_whatsapp_content_data_by_unique_id_and_status(
-            whatsapp_content_id, status_list,[])
+            whatsapp_content_id, status_list, [])
 
         if not whatsapp_content_entity:
             raise NotFoundException(method_name=method_name, reason="Whatsapp content not found")
@@ -615,10 +628,11 @@ def add_or_remove_url_and_subject_line_from_content(request_body, request_header
 
     # Validate content id and status
     content_fetch_filters = [{"column": "is_active", "value": True, "op": "=="},
-                    {"column": "is_deleted", "value": False, "op": "=="},
-                    {"column": "unique_id", "value": content_id, "op": "=="}]
+                             {"column": "is_deleted", "value": False, "op": "=="},
+                             {"column": "unique_id", "value": content_id, "op": "=="}]
     content_details = CONTENT_TABLE_MAPPING[content_type.upper()]().get_content_data(content_fetch_filters)
-    if content_details is None or len(content_details) <= 0 or content_details[0]["status"] == CampaignContentStatus.DEACTIVATE.value:
+    if content_details is None or len(content_details) <= 0 or content_details[0][
+        "status"] == CampaignContentStatus.DEACTIVATE.value:
         logger.error(f"{method_name} :: Content is not in valid state")
         raise ValidationFailedException(method_name=method_name, reason="Content is not in valid state")
 
@@ -637,7 +651,8 @@ def add_or_remove_url_and_subject_line_from_content(request_body, request_header
         if url_list is not None and len(url_list) > 0:
             add_url_list, remove_url_list = validate_url_details_for_content_edit(url_list, content_id, content_type)
         if subject_line_list is not None and len(subject_line_list) > 0 and content_type.upper() == "EMAIL":
-            add_subject_line_list, remove_subject_line_list = validate_subject_line_details_for_content_edit(subject_line_list, content_id)
+            add_subject_line_list, remove_subject_line_list = validate_subject_line_details_for_content_edit(
+                subject_line_list, content_id)
         if description is not None:
             validate_and_update_description(description, content_id, content_type, content_details[0])
     except ValidationFailedException as ex:
@@ -649,7 +664,8 @@ def add_or_remove_url_and_subject_line_from_content(request_body, request_header
                     details_message="Error while validating content and url's.")
 
     update_url_mapping(add_url_list, remove_url_list, content_type, content_details[0])
-    if content_type.upper() == "EMAIL" and add_subject_line_list is not None and remove_subject_line_list is not None and len(add_subject_line_list) + len(remove_subject_line_list) > 0:
+    if content_type.upper() == "EMAIL" and add_subject_line_list is not None and remove_subject_line_list is not None and len(
+            add_subject_line_list) + len(remove_subject_line_list) > 0:
         update_subject_line_mapping(add_subject_line_list, remove_subject_line_list, content_details[0])
 
     log_exit()
@@ -667,7 +683,8 @@ def validate_and_update_description(description, content_id, content_type, conte
 
     validate_description(description)
 
-    CONTENT_TABLE_MAPPING[content_type.upper()]().update_description_by_unique_id(content_id, dict(description=description))
+    CONTENT_TABLE_MAPPING[content_type.upper()]().update_description_by_unique_id(content_id,
+                                                                                  dict(description=description))
     user_session = Session().get_user_session_object()
 
     # Prepare and save activity logs
@@ -687,11 +704,11 @@ def validate_and_update_description(description, content_id, content_type, conte
 def validate_description(description):
     method_name = "validate_description"
     if description is not None:
-        if len(description) < MIN_ALLOWED_DESCRIPTION_LENGTH or\
+        if len(description) < MIN_ALLOWED_DESCRIPTION_LENGTH or \
                 len(description) > MAX_ALLOWED_DESCRIPTION_LENGTH:
             raise ValidationFailedException(method_name=method_name, reason=f"Description length must be in between"
-                                                                      f" {MIN_ALLOWED_DESCRIPTION_LENGTH} to"
-                                                                      f" {MAX_ALLOWED_DESCRIPTION_LENGTH}")
+                                                                            f" {MIN_ALLOWED_DESCRIPTION_LENGTH} to"
+                                                                            f" {MAX_ALLOWED_DESCRIPTION_LENGTH}")
 
 
 def validate_url_details_for_content_edit(url_list, content_id, content_type):
@@ -719,19 +736,24 @@ def validate_url_details_for_content_edit(url_list, content_id, content_type):
         add_url_data = CEDCampaignURLContent().get_content_data(add_url_filter_list)
         if add_url_data is None or len(add_url_data) < len(add_url_list):
             # Not all urls to be added are valid, raise exception
-            raise ValidationFailedException(method_name=method_name, reason="1 or more url to be added are not in valid state")
+            raise ValidationFailedException(method_name=method_name,
+                                            reason="1 or more url to be added are not in valid state")
 
     if len(remove_url_list) > 0:
         # Validate url and content if associated with any campaign
-        campaign_url_mapping = CAMPAIGN_CONTENT_MAPPING_TABLE_DICT[content_type.upper()]().check_campaign_by_content_and_url(content_id, remove_url_list)
+        campaign_url_mapping = CAMPAIGN_CONTENT_MAPPING_TABLE_DICT[
+            content_type.upper()]().check_campaign_by_content_and_url(content_id, remove_url_list)
         if campaign_url_mapping is not None and len(campaign_url_mapping) > 0:
-            raise ValidationFailedException(method_name=method_name, reason="Content and url are mapped with existing campaigns")
+            raise ValidationFailedException(method_name=method_name,
+                                            reason="Content and url are mapped with existing campaigns")
 
         # If content is of type SMS, check for follow up sms campaign mapping
         if content_type == "SMS":
-            follow_up_camp_with_content_and_url = CEDCampaignBuilderIVR().check_content_and_ur_in_follow_up_sms(content_id, remove_url_list)
+            follow_up_camp_with_content_and_url = CEDCampaignBuilderIVR().check_content_and_ur_in_follow_up_sms(
+                content_id, remove_url_list)
             if follow_up_camp_with_content_and_url is not None and len(follow_up_camp_with_content_and_url) > 0:
-                raise ValidationFailedException(method_name=method_name, reason="Content and url mapped with IVR Campaign")
+                raise ValidationFailedException(method_name=method_name,
+                                                reason="Content and url mapped with IVR Campaign")
 
     log_exit()
     return add_url_list, remove_url_list
@@ -752,7 +774,8 @@ def validate_subject_line_details_for_content_edit(subject_line_list, content_id
     subject_lines_mapped_to_content = [content['subject_line_id'] for content in subject_lines_mapped_to_content]
 
     add_subject_line_list = [subject for subject in subject_line_list if subject not in subject_lines_mapped_to_content]
-    remove_subject_line_list = [subject for subject in subject_lines_mapped_to_content if subject not in subject_line_list]
+    remove_subject_line_list = [subject for subject in subject_lines_mapped_to_content if
+                                subject not in subject_line_list]
 
     # Validate subject lines to be added
     if len(add_subject_line_list) > 0:
@@ -764,12 +787,15 @@ def validate_subject_line_details_for_content_edit(subject_line_list, content_id
     # Validated subject lines to be removed
     if len(remove_subject_line_list) > 0:
         # Validate email and subject line mapped with any content
-        campaign_mapped_with_email_and_subject = CEDCampaignBuilderEmail().check_campaign_by_content_and_subjectline(content_id, remove_subject_line_list)
+        campaign_mapped_with_email_and_subject = CEDCampaignBuilderEmail().check_campaign_by_content_and_subjectline(
+            content_id, remove_subject_line_list)
         if campaign_mapped_with_email_and_subject is not None and len(campaign_mapped_with_email_and_subject) > 0:
-            raise ValidationFailedException(method_name=method_name, reason="Subject lines and content are mapped with existing campaigns")
+            raise ValidationFailedException(method_name=method_name,
+                                            reason="Subject lines and content are mapped with existing campaigns")
 
     log_exit()
     return add_subject_line_list, remove_subject_line_list
+
 
 def update_url_mapping(add_url_list, remove_url_list, content_type, content_details):
     method_name = "update_url_mapping"
@@ -807,7 +833,8 @@ def update_url_mapping(add_url_list, remove_url_list, content_type, content_deta
 
     if remove_url_list is not None and len(remove_url_list) > 0:
         # remove url mapping for content in db
-        CEDCampaignContentUrlMapping().delete_content_url_mapping_by_url_list(content_details["unique_id"], remove_url_list)
+        CEDCampaignContentUrlMapping().delete_content_url_mapping_by_url_list(content_details["unique_id"],
+                                                                              remove_url_list)
         for url in remove_url_list:
             create_content_activity_log({"unique_id": uuid.uuid4().hex,
                                          "data_source": "CONTENT",
@@ -820,6 +847,7 @@ def update_url_mapping(add_url_list, remove_url_list, content_type, content_deta
                                          })
     log_exit()
 
+
 def update_subject_line_mapping(add_subject_line_list, remove_subject_line_list, content_details):
     method_name = "update_subject_line_mapping"
     log_entry()
@@ -827,8 +855,10 @@ def update_subject_line_mapping(add_subject_line_list, remove_subject_line_list,
     user_session = Session().get_user_session_object()
 
     # fetch subject line details by subject line id
-    if (add_subject_line_list is not None or remove_subject_line_list is not None) and len(add_subject_line_list) + len(remove_subject_line_list) > 0:
-        subject_line_details = CEDCampaignSubjectLineContent().bulk_fetch_subject_line_details(add_subject_line_list + remove_subject_line_list)
+    if (add_subject_line_list is not None or remove_subject_line_list is not None) and len(add_subject_line_list) + len(
+            remove_subject_line_list) > 0:
+        subject_line_details = CEDCampaignSubjectLineContent().bulk_fetch_subject_line_details(
+            add_subject_line_list + remove_subject_line_list)
         if subject_line_details is None or len(subject_line_details) == 0:
             raise ValidationFailedException(method_name=method_name, reason="Subject line details not found")
         subject_line_details = {subject_line["unique_id"]: subject_line for subject_line in subject_line_details}
@@ -856,7 +886,8 @@ def update_subject_line_mapping(add_subject_line_list, remove_subject_line_list,
 
     if remove_subject_line_list is not None and len(remove_subject_line_list) > 0:
         # Remove subject line mapping for content
-        CEDCampaignContentEmailSubjectMapping().delete_content_subject_line_mapping(content_details["unique_id"], remove_subject_line_list)
+        CEDCampaignContentEmailSubjectMapping().delete_content_subject_line_mapping(content_details["unique_id"],
+                                                                                    remove_subject_line_list)
         for subject_line in remove_subject_line_list:
             create_content_activity_log({"unique_id": uuid.uuid4().hex,
                                          "data_source": "CONTENT",
@@ -902,50 +933,51 @@ def migrate_content_across_projects_with_headers_processing(request_data):
     old_project_id = request_data.get("old_project_id")
     new_project_id = request_data.get("new_project_id")
     content_type = request_data.get("content_type")
-    content_ids = request_data.get("content_ids",[])
+    content_ids = request_data.get("content_ids", [])
 
     if old_project_id is None or new_project_id is None or content_type is None or \
-        content_type not in ["SMS", "EMAIL", "WHATSAPP","SUBJECTLINE","MEDIA","URL","TAG"] or content_ids is None or len(content_ids) == 0:
+            content_type not in ["SMS", "EMAIL", "WHATSAPP", "SUBJECTLINE", "MEDIA", "URL",
+                                 "TAG"] or content_ids is None or len(content_ids) == 0:
         raise ValidationFailedException(reason="Invalid Data")
 
-    headers_mapping = migrate_project_headers(old_project_id,new_project_id)
+    headers_mapping = migrate_project_headers(old_project_id, new_project_id)
 
     if content_type == "SMS":
-        process_sms_content(old_project_id,new_project_id,content_ids,headers_mapping)
+        process_sms_content(old_project_id, new_project_id, content_ids, headers_mapping)
     elif content_type == "EMAIL":
-        process_email_content(old_project_id,new_project_id,content_ids,headers_mapping)
+        process_email_content(old_project_id, new_project_id, content_ids, headers_mapping)
     elif content_type == "WHATSAPP":
-        process_whatsapp_content(old_project_id,new_project_id,content_ids,headers_mapping)
+        process_whatsapp_content(old_project_id, new_project_id, content_ids, headers_mapping)
     elif content_type == "SUBJECTLINE":
-        process_subjectline_content(old_project_id,new_project_id,content_ids,headers_mapping)
+        process_subjectline_content(old_project_id, new_project_id, content_ids, headers_mapping)
     elif content_type == "MEDIA":
-        process_media_content(old_project_id,new_project_id,content_ids,headers_mapping)
+        process_media_content(old_project_id, new_project_id, content_ids, headers_mapping)
     elif content_type == "URL":
-        process_url_content(old_project_id,new_project_id,content_ids,headers_mapping)
+        process_url_content(old_project_id, new_project_id, content_ids, headers_mapping)
     elif content_type == "TAG":
-        process_tags_content(old_project_id,new_project_id,content_ids,headers_mapping)
+        process_tags_content(old_project_id, new_project_id, content_ids, headers_mapping)
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
 
 
-def migrate_project_headers(old_project_id,new_project_id):
-    PI_HEADERS = ["fullname","firstname","lastname","name","pincode","state","mobile"]
+def migrate_project_headers(old_project_id, new_project_id):
+    PI_HEADERS = ["fullname", "firstname", "lastname", "name", "pincode", "state", "mobile"]
 
     query = "Select * from CED_MasterHeaderMapping where ProjectId = '%s'"
 
-    old_project_headers = CustomQueryExecution().execute_query(copy.deepcopy(query)%old_project_id)
+    old_project_headers = CustomQueryExecution().execute_query(copy.deepcopy(query) % old_project_id)
     if old_project_headers["error"] is True:
         raise ValidationFailedException(reason="Unable to fetch old project headers")
     old_project_headers = old_project_headers["result"]
     fixed_headers_pi = [{
-        "HeaderName":header["headerName"],
-        "UniqueId":header["uniqueId"],
-        "IsActive":header["active"],
-        "ColumnName":header["columnName"],
-        "FileDataFieldType":header["fileDataFieldType"],
-        "Comment":header["comment"],
-        "MappingType":header["mappingType"],
-        "ContentType":header["contentType"],
-        "Status":header["status"]
+        "HeaderName": header["headerName"],
+        "UniqueId": header["uniqueId"],
+        "IsActive": header["active"],
+        "ColumnName": header["columnName"],
+        "FileDataFieldType": header["fileDataFieldType"],
+        "Comment": header["comment"],
+        "MappingType": header["mappingType"],
+        "ContentType": header["contentType"],
+        "Status": header["status"]
     } for header in copy.deepcopy(FIXED_HEADER_MAPPING_COLUMN_DETAILS) if header["headerName"].lower() in PI_HEADERS]
     old_project_headers = old_project_headers + fixed_headers_pi
 
@@ -954,7 +986,7 @@ def migrate_project_headers(old_project_id,new_project_id):
         raise ValidationFailedException(reason="Unable to fetch old project headers")
     new_project_headers = new_project_headers["result"]
 
-    new_header_mapping = {header["HeaderName"].lower():header for header in new_project_headers}
+    new_header_mapping = {header["HeaderName"].lower(): header for header in new_project_headers}
     headers_to_be_created = []
     old_new_project_headers_mapping = {}
 
@@ -969,7 +1001,7 @@ def migrate_project_headers(old_project_id,new_project_id):
                 header_name = f"En{old_header['HeaderName']}"
                 master_id = uuid.uuid4().hex
                 header = copy.deepcopy(old_header)
-                header.pop("Id",None)
+                header.pop("Id", None)
                 header["HeaderName"] = header_name
                 header["ColumnName"] = header_name
                 header["HeaderName"] = header_name
@@ -978,7 +1010,7 @@ def migrate_project_headers(old_project_id,new_project_id):
                 header["Encrypted"] = 1
                 header["UniqueId"] = master_id
                 headers_to_be_created.append(header)
-                old_new_project_headers_mapping[old_header["UniqueId"]]={
+                old_new_project_headers_mapping[old_header["UniqueId"]] = {
                     "header_name": header_name,
                     "id": master_id
                 }
@@ -993,11 +1025,11 @@ def migrate_project_headers(old_project_id,new_project_id):
                 header_name = old_header['HeaderName']
                 master_id = uuid.uuid4().hex
                 header = copy.deepcopy(old_header)
-                header.pop("Id",None)
+                header.pop("Id", None)
                 header["ProjectId"] = new_project_id
                 header["UniqueId"] = master_id
                 headers_to_be_created.append(header)
-                old_new_project_headers_mapping[old_header["UniqueId"]]={
+                old_new_project_headers_mapping[old_header["UniqueId"]] = {
                     "header_name": header_name,
                     "id": master_id
                 }
@@ -1006,50 +1038,50 @@ def migrate_project_headers(old_project_id,new_project_id):
     if len(headers_to_be_created) > 0:
         columns = list(headers_to_be_created[0].keys())
         columns_placeholder = ",".join(columns)
-        val_placeholders = ",".join(["%s"]*len(columns))
+        val_placeholders = ",".join(["%s"] * len(columns))
         values = []
         for header in headers_to_be_created:
-            values.append([header.get(col,None) for col in columns])
-        query = " Insert into CED_MasterHeaderMapping (%s) values (%s)"%(columns_placeholder,val_placeholders)
+            values.append([header.get(col, None) for col in columns])
+        query = " Insert into CED_MasterHeaderMapping (%s) values (%s)" % (columns_placeholder, val_placeholders)
         resp = CustomQueryExecution().execute_write_query(query, values)
         if resp["success"] is False:
             raise ValidationFailedException(reason="Unable to insert data in HeadersMapping Table")
 
     return old_new_project_headers_mapping
 
-def process_sms_content(old_project,new_project,old_content_ids,headers_mapping):
+
+def process_sms_content(old_project, new_project, old_content_ids, headers_mapping):
     if len(old_content_ids) == 0:
         return
 
-    already_processed_ids = get_already_processed_content("SMS",old_content_ids,old_project,new_project)
+    already_processed_ids = get_already_processed_content("SMS", old_content_ids, old_project, new_project)
 
     to_process_ids = [idx for idx in old_content_ids if idx not in already_processed_ids and idx is not None]
     if len(to_process_ids) == 0:
         return
 
     sms_content_ids_mapping = {idx: new_project[:10] + idx[10:] for idx in to_process_ids}
-    data = fetch_relevant_content_ids(old_content_ids,"SMS")
+    data = fetch_relevant_content_ids(old_content_ids, "SMS")
 
     url_ids = list(set([node["url_id"] for node in data]))
     sender_ids = list(set([node["sender_id"] for node in data]))
     tag_ids = list(set([node["tag_id"] for node in data]))
     var_ids = list(set([node["var_id"] for node in data]))
 
-    process_url_content(old_project,new_project,url_ids,headers_mapping)
-    process_senderid_content(old_project,new_project,sender_ids,headers_mapping)
-    process_tags_content(old_project,new_project,tag_ids,headers_mapping)
-    process_content_variables(old_project,new_project,var_ids,headers_mapping)
+    process_url_content(old_project, new_project, url_ids, headers_mapping)
+    process_senderid_content(old_project, new_project, sender_ids, headers_mapping)
+    process_tags_content(old_project, new_project, tag_ids, headers_mapping)
+    process_content_variables(old_project, new_project, var_ids, headers_mapping)
+
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignSMSContent")
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignContentUrlMapping")
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignContentSenderIdMapping")
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_EntityTagMapping")
+
+    add_processed_content_list("SMS", sms_content_ids_mapping, old_project, new_project)
 
 
-    update_data_in_content_table(new_project,old_project,to_process_ids,"CED_CampaignSMSContent")
-    update_data_in_content_table(new_project,old_project,to_process_ids,"CED_CampaignContentUrlMapping")
-    update_data_in_content_table(new_project,old_project,to_process_ids,"CED_CampaignContentSenderIdMapping")
-    update_data_in_content_table(new_project,old_project,to_process_ids,"CED_EntityTagMapping")
-
-    add_processed_content_list("SMS",sms_content_ids_mapping,old_project,new_project)
-
-
-def process_url_content(old_project,new_project,content_ids,headers_mapping):
+def process_url_content(old_project, new_project, content_ids, headers_mapping):
     if len(content_ids) == 0:
         return
     already_processed_ids = get_already_processed_content("URL", content_ids, old_project, new_project)
@@ -1061,14 +1093,11 @@ def process_url_content(old_project,new_project,content_ids,headers_mapping):
     content_ids_mapping = {idx: new_project[:10] + idx[10:] for idx in to_process_ids}
     data = fetch_relevant_content_ids(content_ids, "URL")
 
-
     tag_ids = list(set([node["tag_id"] for node in data]))
     var_ids = list(set([node["var_id"] for node in data]))
 
-
-    process_tags_content(old_project, new_project, tag_ids,headers_mapping)
-    process_content_variables(old_project,new_project,var_ids,headers_mapping)
-
+    process_tags_content(old_project, new_project, tag_ids, headers_mapping)
+    process_content_variables(old_project, new_project, var_ids, headers_mapping)
 
     update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignUrlContent")
     update_data_in_content_table(new_project, old_project, to_process_ids, "CED_EntityTagMapping")
@@ -1076,7 +1105,7 @@ def process_url_content(old_project,new_project,content_ids,headers_mapping):
     add_processed_content_list("URL", content_ids_mapping, old_project, new_project)
 
 
-def process_senderid_content(old_project,new_project,content_ids,headers_mapping):
+def process_senderid_content(old_project, new_project, content_ids, headers_mapping):
     if len(content_ids) == 0:
         return
     already_processed_ids = get_already_processed_content("SENDERID", content_ids, old_project, new_project)
@@ -1092,7 +1121,7 @@ def process_senderid_content(old_project,new_project,content_ids,headers_mapping
     add_processed_content_list("SENDERID", content_ids_mapping, old_project, new_project)
 
 
-def process_tags_content(old_project,new_project,content_ids,headers_mapping):
+def process_tags_content(old_project, new_project, content_ids, headers_mapping):
     if len(content_ids) == 0:
         return
     already_processed_ids = get_already_processed_content("TAG", content_ids, old_project, new_project)
@@ -1108,7 +1137,7 @@ def process_tags_content(old_project,new_project,content_ids,headers_mapping):
     add_processed_content_list("TAG", content_ids_mapping, old_project, new_project)
 
 
-def process_email_content(old_project,new_project,content_ids,headers_mapping):
+def process_email_content(old_project, new_project, content_ids, headers_mapping):
     if len(content_ids) == 0:
         return
     already_processed_ids = get_already_processed_content("EMAIL", content_ids, old_project, new_project)
@@ -1125,10 +1154,10 @@ def process_email_content(old_project,new_project,content_ids,headers_mapping):
     tag_ids = list(set([node["tag_id"] for node in data]))
     var_ids = list(set([node["var_id"] for node in data]))
 
-    process_url_content(old_project, new_project, url_ids,headers_mapping)
-    process_subjectline_content(old_project, new_project, subject_ids,headers_mapping)
-    process_tags_content(old_project, new_project, tag_ids,headers_mapping)
-    process_content_variables(old_project, new_project, var_ids,headers_mapping)
+    process_url_content(old_project, new_project, url_ids, headers_mapping)
+    process_subjectline_content(old_project, new_project, subject_ids, headers_mapping)
+    process_tags_content(old_project, new_project, tag_ids, headers_mapping)
+    process_content_variables(old_project, new_project, var_ids, headers_mapping)
 
     update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignEmailContent")
     update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignContentUrlMapping")
@@ -1137,7 +1166,8 @@ def process_email_content(old_project,new_project,content_ids,headers_mapping):
 
     add_processed_content_list("EMAIL", sms_content_ids_mapping, old_project, new_project)
 
-def process_whatsapp_content(old_project,new_project,content_ids,headers_mapping):
+
+def process_whatsapp_content(old_project, new_project, content_ids, headers_mapping):
     if len(content_ids) == 0:
         return
     already_processed_ids = get_already_processed_content("WHATSAPP", content_ids, old_project, new_project)
@@ -1154,10 +1184,10 @@ def process_whatsapp_content(old_project,new_project,content_ids,headers_mapping
     tag_ids = list(set([node["tag_id"] for node in data]))
     var_ids = list(set([node["var_id"] for node in data]))
 
-    process_url_content(old_project, new_project, url_ids,headers_mapping)
-    process_media_content(old_project, new_project, media_ids,headers_mapping)
-    process_tags_content(old_project, new_project, tag_ids,headers_mapping)
-    process_content_variables(old_project, new_project, var_ids,headers_mapping)
+    process_url_content(old_project, new_project, url_ids, headers_mapping)
+    process_media_content(old_project, new_project, media_ids, headers_mapping)
+    process_tags_content(old_project, new_project, tag_ids, headers_mapping)
+    process_content_variables(old_project, new_project, var_ids, headers_mapping)
 
     update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignWhatsAppContent")
     update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignContentUrlMapping")
@@ -1167,7 +1197,7 @@ def process_whatsapp_content(old_project,new_project,content_ids,headers_mapping
     add_processed_content_list("WHATSAPP", sms_content_ids_mapping, old_project, new_project)
 
 
-def process_subjectline_content(old_project,new_project,content_ids,headers_mapping):
+def process_subjectline_content(old_project, new_project, content_ids, headers_mapping):
     if len(content_ids) == 0:
         return
     already_processed_ids = get_already_processed_content("SUBJECTLINE", content_ids, old_project, new_project)
@@ -1182,15 +1212,16 @@ def process_subjectline_content(old_project,new_project,content_ids,headers_mapp
     tag_ids = list(set([node["tag_id"] for node in data]))
     var_ids = list(set([node["var_id"] for node in data]))
 
-    process_tags_content(old_project, new_project, tag_ids,headers_mapping)
-    process_content_variables(old_project, new_project, var_ids,headers_mapping)
+    process_tags_content(old_project, new_project, tag_ids, headers_mapping)
+    process_content_variables(old_project, new_project, var_ids, headers_mapping)
 
     update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignSubjectLineContent")
     update_data_in_content_table(new_project, old_project, to_process_ids, "CED_EntityTagMapping")
 
     add_processed_content_list("SUBJECTLINE", sms_content_ids_mapping, old_project, new_project)
 
-def process_media_content(old_project,new_project,content_ids,headers_mapping):
+
+def process_media_content(old_project, new_project, content_ids, headers_mapping):
     if len(content_ids) == 0:
         return
     already_processed_ids = get_already_processed_content("MEDIA", content_ids, old_project, new_project)
@@ -1204,14 +1235,15 @@ def process_media_content(old_project,new_project,content_ids,headers_mapping):
 
     tag_ids = list(set([node["tag_id"] for node in data]))
 
-    process_tags_content(old_project, new_project, tag_ids,headers_mapping)
+    process_tags_content(old_project, new_project, tag_ids, headers_mapping)
 
     update_data_in_content_table(new_project, old_project, to_process_ids, "CED_CampaignMediaContent")
     update_data_in_content_table(new_project, old_project, to_process_ids, "CED_EntityTagMapping")
 
     add_processed_content_list("MEDIA", sms_content_ids_mapping, old_project, new_project)
 
-def process_content_variables(old_project,new_project,content_ids,headers_mapping):
+
+def process_content_variables(old_project, new_project, content_ids, headers_mapping):
     if len(content_ids) == 0:
         return
     already_processed_ids = get_already_processed_content("CONTENTVARIABLE", content_ids, old_project, new_project)
@@ -1221,7 +1253,6 @@ def process_content_variables(old_project,new_project,content_ids,headers_mappin
         return
     sms_content_ids_mapping = {idx: new_project[:10] + idx[10:] for idx in to_process_ids}
 
-
     ids_placeholder = ",".join([f"'{idx}'" for idx in to_process_ids])
     query = f"Select * from CED_CampaignContentVariableMapping where UniqueId in ({ids_placeholder})"
     resp = CustomQueryExecution().execute_query(query)
@@ -1230,56 +1261,55 @@ def process_content_variables(old_project,new_project,content_ids,headers_mappin
 
     variables_to_be_created = []
 
-
     variable_mappings = resp["result"]
 
     for variable in variable_mappings:
-        variable.pop("Id",None)
+        variable.pop("Id", None)
         variable["UniqueId"] = new_project[:10] + variable["UniqueId"][10:]
         variable["ContentId"] = new_project[:10] + variable["ContentId"][10:]
-        variable["ColumnName"] = headers_mapping[variable["MasterId"]]["header_name"] if variable["MasterId"]  in headers_mapping else variable["ColumnName"]
-        variable["MasterId"] = headers_mapping[variable["MasterId"]]["id"] if variable["MasterId"]  in headers_mapping else variable["MasterId"]
-        variables_to_be_created.append(variable )
-
+        variable["ColumnName"] = headers_mapping[variable["MasterId"]]["header_name"] if variable[
+                                                                                             "MasterId"] in headers_mapping else \
+            variable["ColumnName"]
+        variable["MasterId"] = headers_mapping[variable["MasterId"]]["id"] if variable[
+                                                                                  "MasterId"] in headers_mapping else \
+            variable["MasterId"]
+        variables_to_be_created.append(variable)
 
     if len(variables_to_be_created) > 0:
         columns = list(variables_to_be_created[0].keys())
         columns_placeholder = ",".join(columns)
-        val_placeholders = ",".join(["%s"]*len(columns))
+        val_placeholders = ",".join(["%s"] * len(columns))
         values = []
         for header in variables_to_be_created:
             values.append([header[col] for col in columns])
-        query = " Insert into CED_CampaignContentVariableMapping (%s) values (%s)"%(columns_placeholder,val_placeholders)
+        query = " Insert into CED_CampaignContentVariableMapping (%s) values (%s)" % (
+            columns_placeholder, val_placeholders)
         resp = CustomQueryExecution().execute_write_query(query, values)
         if resp["success"] is False:
             raise ValidationFailedException(reason="Unable to insert data in CED_CampaignContentVariableMapping Table")
 
-
-
     add_processed_content_list("CONTENTVARIABLE", sms_content_ids_mapping, old_project, new_project)
 
 
-
-
-
-
-def get_already_processed_content(content_type,old_content_ids,old_project,new_project):
+def get_already_processed_content(content_type, old_content_ids, old_project, new_project):
     content_ids_str = ",".join([f"'{idx}'" for idx in old_content_ids])
     query = f"Select OldContentId from CED_ContentMigration where ContentType = '{content_type}' and OldProjectId = '{old_project}' and NewProjectId = '{new_project}' and OldContentId in ({content_ids_str})"
     resp = CustomQueryExecution().execute_query(query)
     if resp["error"] is True:
         raise ValidationFailedException(reason="Unable to fetch content related data")
-    return[row["OldContentId"] for row in resp["result"]]
+    return [row["OldContentId"] for row in resp["result"]]
 
-def add_processed_content_list(content_type,content_ids_mapping,old_project,new_project):
+
+def add_processed_content_list(content_type, content_ids_mapping, old_project, new_project):
     values_placeholder = '%s'
-    values = [(key,value) for key,value in content_ids_mapping.items()]
+    values = [(key, value) for key, value in content_ids_mapping.items()]
     query = f"Insert into CED_ContentMigration (OldContentId,NewProjectId,OldProjectId,ContentType,NewContentId) values ({values_placeholder},'{new_project}','{old_project}','{content_type}',{values_placeholder})"
-    resp = CustomQueryExecution().execute_write_query(query,values)
+    resp = CustomQueryExecution().execute_write_query(query, values)
     if resp["success"] is False:
         raise ValidationFailedException(reason="Unable to insert data in Migration Table")
 
-def update_data_in_content_table(new_project_id,old_project_id,content_ids,table):
+
+def update_data_in_content_table(new_project_id, old_project_id, content_ids, table):
     if len(content_ids) == 0:
         return
     already_processed_ids = get_already_processed_content(table, content_ids, old_project_id, new_project_id)
@@ -1293,7 +1323,7 @@ def update_data_in_content_table(new_project_id,old_project_id,content_ids,table
     kwargs = {
         "ids": ",".join([f"'{idx}'" for idx in content_ids]),
         "project_prefix": new_project_id[:10],
-        "new_project_id":new_project_id
+        "new_project_id": new_project_id
     }
     query = INSERT_CONTENT_PROJECT_MIGRATION[table].format(**kwargs)
     resp = CustomQueryExecution().execute_write_query(query)
@@ -1302,7 +1332,7 @@ def update_data_in_content_table(new_project_id,old_project_id,content_ids,table
     add_processed_content_list(table, sms_content_ids_mapping, old_project_id, new_project_id)
 
 
-def fetch_relevant_content_ids(content_ids_list,content_type):
+def fetch_relevant_content_ids(content_ids_list, content_type):
     ids_str = ",".join([f"'{idx}'" for idx in content_ids_list])
     query = FETCH_RELATED_CONTENT_IDS[content_type].format(ids=ids_str)
 
@@ -1310,3 +1340,622 @@ def fetch_relevant_content_ids(content_ids_list,content_type):
     if resp["error"] is True:
         raise ValidationFailedException(reason="Unable to fetch content related data")
     return resp["result"]
+
+
+# TEMPLATE VALIDATION
+
+# Payload Creators
+def get_sms_sandesh_payload(data):
+    body = data
+
+    channel = body.get("channel", "SMS")
+    content_id = body.get("content_id")
+    config_id = body.get("config_id")
+    var_data = body.get("var_data")
+    request_id = body.get("request_id", None)
+    cust_ref_id = body.get("cust_ref_id", None)
+
+    # user details
+    user_session = Session().get_user_session_object()
+    user_mobile = str(user_session.user.mobile_number)
+
+    # checking content ID
+    content_body = dict(content_type="SMS", content_id=content_id)
+    response = get_content_data(content_body)
+    if response["result"] is "FAILURE":
+        raise Exception("Wrong Content ID")
+
+    resp_variables = response['response']["variables"]
+    project_id = response['response']["project_id"]
+
+    # Adding URl variable and checking variables
+    for key in resp_variables:
+        var_master_id = key["master_id"]
+        var_name = key["name"]
+        if var_master_id == '{#URL#}':
+            if var_data.get(var_name) is None:
+                var_data.update({var_name: TEMPLATE_VALIDATION_LINK[project_id]})
+            else:
+                raise Exception("Wrong variables. URL is static.")
+        else:
+            if var_data.get(var_name) is None:
+                raise Exception("Wrong variables. Missing data.")
+
+    # Creating Sandesh Payload
+    sandesh_template_payload = {
+        "request_type": "bulk",
+        "config_id": config_id,
+        "content_id": content_id,
+        "client": "HYPERION",
+        "var_data": [
+            {
+                "Mobile_Number": user_mobile,
+                "cust_ref_id": cust_ref_id,
+                "content_data": var_data
+            }
+        ],
+        "channel": channel,
+        "request_id": request_id,
+        "udf1": get_random_uuid(10)
+    }
+
+    return {"payload": sandesh_template_payload, "project_id": project_id, "success": True}
+
+
+def get_whatsapp_sandesh_payload(data):
+    body = data
+
+    channel = body.get("channel", "WHATSAPP")
+    content_id = body.get("content_id")
+    config_id = body.get("config_id")
+    var_data = body.get("var_data")
+    media_id = body.get("media_id", None)
+    header_id = body.get("header_id", None)
+    footer_id = body.get("footer_id", None)
+    request_id = body.get("request_id", None)
+    cust_ref_id = body.get("cust_ref_id", None)
+
+    # user details
+    user_session = Session().get_user_session_object()
+    user_mobile = str(user_session.user.mobile_number)
+
+    # Check header and media should not be together
+    if header_id is not None and media_id is not None:
+        raise Exception("Header and Media can't be together")
+
+    # checking content ID
+    content_body = dict(content_type="WHATSAPP", content_id=content_id)
+    response = get_content_data(content_body)
+    if response["result"] is "FAILURE":
+        raise Exception("Wrong Content ID")
+
+    # getting Variables
+    resp_variables = response['response']["variables"]
+    project_id = response['response']["project_id"]
+
+    # Adding URl variable and checking variables
+    for key in resp_variables:
+        var_master_id = key["master_id"]
+        var_name = key["name"]
+        if var_master_id == '{#URL#}':
+            if var_data.get(var_name) is None:
+                var_data.update({var_name: TEMPLATE_VALIDATION_LINK[project_id]})
+            else:
+                raise Exception("Wrong variables. URL is static.")
+        else:
+            if var_data.get(var_name) is None:
+                raise Exception("Wrong variables. Missing data.")
+
+    # creating Sandesh payload
+    sandesh_template_payload = {
+        "request_type": "bulk",
+        "config_id": config_id,
+        "content_id": content_id,
+        "client": "HYPERION",
+        "var_data": [
+            {
+                "Mobile_Number": user_mobile,
+                "cust_ref_id": cust_ref_id,
+                "content_data": var_data
+            }
+        ],
+        "channel": channel,
+        "request_id": request_id,
+        "udf1": get_random_uuid(10)
+    }
+
+    # check media id
+    if media_id is not None:
+        content_body = dict(content_type="MEDIA", content_id=media_id)
+        response = get_content_data(content_body)
+        if response["result"] is "FAILURE":
+            raise Exception("Wrong Media ID")
+        sandesh_template_payload.update({"media_id": media_id})
+
+    # check header id
+    if header_id is not None:
+        content_body = dict(content_type="TEXTUAL", content_id=header_id)
+        response = get_content_data(content_body)
+        if response["result"] is "FAILURE":
+            raise Exception("Wrong Header ID")
+        sandesh_template_payload.update({"header_id": header_id})
+
+    # check footer id
+    if footer_id is not None:
+        content_body = dict(content_type="TEXTUAL", content_id=footer_id)
+        response = get_content_data(content_body)
+        if response["result"] is "FAILURE":
+            raise Exception("Wrong Footer ID")
+        sandesh_template_payload.update({"footer_id": footer_id})
+
+    # Creating Sandesh Payload
+    return {"payload": sandesh_template_payload, "project_id": project_id, "success": True}
+
+
+def get_ivr_sandesh_payload(data):
+    body = data
+
+    channel = body.get("channel", "IVR")
+    content_id = body.get("content_id")
+    config_id = body.get("config_id")
+    var_data = body.get("var_data")
+    request_id = body.get("request_id", None)
+    cust_ref_id = body.get("cust_ref_id", None)
+
+    # user details
+    user_session = Session().get_user_session_object()
+    user_mobile = str(user_session.user.mobile_number)
+
+    # checking content ID
+    content_body = dict(content_type="IVR", content_id=content_id)
+    response = get_content_data(content_body)
+    if response["result"] is "FAILURE":
+        raise Exception("Wrong Content ID")
+
+    # getting variables
+    resp_variables = response['response']["variables"]
+    project_id = response['response']["project_id"]
+
+    # Adding URl variable and checking variables
+    for key in resp_variables:
+        var_master_id = key["master_id"]
+        var_name = key["name"]
+        if var_master_id == '{#URL#}':
+            if var_data.get(var_name) is None:
+                var_data.update({var_name: TEMPLATE_VALIDATION_LINK[project_id]})
+            else:
+                raise Exception("Wrong variables. URL is static.")
+        else:
+            if var_data.get(var_name) is None:
+                raise Exception("Wrong variables. Missing data.")
+
+    # Creating Sandesh Payload
+    sandesh_template_payload = {
+        "request_type": "bulk",
+        "config_id": config_id,
+        "content_id": content_id,
+        "client": "HYPERION",
+        "var_data": [
+            {
+                "Mobile_Number": user_mobile,
+                "cust_ref_id": cust_ref_id,
+                "content_data": var_data
+            }
+        ],
+        "channel": channel,
+        "request_id": request_id,
+        "udf1": get_random_uuid(10)
+    }
+
+    return {"payload": sandesh_template_payload, "project_id": project_id, "success": True}
+
+
+def get_email_sandesh_payload(data):
+    body = data
+
+    channel = body.get("channel", "SMS")
+    content_id = body.get("content_id")
+    config_id = body.get("config_id")
+    var_data = body.get("var_data")
+    subject_line_id = body.get("subject_line_id", None)
+    request_id = body.get("request_id", None)
+    cust_ref_id = body.get("cust_ref_id", None)
+
+    # user details
+    user_session = Session().get_user_session_object()
+    user_email = user_session.user.email_id
+
+    # checking content ID
+    content_body = dict(content_type="EMAIL", content_id=content_id)
+    response = get_content_data(content_body)
+    if response["result"] is "FAILURE":
+        raise Exception("Wrong Content ID")
+
+    # getting Variables
+    resp_variables = response['response']["variables"]
+    project_id = response['response']["project_id"]
+
+    # Adding URl variable and checking variables
+    for key in resp_variables:
+        var_master_id = key["master_id"]
+        var_name = key["name"]
+        if var_master_id == '{#URL#}':
+            if var_data.get(var_name) is None:
+                var_data.update({var_name: TEMPLATE_VALIDATION_LINK[project_id]})
+            else:
+                raise Exception("Wrong variables. URL is static.")
+        else:
+            if var_data.get(var_name) is None:
+                raise Exception("Wrong variables. Missing data.")
+
+    # check subject_line_id
+    if subject_line_id is not None:
+        content_body = dict(content_type="SUBJECTLINE", content_id=subject_line_id)
+        response = get_content_data(content_body)
+        if response["result"] is "FAILURE":
+            raise Exception("Wrong Subject Line ID")
+
+    # Creating Sandesh Payload
+    sandesh_template_payload = {
+        "request_type": "bulk",
+        "config_id": config_id,
+        "content_id": content_id,
+        "client": "HYPERION",
+        "var_data": [
+            {
+                "email_id": user_email,
+                "cust_ref_id": cust_ref_id,
+                "content_data": var_data
+            }
+        ],
+        "channel": channel,
+        "subject_line_id": subject_line_id,
+        "request_id": request_id,
+        "udf1": get_random_uuid(10)
+    }
+
+    return {"payload": sandesh_template_payload, "project_id": project_id, "success": True}
+
+
+def send_req_template_validation(request, project_id):
+    response = RequestClient().post_onyx_local_api_request(request,
+                                                           settings.ONYX_LOCAL_DOMAIN[project_id],
+                                                           TEMPLATE_VALIDATION_LOCAL)
+
+    if response.get("success") is False:
+        if isinstance(response['data'], str):
+            err_message = response.get("data", {})
+            ack_id = err_message.get("ack_id", None)
+
+        elif isinstance(response['data'], bytes):
+            try:
+                json_data = response['data'].decode('utf-8')
+                loaded_data = json.loads(json_data)
+                err_message = loaded_data.get("details_message", None)
+                ack_id = loaded_data.get("ack_id", None)
+            except Exception as e:
+                err_message = str(response["data"]) + str(e)
+                ack_id = None
+        else:
+            err_message = str(response["data"])
+            ack_id = None
+
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message=err_message, ack_id=ack_id)
+
+    data = response.get("data", None)
+    ack_id = data.get("ack_id", None)
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                details_message="Request sent successfully", ack_id=ack_id)
+
+
+def trigger_template_validation_func(request):
+    body = request
+
+    # Getting Body Data
+    channel = body.get("channel", None)
+    var_data = body.get("var_data", None)
+    content_id = body.get("content_id", None)
+    config_id = body.get("config_id", None)
+    media_id = body.get("media_id", None)
+    header_id = body.get("header_id", None)
+    footer_id = body.get("footer_id", None)
+    subject_line_id = body.get("subject_line_id", None)
+    unique_id = get_random_uuid(64)
+    cust_ref_id = "HYPR_CEN_" + get_random_uuid(55)
+    request_id = "HYPR_CEN_" + get_random_uuid(55)
+
+    # user details
+    user_session = Session().get_user_session_object()
+    user_name = user_session.user.user_name
+
+    # adding to data
+    body.update({"unique_id": unique_id})
+    body.update({"cust_ref_id": cust_ref_id})
+    body.update({"request_id": request_id})
+
+    # creating payload
+    if channel == "SMS":
+        try:
+            payload_request_response = get_sms_sandesh_payload(body)
+        except Exception as ex:
+            return dict(details_message=str(ex), success="False")
+
+    elif channel == "WHATSAPP":
+        try:
+            payload_request_response = get_whatsapp_sandesh_payload(body)
+        except Exception as ex:
+            return dict(details_message=str(ex), success="False")
+
+    elif channel == "IVR":
+        try:
+            payload_request_response = get_ivr_sandesh_payload(body)
+        except Exception as ex:
+            return dict(details_message=str(ex), success="False")
+
+    elif channel == "EMAIL":
+        try:
+            payload_request_response = get_email_sandesh_payload(body)
+        except Exception as ex:
+            return dict(details_message=str(ex), success="False")
+    else:
+        return dict(details_message="Wrong Channel", success="False")
+
+    # Getting project id
+    sandesh_payload = payload_request_response["payload"]
+    project_id = payload_request_response["project_id"]
+
+    # Giving callback URl
+    domain = settings.TEMPLATE_SANDESH_CALLBACK
+    api_path = TEMPLATE_SANDESH_CALLBACK_PATH
+    api_url = f"{domain}/{api_path}"
+    sandesh_payload.update({"callback_url": api_url})
+
+    # creating metadata
+    meta_data = {}
+
+    if header_id is not None:
+        meta_data.update({"header_id": header_id})
+    if media_id is not None:
+        meta_data.update({"media_id": media_id})
+    if footer_id is not None:
+        meta_data.update({"footer_id": footer_id})
+    if subject_line_id is not None:
+        meta_data.update({"subject_line_id": subject_line_id})
+
+    # Creating log table entry
+    data_log_entry = {
+        "unique_id": unique_id,
+        "channel": channel,
+        "config_id": config_id,
+        "content_id": content_id,
+        "initiator": user_name,
+        "variables": var_data,
+        "meta_data": meta_data,
+        "cust_ref_id": cust_ref_id,
+        "request_id": request_id,
+        "ack_id": None,
+        "status": "init"
+    }
+
+    logs_entry = Template_Log(data_log_entry)
+    res = TemplateLog().save_template_log(logs_entry)
+
+    if not res.get("status"):
+        return dict(details_message="Log Entry error", success="False")
+
+    # Sending HTTPS request
+    comm_response = send_req_template_validation(sandesh_payload, project_id)
+
+    # Update ack_id message
+    ack_id = comm_response.get("ack_id",None)
+    if ack_id is not None:
+        res = TemplateLog().update_ack_id(cust_ref_id, ack_id)
+        if not res.get("status"):
+            return dict(details_message="Ack_id Update error and Communication Failure", success="False")
+
+    if comm_response.get("result") == TAG_FAILURE:
+        error_message = comm_response.get("details_message")
+
+        # Update Status to error
+        res = TemplateLog().update_template_log_status(cust_ref_id, "ERROR")
+        if not res.get("status"):
+            return dict(details_message="Status 'Error' Update Error and Communication Failure", success="False")
+
+        # Update Error message
+        res = TemplateLog().update_template_error_message(cust_ref_id, error_message)
+        if not res.get("status"):
+            return dict(details_message="Error Message Update error and Communication Failure", success="False")
+
+        return dict(details_message=error_message, success="False")
+
+    # Update Status to sent
+    res = TemplateLog().update_template_log_status(cust_ref_id, "SENT")
+    if not res.get("status"):
+        return dict(details_message="Status 'Sent' Update Error", success="False")
+
+    return dict(details_message="OK", success="True")
+
+
+def get_template_all_logs_func(request):
+    body = request
+
+    content_id = body.get("content_id", None)
+    channel = body.get("channel", None)
+
+    # fetching rows
+    try:
+        user_log_data = TemplateLog().get_template_logs(content_id, channel)
+    except Exception as ex:
+        return dict(details_message=str(ex), success="False")
+
+    return dict(details_message="OK", data=user_log_data, success="True")
+
+
+def template_sandesh_callback_func(request):
+    body = request
+    cust_ref_id = body.get("cust_ref_id", None)
+    CustRefId = body.get("CustRefId", None)
+
+    # There are 2 cust_ref_id since SMS sandesh callback has CustRefId thus we have to check both
+    if cust_ref_id is not None:
+        try:
+            user_log_data = TemplateLog().get_template_logs_cust_ref_id(cust_ref_id)
+        except Exception as ex:
+            return dict(details_message=str(ex), success="False")
+
+        if user_log_data is []:
+            return dict(details_message="No log present for the Cust_ref_ID", success="False")
+
+        channel = user_log_data[0].get("channel", None)
+        content_id = user_log_data[0].get("content_id", None)
+
+        if channel == "IVR":
+            # Getting necessary data
+            status = body.get("status", None)
+            ack_id = body.get("ack_id", None)
+            end_time_string = body.get("end_time", None)
+            if end_time_string is not None:
+                end_time = datetime.strptime(end_time_string, "%Y-%m-%d %H: %M: %S")
+            else:
+                end_time = None
+            caller_id = body.get("caller_id", None)
+            duration = body.get("duration", None)
+            vendor_response_id = body.get("vendor_response_id", None)
+            key_pressed = body.get("key_pressed", None)
+            # Extra Info
+            extra_info = {}
+            extra_info.update({"caller_id": caller_id})
+            extra_info.update({"duration": duration})
+            extra_info.update({"key_pressed": key_pressed})
+
+            # Updating Logs on Callback
+            res = TemplateLog().update_template_log_callback(cust_ref_id, status, vendor_response_id, None,
+                                                             end_time, extra_info)
+            if not res.get("status"):
+                return dict(details_message="Update Callback Log Error", success="False")
+
+            # Updating is_Validated
+            if status in ["DELIVERED", "CONNECTED"]:
+                res = CEDCampaignIvrContent().update_isValidated(content_id, True)
+                if not res.get("status"):
+                    return dict(details_message="Update Is_Validated Error", success="False")
+
+        elif channel == "EMAIL":
+            # Getting necessary data
+            event = body.get("event", None)
+            ack_id = body.get("ack_id", None)
+            event_time_string = body.get("event_time", None)
+            if event_time_string is not None:
+                event_time = datetime.strptime(event_time_string, "%Y-%m-%d %H: %M: %S")
+            else:
+                event_time = None
+            vendor_response_id = body.get("vendor_response_id", None)
+            from_email = body.get("from_email", None)
+            meta_json = body.get("meta_json", {})
+            MessageId = meta_json.get("MessageId", None)
+            error_message = meta_json.get("Reason", None)
+            # Extra Info
+            extra_info = {}
+            extra_info.update({"MessageId": MessageId})
+            extra_info.update({"from_email": from_email})
+
+            # Updating callback
+            res = TemplateLog().update_template_log_callback(cust_ref_id, event, vendor_response_id,
+                                                             error_message,
+                                                             event_time, extra_info)
+            if not res.get("status"):
+                return dict(details_message="Update Callback Log Error", success="False")
+
+            # Updating is_Validated
+            if event in ["DELIVERED", "OPENED", "CLICKED"]:
+                res = CEDCampaignEmailContent().update_isValidated(content_id, True)
+                if not res.get("status"):
+                    return dict(details_message="Update Is_Validated Error", success="False")
+
+        elif channel == "Whatsapp":
+            # Getting necessary data
+            event = body.get("event", "")
+            ack_id = body.get("ack_id", None)
+            event_time_string = body.get("event_time", None)
+            if event_time_string is not None:
+                event_time = datetime.strptime(event_time_string, "%Y-%m-%d %H: %M: %S")
+            else:
+                event_time = None
+            vendor_response_id = body.get("vendor_response_id", None)
+            sender_id = body.get("sender_id", None)
+            meta_json = body.get("meta_json", {})
+            MessageId = meta_json.get("MessageId", None)
+            error_message = meta_json.get("Reason", None)
+            Cause = meta_json.get("Cause", None)
+            # Extra Info
+            extra_info = {}
+            extra_info.update({"MessageId": MessageId})
+            extra_info.update({"Cause": Cause})
+            extra_info.update({"sender_id": sender_id})
+
+            res = TemplateLog().update_template_log_callback(cust_ref_id, event, vendor_response_id,
+                                                             error_message,
+                                                             event_time, extra_info)
+            if not res.get("status"):
+                return dict(details_message="Update Callback Log Error", success="False")
+
+            # Updating is_Validated
+            if event in ["DELIVERED", "READ"]:
+                res = CEDCampaignWhatsAppContent().update_isValidated(content_id, True)
+                if not res.get("status"):
+                    return dict(details_message="Update Is_Validated Error", success="False")
+
+        else:
+            return dict(details_message="Channel Unknown", success="False")
+
+    elif CustRefId is not None:
+        try:
+            user_log_data = TemplateLog().get_template_logs_cust_ref_id(cust_ref_id)
+        except Exception as ex:
+            return dict(details_message=str(ex), success="False")
+
+        if user_log_data is []:
+            return dict(details_message="No log present for the Cust_ref_ID", success="False")
+
+        content_id = user_log_data[0].get("content_id", None)
+
+        # Getting necessary data
+        SentStatus = body.get("SentStatus", None)
+        AckId = body.get("AckId", None)
+        SentTimeString = body.get("SentTime", None)
+        if SentTimeString is not None:
+            SentTime = datetime.strptime(SentTimeString, "%Y-%m-%d %H: %M: %S")
+        else:
+            SentTime = None
+        VendorResponseId = body.get("VendorResponseId", None)
+        meta_json = body.get("MetaJSON", {})
+        MessageId = meta_json.get("MessageId", None)
+        error_message = meta_json.get("Reason", None)
+        StatusCode = meta_json.get("StatusCode", None)
+        # Extra Info
+        extra_info = {}
+        extra_info.update({"MessageId": MessageId})
+        extra_info.update({"StatusCode": StatusCode})
+
+        res = TemplateLog().update_template_log_callback(CustRefId, SentStatus, VendorResponseId, error_message,
+                                                         SentTime, extra_info)
+        if not res.get("status"):
+            return dict(details_message="Update Callback Log Error", success="False")
+
+        # Updating is_Validated
+        if SentStatus == "DELIVERED":
+            res = CEDCampaignSMSContent().update_isValidated(content_id, True)
+            if not res.get("status"):
+                return dict(details_message="Update Is_Validated Error", success="False")
+
+    else:
+        return dict(details_message="Cust Ref ID not present", success="False")
+
+    return dict(details_message="Callback Received and Logs Updated Successfully", success="True")
+
+
+def get_random_uuid(length=20):
+    ran = ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+    return ran

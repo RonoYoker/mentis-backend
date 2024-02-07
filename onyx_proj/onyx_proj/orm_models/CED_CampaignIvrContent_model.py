@@ -29,6 +29,7 @@ class CED_CampaignIvrContent(Base, Orm_helper):
     history_id = Column("HistoryId", String)
     extra = Column("Extra", String)
     is_starred = Column("IsStarred", Boolean, default=False)
+    is_validated = Column("IsValidated", Boolean, default=False)
     variables = relationship("CED_CampaignContentVariableMapping")
 
     tag_mapping = relationship("CED_EntityTagMapping")

@@ -388,3 +388,32 @@ HYPERION_CENTRAL_API_CALL = {
 }
 
 WEB_PROTOCOL = "https://"
+
+TEMPLATE_SANDESH_CALLBACK = "https://hyperiontool.com"
+
+# Template Validation Links
+TEMPLATE_VALIDATION_LINK = {
+    "iblcrdjlsdsmablpxpqclospknify44mveqlhiqxtdjplapyndmenfn11nausprj": "inbl.in",
+    "iblaocjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "inbl.in",
+    "iblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "inbl.in",
+    "iblccupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj": "inbl.in",
+    "iblocljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "inbl.in",
+    "iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "inbl.in",
+    "ibldcljlsdsmablpxpqclospknifyewmenblhiqxtdjplapyndmenfn11nausprj": "inbl.in",
+    "iblcoljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "inbl.in",
+    "iblsplitlimitblpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "inbl.in",
+    "ibldcupgsdsmablpxpqclospkniackwmveqlhlmztdjplapyndmenfn88nausprj": "inbl.in",
+    "iblcsupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj": "inbl.in",
+    "hdbethjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapradmenfn11nausprj": "hdbf.in",
+    "cmdhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "cmys.in",
+    "aiahwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "cmys.in",
+    "hsbcwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "cmys.in",
+    "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd": "bit.ly/2TDeg5K",
+    "yblclejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "ccybl.in",
+    "yblacqjlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "ccybl.in",
+    "yblovljlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "ccybl.in",
+    "yblccenbldsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "ccybl.in",
+    "ybltxntoemimablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "ccybl.in",
+    "yblccujlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "ccybl.in",
+    "ablethjlsdsmablpxpqcloaxlnifyewmveqlhiacldjplapyndmenfn44nausprj": "https://pay.axisbank.com/"
+}

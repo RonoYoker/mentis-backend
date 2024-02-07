@@ -43,3 +43,4 @@ ONYX_DOMAIN = "http://onyxuat.hyperiontool.com"  # uat
 ONYX_CENTRAL_AUTH_TOKEN = "348691BE-D2AA-4460-9A42-2B4A9FFD3296"
 
 MKT_CLICKDATA_FLAG = False
+SANDESH_SEND_COMM = "http://internal-m-stage-sandesh-elb-1067281613.ap-south-1.elb.amazonaws.com/api/send_communication"

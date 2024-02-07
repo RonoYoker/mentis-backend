@@ -50,3 +50,4 @@ QUERY_EXECUTION_JOB_BUCKET = "abl-uat-async-query-execution-response"
 
 
 MKT_CLICKDATA_FLAG = False
+SANDESH_SEND_COMM = "http://m-stage-sandesh-elb-2116555518.ap-south-1.elb.amazonaws.com/api/send_communication"

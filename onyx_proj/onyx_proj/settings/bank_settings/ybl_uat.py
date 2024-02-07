@@ -71,3 +71,4 @@ SNS_SEGMENT_EVALUATOR = "TEST_HYP_DK_Campaign_Segment_Evaluator"
 QUERY_EXECUTION_JOB_BUCKET = "ybl-uat-async-query-execution-response"
 
 MKT_CLICKDATA_FLAG = False
+SANDESH_SEND_COMM = "http://m-stage-sandesh-elb-49694380.ap-south-1.elb.amazonaws.com/api/send_communication"

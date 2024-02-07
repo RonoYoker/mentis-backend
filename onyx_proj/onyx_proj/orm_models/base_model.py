@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 
-from sqlalchemy import inspect, TIMESTAMP, text,  Column, Integer, String, ForeignKey, DateTime, \
+from sqlalchemy import inspect, JSON, TIMESTAMP, text,  Column, Integer, String, ForeignKey, DateTime, \
     Time, Boolean, func, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base

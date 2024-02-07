@@ -95,10 +95,11 @@ ONYX_LOCAL_DOMAIN = {
     "hsbcwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-1013783555.ap-south-1.elb.amazonaws.com",
     "prlethjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapradmenfn11nausprj": "http://m-prod-onyxlocal-elb-1133520533.ap-south-1.elb.amazonaws.com",
     "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd": "http://m-prod-onyxlocal-elb-263941227.ap-south-1.elb.amazonaws.com",
+    "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "http://localhost:8000"
 }
 
 OTP_APP_USER_MAPPING = {
-    OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value:  {
+    OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value: {
         "divyansh_jain": {
             "display_name": "Divyansh Jain",
             "mobile_number": 8929294241
@@ -116,7 +117,7 @@ OTP_APP_USER_MAPPING = {
             "mobile_number": 9953095877
         }
     },
-    OtpAppName.CAMP_SCHEDULE_TIME_UPDATE.value:  {
+    OtpAppName.CAMP_SCHEDULE_TIME_UPDATE.value: {
         "divyansh_jain": {
             "display_name": "Divyansh Jain",
             "mobile_number": 8929294241
@@ -134,7 +135,7 @@ OTP_APP_USER_MAPPING = {
             "mobile_number": 9953095877
         }
     },
-    OtpAppName.FILE_DEPENDENCY_OVERRIDE.value:  {
+    OtpAppName.FILE_DEPENDENCY_OVERRIDE.value: {
         "divyansh_jain": {
             "display_name": "Divyansh Jain",
             "mobile_number": 8929294241
@@ -152,7 +153,7 @@ OTP_APP_USER_MAPPING = {
             "mobile_number": 9953095877
         }
     },
-    OtpAppName.SEGMENT_HOD_APPROVAL.value:  {
+    OtpAppName.SEGMENT_HOD_APPROVAL.value: {
         "arsheen_gujral": {
             "display_name": "Arsheen Gujral",
             "mobile_number": 9990701692
@@ -176,3 +177,23 @@ HYPERION_CENTRAL_API_CALL = {
 }
 
 WEB_PROTOCOL = "http://"
+
+SANDESH_SEND_COMM = "http://m-stage-sandesh-elb-1510984338.ap-south-1.elb.amazonaws.com/api/send_communication"
+TEMPLATE_SANDESH_CALLBACK = "http://127.0.0.1:8000"
+
+# Template Validation Links
+TEMPLATE_VALIDATION_LINK = {
+    "iblcrdjlsdsmablpxpqclospknify44mveqlhiqxtdjplapyndmenfn11nausprj": "inbl.in",
+    "iblaocjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "inbl.in",
+    "iblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "inbl.in",
+    "iblccupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj": "inbl.in",
+    "iblocljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "inbl.in",
+    "hdbethjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapradmenfn11nausprj": "hdbf.in",
+    "cmdhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "cmys.in",
+    "aiahwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "cmys.in",
+    "hsbcwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "cmys.in",
+    "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd": "rblp.in",
+    "prlethjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapradmenfn11nausprj": "prlf.in",
+    "vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj": "vstp.in",
+    "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "locl.in"
+}

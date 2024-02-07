@@ -85,3 +85,4 @@ MKT_CLICKDATA_FLAG = True
 
 
 ETHERA_COMMONS_DOMAIN = "http://m-stage-ethera-commons-elb-61896516.ap-south-1.elb.amazonaws.com"
+SANDESH_SEND_COMM="http://m-stage-sandesh-elb-1510984338.ap-south-1.elb.amazonaws.com/api/send_communication"

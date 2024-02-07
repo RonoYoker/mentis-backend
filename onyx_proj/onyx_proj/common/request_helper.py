@@ -11,7 +11,8 @@ from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from Crypto.Cipher import AES
 from onyx_proj.common.utils.RSA_encryption import RsaEncrypt
 from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException
-from onyx_proj.common.logging_helper import log_exit,log_entry
+from onyx_proj.common.logging_helper import log_exit, log_entry
+
 logger = logging.getLogger("apps")
 
 
@@ -103,14 +104,14 @@ class RequestClient:
                     encrypted_response_data)
                 resp = json.loads(decrypted_data)
             else:
-                return {"success": False, "status_code": response.status_code}
+                return {"success": False, "status_code": response.status_code, "data": response.content}
         except Exception as e:
             logger.error(f"Unable to process localdb api, Exception message :: {e}")
-            return {"success": False}
+            return {"success": False, "data": str(e)}
         return {"success": True, "data": resp, "status_code": response.status_code}
 
     @staticmethod
-    def post_onyx_local_api_request_rsa(bank,body, domain, api_path):
+    def post_onyx_local_api_request_rsa(bank, body, domain, api_path):
         # request send
         log_entry(bank)
         api_url = f"{domain}/{api_path}"

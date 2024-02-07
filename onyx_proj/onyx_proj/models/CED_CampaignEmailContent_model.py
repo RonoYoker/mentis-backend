@@ -114,3 +114,14 @@ class CEDCampaignEmailContent:
         ]
         res = update(self.engine, self.table, filter_list, update_dict)
         return res
+
+    def update_isValidated(self, content_id, is_validated):
+        filter_list = [
+            {"column": "unique_id", "value": content_id, "op": "=="},
+        ]
+        update_dict = {"is_validated": is_validated}
+        try:
+            response = update(self.engine, self.table, filter_list=filter_list, update_dict=update_dict)
+        except Exception as ex:
+            return dict(status=False, message=str(ex))
+        return dict(status=True, response=response)

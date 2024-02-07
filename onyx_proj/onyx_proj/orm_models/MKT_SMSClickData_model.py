@@ -1,4 +1,6 @@
 from onyx_proj.orm_models.base_model import *
+
+
 class MKT_SMSClickData(Base, Orm_helper):
     __tablename__ = 'MKT_SMSClickData'
 

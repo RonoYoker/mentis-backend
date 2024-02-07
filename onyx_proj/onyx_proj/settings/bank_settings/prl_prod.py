@@ -39,3 +39,4 @@ ONYX_DOMAIN = "https://onyx.hyperiontool.com" # prod
 # ONYX_DOMAIN = "http://127.0.0.1:8084" # dev
 
 ONYX_CENTRAL_AUTH_TOKEN = "ACDB144B-5CAF-473F-9B1C-FEF493AA6865"
+SANDESH_SEND_COMM="http://internal-m-prod-piramal-sandesh-alb-918101571.ap-south-1.elb.amazonaws.com/api/send_communication"

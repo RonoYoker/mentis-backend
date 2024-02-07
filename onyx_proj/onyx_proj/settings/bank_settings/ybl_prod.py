@@ -70,3 +70,4 @@ AWS_REGION = "ap-south-1"
 AWS_ACCOUNTID = 471070473108
 
 MKT_CLICKDATA_FLAG = False
+SANDESH_SEND_COMM = "http://internal-m-prod-sandesh-elb-1817140403.ap-south-1.elb.amazonaws.com/api/send_communication"

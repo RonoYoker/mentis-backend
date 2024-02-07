@@ -86,6 +86,8 @@ SEGMENT_RECORDS_COUNT_API_PATH = "hyperioncampaigntooldashboard/segment/recordco
 
 HYPERION_CAMPAIGN_APPROVAL_FLOW = "hyperioncampaigntooldashboard/campaignbuilder/approvalaction/"
 
+TEMPLATE_SANDESH_CALLBACK_PATH = "content/template_sandesh_callback"
+
 ALLOWED_SEGMENT_STATUS = ["APPROVED", "APPROVAL_PENDING", "HOD_APPROVAL_PENDING"]
 
 BASE_DASHBOARD_TAB_QUERY = """

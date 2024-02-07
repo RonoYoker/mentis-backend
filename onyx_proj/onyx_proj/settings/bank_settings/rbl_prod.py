@@ -45,3 +45,4 @@ SNS_SEGMENT_EVALUATOR = "PROD_HYP_DK_Campaign_Segment_Evaluator"
 QUERY_EXECUTION_JOB_BUCKET = "rbl-prod-async-query-execution-response"
 
 MKT_CLICKDATA_FLAG = False
+SANDESH_SEND_COMM = "http://internal-int-rbl-sandesh-48324355.ap-south-1.elb.amazonaws.com/api/send_communication"

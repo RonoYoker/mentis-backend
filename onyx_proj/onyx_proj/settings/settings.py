@@ -50,3 +50,4 @@
 # CENTRAL_TO_LOCAL_ENCRYPTION_KEY = "test@123@123"
 # HYPERION_CENTRAL_DOMAIN = "http://uatdev.hyperiontool.com/"
 
+SANDESH_SEND_COMM="http://m-stage-sandesh-elb-1510984338.ap-south-1.elb.amazonaws.com/api/send_communication"

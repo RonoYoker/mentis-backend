@@ -45,3 +45,4 @@ AWS_ACCOUNTID = 594841986745
 SNS_SEGMENT_EVALUATOR = "PROD_HYP_DK_Campaign_Segment_Evaluator"
 
 MKT_CLICKDATA_FLAG = False
+SANDESH_SEND_COMM = "http://internal-m-prod-sandesh-elb-74728110.ap-south-1.elb.amazonaws.com/api/send_communication"

@@ -28,4 +28,5 @@ VALIDATE_CAMPAIGN_PROCESSING_ONYX_LOCAL = "campaign/local/check_campaign_process
 
 DEACTIVATE_CAMP_LOCAL = "campaign/local/deactivate_campaign_by_campaign_builder_ids/"
 
+TEMPLATE_VALIDATION_LOCAL = "content/local/route_template_message/"
 
