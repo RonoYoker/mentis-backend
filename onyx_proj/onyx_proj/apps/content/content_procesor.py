@@ -1912,11 +1912,11 @@ def template_sandesh_callback_func(request):
 
     elif CustRefId is not None:
         try:
-            user_log_data = TemplateLog().get_template_logs_cust_ref_id(cust_ref_id)
+            user_log_data = TemplateLog().get_template_logs_cust_ref_id(CustRefId)
         except Exception as ex:
             return dict(details_message=str(ex), success="False")
 
-        if user_log_data is []:
+        if len(user_log_data) == 0:
             return dict(details_message="No log present for the Cust_ref_ID", success="False")
 
         content_id = user_log_data[0].get("content_id", None)
