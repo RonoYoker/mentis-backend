@@ -1853,7 +1853,7 @@ def template_sandesh_callback_func(request):
                 event_time = None
             vendor_response_id = body.get("vendor_response_id", None)
             from_email = body.get("from_email", None)
-            meta_json = body.get("meta_json", {})
+            meta_json = json.loads(body.get("meta_json", "{}"))
             MessageId = meta_json.get("MessageId", None)
             error_message = meta_json.get("Reason", None)
             # Extra Info
@@ -1885,7 +1885,7 @@ def template_sandesh_callback_func(request):
                 event_time = None
             vendor_response_id = body.get("vendor_response_id", None)
             sender_id = body.get("sender_id", None)
-            meta_json = body.get("meta_json", {})
+            meta_json = json.loads(body.get("meta_json", "{}"))
             MessageId = meta_json.get("MessageId", None)
             error_message = meta_json.get("Reason", None)
             Cause = meta_json.get("Cause", None)
@@ -1930,7 +1930,7 @@ def template_sandesh_callback_func(request):
         else:
             SentTime = None
         VendorResponseId = body.get("VendorResponseId", None)
-        meta_json = body.get("MetaJSON", {})
+        meta_json = json.loads(body.get("MetaJSON", "{}"))
         MessageId = meta_json.get("MessageId", None)
         error_message = meta_json.get("Reason", None)
         StatusCode = meta_json.get("StatusCode", None)
