@@ -389,7 +389,7 @@ HYPERION_CENTRAL_API_CALL = {
 
 WEB_PROTOCOL = "https://"
 
-TEMPLATE_SANDESH_CALLBACK = "https://hyperiontool.com"
+TEMPLATE_SANDESH_CALLBACK = "https://onyx.hyperiontool.com"
 
 # Template Validation Links
 TEMPLATE_VALIDATION_LINK = {

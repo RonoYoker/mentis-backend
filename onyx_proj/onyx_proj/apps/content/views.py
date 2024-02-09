@@ -221,7 +221,7 @@ def get_template_all_logs(request):
 
 
 @csrf_exempt
-@UserAuth.user_authentication()
+# @UserAuth.user_authentication()
 def template_sandesh_callback(request):
     request_body = json.loads(request.body.decode("utf-8"))
 
