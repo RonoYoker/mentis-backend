@@ -71,7 +71,10 @@ class AesEncryptDecrypt:
         message += "=" * ((self.block_size - len(message) % self.block_size) % self.block_size)
         byte_array = message.encode("utf-8")
         # base64 decode
-        message = base64.b64decode(byte_array)
+        try:
+            message = base64.b64decode(byte_array)
+        except Exception as e:
+            message = base64.urlsafe_b64decode(byte_array)
         # AES instance with the - setKey()
         cipher = AES.new(self.key, AES.MODE_ECB)
         # decrypt and decode
