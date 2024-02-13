@@ -26,6 +26,7 @@ urlpatterns = [
     path("save_campaign/", views.save_campaign),
     path("approval_action/", views.approval_action_on_campaign_builder),
     path("test_campaign/", views.initiate_test_campaign),
+    path("local/trigger_segment_evaluator_for_test_campaign/", views.trigger_segment_evaluator_for_test_campaign),
     path("local/create_campaign_details/", views.create_campaign_details),
     path("get_campaigns_detail_between_time/", views.get_campaigns_detail_between_time),
     path("get_campaigns_detail/", views.get_campaigns_detail),

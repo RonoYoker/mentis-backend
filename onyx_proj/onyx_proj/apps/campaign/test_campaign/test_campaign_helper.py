@@ -99,6 +99,8 @@ def validate_test_campaign_data(data_dict: dict):
                         details_message="Invalid segment entity for the given campaign_id")
 
     segment_id = campaign_builder_campaign_object.get("segment_id")
+    if segment_id is None:
+        segment_id = campaign_builder_object.get("segment_id")
     if segment_id is not None:
         segment_data = CEDSegment().get_segment_data(segment_id=segment_id)
         campaign_builder_campaign_object["campaign_builder_data"]["segment_data"] = segment_data[0]

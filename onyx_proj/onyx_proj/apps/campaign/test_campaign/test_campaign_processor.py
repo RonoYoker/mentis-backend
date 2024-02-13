@@ -8,12 +8,16 @@ from Crypto.Cipher import AES
 from django.conf import settings
 
 from onyx_proj.apps.segments.segments_processor.segments_data_processors import encrypt_pi_data
+from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import process_campaigns_for_query_executor
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
+from onyx_proj.exceptions.permission_validation_exception import BadRequestException
+from onyx_proj.models.CED_CampaignSchedulingSegmentDetailsTest_model import CEDCampaignSchedulingSegmentDetailsTest
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT
 from onyx_proj.apps.campaign.test_campaign.test_campaign_helper import validate_test_campaign_data, \
     get_campaign_service_vendor, generate_test_file_name, create_file_details_json, get_time_difference
-from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CampaignSchedulingSegmentStatus, CampaignCategory
+from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, CampaignSchedulingSegmentStatus, CampaignCategory, \
+    CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH
 from onyx_proj.orm_models.CED_CampaignSchedulingSegmentDetailsTEST_model import CED_CampaignSchedulingSegmentDetailsTEST
 from onyx_proj.orm_models.CED_CampaignExecutionProgress_model import CED_CampaignExecutionProgress
 from onyx_proj.models.CED_Projects import CEDProjects
@@ -68,7 +72,10 @@ def test_campaign_process(request: dict):
     #     return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
     #                 details_message="Data is stale, need to refresh data to process test campaign for the given instance.")
 
-    # if data is not stale, proceed with flow
+    # Check for valid segment count
+    if validation_object["campaign_builder_data"]["segment_data"]['records'] <= 0:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Sement has 0 count, can not schedule test campaign.")
 
     # fetch project entity for by using the segment_id in campaign_builder entity
     project_entity = CEDProjects().get_project_entity_by_unique_id(
@@ -128,7 +135,8 @@ def test_campaign_process(request: dict):
     campaign_scheduling_segment_details_test_entity.creation_date = datetime.datetime.utcnow()
     recurring_detail = validation_object["campaign_builder_data"]["recurring_detail"]
     campaign_scheduling_segment_details_test_entity.campaign_category = validation_object["campaign_builder_data"].get("campaign_category",CampaignCategory.Recurring.value)
-
+    campaign_scheduling_segment_details_test_entity.campaign_sql_query = validation_object['campaign_builder_data']["segment_data"]["campaign_sql_query"]
+    campaign_scheduling_segment_details_test_entity.user_data = json.dumps(user_dict)
 
     # save CED_CampaignSchedulingSegmentDetailsTEST entity in DB
     save_or_update_cssdtest(campaign_scheduling_segment_details_test_entity)
@@ -227,11 +235,89 @@ def test_campaign_process(request: dict):
         logger.debug(f"{method_name} :: Successfully created entries in Bank's infra and "
                      f"pushed packet to SNS of Campaign Segment Evaluator.")
         campaign_scheduling_segment_details_test_entity.status = CampaignSchedulingSegmentStatus.LAMBDA_TRIGGERED.value
+        campaign_scheduling_segment_details_test_entity.local_file_id = request_response['data'].get("local_file_id", None)
         save_or_update_cssdtest(campaign_scheduling_segment_details_test_entity)
         # update status of campaign instance in CED_CampaignExecutionProgress to SCHEDULED
         campaign_execution_progress_entity_final.status = CampaignExecutionProgressStatus.SCHEDULED.value
         campaign_execution_progress_entity_final.updation_date = datetime.datetime.utcnow()
         save_or_update_campaign_progress_entity(campaign_execution_progress_entity_final)
 
+    # trigger query executor for test campaign
+    query_executor_result = process_test_campaign_for_query_executor(campaign_scheduling_segment_details_test_entity)
+    if not query_executor_result['success']:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Error while invoking query executor")
+
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                 details_message="Test campaign has been initiated! Please wait while you receive the communication.", cssd_test_id=cssd_test_id)
+
+def process_test_campaign_for_query_executor(cssd_test_entity):
+    method_name = "process_test_campaign_for_query_executor"
+    project_id = cssd_test_entity.project_id
+
+    camp_id = cssd_test_entity.id
+    campaign_sql_query = cssd_test_entity.campaign_sql_query
+    camp_builder_camp_id = cssd_test_entity.campaign_id
+    try:
+        payload = {
+            "source": "ONYX_CENTRAL",
+            "request_id": camp_builder_camp_id,
+            "request_type": "HYPERION_TEST_CAMPAIGN_QUERY_EXECUTION_FLOW",
+            "project_id": project_id,
+            "callback": {"callback_key": "HYPERION_CAMPAIGN_QUERY_EXECUTION"},
+            "queries": [
+                {"query": campaign_sql_query + ' LIMIT 1', "response_format": "s3_output", "query_key": "SEGMENT_DATA_TEST_CAMP"}]
+        }
+        rest_object = RequestClient()
+        request_response = rest_object.post_onyx_local_api_request(payload, settings.ONYX_LOCAL_DOMAIN[project_id],
+                                                                   CUSTOM_QUERY_ASYNC_EXECUTION_API_PATH)
+        if request_response is None or request_response.get("success", False) is False:
+            logger.error(f"Unable to call query executor error::{request_response}")
+            raise BadRequestException(method_name=method_name)
+
+        decrypted_resp_json = request_response.get("data",{})
+        if decrypted_resp_json.get("result", "FAILURE") == "SUCCESS":
+            CEDCampaignSchedulingSegmentDetailsTest().update_scheduling_status(camp_id,"QUERY_EXECUTOR_TRIGGERED")
+        else:
+            raise BadRequestException(method_name=method_name)
+
+    except Exception as e:
+        logger.error(f"Unable to call query executor error::{str(e)}")
+        CEDCampaignSchedulingSegmentDetailsTest().update_scheduling_status(camp_id, "QUERY_EXECUTOR_ERROR")
+        return dict(success=False)
+
+    return dict(success=True)
+
+def trigger_segment_evaluator_for_test_camp(campaign_list: dict):
+    """
+    Method to trigger Segment evaluator lambda via SNS for test campaign
+    """
+    method_name = "trigger_segment_evaluator_for_test_camp"
+    logger.info(f"{method_name} :: Campaign List: {campaign_list}")
+    for camp in campaign_list:
+        campaign_packet = dict(
+            campaign_builder_campaign_id=camp["campaign_builder_campaign_id"],
+            campaign_name=camp["campaign_name"],
+            record_count=camp["records"],
+            query="",
+            startDate=datetime.datetime.utcnow(),
+            endDate=datetime.datetime.utcnow() + datetime.timedelta(minutes=10),
+            contentType=camp["channel"],
+            campaign_schedule_segment_details_id=camp["campaign_schedule_segment_details_id"],
+            is_test=True,
+            user_data=json.loads(camp['user_data']),
+            file_id=camp['file_id'],
+            segment_headers=camp['segment_headers'],
+            segment_data_s3_path=camp['segment_data_s3_path']
+        )
+        campaign_segment_eval_packet = dict(campaigns=[campaign_packet])
+        from onyx_proj.common.utils.sns_helper import SnsHelper
+        sns_response = SnsHelper().publish_data_to_topic(settings.SNS_SEGMENT_EVALUATOR,
+                                                         {"default": json.dumps(campaign_segment_eval_packet, default=str)})
+        if sns_response is False:
+            logger.error(
+                f"{method_name} :: Error: Unable to push packet in SNS for campaign_id: {camp['campaign_builder_campaign_id']}"
+                f"and sns_topic: {settings.SNS_SEGMENT_EVALUATOR}")
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="SNS push failure!")
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)

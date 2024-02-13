@@ -1009,7 +1009,9 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     'count_refresh_end_date': 'CountRefreshEndDate',
     'data_refresh_start_date': 'DataRefreshStartDate',
     'data_refresh_end_date': 'DataRefreshEndDate',
-    'is_validated': 'isValidated'
+    'is_validated': 'isValidated',
+    'user_data': 'userData',
+    'local_file_id': 'localFileId'
 }
 
 CAMPAIGN_APPROVAL_STATUS_SUBJECT_MAPPING = {

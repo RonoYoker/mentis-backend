@@ -483,3 +483,8 @@ class CEDCampaignBuilderCampaign:
         ]
         update_dict = {"is_validated_system": True}
         return update(self.engine, self.table, filter, update_dict)
+
+    def get_project_name_from_cbc_id(self, cbc_id):
+        query = f"SELECT p.Name as Name from CED_Projects p JOIN CED_CampaignBuilder cb on p.UniqueId = cb.ProjectId JOIN CED_CampaignBuilderCampaign cbc on cb.UniqueId = cbc.CampaignBuilderId WHERE cbc.UniqueId = '{cbc_id}' "
+        res = execute_query(self.engine, query)
+        return None if not res or len(res) <= 0 or not res[0].get('Name') else res[0].get('Name')

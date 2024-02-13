@@ -5,6 +5,7 @@ import datetime
 
 from django.conf import settings
 from onyx_proj.apps.async_task_invocation.app_settings import AsyncJobStatus
+from onyx_proj.apps.campaign.campaign_processor.app_settings import LOCAL_TEST_CAMPAIGN_API_ENDPOINT
 from onyx_proj.apps.segments.app_settings import QueryKeys
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.common.utils.telegram_utility import TelegramUtility
@@ -12,6 +13,7 @@ from onyx_proj.exceptions.permission_validation_exception import ValidationFaile
 from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException
 from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException,InternalServerError
 from onyx_proj.models.CED_CampaignExecutionProgress_model import CEDCampaignExecutionProgress
+from onyx_proj.models.CED_CampaignSchedulingSegmentDetailsTest_model import CEDCampaignSchedulingSegmentDetailsTest
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetails_model import CEDCampaignSchedulingSegmentDetails
 from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS, LAMBDA_PUSH_PACKET_API_PATH, SYS_IDENTIFIER_TABLE_MAPPING, CampaignCategory
@@ -125,16 +127,20 @@ def update_campaign_segment_data(request_data) -> json:
     task_data = request_data["tasks"]
 
     is_instant = False
+    is_test = False
     if QueryKeys.SEGMENT_DATA.value in task_data:
         task_data = task_data[QueryKeys.SEGMENT_DATA.value]
     elif QueryKeys.SEGMENT_DATA_INSTANT.value in task_data:
         task_data = task_data[QueryKeys.SEGMENT_DATA_INSTANT.value]
         is_instant = True
+    elif QueryKeys.SEGMENT_DATA_TEST_CAMP.value in task_data:
+        task_data = task_data[QueryKeys.SEGMENT_DATA_TEST_CAMP.value]
+        is_test = True
     else:
         raise ValidationFailedException(reason="Invalid Query Key Present")
     where_dict = dict(UniqueId=campaign_builder_campaign_id)
 
-    if task_data["response"].get("headers_list", []) is None or len(task_data["response"].get("headers_list", [])) == 0:
+    if (task_data["response"].get("headers_list", []) is None or len(task_data["response"].get("headers_list", [])) == 0) and is_test == False:
         update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
                            S3DataRefreshStatus="ERROR", S3Path=None, S3DataHeadersList=None)
         update_db_resp = CEDCampaignBuilderCampaign().update_campaign_builder_campaign_instance(update_dict, where_dict)
@@ -143,7 +149,7 @@ def update_campaign_segment_data(request_data) -> json:
                 f"update_campaign_segment_data :: Error while updating status in table CEDCampaignBuilderCampaign for request_id: {campaign_builder_campaign_id}")
         raise ValidationFailedException(
             reason=f"Headers List not found for mentioned cbc ::{campaign_builder_campaign_id}")
-    else:
+    elif is_test == False:
         for header in task_data["response"]["headers_list"]:
             if header == "" or header is None:
                 update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),
@@ -208,6 +214,47 @@ def update_campaign_segment_data(request_data) -> json:
             if resp is None:
                 raise ValidationFailedException(reason=f"Unable tp update cssd scheduling status id::{cssd_resp.id}")
         return update_cbc_instance_for_s3_callback(task_data, where_dict, campaign_builder_campaign_id)
+    elif is_test is True:
+        cssd_entity_list = CEDCampaignSchedulingSegmentDetailsTest().get_cssd_test_by_cbc_id(campaign_builder_campaign_id, "QUERY_EXECUTOR_TRIGGERED")
+        if cssd_entity_list is None or len(cssd_entity_list) <= 0:
+            logger.debug("method_name: update_campaign_segment_data, No test campaign available to run.")
+            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
+        project_id = CEDCampaignBuilderCampaign().get_project_id_from_campaign_builder_campaign_id(campaign_builder_campaign_id)
+        cssd_id_list = [cssd_entity['id'] for cssd_entity in cssd_entity_list]
+        # Update test campaign status
+        resp = CEDCampaignSchedulingSegmentDetailsTest().update_scheduling_status(cssd_id_list, "QUERY_EXECUTOR_SUCCESS_TEST_CAMP")
+        project_name = CEDCampaignBuilderCampaign().get_project_name_from_cbc_id(campaign_builder_campaign_id)
+        campaigns = []
+        for cssd_entity in cssd_entity_list:
+            campaigns.append({
+                    "campaign_builder_campaign_id": campaign_builder_campaign_id,
+                    "campaign_name": camp_name,
+                    "records": 1,
+                    "startDate": datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                    "endDate": datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                    "channel": cbc["ContentType"],
+                    "query": "",
+                    "is_test": True,
+                    "split_details": None,
+                    "segment_data_s3_path": task_data["response"]["s3_url"],
+                    "user_data": cssd_entity['user_data'],
+                    "segment_headers": json.dumps(task_data["response"]["headers_list"]),
+                    "file_id": cssd_entity['local_file_id'],
+                    "project_id": project_id,
+                    "campaign_schedule_segment_details_id": cssd_entity['id'],
+                })
+        rest_object = RequestClient()
+        api_response = rest_object.post_onyx_local_api_request(campaigns, settings.ONYX_LOCAL_DOMAIN[project_id],
+                                                                   LOCAL_TEST_CAMPAIGN_API_ENDPOINT)
+        if api_response.get("success", False) is True:
+            resp = CEDCampaignSchedulingSegmentDetailsTest().update_scheduling_status(cssd_id_list, "TEST_CAMP_INITIATED")
+            if resp is None:
+                raise ValidationFailedException(reason=f"Unable tp update cssd scheduling status id::{cssd_id_list}")
+        else:
+            resp = CEDCampaignSchedulingSegmentDetailsTest().update_scheduling_status(cssd_id_list, "ERROR")
+            if resp is None:
+                raise ValidationFailedException(reason=f"Unable tp update cssd scheduling status id::{cssd_id_list}")
+        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
     elif is_ab_camp_split is True:
         if task_data["status"] in [AsyncJobStatus.ERROR.value]:
             update_dict = dict(S3DataRefreshEndDate=str(datetime.datetime.utcnow()),

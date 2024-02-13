@@ -4,6 +4,8 @@ import sys
 import time
 from celery import task
 from celery.exceptions import SoftTimeLimitExceeded
+
+from onyx_proj.apps.segments.app_settings import AsyncTaskRequestKeys
 from onyx_proj.exceptions.permission_validation_exception import QueryTimeoutException, EmptySegmentException
 
 from onyx_proj.apps.campaign.campaign_engagement_data.engagement_data_processor import \
@@ -53,7 +55,8 @@ def query_executor(task_id: str):
         db_config = json.loads(project_level_data["result"][0]["ProjectConfig"])
         db_reader_config_key = db_config["database_config"]["reader_conf_key"]
 
-        processed_query = task_data["Query"] + " LIMIT 1" if task_data["ResponseFormat"] == "s3_output" else task_data["Query"]
+        processed_query = task_data["Query"] + " LIMIT 1" if (task_data["ResponseFormat"] == "s3_output" and
+                                                              task_data["RequestType"] != AsyncTaskRequestKeys.HYPERION_TEST_CAMPAIGN_QUERY_EXECUTION_FLOW.value) else task_data["Query"]
         init_time = time.time()
         try:
             query_response = execute_custom_query(db_conf_key=db_reader_config_key, query=processed_query)

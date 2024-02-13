@@ -3547,38 +3547,38 @@ def create_campaign_details_in_local_db(request: dict):
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message=f"Unable to save camp creation detail, campaign_id: {fp_project_details_json['id']} and testcamp: {fp_project_details_json.get('testCampaign')}")
 
-    if fp_project_details_json.get("testCampaign"):
-        # decrypt extra data and send cached data packet to Segment_Evaluator via SNS packet to avoid executing query
-        # TODO: create this function generic for normal campaigns as well
-        # create SNS packet and push it to Campaign Segment Evaluator via SNS
-        campaign_packet = dict(
-                    campaign_builder_campaign_id=project_details_object["campaignBuilderCampaignId"],
-                    campaign_name=fp_project_details_json["campaignTitle"],
-                    record_count=fp_project_details_json["records"],
-                    query=segment_data["sql_query"],
-                    startDate=datetime.datetime.utcnow(),
-                    endDate=datetime.datetime.utcnow() + timedelta(minutes=10),
-                    contentType=fp_project_details_json["channel"],
-                    campaign_schedule_segment_details_id=fp_project_details_json["id"],
-                    is_test=True,
-                    user_data=user_data,
-                    file_id=fp_file_data_entity_final.id
-                )
-        if request.get("cached_test_campaign_data", None):
-            campaign_packet["cached_segment_data"] = request["cached_test_campaign_data"]
-        campaign_segment_eval_packet = dict(campaigns=[campaign_packet])
+    # if fp_project_details_json.get("testCampaign"):
+    #     # decrypt extra data and send cached data packet to Segment_Evaluator via SNS packet to avoid executing query
+    #     # TODO: create this function generic for normal campaigns as well
+    #     # create SNS packet and push it to Campaign Segment Evaluator via SNS
+    #     campaign_packet = dict(
+    #                 campaign_builder_campaign_id=project_details_object["campaignBuilderCampaignId"],
+    #                 campaign_name=fp_project_details_json["campaignTitle"],
+    #                 record_count=fp_project_details_json["records"],
+    #                 query=segment_data["sql_query"],
+    #                 startDate=datetime.datetime.utcnow(),
+    #                 endDate=datetime.datetime.utcnow() + timedelta(minutes=10),
+    #                 contentType=fp_project_details_json["channel"],
+    #                 campaign_schedule_segment_details_id=fp_project_details_json["id"],
+    #                 is_test=True,
+    #                 user_data=user_data,
+    #                 file_id=fp_file_data_entity_final.id
+    #             )
+    #     if request.get("cached_test_campaign_data", None):
+    #         campaign_packet["cached_segment_data"] = request["cached_test_campaign_data"]
+    #     campaign_segment_eval_packet = dict(campaigns=[campaign_packet])
+    #
+    #     from onyx_proj.common.utils.sns_helper import SnsHelper
+    #     sns_response = SnsHelper().publish_data_to_topic(settings.SNS_SEGMENT_EVALUATOR,
+    #                                                      {"default": json.dumps(campaign_segment_eval_packet, default=str)})
+    #     if sns_response is False:
+    #         logger.error(
+    #             f"{method_name} :: Error: Unable to push packet in SNS for campaign_id: {fp_project_details_json['id']}"
+    #             f"and sns_topic: {settings.SNS_SEGMENT_EVALUATOR}")
+    #         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+    #                     details_message="SNS push failure!")
 
-        from onyx_proj.common.utils.sns_helper import SnsHelper
-        sns_response = SnsHelper().publish_data_to_topic(settings.SNS_SEGMENT_EVALUATOR,
-                                                         {"default": json.dumps(campaign_segment_eval_packet, default=str)})
-        if sns_response is False:
-            logger.error(
-                f"{method_name} :: Error: Unable to push packet in SNS for campaign_id: {fp_project_details_json['id']}"
-                f"and sns_topic: {settings.SNS_SEGMENT_EVALUATOR}")
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="SNS push failure!")
-
-    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, local_file_id=fp_file_data_entity_final.id)
 
 
 def get_camps_detail_between_time(request_body):

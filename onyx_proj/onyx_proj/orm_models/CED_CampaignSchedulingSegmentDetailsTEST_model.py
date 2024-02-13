@@ -23,6 +23,8 @@ class CED_CampaignSchedulingSegmentDetailsTEST(Base, Orm_helper):
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     creation_date = Column("CreationDate", TIMESTAMP, default=datetime.utcnow())
+    user_data = Column("UserData", String)
+    local_file_id = Column("LocalFileId", Integer)
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)
