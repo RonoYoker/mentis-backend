@@ -4059,6 +4059,7 @@ def prepare_seg_based_campaign_list(data, recurring_detail):
                 elif segment_type == SegmentABTypes.ATTRIBUTE.value:
                     variant['filter_json'] = json.dumps(variant_dict["filter_json"]["segment_filter"])
                     variant['segment_id'] = variant_dict["filter_json"]["sub_segment_id"]
+                    campaign_segments_list.append(variant_dict["filter_json"]["sub_segment_id"])
                     if not validate_segment_parent_and_child(segment_id, variant_dict["filter_json"]["sub_segment_id"]):
                         raise BadRequestException(method=method_name, reason="Subsegment does not belong to parent.")
 
@@ -4103,7 +4104,7 @@ def prepare_seg_based_campaign_list(data, recurring_detail):
                 slot_availability_list.append(slot_dict)
                 final_cbc_list.extend(campaign_builder_campaign_list)
 
-        data["campaign_segment_list"] = campaign_segments_list
+        data["campaign_segment_list"] = list(set(campaign_segments_list))
         data["campaign_content_dict"] = campaign_content_dict
 
         cbc_details = {
@@ -4627,6 +4628,7 @@ def prepare_recurring_camp_campaign_list(data, recurring_detail):
                 if recurring_detail.get("is_segment_attr_split", False) is True:
                     variant['filter_json'] = json.dumps(variant_dict["filter_json"]["segment_filter"])
                     variant['segment_id'] = variant_dict["filter_json"]["sub_segment_id"]
+                    campaign_segments_list.append(variant_dict["filter_json"]["sub_segment_id"])
                     if not validate_segment_parent_and_child(segment_id, variant_dict["filter_json"]["sub_segment_id"]):
                         raise BadRequestException(method=method_name, reason="Subsegment does not belong to parent.")
 
