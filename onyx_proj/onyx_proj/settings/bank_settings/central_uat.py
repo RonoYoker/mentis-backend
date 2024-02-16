@@ -25,6 +25,7 @@ ACTIVE_DATABASE = "creditascampaignengine"
 HYPERION_LOCAL_DOMAIN = {
     "TEST_TCL": "https://tclctpay.tatacapital.com/",  # https://tclctpay.tatacapital.com/hyperioncampaigntooldashboard
     "TEST_IBL": "http://uatpay.indusind.com/",
+    "TEST_IBL_CLE": "http://uatpay.indusind.com/",
     "TEST_KOTAK": "http://uatpay.kotak.com/",
     "IBL_Ethera": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
     "TCL_Ethera": "http://m-prod-tatacapital-hyp-1407059969.ap-south-1.elb.amazonaws.com/",
@@ -57,6 +58,7 @@ ONYX_LOCAL_DOMAIN = {
     "iblcrdjlsdsmablpx55clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
     "iblaocjlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
     "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
+    "iblclejlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
     "iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
     "ibldcuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
     "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
@@ -160,11 +162,13 @@ VENDOR_CONFIG = {
 USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                                               "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                                               "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                                              "iblclejlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                                               "ablhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd"]
 
 TEST_CAMPAIGN_ENABLED = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                          "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                          "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                         "iblclejlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                          "ablhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                          "iblaocjlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                          "iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
@@ -286,6 +290,7 @@ TEMPLATE_VALIDATION_LINK = {
     "ybltxntoemimabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "uat.ccybl.in",
     "ablhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "https://uatpay.axisbank.com/",
     "iblspllimdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "uat.inbl.in",
+    "iblclejlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "uat.inbl.in",
     "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "uat.inbl.in"
 }
 
