@@ -66,15 +66,17 @@ class AesEncryptDecrypt:
         # unpad - with pkcs5 style and return
         return self.unpad(decrypted)
 
-    def decrypt_str_with_missing_padding(self, message: str) -> str:
+    def decrypt_str_with_missing_padding(self, message: str,orig_message: str) -> str:
         # convert the message to bytes
         message += "=" * ((self.block_size - len(message) % self.block_size) % self.block_size)
+        orig_message += "=" * ((self.block_size - len(orig_message) % self.block_size) % self.block_size)
         byte_array = message.encode("utf-8")
+        byte_array_orig = orig_message.encode("utf-8")
         # base64 decode
         try:
             message = base64.b64decode(byte_array)
         except Exception as e:
-            message = base64.urlsafe_b64decode(byte_array)
+            message = base64.urlsafe_b64decode(byte_array_orig)
         # AES instance with the - setKey()
         cipher = AES.new(self.key, AES.MODE_ECB)
         # decrypt and decode

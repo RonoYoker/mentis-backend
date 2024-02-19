@@ -91,7 +91,7 @@ def decode_uuid_str(uuid):
     uuid_str = uuid.replace("_", "/")
     uuid_str = uuid_str.replace("-", "\\+")
     try:
-        decrypted_uuid = AesEncryptDecrypt(key=settings.UUID_ENCRYPTION_KEY).decrypt_str_with_missing_padding(uuid_str)
+        decrypted_uuid = AesEncryptDecrypt(key=settings.UUID_ENCRYPTION_KEY).decrypt_str_with_missing_padding(uuid_str,uuid)
     except Exception as e:
         logger.error(f"method name: {method_name} , Error while decoding UUID")
         push_custom_parameters_to_newrelic({"error": "WHILE_DECODING_UUID"})
