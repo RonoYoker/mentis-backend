@@ -4836,3 +4836,15 @@ def validate_segment_parent_and_child(parent_id, child_id):
     if segment_entity[0].get("parent_id") != parent_id:
         return False
     return True
+
+def get_project_id_from_cbc_id(cbc_id):
+    if not cbc_id:
+        return None
+    cbc_entity = CEDCampaignBuilderCampaign().fetch_entity_by_unique_id(cbc_id)
+    if not cbc_entity:
+        return None
+
+    if cbc_entity.segment_id:
+        return CEDSegment().get_project_id_by_segment_id(cbc_entity.segment_id)
+    else:
+        return CEDCampaignBuilderCampaign().get_project_id_from_campaign_builder_campaign_id(cbc_id)

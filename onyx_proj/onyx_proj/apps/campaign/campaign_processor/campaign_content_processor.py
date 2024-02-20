@@ -6,6 +6,7 @@ import datetime
 from django.conf import settings
 from onyx_proj.apps.async_task_invocation.app_settings import AsyncJobStatus
 from onyx_proj.apps.campaign.campaign_processor.app_settings import LOCAL_TEST_CAMPAIGN_API_ENDPOINT
+from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import get_project_id_from_cbc_id
 from onyx_proj.apps.segments.app_settings import QueryKeys
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.common.utils.telegram_utility import TelegramUtility
@@ -219,11 +220,10 @@ def update_campaign_segment_data(request_data) -> json:
         if cssd_entity_list is None or len(cssd_entity_list) <= 0:
             logger.debug("method_name: update_campaign_segment_data, No test campaign available to run.")
             return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
-        project_id = CEDCampaignBuilderCampaign().get_project_id_from_campaign_builder_campaign_id(campaign_builder_campaign_id)
+        project_id = get_project_id_from_cbc_id(campaign_builder_campaign_id)
         cssd_id_list = [cssd_entity['id'] for cssd_entity in cssd_entity_list]
         # Update test campaign status
         resp = CEDCampaignSchedulingSegmentDetailsTest().update_scheduling_status(cssd_id_list, "QUERY_EXECUTOR_SUCCESS_TEST_CAMP")
-        project_name = CEDCampaignBuilderCampaign().get_project_name_from_cbc_id(campaign_builder_campaign_id)
         campaigns = []
         for cssd_entity in cssd_entity_list:
             campaigns.append({
