@@ -15,6 +15,7 @@ import requests
 from django.template.loader import render_to_string
 from Crypto.Cipher import AES
 
+from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import decrypt_test_segment_data
 from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT, DEACTIVATE_CAMP_LOCAL, \
     UPDATE_SCHEDULING_TIME_IN_CCD_API_ENDPOINT, CAMP_SCHEDULING_TIME_UPDATE_ALLOWED_BUFFER,VALIDATE_CAMPAIGN_PROCESSING_ONYX_LOCAL
 from onyx_proj.apps.campaign.app_settings import CBC_DICT
@@ -458,6 +459,7 @@ def update_segment_count_and_status_for_campaign(request_data):
     is_test = data.get("is_test", False)
     trigger_count = data.get("trigger_count")
     error_msg = data.get("error", None)
+    campaign_data = data.get("campaign_data", None)
     curr_date_time = datetime.datetime.utcnow()
     resp = {
         "upd_segment_table": False,
@@ -517,6 +519,15 @@ def update_segment_count_and_status_for_campaign(request_data):
         if upd_resp is not None and upd_resp.get("row_count", 0) > 0:
             resp["upd_sched_table"] = True
 
+    # This is to put test segment data into the CSSDT table
+    if is_test is True and campaign_data is not None:
+        encrypted_campaign_data = AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
+                              iv=settings.SEGMENT_AES_KEYS["AES_IV"],
+                              mode=AES.MODE_CBC).encrypt_aes_cbc(campaign_data)
+        upd_resp = CEDCampaignSchedulingSegmentDetailsTest().update_test_campaign_data(campaign_data=encrypted_campaign_data,campaign_id=campaign_id)
+        if upd_resp is not None and upd_resp.get("row_count", 0) > 0:
+            resp["upd_sched_table"] = True
+
     if status is not None:
         upd_resp = CEDCampaignExecutionProgress().update_campaign_status(campaign_id=campaign_id, status=status, error_msg=error_msg)
         if upd_resp is not None and upd_resp.get("row_count", 0) > 0:
@@ -532,6 +543,143 @@ def update_segment_count_and_status_for_campaign(request_data):
     logger.debug(f"API Resp ::{resp}")
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                 data=resp)
+
+
+def update_test_campaign_status_data_map(data_map):
+    """
+    Method to convert to snake case
+    """
+    snake_to_camel_converter = CAMEL_TO_SNAKE_CONVERTER_FOR_TEST_CAMPAIGN_STATUS
+    data_map_updated = {}
+    for key in data_map:
+        if key == "campaign_data":
+            data_map_updated["campaign_data"] = data_map["campaign_data"]
+        else:
+            data_map_updated[snake_to_camel_converter[key]] = data_map[key]
+            if key == "id":
+                data_map_updated[snake_to_camel_converter[key]] = str(data_map[key])
+    return data_map_updated
+
+
+def test_campaign_status(request_data):
+    campaign_id = request_data.get("CBC_IDS",None)
+    limit = request_data.get("limit",0)
+    request_data[limit]=str(limit)
+
+    if campaign_id is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Request is not valid")
+
+    # getting segment Id and extra
+    cbc_data = CEDCampaignBuilderCampaign().get_campaign_builder_details_by_id(campaign_id)
+    cb_id = cbc_data.get("campaign_builder_id",None)
+    if cb_id is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Error in getting cb_id")
+
+    cb_data = CEDCampaignBuilder().get_campaign_details(cb_id)
+    logger.debug(f"cb_data: {cb_data}")
+
+    if len(cb_data) == 0 or cb_data is None:
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message=f"Segment data not found for {campaign_id}.")
+    else:
+        cb_data = cb_data[0]
+
+    segment_id = cb_data.get("segment_id",None)
+    logger.debug(f"segment_id: {segment_id}")
+    if segment_id is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Error in getting segment_id")
+
+    segment_data = CEDSegment().get_segment_by_unique_id(dict(UniqueId=segment_id))
+    if len(segment_data) == 0 or segment_data is None:
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message=f"Segment data not found for {campaign_id}.")
+    else:
+        segment_data = segment_data[0]
+
+    logger.debug(f"segment_data: {segment_data}")
+
+    records_data = segment_data.get("Extra", "")
+    if records_data != "":
+        records_data = json.loads(AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
+                                                iv=settings.SEGMENT_AES_KEYS["AES_IV"],
+                                                mode=AES.MODE_CBC).decrypt_aes_cbc(records_data))
+    headers_list = records_data.get("headers_list", [])
+
+    logger.debug(f"headers_list: {headers_list}")
+
+    # getting project name from CBC_id
+    project_name = CEDCampaignBuilderCampaign().get_project_name_from_cbc_id(campaign_id)
+
+    if project_name is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Project Name not present.")
+
+    domain = settings.HYPERION_LOCAL_DOMAIN.get(project_name)
+    api_path = "hyperioncampaigntooldashboard/localdb/testcampaignstatus"
+    payload = request_data
+    local_request_responses = RequestClient.post_local_api_request(payload,project_name,api_path,True)
+    logger.debug(f"responses_Local_request: {local_request_responses}")
+
+    if local_request_responses is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Test Campaign Entry not Present")
+    cssdt_ids = []
+    for response in local_request_responses:
+        cssdt_id = response.get("CampaignId")
+        cssdt_ids.append(cssdt_id)
+
+    cssdt_data = CEDCampaignSchedulingSegmentDetailsTest().get_campaign_datas(cssdt_ids)
+
+    if cssdt_data is None or cssdt_data == []:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Campaigns data are not present")
+
+    campaigns_data_to_decrypt = []
+    updated_local_responses = []
+
+    for local_response in local_request_responses:
+        for data in cssdt_data:
+            response = update_test_campaign_status_data_map(local_response)
+            if response.get("campaign_id") != data["id"]:
+                continue
+            encrypted_data = data["campaign_data"]
+            if encrypted_data is None:
+                decrypted_data = None
+            else:
+                decrypted_data = json.loads(AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
+                                                iv=settings.SEGMENT_AES_KEYS["AES_IV"],
+                                                mode=AES.MODE_CBC).decrypt_aes_cbc(encrypted_data))
+                campaigns_data_to_decrypt.append(decrypted_data)
+
+            response.update({"campaign_data": decrypted_data})
+            updated_local_responses.append(response)
+    logger.debug(f"campaigns_data: {campaigns_data_to_decrypt}")
+
+    decrypted_campaign_data = decrypt_test_segment_data(campaigns_data_to_decrypt, headers_list, segment_data.get("ProjectId"))
+    logger.debug(f"decrypted_campaign_data: {decrypted_campaign_data}")
+
+    decrypted_campaign_data_index = 0
+    for test_campaign_dict in updated_local_responses:
+        if test_campaign_dict["campaign_data"] is None:
+            test_campaign_dict["campaign_data"] = {}
+            continue
+        test_campaign_dict["campaign_data"] = decrypted_campaign_data[decrypted_campaign_data_index]
+        decrypted_campaign_data_index += 1
+
+    logger.debug(f"updated_response: {updated_local_responses}")
+
+    final_response = {
+            "data": updated_local_responses,
+            "success": True
+    }
+
+    logger.debug(f"final_response: {final_response}")
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
+                data=final_response)
 
 
 def validate_campaign(request_data):

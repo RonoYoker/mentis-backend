@@ -1011,7 +1011,31 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     'data_refresh_end_date': 'DataRefreshEndDate',
     'is_validated': 'isValidated',
     'user_data': 'userData',
-    'local_file_id': 'localFileId'
+    'local_file_id': 'localFileId',
+    'campaign_data': 'campaignData'
+}
+CAMEL_TO_SNAKE_CONVERTER_FOR_TEST_CAMPAIGN_STATUS = {
+    'CampaignId': 'campaign_id',
+    'CampaignUUID': 'campaign_uuid',
+    'TestCampaign': 'test_campaign',
+    'ScheduleDate': 'schedule_date',
+    'ScheduleTime': 'schedule_time',
+    'Vendor': 'vendor',
+    'FileStatus': 'file_status',
+    'SplitFileStatus': 'split_file_status',
+    'UpdateTime': 'update_time',
+    'skippedRowCount': 'skipped_row_count',
+    'FileDataStatus': 'file_data_status',
+    'RequestTime': 'request_time',
+    'contactInfo': 'contact_info',
+    'smsResponseStatus': 'sms_response_status',
+    'BulkId': 'bulk_id',
+    'ContentText': 'context_text',
+    'MessageLandingUrl': 'message_landing_url',
+    'DeliveryStatus': 'delivery_status',
+    'VendorMessageId': 'vendor_message_id',
+    'VendorResponseId': 'vendor_response_id',
+    'campaign_data': 'campaign_data',
 }
 
 CAMPAIGN_APPROVAL_STATUS_SUBJECT_MAPPING = {

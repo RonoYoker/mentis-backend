@@ -80,3 +80,9 @@ class CEDProjects:
             {"column": "bank_name", "value": bank, "op": "=="}
         ]
         return fetch_rows_limited(self.engine, table=self.table, filter_list=filter_list,relationships=["file_dependency_configs.files"])
+
+    def get_project_details(self, project_id):
+        filter_list = [
+            {"column": "unique_id", "value": project_id, "op": "=="}
+        ]
+        return fetch_rows(self.engine, self.table, filter_list)
