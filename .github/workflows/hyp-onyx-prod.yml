@@ -20,7 +20,7 @@ env:
   ECS_TASK_DEFINITION_3: .aws/task-definition-onyx3.json
   CONTAINER_NAME: onyx
   CONTAINER_NAME_2: onyx-celery-prod
-  CONTAINER_NAME_3: onyx-celery-callback
+  CONTAINER_NAME_3: onyx-prod-celery-callback
   BANK_NAME: central
   CURR_ENV: prod
 
