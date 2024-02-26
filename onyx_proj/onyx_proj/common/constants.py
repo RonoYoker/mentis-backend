@@ -1037,7 +1037,7 @@ CAMEL_TO_SNAKE_CONVERTER_FOR_TEST_CAMPAIGN_STATUS = {
     'contactInfo': 'contact_info',
     'smsResponseStatus': 'sms_response_status',
     'BulkId': 'bulk_id',
-    'ContentText': 'context_text',
+    'ContentText': 'content_text',
     'MessageLandingUrl': 'message_landing_url',
     'DeliveryStatus': 'delivery_status',
     'VendorMessageId': 'vendor_message_id',
