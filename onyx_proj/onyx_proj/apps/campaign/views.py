@@ -198,7 +198,6 @@ def get_campaign_monitoring_stats_v2(request):
 
 @csrf_exempt
 def update_campaign_stats(request):
-    logger.info(f'Input Request body for Campaign Stats processor is : {request.body.decode("utf-8")}')
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
     data = dict(body=request_body, headers=request_headers)
