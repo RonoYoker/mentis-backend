@@ -9,7 +9,7 @@ env:
   ECR_REPO_URL: ${{ secrets.onyx_UAT_ECR_REPO }}
   DOCKER_COMPOSE_FILE: docker-compose-central-uat.yml
   HEALTHCHECK_URL: http://localhost:8080/ping
-  AWS_REGION: ${{ secrets.PROD_AWS_REGION }}
+  AWS_REGION: ${{ secrets.HYP_UAT_AWS_REGION }}
   ECR_REPOSITORY: onyx
   ECS_SERVICE: onyx-svc
   ECS_CLUSTER: ecs-hyp-onyx-fargate
@@ -25,7 +25,7 @@ jobs:
     steps:
       - name: create ECR repository
         env:
-          aws_region: ${{ secrets.PROD_AWS_Region }}
+          aws_region: ${{ secrets.HYP_UAT_AWS_REGION }}
           ECR_REPOSITORY: onyx
         run: |
           echo "== START CREATE REPO"
@@ -89,7 +89,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.HYP_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.HYP_AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.PROD_AWS_Region }}
+          aws-region: ${{ secrets.HYP_UAT_AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr

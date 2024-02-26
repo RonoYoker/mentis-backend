@@ -4,6 +4,7 @@ from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, save_or_upda
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilderEmail, CED_CampaignBuilderSMS
 
 
+
 class CEDCampaignBuilderSMS:
     def __init__(self, **kwargs):
         self.database = kwargs.get("db_conf_key", "default")

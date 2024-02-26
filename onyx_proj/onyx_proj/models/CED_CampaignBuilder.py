@@ -3,7 +3,7 @@ from django.conf import settings
 from onyx_proj.common.constants import CampaignStatus
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, save_or_update_merge, \
-    fetch_rows_limited
+    fetch_rows_limited, fetch_count
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, update, execute_query, fetch_rows
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilder
 from onyx_proj.common.sqlalchemy_helper import save_or_update, sql_alchemy_connect, fetch_rows, update
@@ -39,14 +39,18 @@ class CEDCampaignBuilder:
         return query_executor(self.curr, query)
 
     def get_campaign_list(self, filters):
-        baseQuery = """SELECT cb.Id AS id, cb.UniqueId AS unique_id, cb.Name AS name, cb.SegmentName AS segment_name, 
-        cb.Status AS status, cb.CreatedBy AS created_by, min(cbc.StartDateTime) AS start_date_time, cb.ApprovedBy AS 
-        approved_by, cb.RecordsInSegment AS segment_records, cb.Type AS type, cb.IsActive as active, cb.ErrorMsg as error_message, cb.CampaignCategory
-         as campaign_category , cb.IsRecurring AS is_recurring, cb.Version as version, cb.RecurringDetail AS recurring_details, cb.IsStarred as
-          is_starred, cbc.ContentType AS channel, COUNT(*) AS instance_count, cb.Description as description, cb.IsManualValidationMandatory as 
-        is_manual_validation_mandatory, cbc.IsValidatedSystem as is_validated_system, GROUP_CONCAT(cbc.TestCampignState separator ',') as test_campaign_state_list FROM 
-          CED_CampaignBuilder cb LEFT JOIN CED_Segment cs ON cs.UniqueId = cb.SegmentId JOIN CED_CampaignBuilderCampaign
-           cbc ON cb.UniqueId = cbc.CampaignBuilderId WHERE % s GROUP BY 1, 2, 3, 4, 5 order by cb.Id DESC""" % filters
+        baseQuery = """SELECT cb.Id AS id, cb.UniqueId AS unique_id, cb.Name AS name, cb.SegmentName AS segment_name,
+         cb.Status AS status, cb.CreatedBy AS created_by, min(cbc.StartDateTime) AS start_date_time,
+          cb.ApprovedBy AS approved_by, cb.RecordsInSegment AS segment_records, cb.Type AS type, cb.Version as version,
+           cb.IsActive as active, cb.ErrorMsg as error_message, cb.CampaignCategory as campaign_category,
+            cb.IsRecurring AS is_recurring, cb.RecurringDetail AS recurring_details, cb.IsStarred as is_starred,
+             cbc.ContentType AS channel, COUNT(*) AS instance_count, cb.Description as description,
+              cb.IsManualValidationMandatory as is_manual_validation_mandatory, cbc.IsValidatedSystem as is_validated_system,
+               sb.Name as strategy_name, sb.UniqueId as strategy_id, GROUP_CONCAT( cbc.TestCampignState separator ',' ) as test_campaign_state_list 
+               FROM CED_CampaignBuilder cb LEFT JOIN CED_Segment cs ON cs.UniqueId = cb.SegmentId 
+               LEFT JOIN CED_StrategyBuilder as sb ON cb.StrategyId = sb.UniqueId 
+               JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId 
+               WHERE % s GROUP BY 1, 2, 3, 4, 5 order by cb.Id DESC""" % filters
         return dict_fetch_query_all(self.curr, baseQuery)
 
     def execute_fetch_campaigns_list_query(self, query) -> list:
@@ -256,3 +260,27 @@ class CEDCampaignBuilder:
                 f"ps.UniqueId = ss.ParentId where cb.UniqueId = '{campaign_id}'"
 
         return dict_fetch_query_all(self.curr, query)
+
+    def get_campaign_builder_details_by_filter_list(self, filter_list, columns_list=[], relationships_list=[]):
+        res = fetch_rows_limited(self.engine, self.table, filter_list, columns=columns_list, relationships=relationships_list)
+        if res is None or len(res) <= 0:
+            return None
+        return res
+
+    def get_campaign_count_by_filter_list(self, filter_list):
+        res = fetch_count(self.engine, self.table, filter_list)
+        return res
+
+    def delete_campaign_builder_by_upd_dict(self, upd_dict):
+        return delete_rows_from_table(self.curr, self.table_name, upd_dict)
+
+    def fetch_valid_v2_camp_detail_by_unique_id(self, campaign_builder_ids):
+        query = (f"Select cb.UniqueId from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb on cb.UniqueId "
+                 f"= cbc.CampaignBuilderId join CED_CampaignExecutionProgress cep on cep.CampaignBuilderCampaignId = "
+                 f"cbc.UniqueId where cb.UniqueId in ({campaign_builder_ids}) "
+                 f"and cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = "
+                 f"'Recurring' and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' and "
+                 f"cep.Status in ( 'PARTIALLY_EXECUTED', 'EXECUTED' ) and cep.TestCampaign = 0 GROUP BY cb.UniqueId "
+                 f"HAVING count(distinct cbc.ExecutionConfigId)= 1")
+        res = execute_query(self.engine, query)
+        return res

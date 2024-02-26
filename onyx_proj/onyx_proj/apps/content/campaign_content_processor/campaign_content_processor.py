@@ -1,3 +1,4 @@
+import collections
 import http
 import json
 import logging
@@ -7,16 +8,23 @@ from Crypto.Cipher import AES
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 
+from onyx_proj.apps.content import app_settings
 from onyx_proj.apps.content.app_settings import CAMPAIGN_CONTENT_DATA_CHANNEL_LIST
-from onyx_proj.common.constants import TAG_SUCCESS, ApplicationName
+from onyx_proj.common.constants import TAG_SUCCESS, ApplicationName, TAG_FAILURE, ContentType, \
+    ContentAttributeIdToContentText
 from onyx_proj.common.decorators import ReqEncryptDecrypt
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.common.utils.logging_helpers import log_entry, log_error
-from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException, BadRequestException
+from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException, BadRequestException, \
+    InternalServerError
+from onyx_proj.models.CED_CampaignBuilderSMS_model import CEDCampaignBuilderSMS
+from onyx_proj.models.CED_CampaignExecutionProgress_model import CEDCampaignExecutionProgress
 from onyx_proj.models.CED_EMAILResponse_model import CEDEMAILResponse
 from onyx_proj.models.CED_SMSResponse_model import CEDSMSResponse
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from onyx_proj.models.CED_WHATSAPPResponse_model import CEDWHATSAPPResponse
+
+from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
 
 logger = logging.getLogger("apps")
 
@@ -148,4 +156,332 @@ def aggregate_all_and_main_table_result_for_user_campaign_data(query_result_all_
             processed_records.append(cust_ref_id)
             query_result.append(result)
     return query_result
+
+
+def fetch_template_stats(request_body):
+    method_name = "fetch_template_stats"
+    logger.debug(f"Entry: {method_name} :: request_body: {request_body}")
+
+    project_id = request_body.get("project_id", None)
+    start_time = request_body.get("start_date", None)
+    end_time = request_body.get("end_date", None)
+    segment_id = request_body.get("segment_id", None)
+
+    if project_id is None or start_time is None or end_time is None:
+        logger.error(f"{method_name} :: Not a valid request: {request_body}.")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid Input")
+    final_response = []
+    try:
+        for content_type in ContentType:
+            if content_type in [ContentType.SMS, ContentType.IVR, ContentType.EMAIL, ContentType.WHATSAPP]:
+                template_data = get_template_stats(project_id, start_time, end_time, content_type.value, segment_id)
+                final_response.extend(template_data)
+    except BadRequestException as ex:
+        logger.error(f"Invalid Request, request: {request_body}. {ex}")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid Request")
+    except InternalServerError as ex:
+        logger.error(f"Problem in fetching template stats. {ex}")
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message="Issues in fetching template statistics")
+    except Exception as ex:
+        logger.error(f"Problem in fetching template stats. {ex}")
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message="Issues in fetching template statistics")
+
+    logger.debug(f"Exit: {method_name}. SUCCESS")
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=final_response)
+
+
+def get_template_stats(project_id, start_time, end_time, channel, segment_id=None):
+    method_name = "get_template_stats"
+
+    query_to_fetch_cbc_for_templates = prepare_query_to_fetch_cbc_for_templates(
+        {"project_id": project_id, "start_time": start_time, "end_time": end_time, "segment_id": segment_id},
+        channel=channel
+    )
+    template_data_response = CEDCampaignBuilderCampaign().fetch_cbc_by_query(query_to_fetch_cbc_for_templates)
+
+    if template_data_response is None:
+        logger.error(f"No template_data_response from database")
+        raise BadRequestException(method_name=method_name, reason="Bad Request")
+
+    template_stats = []
+    all_cbc = []
+
+    if channel == ContentType.SMS.value:
+        attribute_ids = {"sms_id": set(), "sender_id": set(), "url_id": set()}
+        template_id = "sms_id"
+    elif channel == ContentType.WHATSAPP.value:
+        attribute_ids = {"whatsapp_content_id": set(), "cta_id": set(), "footer_id": set(), "header_id": set(), "media_id": set(), "url_id": set()}
+        template_id = "whatsapp_content_id"
+    elif channel == ContentType.EMAIL.value:
+        attribute_ids = {"email_id": set(), "subject_line_id": set(), "url_id": set()}
+        template_id = "email_id"
+    else:
+        attribute_ids = {"ivr_id": set()}
+        template_id = "ivr_id"
+         
+    template_stats_len = 0
+
+    cbc_to_stats_mapping = {}
+
+    prev_row = None
+    for row in template_data_response:
+        if prev_row is None or (prev_row.get(template_id) != row.get(template_id)):
+            template_stats.append({
+                "unique_id": row.get(template_id),
+                "channel": channel,
+                "associate_mapping": [{**{k: row.get(k) for k in attribute_ids.keys() if k != template_id and row.get(k) is not None}, "campaign_builder_id": row.get("cb_id")}]
+            })
+            template_stats_len += 1
+        else:
+            new_mapping = False
+            for k, v in row.items():
+                if k not in [template_id, "cbc_id", "cb_id"]:
+                    if prev_row.get(k) != v:
+                        new_mapping = True
+                        break
+            if new_mapping:
+                template_stats[template_stats_len - 1]["associate_mapping"].append(
+                    {**{k: row.get(k) for k in attribute_ids.keys() if k != template_id and row.get(k) is not None}, "campaign_builder_id": row.get("cb_id")}
+                )
+        for key in attribute_ids.keys():
+            attribute_ids.get(key).add(row.get(key)) if row.get(key) is not None else None
+        all_cbc.append(row.get("cbc_id"))
+        cbc_to_stats_mapping[row.get("cbc_id")] = [
+            template_stats_len - 1,
+            len(template_stats[template_stats_len - 1]["associate_mapping"]) - 1
+        ]
+        prev_row = row
+
+    all_cbc_len = len(all_cbc)
+    for index in range(0, all_cbc_len, 800):
+        next_index = index + 800
+        if next_index > all_cbc_len:
+            next_index = all_cbc_len
+
+        filter_string = f"""{"', '".join(all_cbc[index: next_index])}"""
+
+        data = CEDCampaignExecutionProgress().get_performance_counts_for_cbc_ids(filter_string)
+        if data is None:
+            logger.error(f"No data captured from CED_CampaignExecutionProgress table")
+            raise BadRequestException(method_name=method_name, reason="Bad Request")
+
+        # aggregate data for each template
+        for cbc_exec_progress in data:
+            template_index = cbc_to_stats_mapping[cbc_exec_progress.get("cbc_id")][0]
+            associate_mapping_index = cbc_to_stats_mapping[cbc_exec_progress.get("cbc_id")][1]
+
+            template_stats[template_index].setdefault("has_at_least_one_valid_cbc", True)
+
+            for entity in ["delivery", "landing", "clicked", "acknowledge"]:
+                if cbc_exec_progress.get(entity, 0) is None:
+                    cbc_exec_progress[entity] = 0
+
+            template_stats[template_index]["total_delivery"] = template_stats[template_index].get("total_delivery", 0) + cbc_exec_progress.get("delivery", 0)
+            template_stats[template_index]["total_landing"] = template_stats[template_index].get("total_landing", 0) + cbc_exec_progress.get("landing", 0)
+            template_stats[template_index]["total_clicked"] = template_stats[template_index].get("total_clicked", 0) + cbc_exec_progress.get("clicked", 0)
+            template_stats[template_index]["total_acknowledge"] = template_stats[template_index].get("total_acknowledge", 0) + cbc_exec_progress.get("acknowledge", 0)
+
+
+            # NOTE: (IVR will have empty associate_mappings) so its associate_mapping will be removed later
+            # NOTE: (Any channel, where all associate_ids are null will have empty associate_mapping) that mapping will be removed later
+            if len(template_stats[template_index]["associate_mapping"]) > 0 and len(template_stats[template_index]["associate_mapping"][associate_mapping_index]) > 1:  # if associate_mapping is valid
+                template_stats[template_index]["associate_mapping"][associate_mapping_index].setdefault("has_at_least_one_valid_cbc", True)
+                template_stats[template_index]["associate_mapping"][associate_mapping_index]["total_delivery"] = template_stats[template_index]["associate_mapping"][associate_mapping_index].get("total_delivery",0) + cbc_exec_progress.get("delivery", 0)
+                template_stats[template_index]["associate_mapping"][associate_mapping_index]["total_landing"] = template_stats[template_index]["associate_mapping"][associate_mapping_index].get("total_landing",0) + cbc_exec_progress.get("landing",0)
+                template_stats[template_index]["associate_mapping"][associate_mapping_index]["total_clicked"] = template_stats[template_index]["associate_mapping"][associate_mapping_index].get("total_clicked",0) + cbc_exec_progress.get("clicked",0)
+                template_stats[template_index]["associate_mapping"][associate_mapping_index]["total_acknowledge"] = template_stats[template_index]["associate_mapping"][associate_mapping_index].get("total_acknowledge",0) + cbc_exec_progress.get("acknowledge", 0)
+            elif len(template_stats[template_index]["associate_mapping"]) == 1 and len(template_stats[template_index]["associate_mapping"][associate_mapping_index]) == 1:  # if associate_mapping is invalid
+                template_stats[template_index]["campaign_builder_id"] = template_stats[template_index]["associate_mapping"][associate_mapping_index].get("campaign_builder_id")
+
+    template_without_any_valid_cbc = []  # contains templates which does not have a single valid CBC
+
+    content_table_obj = app_settings.CONTENT_TABLE_MAPPING[channel]()
+    query_to_fetch_textual_data = prepare_query_to_fetch_content_text(attribute_ids, channel)
+    textual_data = content_table_obj.fetch_content_data_by_query(query_to_fetch_textual_data)
+    textual_data_map = {d['unique_id']: [d['text'], d['id']] for d in textual_data}
+
+    for temp in template_stats:
+        if not temp.get("has_at_least_one_valid_cbc"):
+            template_without_any_valid_cbc.append(temp)
+            continue
+
+        try:
+            temp["average_delivery"] = (temp.get("total_delivery", 0) / temp.get("total_acknowledge")) * 100
+            temp["average_landing"] = (temp.get("total_landing", 0) / temp.get("total_acknowledge")) * 100
+            temp["average_clicked"] = (temp.get("total_clicked", 0) / temp.get("total_acknowledge")) * 100
+        except Exception as ex:
+            temp["average_delivery"] = 0
+            temp["average_landing"] = 0
+            temp["average_clicked"] = 0
+
+        temp["id"] = textual_data_map[temp.get("unique_id")][1]
+        temp["text"] = textual_data_map[temp.get("unique_id")][0]
+
+        temp.pop("has_at_least_one_valid_cbc", None)
+
+        associate_mapping_without_any_valid_cbc = []  # contains mappings which does not have a single valid CBC
+
+        for mapping in temp["associate_mapping"]:
+            if not mapping.get("has_at_least_one_valid_cbc"):
+                associate_mapping_without_any_valid_cbc.append(mapping)
+                continue
+            try:
+                mapping["average_delivery"] = (mapping.get("total_delivery", 0) / mapping.get("total_acknowledge")) * 100
+                mapping["average_landing"] = (mapping.get("total_landing", 0) / mapping.get("total_acknowledge")) * 100
+                mapping["average_clicked"] = (mapping.get("total_clicked", 0) / mapping.get("total_acknowledge")) * 100
+            except Exception as ex:
+                mapping["average_delivery"] = 0
+                mapping["average_landing"] = 0
+                mapping["average_clicked"] = 0
+
+            for attribute_id in attribute_ids.keys():
+                if attribute_id != template_id and mapping.get(attribute_id, None) is not None:
+                    mapping[ContentAttributeIdToContentText[attribute_id]] = textual_data_map[mapping.get(attribute_id)][0]
+
+            mapping.pop("has_at_least_one_valid_cbc", None)
+
+        # remove associate_mappings which does not have a single valid CBC or have all associate_ids as null
+        for ass_mapping in associate_mapping_without_any_valid_cbc:
+            temp["associate_mapping"].remove(ass_mapping)
+        if len(temp["associate_mapping"]) == 0:
+            del temp["associate_mapping"]
+
+    # remove templates which does not have a single valid CBC
+    for temp in template_without_any_valid_cbc:
+        template_stats.remove(temp)
+        
+    return template_stats
+
+
+def prepare_query_to_fetch_content_text(attribute_ids, channel):
+    if channel == ContentType.SMS.value:
+        query = f"""
+             select Id as id, UniqueId as unique_id, ContentText as text
+             FROM CED_CampaignSMSContent WHERE UniqueId in ({"'" + "', '".join(attribute_ids.get("sms_id")) + "'"})
+             UNION
+             select Id as id, UniqueId as unique_id, ContentText as text
+             FROM CED_CampaignSenderIdContent WHERE UniqueId in ({"'" + "', '".join(attribute_ids.get("sender_id")) + "'"})
+             UNION
+             select Id as id, UniqueId as unique_id, URL as text
+             FROM CED_CampaignUrlContent WHERE UniqueId in ({"'" + "', '".join(attribute_ids.get("url_id")) + "'"});
+             """
+    elif channel == ContentType.WHATSAPP.value:
+        query = f"""
+             select Id as id, UniqueId as unique_id, ContentText as text
+             FROM CED_CampaignWhatsAppContent 
+             WHERE UniqueId in ({"'" + "', '".join(attribute_ids.get("whatsapp_content_id")) + "'"})
+             UNION select Id as id, UniqueId as unique_id, ContentText as text FROM CED_CampaignMediaContent 
+             WHERE UniqueId in ({"'" + "', '".join(attribute_ids.get("media_id")) + "'"})
+             UNION select Id as id, UniqueId as unique_id, URL as text FROM CED_CampaignUrlContent WHERE UniqueId 
+             in ({"'" + "', '".join(attribute_ids.get("url_id")) + "','" + "', '".join(attribute_ids.get("cta_id")) + "'"})
+             UNION select Id as id, UniqueId as unique_id, ContentText as text FROM CED_CampaignTextualContent WHERE UniqueId 
+             in ({"'" + "', '".join(attribute_ids.get("footer_id")) + "','" + "', '".join(attribute_ids.get("header_id")) + "'"});
+             """
+    elif channel == ContentType.EMAIL.value:
+        query = f"""
+             select Id as id, UniqueId as unique_id, Title as text
+             FROM CED_CampaignEmailContent WHERE UniqueId in ({"'" + "', '".join(attribute_ids.get("email_id")) + "'"})
+             UNION
+             select Id as id, UniqueId as unique_id, ContentText as text FROM CED_CampaignSubjectLineContent WHERE UniqueId 
+             in ({"'" + "', '".join(attribute_ids.get("subject_line_id")) + "'"})
+             UNION
+             select Id as id, UniqueId as unique_id, URL as text
+             FROM CED_CampaignUrlContent WHERE UniqueId in ({"'" + "', '".join(attribute_ids.get("url_id")) + "'"});
+             """
+    elif channel == ContentType.IVR.value:
+        query = f"""
+             select Id as id, UniqueId as unique_id, ContentText as text
+             FROM CED_CampaignIvrContent WHERE UniqueId in ({"'" + "', '".join(attribute_ids.get("ivr_id")) + "'"});
+             """
+    else:
+        logger.error(f"Query preparation failed, Invalid channel")
+        raise BadRequestException(reason="Invalid Channel Provided")
+    return query
+
+
+def prepare_query_to_fetch_cbc_for_templates(filters, channel):
+    project_id = filters.get("project_id")
+    start_time = filters.get("start_time")
+    end_time = filters.get("end_time")
+    segment_id = filters.get("segment_id")
+    segment_where_clause = f"and cb.SegmentId = '{segment_id}'" if segment_id is not None else ""
+
+    if channel == ContentType.SMS.value:
+        query = f"""
+                select cbs.SmsId as sms_id, cbs.SenderId as sender_id, cbs.UrlId as url_id, 
+                cbc.UniqueId as cbc_id, cbc.CampaignBuilderId as cb_id
+                from ( SELECT cb.* FROM CED_CampaignBuilder as cb JOIN CED_CampaignBuilderCampaign as cbc
+                ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}'
+                and cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' 
+                and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' 
+                and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' 
+                {segment_where_clause} GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) cb
+                JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId
+                JOIN CED_CampaignBuilderSMS cbs ON cbc.UniqueId = cbs.MappingId 
+                JOIN CED_CampaignExecutionProgress as cep ON cbc.UniqueId = cep.CampaignBuilderCampaignId 
+                Where cbc.IsActive = 1 and cbc.IsDeleted = 0 
+                AND cep.TestCampaign=0 AND cep.Status in ('PARTIALLY_EXECUTED', 'EXECUTED')
+                ORDER BY cbs.SmsId, cbs.SenderId, cbs.UrlId;
+                """
+    elif channel == ContentType.WHATSAPP.value:
+        query = f"""
+                select cbw.WhatsAppContentId as whatsapp_content_id, cbw.UrlId as url_id, cbw.CtaId as cta_id, cbw.FooterId as footer_id,
+                cbw.HeaderId as header_id, cbw.MediaId as media_id,  
+                cbc.UniqueId as cbc_id, cbc.CampaignBuilderId as cb_id
+                from ( SELECT cb.* FROM CED_CampaignBuilder as cb JOIN CED_CampaignBuilderCampaign as cbc
+                ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}'
+                and cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' 
+                and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' 
+                and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' 
+                {segment_where_clause} GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) cb
+                JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId
+                JOIN CED_CampaignBuilderWhatsApp cbw ON cbc.UniqueId = cbw.MappingId 
+                JOIN CED_CampaignExecutionProgress as cep ON cbc.UniqueId = cep.CampaignBuilderCampaignId
+                Where cbc.IsActive = 1 and cbc.IsDeleted = 0 
+                AND cep.TestCampaign=0 AND cep.Status in ('PARTIALLY_EXECUTED', 'EXECUTED')
+                ORDER BY 1,2,3,4,5,6;
+                """
+    elif channel == ContentType.EMAIL.value:
+        query = f"""
+                select cbe.EmailId as email_id, cbe.SubjectLineId as subject_line_id, cbe.UrlId as url_id,
+                cbc.UniqueId as cbc_id, cbc.CampaignBuilderId as cb_id
+                from ( SELECT cb.* FROM CED_CampaignBuilder as cb JOIN CED_CampaignBuilderCampaign as cbc
+                ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}'
+                and cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' 
+                and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' 
+                and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' 
+                {segment_where_clause} GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) cb
+                JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId
+                JOIN CED_CampaignBuilderEmail cbe ON cbc.UniqueId = cbe.MappingId 
+                JOIN CED_CampaignExecutionProgress as cep ON cbc.UniqueId = cep.CampaignBuilderCampaignId
+                Where cbc.IsActive = 1 and cbc.IsDeleted = 0 
+                AND cep.TestCampaign=0 AND cep.Status in ('PARTIALLY_EXECUTED', 'EXECUTED')
+                ORDER BY 1,2,3;
+                """
+    elif channel == ContentType.IVR.value:
+        query = f"""
+                select cbi.IvrId as ivr_id, cbc.UniqueId as cbc_id, cbc.CampaignBuilderId as cb_id
+                from ( SELECT cb.* FROM CED_CampaignBuilder as cb JOIN CED_CampaignBuilderCampaign as cbc
+                ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}'
+                and cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' 
+                and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' 
+                and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' 
+                {segment_where_clause} GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) cb
+                JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId
+                JOIN CED_CampaignBuilderIVR cbi ON cbc.UniqueId = cbi.MappingId 
+                JOIN CED_CampaignExecutionProgress as cep ON cbc.UniqueId = cep.CampaignBuilderCampaignId
+                Where cbc.IsActive = 1 and cbc.IsDeleted = 0 
+                AND cep.TestCampaign=0 AND cep.Status in ('PARTIALLY_EXECUTED', 'EXECUTED')
+                ORDER BY 1;
+                """
+    else:
+        logger.error(f"Query preparation failed, Invalid channel")
+        raise BadRequestException(reason="Invalid Channel Provided")
+    return query
+    
+
 

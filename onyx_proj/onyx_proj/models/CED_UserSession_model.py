@@ -43,12 +43,11 @@ class CEDUserSession:
         return dict_fetch_all(cursor=self.curr, table_name=self.table_name, data_dict=data_dict,
                               select_args=["UserUId as user_id", "ProjectId as project_id"])
 
-    def get_session_obj_from_session_id(self,session_id: str):
-        filter_list = [
-                        {"op": "==", "column": "session_id", "value": session_id},
-                        {"op": "==", "column": "expired", "value": 0},
-                        {"op": ">", "column": "expire_time", "value": datetime.now()}
-                      ]
+    def get_session_obj_from_session_id(self, session_id: str, expired_flag=True):
+        filter_list = [{"op": "==", "column": "session_id", "value": session_id}]
+        if expired_flag:
+            filter_list.append({"op": "==", "column": "expired", "value": 0})
+            filter_list.append({"op": ">", "column": "expire_time", "value": datetime.now()})
         res = fetch_rows_limited(self.engine, self.alch_class, filter_list, columns=[],
                            relationships=["user.user_project_mapping_list.roles.roles_permissions_mapping_list.permission"])
         if res is None or len(res) <= 0:

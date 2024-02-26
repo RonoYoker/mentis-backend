@@ -78,7 +78,6 @@ class CEDCampaignIvrContent:
         update_dict = {"is_starred": is_starred}
         return update(self.engine, self.table, filter, update_dict)
 
-
     def get_active_data_by_unique_id(self, uid):
         filter_list = [
             {"column": "unique_id", "value": uid, "op": "=="},
@@ -124,3 +123,6 @@ class CEDCampaignIvrContent:
         if res is None or len(res) <= 0:
             return None
         return res
+
+    def fetch_content_data_by_query(self, query):
+        return dict_fetch_query_all(self.curr, query)

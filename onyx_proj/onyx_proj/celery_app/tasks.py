@@ -294,3 +294,18 @@ def update_segment_data_encrypted(segment_data):
 def task_resolve_data_dependency_callback_for_project(dependency_config_id=None):
     from onyx_proj.apps.project.project_processor import resolve_data_dependency_callback_for_project
     resolve_data_dependency_callback_for_project(dependency_config_id)
+
+@task
+def execute_celery_child_task(unique_id, auth_token):
+    from onyx_proj.celery_app.tasks_processor import execute_celery_child_task_by_unique_id
+    execute_celery_child_task_by_unique_id(unique_id, auth_token)
+
+@task
+def check_parent_task_completion_status(unique_id):
+    from onyx_proj.celery_app.tasks_processor import check_parent_task_completion_status_by_unique_id
+    check_parent_task_completion_status_by_unique_id(unique_id)
+
+
+def get_callback_function_name_by_key(callback_key):
+    from onyx_proj.common.constants import ASYNC_CELERY_CALLBACK_KEY_MAPPING
+    return ASYNC_CELERY_CALLBACK_KEY_MAPPING[callback_key]

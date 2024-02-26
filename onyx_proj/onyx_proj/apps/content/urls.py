@@ -16,5 +16,6 @@ urlpatterns = {
     path("template_sandesh_callback", views.template_sandesh_callback),
     path("local/messageData", views.fetch_campaign_data_by_account_id),
     path("local/route_template_message/", views.route_local_template_message),
-    path("local/message_data", views.fetch_campaign_data_by_account_id)
+    path("local/message_data", views.fetch_campaign_data_by_account_id),
+    path("get_template_stats/", views.get_template_stats)
 }

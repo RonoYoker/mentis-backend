@@ -167,3 +167,6 @@ class CEDCampaignWhatsAppContent:
         if res is None or len(res) <= 0:
             return None
         return res
+
+    def fetch_content_data_by_query(self, query):
+        return dict_fetch_query_all(self.curr, query)

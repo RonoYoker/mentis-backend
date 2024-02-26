@@ -488,3 +488,27 @@ class CEDCampaignBuilderCampaign:
         query = f"SELECT p.Name as Name from CED_Projects p JOIN CED_CampaignBuilder cb on p.UniqueId = cb.ProjectId JOIN CED_CampaignBuilderCampaign cbc on cb.UniqueId = cbc.CampaignBuilderId WHERE cbc.UniqueId = '{cbc_id}' "
         res = execute_query(self.engine, query)
         return None if not res or len(res) <= 0 or not res[0].get('Name') else res[0].get('Name')
+
+    def fetch_valid_v2_camp_detail_by_project_id(self, project_id, start_date, end_date, exclude_strategy=False):
+        if exclude_strategy:
+            strategy_filter = "and cb.StrategyId is null"
+        else:
+            strategy_filter = ""
+        query = (f"Select cb.Id as id, cb.UniqueId as unique_id, cb.Name as name, s.Title as segment_name, s.Records "
+                 f"as segment_records, s.UniqueId as segment_id, s.CountRefreshEndDate as refresh_date, "
+                 f"cbc.ContentType as channel, cbc.StartDateTime as start_date_time, cbc.EndDateTime as end_date_time, "
+                 f"SUM(cep.AcknowledgeCount) as ack_count, SUM(cep.DeliveredCount) as delivered_count, "
+                 f"SUM(cep.ClickedCount) as clicked_count, SUM(cep.LandingCount) as landing_count from "
+                 f"CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb on cb.UniqueId = cbc.CampaignBuilderId "
+                 f"join CED_CampaignExecutionProgress cep on cep.CampaignBuilderCampaignId = cbc.UniqueId join "
+                 f"CED_Segment s on cb.SegmentId = s.UniqueId join CED_Projects p on p.UniqueId = cb.ProjectId where "
+                 f"p.UniqueId = '{project_id}' and Date(cb.StartDateTime) BETWEEN '{start_date}' and '{end_date}' and "
+                 f"cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' "
+                 f"and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' and cep.Status in "
+                 f"( 'PARTIALLY_EXECUTED', 'EXECUTED' ) and cep.TestCampaign = 0 {strategy_filter} GROUP BY "
+                 f"cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1")
+        res = execute_query(self.engine, query)
+        return res
+
+    def fetch_cbc_by_query(self, query):
+        return dict_fetch_query_all(self.curr, query)

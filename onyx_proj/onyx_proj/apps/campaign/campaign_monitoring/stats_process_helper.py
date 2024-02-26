@@ -5,7 +5,7 @@ from datetime import datetime
 def add_filter_to_query_using_params(filter_dict: dict, mapping_dict: dict, project_id: str):
     query = ""
     mapping_dict["values"]["value"] = "'"+str(mapping_dict["values"]["value"])+"'" if mapping_dict.get('condition') == "=" else mapping_dict["values"]["value"]
-    if not filter_dict or filter_dict.get("filter_type") in [TAG_CHANNEL_FILTER, TAG_CAMP_TITLE_FILTER, TAG_STATUS_FILTER, TAG_TEMPLATE_ID_FILTER]:
+    if not filter_dict or filter_dict.get("filter_type") in [TAG_CHANNEL_FILTER, TAG_CAMP_TITLE_FILTER, TAG_STATUS_FILTER, TAG_TEMPLATE_ID_FILTER, TAG_CAMPAIGN_BUILDER_ID_FILTER]:
         query = STATS_VIEW_BASE_QUERY + f" WHERE s.ProjectId = '{project_id}' AND {mapping_dict.get('column')} {mapping_dict.get('condition')} {mapping_dict.get('values').get('value')}"
     elif filter_dict.get("filter_type") in [TAG_DATE_FILTER]:
         if mapping_dict.get('values').get('value').get('range').get('from_date') == mapping_dict.get('values').get('value').get('range').get('to_date'):
@@ -16,6 +16,9 @@ def add_filter_to_query_using_params(filter_dict: dict, mapping_dict: dict, proj
 
     if filter_dict.get("campaign_id") is not None:
         query = f"{query} AND cb.Id = {filter_dict['campaign_id']}"
+    elif filter_dict.get("strategy_id") is not None:
+        strategy_id = filter_dict['strategy_id']
+        query = f"""{query} AND cb.StrategyId = '{strategy_id}' """
     return query
 
 

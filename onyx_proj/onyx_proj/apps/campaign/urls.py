@@ -42,7 +42,7 @@ urlpatterns = [
     path("replay_error_campaign/", views.replay_error_campaign),
     path("local/check_campaign_processing/", views.check_campaign_status),
     path("campaign_error_alert/", views.campaign_error_alert),
+    path("get_test_campaign_status/", views.get_test_campaign_status),
     path("get_valid_v2_campaigns_detail/", views.get_valid_v2_campaigns_detail),
     path("get_campaign_variant_detail/", views.get_campaign_variant_detail),
-    path("get_test_campaign_status/", views.get_test_campaign_status),
 ]

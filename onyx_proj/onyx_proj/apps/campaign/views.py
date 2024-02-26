@@ -311,13 +311,6 @@ def get_campaign_data_by_unique_id(request):
 
 @csrf_exempt
 @UserAuth.user_authentication()
-@UserAuth.user_validation(permissions=[Roles.APPROVER.value], identifier_conf={
-    "param_type": "arg",
-    "param_key": 0,
-    "param_instance_type": "request_post",
-    "param_path": "unique_id",
-    "entity_type": "CAMPAIGNBUILDER"
-})
 def approval_action_on_campaign_builder(request):
     request_body = json.loads(request.body.decode("utf-8"))
     request_headers = request.headers
@@ -596,5 +589,23 @@ def get_test_campaign_status(request):
     request_headers = request.headers
 
     response = test_campaign_status(request_body)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def get_valid_v2_campaigns_detail(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    response = get_v2_camps_detail(request_body)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def get_campaign_variant_detail(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    response = fetch_campaign_variant_detail(request_body)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")

@@ -36,6 +36,7 @@ class TabName(Enum):
     APPROVAL_PENDING = "APPROVAL_PENDING"
     MY_CAMPAIGN = "MY_CAMPAIGN"
     ALL_STARRED = "ALL_STARRED"
+    STRATEGY = "STRATEGY"
 
 
 class DashboardTab(Enum):
@@ -55,6 +56,7 @@ TAG_TEMPLATE_ID_FILTER = "TEMPLATE_ID_FILTER"
 TAG_CHANNEL_FILTER = "CHANNEL_FILTER"
 TAG_STATUS_FILTER = "STATUS_FILTER"
 TAG_DEFAULT_VIEW = "DEFAULT_VIEW"
+TAG_CAMPAIGN_BUILDER_ID_FILTER = "CAMPAIGN_BUILDER_ID"
 
 COMMUNICATION_SOURCE_LIST = ["SMS", "IVR", "EMAIL", "WHATSAPP", "SUBJECT", "URL"]
 
@@ -415,10 +417,12 @@ STATS_HEADER_MAPPING = {
     TAG_STATUS_FILTER: "cep.Status",
     TAG_CHANNEL_FILTER: "cbc.ContentType",
     TAG_DEFAULT_VIEW: "cssd.ScheduleDate",
+    TAG_CAMPAIGN_BUILDER_ID_FILTER: "cb.UniqueId"
 }
 
 FILTER_BASED_CONDITIONS_MAPPING = {
     TAG_DEFAULT_VIEW: "=",
+    TAG_CAMPAIGN_BUILDER_ID_FILTER: "=",
     TAG_STATUS_FILTER: "IN",
     TAG_CHANNEL_FILTER: "IN",
     TAG_CAMP_TITLE_FILTER: "=",
@@ -498,7 +502,8 @@ STATS_VIEW_BASE_QUERY = """SELECT
     cep.Status AS Status,
     cep.Extra AS Extra,
     cep.UpdationDate AS LastRefreshTime,
-    subs.Records as sub_segment_count 
+    subs.Records as sub_segment_count,
+    sb.Name as strategy_name 
 FROM
     CED_CampaignExecutionProgress cep
         JOIN
@@ -510,6 +515,7 @@ FROM
             JOIN
     CED_CampaignSchedulingSegmentDetails cssd ON cssd.CampaignId = cep.CampaignBuilderCampaignId
     LEFT JOIN CED_Segment subs ON subs.UniqueId = cbc.SegmentId
+    LEFT JOIN CED_StrategyBuilder sb ON sb.UniqueId = cb.StrategyId
 """
 
 TAG_TEST_CAMPAIGN_QUERY_ALIAS_PATTERNS = ["as mobile", "as email"]
@@ -808,6 +814,7 @@ class CampaignExecutionProgressStatus(Enum):
 
 class DataSource(Enum):
     CAMPAIGN_BUILDER = "CAMPAIGN_BUILDER"
+    STRATEGY_BUILDER = "STRATEGY_BUILDER"
     CONTENT = "CONTENT"
     DATAID = "DATAID"
     PROJECT = "PROJECT"
@@ -1215,6 +1222,10 @@ CONTENT_VAR_NAME_REGEX = "(\\{|\\#|\\{#)var"
 MIN_ALLOWED_CONTENT_NAME_LENGTH = 5
 MAX_ALLOWED_CONTENT_NAME_LENGTH = 128
 
+
+MIN_ALLOWED_ENTITY_NAME_LENGTH = 5
+MAX_ALLOWED_ENTITY_NAME_LENGTH = 128
+
 CAMPAIGN_CONTENT_MAPPING_TABLE_DICT = {
     "SMS": CEDCampaignBuilderSMS,
     "EMAIL": CEDCampaignBuilderEmail,
@@ -1326,3 +1337,74 @@ class TemplateABTypes(Enum):
 
 class ProjectValidationConf(Enum):
     DATA_SYNC_REQUIRED = "DATA_SYNC_REQUIRED"
+
+
+class StrategyBuilderStatus(Enum):
+    APPROVAL_PENDING = "APPROVAL_PENDING"
+    APPROVAL_IN_PROGRESS = "APPROVAL_IN_PROGRESS"
+    APPROVED = "APPROVED"
+    DEACTIVATE = "DEACTIVATE"
+    DEACTIVATION_IN_PROGRESS = "DEACTIVATION_IN_PROGRESS"
+    DIS_APPROVED = "DIS_APPROVED"
+    SAVED = "SAVED"
+    DRAFTED = "DRAFTED"
+    ERROR = "ERROR"
+
+
+class CeleryTaskLogsStatus(Enum):
+    INITIALIZED = "INITIALIZED"
+    PICKED = "PICKED"
+    SUCCESS = "SUCCESS"
+    ERROR = "ERROR"
+
+
+class CeleryChildTaskLogsStatus(Enum):
+    INITIALIZED = "INITIALIZED"
+    PICKED = "PICKED"
+    SUCCESS = "SUCCESS"
+    ERROR = "ERROR"
+
+
+class AsyncCeleryTaskCallbackKeys(Enum):
+    ONYX_SAVE_STRATEGY = "ONYX_SAVE_STRATEGY"
+    ONYX_SENT_FOR_APPROVAL_STRATEGY = "ONYX_SENT_FOR_APPROVAL_STRATEGY"
+    ONYX_APPROVAL_FLOW_STRATEGY = "ONYX_APPROVAL_FLOW_STRATEGY"
+    ONYX_DEACTIVATION_STRATEGY = "ONYX_DEACTIVATION_STRATEGY"
+
+
+ASYNC_CELERY_CALLBACK_KEY_MAPPING = {
+    AsyncCeleryTaskCallbackKeys.ONYX_SAVE_STRATEGY.value: "onyx_save_strategy_callback_processor",
+    AsyncCeleryTaskCallbackKeys.ONYX_SENT_FOR_APPROVAL_STRATEGY.value: "onyx_sent_for_approval_strategy_callback_processor",
+    AsyncCeleryTaskCallbackKeys.ONYX_APPROVAL_FLOW_STRATEGY.value: "onyx_approval_flow_strategy_callback_processor",
+    AsyncCeleryTaskCallbackKeys.ONYX_DEACTIVATION_STRATEGY.value: "onyx_deactivate_strategy_callback_processor"
+}
+
+
+StrategyCTABasedOnStatus = {
+    StrategyBuilderStatus.SAVED: ["EDIT", "DEACTIVATE", "APPROVAL_PENDING", "CLONE", "VIEW"],
+    StrategyBuilderStatus.APPROVAL_PENDING: ["APPROVED", "DIS_APPROVED", "CLONE", "VIEW"],
+    StrategyBuilderStatus.APPROVED: ["DEACTIVATE", "CLONE", "VIEW", "STATS"],
+    StrategyBuilderStatus.DEACTIVATE: ["EDIT", "CLONE", "VIEW"],
+    StrategyBuilderStatus.ERROR: ["EDIT", "CLONE", "VIEW"],
+    StrategyBuilderStatus.DIS_APPROVED: ["EDIT", "CLONE", "VIEW"],
+    StrategyBuilderStatus.DRAFTED: ["VIEW"],
+    StrategyBuilderStatus.APPROVAL_IN_PROGRESS: ["VIEW"],
+    StrategyBuilderStatus.DEACTIVATION_IN_PROGRESS: ["VIEW"]
+}
+
+ContentAttributeIdToContentText = {
+    "sender_id": "sender_text",
+    "url_id": "url_text",
+    "cta_id": "cta_text",
+    "footer_id": "footer_text",
+    "header_id": "header_text",
+    "media_id": "media_text",
+    "subject_line_id": "subject_line_text",
+}
+
+
+class CampaignLevel(Enum):
+    MAIN = "MAIN"
+    INTERNAL = "INTERNAL"
+    LIMIT = "LIMIT"
+

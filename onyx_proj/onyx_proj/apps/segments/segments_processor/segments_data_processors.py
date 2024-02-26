@@ -1,3 +1,4 @@
+import collections
 import copy
 import http
 import json
@@ -22,6 +23,7 @@ from onyx_proj.exceptions.permission_validation_exception import BadRequestExcep
     InternalServerError
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
+from onyx_proj.models.CED_CampaignExecutionProgress_model import CEDCampaignExecutionProgress
 from onyx_proj.models.CED_DataID_Details_model import CEDDataIDDetails
 from onyx_proj.models.CED_FP_HeaderMap_model import CEDFPHeaderMapping
 from onyx_proj.models.CED_MasterHeaderMapping_model import CEDMasterHeaderMapping
@@ -36,6 +38,7 @@ from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from onyx_proj.orm_models.CED_Segment_Filter_Value_model import CED_Segment_Filter_Value
 from onyx_proj.orm_models.CED_Segment_Filter_model import CED_Segment_Filter
 from onyx_proj.orm_models.CED_Segment_model import CED_Segment
+from onyx_proj.common.constants import *
 
 logger = logging.getLogger("apps")
 
@@ -140,7 +143,7 @@ def get_master_headers_by_data_id(request_body):
 
 
 def validate_segment_tile(request_body):
-    logger.debug(f"get_master_headers_by_data_id :: request_body: {request_body}")
+    logger.debug(f"validate_segment_tile :: request_body: {request_body}")
 
     project_id = request_body.get("project_id", None)
     seg_title = request_body.get("title", None)
@@ -577,4 +580,165 @@ def get_segment_list_from_campaign(request: dict, session_id=None):
             used_seg_ids.append(record["sub_seg_unique_id"])
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=filtered_data)
+
+
+def fetch_segment_stats(request_body):
+    method_name = "fetch_segment_stats"
+    logger.debug(f"ENTER, {method_name} :: request_body: {request_body}")
+
+    project_id = request_body.get("project_id", None)
+    start_time = request_body.get("start_date", None)
+    end_time = request_body.get("end_date", None)
+    template_info = request_body.get("template_info", None)
+
+    if project_id is None or start_time is None or end_time is None:
+        logger.error(f"{method_name} :: Not a valid request: {request_body}.")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Invalid Input")
+
+    if template_info is None or template_info == "":
+        segment_data_response = CEDSegment().get_segment_and_cbc_ids_for_stats({'project_id': project_id, 'start_time': start_time, 'end_time': end_time})
+    else:
+        if request_body.get("channel") is None:
+            logger.error(f"get_segment_stats_by_project_id :: channel is missing: {request_body}.")
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Invalid Input")
+
+        template = template_info
+        try:
+            if request_body.get("channel") == ContentType.SMS.value:
+                if (template.get('sms_id') is None or template.get('sms_id') == "" or
+                        template.get('sender_id') is None or template.get('sender_id') == ""):
+                    return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message=
+                    f"{request_body.get('channel')} details are missing or incorrect.")
+                join_filter = " JOIN CED_CampaignBuilderSMS as cbs ON cbs.MappingId = cbcs.UniqueId"
+                where_filter = (f" WHERE cbs.SmsId = '{template.get('sms_id')}' AND "
+                                f" cbs.SenderId = '{template.get('sender_id')}' "
+                                f""" {f" AND cbs.UrlId  = '{template.get('url_id')}' " if template.get('url_id') is not None and template.get('url_id') != "" else "AND cbs.UrlId is null"} """)
+            elif request_body.get("channel") == ContentType.IVR.value:
+                if template.get('ivr_id') is None or template.get('ivr_id') == "":
+                    return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message=
+                    f"{request_body.get('channel')} details are missing or incorrect.")
+                join_filter = " JOIN CED_CampaignBuilderIVR as cbi ON cbi.MappingId = cbcs.UniqueId"
+                where_filter = f" WHERE cbi.IvrId = '{template.get('ivr_id')}'"
+            elif request_body.get("channel") == ContentType.EMAIL.value:
+                if (template.get('email_id') is None or template.get('email_id') == "" or
+                        template.get('subject_line_id') is None or template.get('subject_line_id') == ""):
+                    return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message=
+                    f"{request_body.get('channel')} details are missing or incorrect.")
+                join_filter = " JOIN CED_CampaignBuilderEmail as cbe ON cbe.MappingId = cbcs.UniqueId"
+                where_filter = (f" WHERE cbe.EmailId = '{template.get('email_id')}' AND "
+                                f" cbe.SubjectLineId = '{template.get('subject_line_id')}' "
+                                f""" {f" AND cbe.UrlId  = '{template.get('url_id')}' " if template.get('url_id') is not None and template.get('url_id') != "" else "AND cbe.UrlId is null"} """)
+            elif request_body.get("channel") == ContentType.WHATSAPP.value:
+                if template.get('whatsapp_content_id') is None or template.get('whatsapp_content_id') == "":
+                    return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message=
+                    f"{request_body.get('channel')} details are missing or incorrect.")
+                join_filter = " JOIN CED_CampaignBuilderWhatsApp as cbw ON cbw.MappingId = cbcs.UniqueId"
+                where_filter = (f""" WHERE cbw.WhatsAppContentId = '{template.get('whatsapp_content_id')}' """
+                                f""" {f" AND cbw.FooterId = '{template.get('footer_id')}'" if template.get('footer_id') is not None and template.get('footer_id') != "" else "AND cbw.FooterId is null" } """ 
+                                f""" {f" AND cbw.HeaderId = '{template.get('header_id')}'" if template.get('header_id') is not None and template.get('header_id') != "" else "AND cbw.HeaderId is null" } """
+                                f""" {f" AND cbw.MediaId = '{template.get('media_id')}'" if template.get('media_id') is not None and template.get('media_id') != "" else "AND cbw.MediaId is null" } """
+                                f""" {f" AND cbw.UrlId = '{template.get('url_id')}'" if template.get('url_id') is not None and template.get('url_id') != "" else "AND cbw.UrlId is null" } """
+                                f""" {f" AND cbw.CtaId = '{template.get('cta_id')}' " if template.get('cta_id') is not None and template.get('cta_id') != "" else "AND cbw.CtaId is null" } """)
+            else:
+                logger.error(f"{method_name} :: channel is invalid for the request: {request_body}.")
+                return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="Invalid Input")
+        except Exception as ex:
+            logger.error(f'Some issue in getting template details, {ex}')
+            return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE, details_message="Unable to capture template details")
+
+        segment_data_response = CEDSegment().get_segment_and_cbc_ids_for_stats({'project_id': project_id, 'start_time': start_time, 'end_time': end_time}, join_filter, where_filter)
+
+    if segment_data_response is None or len(segment_data_response) == 0:
+        logger.error(f" No Segment data from the query , {method_name} :: request_body : {request_body}.")
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="No segments for this request")
+
+    all_cbc = []
+    segment_stats = []
+
+    # dict used to map CBC indexes in 'all_cbc' to Segment index in 'segment_stats'
+    # for example, 0th to 4th index CBCs belong to 0th segment,
+    # 5th to 9th index CBCs belong to 1st segment, and so on
+    cbc_index_to_seg_index = {}  # {  5 : 0 , 10 : 1 , 15 : 2 }
+
+    prev_id = None
+    # Note: segment_data_response is sorted w.r.t segment id in desc order
+    # fill 'all_cbc' and make 'cbc_index_to_seg_index' and 'segment_stats'
+    for row in segment_data_response:
+        if (row.get("id") is not None and row.get("id") != prev_id) or prev_id is None:
+            if prev_id is not None:
+                cbc_index_to_seg_index[len(all_cbc)] = len(segment_stats) - 1
+            segment = dict(row)
+            segment.pop("cbc_id")
+            segment_stats.append(segment)
+            prev_id = row.get("id")
+        all_cbc.append(row.get("cbc_id"))
+    cbc_index_to_seg_index[len(all_cbc)] = len(segment_stats) - 1
+
+    cbc_index_to_seg_index = collections.OrderedDict(sorted(cbc_index_to_seg_index.items()))
+
+    all_cbc_len = len(all_cbc)
+
+    # fetch details of 800 cbc at a time from CEP Table
+    for index in range(0, all_cbc_len, 800):
+        next_index = index+800
+        if next_index > all_cbc_len:
+            next_index = all_cbc_len
+
+        filter_string = f"""{"', '".join(all_cbc[index: next_index])}"""
+
+        data = CEDCampaignExecutionProgress().get_performance_counts_for_cbc_ids(filter_string)
+        if data is None:
+            logger.error(f" No data captured from CED_CampaignExecutionProgress table  , {method_name} :: request_body : {request_body}.")
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="No segments for this request")
+
+        # aggregate data for each segment
+        for cbc_exec_progress in data:
+            cbc_index_in_all_cbc = all_cbc.index(cbc_exec_progress.get("cbc_id"))
+            seg_index = None
+            for key, value in cbc_index_to_seg_index.items():
+                if cbc_index_in_all_cbc < key:
+                    seg_index = value
+                    break
+
+            segment_stats[seg_index].setdefault("has_at_least_one_valid_cbc", True)
+
+            for entity in ["delivery", "landing", "clicked", "acknowledge"]:
+                if cbc_exec_progress.get(entity, 0) is None:
+                    cbc_exec_progress[entity] = 0
+
+            segment_stats[seg_index]["total_delivery"] = segment_stats[seg_index].get("total_delivery", 0) + cbc_exec_progress.get("delivery",0)
+            segment_stats[seg_index]["total_landing"] = segment_stats[seg_index].get("total_landing", 0) + cbc_exec_progress.get("landing",0)
+            segment_stats[seg_index]["total_clicked"] = segment_stats[seg_index].get("total_clicked", 0) + cbc_exec_progress.get("clicked",0)
+            segment_stats[seg_index]["total_acknowledge"] = segment_stats[seg_index].get("total_acknowledge", 0) + cbc_exec_progress.get("acknowledge",0)
+
+    seg_without_any_valid_cbc = []  # contains segments which does not have a single valid CBC
+
+    for seg in segment_stats:
+        if not seg.get("has_at_least_one_valid_cbc"):
+            seg_without_any_valid_cbc.append(seg)
+            continue
+
+        try:
+            seg["average_delivery"] = (seg.get("total_delivery", 0)/seg.get("total_acknowledge"))*100
+            seg["average_landing"] = (seg.get("total_landing", 0)/seg.get("total_acknowledge"))*100
+            seg["average_clicked"] = (seg.get("total_clicked", 0)/seg.get("total_acknowledge"))*100
+        except Exception as ex:
+            seg["average_delivery"] = 0
+            seg["average_landing"] = 0
+            seg["average_clicked"] = 0
+
+        seg.pop("has_at_least_one_valid_cbc", None)
+
+    # remove segments which does not have a single valid CBC
+    for seg in seg_without_any_valid_cbc:
+        segment_stats.remove(seg)
+
+    logger.debug(f"Exit. {method_name}. SUCCESS")
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=segment_stats)
+
 

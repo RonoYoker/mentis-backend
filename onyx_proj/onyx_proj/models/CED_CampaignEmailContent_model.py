@@ -125,3 +125,6 @@ class CEDCampaignEmailContent:
         except Exception as ex:
             return dict(status=False, message=str(ex))
         return dict(status=True, response=response)
+
+    def fetch_content_data_by_query(self, query):
+        return dict_fetch_query_all(self.curr, query)

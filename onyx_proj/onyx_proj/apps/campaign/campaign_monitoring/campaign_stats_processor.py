@@ -55,9 +55,6 @@ def get_filtered_campaign_stats_variants(data) -> json:
     if filter_dict.get("campaign_id") is not None and filter_dict.get("only_cb") :
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Both Filters cannot be applied at same time")
-    if filter_dict.get("campaign_id") is None and filter_dict.get("only_cb",False) is False:
-        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Mandatory Filter Missing")
 
     mapping_dict = create_filter_mapping_dict(filter_dict)
     query = add_filter_to_query_using_params(filter_dict, mapping_dict, project_id)

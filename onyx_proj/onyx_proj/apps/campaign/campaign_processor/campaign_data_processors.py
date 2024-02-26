@@ -10,6 +10,7 @@ import sys
 import uuid
 import jwt
 import logging
+import json
 from django.conf import settings
 import requests
 from django.template.loader import render_to_string
@@ -24,6 +25,7 @@ from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_END
 from onyx_proj.apps.otp.app_settings import OtpAppName
 from onyx_proj.apps.otp.otp_processor import check_otp_status
 from onyx_proj.apps.slot_management.data_processor.slots_data_processor import vaildate_campaign_for_scheduling
+from onyx_proj.apps.strategy_campaign.app_settings import AsyncCeleryChildTaskName
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.common.utils.logging_helpers import log_entry, log_exit
@@ -69,6 +71,7 @@ from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilde
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.models.CED_CampaignExecutionProgress_model import CEDCampaignExecutionProgress
 from onyx_proj.models.CED_CampaignWhatsAppContent_model import CEDCampaignWhatsAppContent
+from onyx_proj.models.CED_CeleryChildTaskLogs_model import CEDCeleryChildTaskLogs
 from onyx_proj.models.CED_DataID_Details_model import CEDDataIDDetails
 from onyx_proj.models.CED_HIS_CampaignBuilder import CED_HISCampaignBuilder
 from onyx_proj.models.CED_Projects import CEDProjects
@@ -81,6 +84,8 @@ from onyx_proj.models.CED_HIS_CampaignBuilder_model import CEDHIS_CampaignBuilde
 from onyx_proj.models.CED_SchedulingTable_model import CEDSchedulingTable
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from django.conf import settings
+
+from onyx_proj.models.CED_StrategyBuilder_model import CEDStrategyBuilder
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from onyx_proj.models.CED_User_model import CEDUser
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilder, CED_CampaignSchedulingSegmentDetails, \
@@ -875,6 +880,8 @@ def filter_list(request, session_id):
         filters = f" cb.CreatedBy = '{created_by}' and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' and cb.ProjectId='{project_id}' {segment_filter_placeholder} "
     elif tab_name == TabName.ALL_STARRED.value:
         filters = f" cb.IsStarred is True and cb.ProjectId ='{project_id}' {segment_filter_placeholder} "
+    elif tab_name == TabName.STRATEGY.value:
+        filters = f" cb.StrategyId is not null and cb.ProjectId ='{project_id}' and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' {segment_filter_placeholder} "
     else:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid Tab")
@@ -1266,6 +1273,8 @@ def approval_action_on_campaign_builder_by_unique_id(request_data):
                 return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                             details_message="reason not found")
             update_campaign_builder_status_by_unique_id(campaign_builder_id, input_status, reason, input_is_manual_validation_mandatory)
+        elif input_status == CampaignStatus.APPROVAL_PENDING.value:
+            update_cb_status_to_approval_pending_by_unique_id(campaign_builder_id, input_status)
         else:
             logger.error(f"{method_name}, invalid status request")
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -1293,6 +1302,91 @@ def approval_action_on_campaign_builder_by_unique_id(request_data):
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, details_message="")
 
 
+@UserAuth.user_validation(permissions=[Roles.MAKER.value], identifier_conf={
+    "param_type": "arg",
+    "param_key": 0,
+    "param_instance_type": "str",
+    "entity_type": "CAMPAIGNBUILDER"
+})
+def update_cb_status_to_approval_pending_by_unique_id(campaign_builder_id):
+    """
+        method to update campaign builder status to APPROVAL_PENDING using unique id
+    """
+
+    method_name = "update_cb_status_to_approval_pending_by_unique_id"
+    log_entry(campaign_builder_id)
+
+    try:
+        campaign_builder_entity_db = CEDCampaignBuilder().get_campaign_builder_entity_by_unique_id(campaign_builder_id)
+        if campaign_builder_entity_db is None or campaign_builder_entity_db.unique_id != campaign_builder_id:
+            logger.error(f"method_name: {method_name}, campaign builder id not found")
+            raise NotFoundException(method_name=method_name, reason="Campaign Builder entity not found")
+
+        #  To check at least 1 Campaign builder campaign entity for
+        #  this Campaign builder unique id present
+        validate_campaign_builder_for_campaign_id(campaign_builder_entity_db)
+
+        # Check current status should be SAVED
+        if campaign_builder_entity_db.status != CampaignStatus.SAVED.value:
+            raise BadRequestException(method_name=method_name,
+                                      reason="Campaign builder cannot be send for approval")
+
+        # Check if campaign's test state in campaign builder are
+        # already validated by maker
+        test_camp_state_list = [TestCampStatus.VALIDATED.value, TestCampStatus.MAKER_VALIDATED.value]
+        validate_campaign_builder_campaigns_for_valid_test(campaign_builder_entity=campaign_builder_entity_db,
+                                                           test_campaign_state_list=test_camp_state_list)
+
+        # Check project configuration in CED_Projects
+        project_entity = CEDProjects().get_project_data_by_project_id(campaign_builder_entity_db.project_id)
+        if (project_entity is None or len(project_entity) < 1 or "ValidationConfig" not in project_entity[0]
+                or len(project_entity[0]['ValidationConfig']) == 0):
+            raise BadRequestException(method_name=method_name,
+                                      reason="No project configuration found, Invalid campaign builder id")
+
+        test_camp_validation_config = json.loads(project_entity[0]['ValidationConfig'])
+
+        approved_test_camp_flag = False
+        if "APPROVER_TEST_CAMP_VALIDATION_FLAG" in test_camp_validation_config and test_camp_validation_config[
+            "APPROVER_TEST_CAMP_VALIDATION_FLAG"] is not None:
+            approved_test_camp_flag = test_camp_validation_config['APPROVER_TEST_CAMP_VALIDATION_FLAG']
+
+        if approved_test_camp_flag is False:
+            CEDCampaignBuilderCampaign().update_campaign_builder_campaign_instance(
+                update_dict={'TestCampignState': TestCampStatus.VALIDATED.value},
+                where_dict={'CampaignBuilderId': campaign_builder_entity_db.unique_id})
+
+        CEDCampaignBuilder().update_campaign_builder(where_dict={'UniqueId': campaign_builder_entity_db.unique_id},
+                                                     update_dict={'Status': CampaignStatus.APPROVAL_PENDING.value})
+
+        campaign_builder_entity_db = CEDCampaignBuilder().get_campaign_builder_entity_by_unique_id(campaign_builder_id)
+        prepare_and_save_campaign_builder_history_data(campaign_builder_entity_db)
+
+    except NotFoundException as ex:
+        logger.error(f"method_name: {method_name}, error: {ex.reason}")
+        raise NotFoundException(method_name=method_name, reason=ex.reason)
+    except BadRequestException as ex:
+        logger.error(f"method_name: {method_name}, error: {ex.reason}")
+        raise BadRequestException(method_name=method_name, reason=ex.reason)
+    except ValidationFailedException as ex:
+        logger.error(f"method_name: {method_name}, error: {ex.reason}")
+        raise ValidationFailedException(method_name=method_name, reason=ex.reason)
+    except OtpRequiredException as ex:
+        raise OtpRequiredException(data=ex.data)
+    except Exception as ex:
+        logger.error(f"method_name: {method_name}, error: error while updating campaign builder status, {ex}")
+        raise BadRequestException(method_name=method_name, reason="error while updating campaign builder status")
+
+    log_exit()
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, details_message="")
+
+
+@UserAuth.user_validation(permissions=[Roles.APPROVER.value], identifier_conf={
+    "param_type": "arg",
+    "param_key": 0,
+    "param_instance_type": "str",
+    "entity_type": "CAMPAIGNBUILDER"
+})
 def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_status, reason, input_is_manual_validation_mandatory):
     """
         method to update campaign builder status using unique id
@@ -1419,6 +1513,18 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, details_message="")
 
 
+def validate_campaign_builder_campaigns_for_valid_test(campaign_builder_entity, test_campaign_state_list):
+    method_name = "validate_campaign_builder_campaigns_for_valid_test"
+    for cbc in campaign_builder_entity.campaign_list:
+        # Instead of throw exception, it should check if the instance is system validated, and are the system validation
+        # entries are in one out of these states READY_TO_SEND_FOR_APPROVAL, READY_TO_APPROVE, COMPLETED
+        if cbc.test_campign_state not in test_campaign_state_list:
+            camp_system_validation_row = CEDCampaignSystemValidation().get_campaign_validation_entity(campaign_builder_entity.unique_id, cbc.execution_config_id)
+            if camp_system_validation_row.execution_status in ["READY_TO_SEND_FOR_APPROVAL", "READY_TO_APPROVE", "COMPLETED"]:
+                continue
+            raise ValidationFailedException(method_name=method_name, reason="Please validate the test campaign.")
+
+
 def validate_campaign_builder_for_campaign_id(campaign_builder_entity):
     """
     Method to validate campaign builder campaigns for campaign builder id
@@ -1464,6 +1570,7 @@ def validate_campaign_builder_campaign_for_scheduled_time(campaign_builder_entit
 def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
     from onyx_proj.apps.segments.segments_processor.segment_processor import check_segment_refresh_status, \
         validate_segment_status
+    from onyx_proj.celery_app.tasks import check_parent_task_completion_status
     method_name = "schedule_campaign_using_campaign_builder_id"
     log_entry(campaign_builder_id)
 
@@ -1627,6 +1734,27 @@ def schedule_campaign_using_campaign_builder_id(campaign_builder_id):
     CEDCampaignBuilder().update_campaign_builder_status(campaign_builder_entity.unique_id,
                                                         CampaignStatus.APPROVED.value,
                                                         input_is_manual_validation_mandatory=1)
+    if campaign_builder_entity.strategy_id is not None:
+        child_task_filter_list = [
+            {"column": "child_task_name", "value": AsyncCeleryChildTaskName.ONYX_CAMPAIGN_BUILDER_APPROVAL_FLOW.value,
+             "op": "=="},
+            {"column": "task_reference_id", "value": campaign_builder_entity.unique_id, "op": "=="}]
+        celery_child_task_list = CEDCeleryChildTaskLogs().get_celery_child_task_detail_by_filter_list(
+            child_task_filter_list)
+        if celery_child_task_list is None or len(celery_child_task_list) == 0:
+            logger.error(
+                f"{method_name} :: Unable to fetch celery child task data for task reference id: {campaign_builder_entity.unique_id}.")
+            raise BadRequestException(method_name=method_name,
+                                      reason=f"Unable to fetch celery child task data for task reference id: {campaign_builder_entity.unique_id}")
+
+        celery_child_task = celery_child_task_list[0]
+
+        filter_list = [{"column": "unique_id", "value": celery_child_task.unique_id, "op": "=="}]
+        CEDCeleryChildTaskLogs().update_table(filter_list, dict(status=CeleryChildTaskLogsStatus.SUCCESS.value))
+
+        check_parent_task_completion_status.apply_async(kwargs={"unique_id": celery_child_task.parent_task_id},
+                                                        queue="onyx_celery_callback")
+
     generate_campaign_approval_status_mail(
         {'unique_id': campaign_builder_entity.unique_id, 'status': CampaignStatus.APPROVED.value})
 
@@ -2444,6 +2572,8 @@ def save_campaign_details(request_data):
     method_name = "save_campaign_details"
     body = request_data.get("body", {})
     unique_id = body.get("unique_id", None)
+    campaign_reference_id = body.get("campaign_reference_id", None)
+    strategy_id = body.get("strategy_id", None)
     name = body.get("name", None)
     segment_id = body.get("segment_id", None)
     start_date_time = body.get("start_date_time", None)
@@ -2523,13 +2653,15 @@ def save_campaign_details(request_data):
     else:
         campaign_builder = CED_CampaignBuilder()
         campaign_builder.unique_id = uuid.uuid4().hex
-
+    is_split = is_split if strategy_id is None else json.loads(recurring_detail).get('is_split', False)
     campaign_builder.status = CampaignBuilderStatus.SAVED.value
     campaign_builder.created_by = user_name
     campaign_builder.segment_name = segment_entity[0].get("title", "") if segment_entity is not None else None
     campaign_builder.records_in_segment = segment_entity[0].get("records", "") if segment_entity is not None else None
     campaign_builder.name = name
     campaign_builder.segment_id = segment_id
+    campaign_builder.campaign_reference_id = campaign_reference_id
+    campaign_builder.strategy_id = strategy_id
     campaign_builder.priority = priority
     campaign_builder.start_date_time = start_date_time
     campaign_builder.end_date_time = end_date_time
@@ -2544,6 +2676,8 @@ def save_campaign_details(request_data):
     campaign_builder.is_manual_validation_mandatory = is_manual_validation_mandatory
     campaign_builder.request_meta = json.dumps(body)
     campaign_builder.version = version
+    if strategy_id is not None and strategy_id != "":
+        campaign_builder.campaign_level = CampaignLevel.MAIN.value
 
     try:
         saved_campaign_builder = save_campaign_builder_details(campaign_builder, campaign_list, unique_id, project_id)
@@ -2591,7 +2725,7 @@ def save_campaign_details(request_data):
             db_res = CEDCampaignBuilder().save_or_update_campaign_builder_details(campaign_builder)
             if not db_res.get("status"):
                 return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
-                            details_message="Enable to save campaign builder details")
+                            details_message="Unable to save campaign builder details")
             if campaign_builder.status == CampaignBuilderStatus.ERROR.value:
                 return dict(status_code=status_code, result=TAG_FAILURE,
                             details_message=campaign_builder.error_msg)
@@ -2603,6 +2737,95 @@ def save_campaign_details(request_data):
         else:
             return dict(status_code=status_code, result=TAG_FAILURE,
                         details_message=campaign_builder.error_msg)
+
+
+def save_strategy_campaign_details(data_packet):
+    method_name = "save_strategy_campaign_details"
+    logger.debug(f"Entry: {method_name}, data_packet: {data_packet}")
+
+    strategy_id = data_packet.get("strategy_id", None)
+    campaign_builder = data_packet.get("campaign_builder", None)
+    if campaign_builder is None or strategy_id is None:
+        return dict(result=TAG_FAILURE, details_message="data packet has missing fields")
+    campaign_builder_id = campaign_builder.get('campaign_builder_id')
+    recurring_detail = campaign_builder.get('recurring_detail')
+    schedule_time = campaign_builder.get('schedule_time')
+    if schedule_time is None or len(schedule_time) < 1:
+        return dict(result=TAG_FAILURE, details_message="data packet has missing fields")
+    try:
+        filter_list = [{"column": "unique_id", "value": campaign_builder_id, "op": "=="},
+                       {"column": "is_recurring", "value": 1, "op": "=="},
+                       {"column": "campaign_category", "value": "Recurring", "op": "=="},
+                       {"column": "version", "value": "V2", "op": "=="},
+                       {"column": "campaign_level", "value": "MAIN", "op": "=="}]
+        campaign_builder = CEDCampaignBuilder().get_campaign_builder_details_by_filter_list(filter_list)
+        if campaign_builder is None or len(campaign_builder) < 1:
+            raise InternalServerError(method_name=method_name,
+                                      reason=f"Unable to find campaign builder details for id {campaign_builder_id}.")
+
+        strategy_filter_list = [{"column": "unique_id", "value": strategy_id, "op": "=="}]
+        strategy_builder = CEDStrategyBuilder().get_strategy_builder_details(strategy_filter_list)
+        if strategy_builder is None or len(strategy_builder) < 1:
+            raise InternalServerError(method_name=method_name,
+                                      reason=f"Unable to find strategy builder details for id {strategy_builder}.")
+
+        campaign_builder = campaign_builder[0]
+        request_meta = json.loads(campaign_builder.request_meta)
+
+        min_start_time = schedule_time[0]["start_time"]
+        max_end_time = schedule_time[0]["end_time"]
+
+        # Iterate through the list starting from the second element
+        for time_entry in schedule_time[1:]:
+            if time_entry["start_time"] < min_start_time:
+                min_start_time = time_entry["start_time"]
+            if time_entry["end_time"] > max_end_time:
+                max_end_time = time_entry["end_time"]
+
+        new_variants = []
+        variants = request_meta['variant_detail']['variants'][0][0]
+        for time in schedule_time:
+            new_variants.append({
+                "channel": variants['channel'],
+                "template_info": variants['template_info'],
+                "start_time": time['start_time'],
+                "end_time": time['end_time']
+            })
+
+        # Validate recurring details
+        validate_recurring_details(recurring_detail)
+
+        request_meta['strategy_id'] = strategy_id
+        request_meta['campaign_reference_id'] = campaign_builder_id
+        request_meta['name'] = f"{request_meta['name']}_{strategy_builder[0].name}_{uuid.uuid4().hex[0:4]}"
+        request_meta['recurring_detail'] = json.dumps(recurring_detail)
+        request_meta['start_date_time'] = f"{recurring_detail['start_date']} {min_start_time}"
+        request_meta['end_date_time'] = f"{recurring_detail['end_date']} {max_end_time}"
+        request_meta['variant_detail']['variants'] = [new_variants]
+
+        request_data = dict(body=request_meta)
+        resp = save_campaign_details(request_data)
+        if resp is None or resp.get('result') != TAG_SUCCESS:
+            raise InternalServerError(method_name=method_name,
+                                      reason=f"Unable to save campaign for id {campaign_builder_id}.")
+        logger.debug(f"Exit: {method_name}, Success")
+        return dict(result=TAG_SUCCESS)
+
+    except BadRequestException as ex:
+        logger.error(f"Error while prepare and saving campaign builder details BadRequestException ::{ex}")
+        raise ex
+    except InternalServerError as ey:
+        logger.error(f"Error while prepare and saving campaign builder details InternalServerError ::{ey}")
+        raise ey
+    except NotFoundException as ez:
+        logger.error(f"Error while prepare and saving campaign builder details NotFoundException ::{ez}")
+        raise ez
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        logger.error(f"Error while prepare and saving campaign builder details Exception ::{str(e)}")
+        raise e
 
 
 def save_campaign_builder_details(campaign_builder, campaign_list, unique_id, project_id):
@@ -2749,7 +2972,7 @@ def validate_campaign_builder_campaign_details(campaign_builder, campaign_list, 
     if campaign_builder_details is None or len(campaign_builder_details) == 0:
         return dict(result=TAG_FAILURE, details_message="Campaign builder details are not valid")
 
-    if is_instant is False:
+    if is_instant is False and campaign_builder.strategy_id is None:
         response = validate_schedule(campaign_list, segment_id, unique_id, campaign_id,is_split,campaign_builder)
         if response.get("result") == TAG_FAILURE:
             logger.error(f"{method_name}, validate schedule resp :: {response}  ")
@@ -2854,7 +3077,7 @@ def prepare_and_save_campaign_builder_campaign_details(campaign_builder, campaig
             base_campaign_builder_campaign_entity = save_campaign_details_and_return_id(campaign_entity, campaign, campaign_his_entity.unique_id)
             campaign_entity.campaign_id = base_campaign_builder_campaign_entity.unique_id
             campaign_his_entity.campaign_id = base_campaign_builder_campaign_entity.history_id
-            campaign_entity.test_campaign_state = TestCampStatus.NOT_DONE.value
+            campaign_entity.test_campign_state = TestCampStatus.NOT_DONE.value if campaign_builder.campaign_level is None or campaign_builder.campaign_level != CampaignLevel.MAIN.value else TestCampStatus.VALIDATED.value
             CEDCampaignBuilderCampaign().save_or_update_campaign_builder_campaign_details(campaign_entity)
             history_id = campaign_builder.history_id
             prepare_and_save_campaign_builder_campaign_history_data(campaign_his_entity, campaign_entity, history_id)
@@ -4101,6 +4324,7 @@ def prepare_campaign_builder_campaign(request_data):
     recurring_detail = request_data.get("recurring_detail")
     get_cbc_data = request_data.get("get_cbc_data", False)
     campaign_type = request_data.get("campaign", "")
+    strategy_id = request_data.get("strategy_id", None)
 
     if (mode is None and campaign_type is None) or data is None or recurring_detail is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
@@ -4111,7 +4335,7 @@ def prepare_campaign_builder_campaign(request_data):
         elif mode == ABMode.TEMPLATE.value:
             resp = get_template_based_cbc_list(data, recurring_detail)
         elif campaign_type == CampaignCategory.Recurring_new.value:
-            resp = get_recurring_based_cbc_list(data, recurring_detail)
+            resp = get_recurring_based_cbc_list(data, recurring_detail, strategy_id)
         elif campaign_type == CampaignCategory.Campaign_Journey_Builder.value:
             resp = get_cjb_based_cbc_list(data, recurring_detail)
         else:
@@ -4659,7 +4883,8 @@ def get_recurring_campaign_list(body):
         "campaign": body.get("campaign", None),
         "data": body["variant_detail"],
         "recurring_detail": json.loads(body["recurring_detail"]),
-        "get_cbc_data": True
+        "get_cbc_data": True,
+        "strategy_id": body.get("strategy_id", None)
     })
 
     if response['result'] != TAG_SUCCESS:
@@ -4695,8 +4920,10 @@ def generate_campaign_segment_and_content_details(final_data):
 
     final_data['campaign_content_details'] = campaign_content_details
 
+    return campaign_content_details
 
-def get_recurring_based_cbc_list(data, recurring_detail):
+
+def get_recurring_based_cbc_list(data, recurring_detail, strategy_id=None):
     method_name = "get_recurring_based_cbc_list"
     log_entry(data, recurring_detail)
 
@@ -4731,7 +4958,7 @@ def get_recurring_based_cbc_list(data, recurring_detail):
                     raise BadRequestException(method_name=method_name, reason="Mandatory params missing in variants.")
 
         # generate campaign details:
-        result = prepare_recurring_camp_campaign_list(data, recurring_detail)
+        result = prepare_recurring_camp_campaign_list(data, recurring_detail, strategy_id)
         log_exit(result)
         return result
     except ValidationFailedException as vx:
@@ -4748,7 +4975,7 @@ def get_recurring_based_cbc_list(data, recurring_detail):
         logger.error(f"Error while validating and preparing template based campaign. Exception ::{e}")
         raise e
 
-def prepare_recurring_camp_campaign_list(data, recurring_detail):
+def prepare_recurring_camp_campaign_list(data, recurring_detail, strategy_id=None):
     method_name = "prepare_recurring_camp_campaign_list"
     log_entry(data, recurring_detail)
 
@@ -4804,13 +5031,16 @@ def prepare_recurring_camp_campaign_list(data, recurring_detail):
                     cbc["input_end_date_time"] = cbc["input_end_date_time"].strftime("%Y-%m-%d %H:%M:%S")
                     campaign_builder_campaign_list.append(cbc)
                 variant_cbc_list.extend(campaign_builder_campaign_list)
-                resp = validate_ab_schedule_slots(variant_cbc_list, segment_id, campaign_id, False)
-                if resp.get("result") != TAG_SUCCESS:
-                    raise InternalServerError(method_name=method_name, reason="Enable to check slots availability")
                 valid_schedule = True
-                for slots_data in resp.get("data"):
-                    if not slots_data.get("valid_schedule"):
-                        valid_schedule = False
+                if strategy_id is not None:
+                    pass
+                else:
+                    resp = validate_ab_schedule_slots(variant_cbc_list, segment_id, campaign_id, False)
+                    if resp.get("result") != TAG_SUCCESS:
+                        raise InternalServerError(method_name=method_name, reason="Enable to check slots availability")
+                    for slots_data in resp.get("data"):
+                        if not slots_data.get("valid_schedule"):
+                            valid_schedule = False
                 if valid_schedule:
                     slot_check_cbc_list.extend(campaign_builder_campaign_list)
                 slot_dict = {
@@ -4975,7 +5205,7 @@ def prepare_cjb_camp_campaign_list(data, recurring_detail):
     except Exception as e:
         logger.error(f"Error while preparing segment based campaign. Exception ::{e}")
         raise e
-    
+
 def validate_segment_parent_and_child(parent_id, child_id):
     method_name = "validate_segment_parent_and_child"
     segment_entity = CEDSegment().get_active_data_by_unique_id(child_id)
@@ -4996,3 +5226,87 @@ def get_project_id_from_cbc_id(cbc_id):
         return CEDSegment().get_project_id_by_segment_id(cbc_entity.segment_id)
     else:
         return CEDCampaignBuilderCampaign().get_project_id_from_campaign_builder_campaign_id(cbc_id)
+
+
+def get_v2_camps_detail(request_body):
+    method_name = "get_v2_camps_detail"
+    log_entry(request_body)
+
+    project_id = request_body.get("project_id", None)
+    start_date = request_body.get("start_date", None)
+    end_date = request_body.get("end_date", None)
+    tab_name = request_body.get("tab_name", None)
+
+    if project_id is None or start_date is None or end_date is None or tab_name is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="Invalid Input")
+
+    if tab_name == "ALL":
+        campaign_data = CEDCampaignBuilderCampaign().fetch_valid_v2_camp_detail_by_project_id(project_id,
+                                                                                          start_date, end_date)
+    elif tab_name == "EXCLUDE_STRATEGY":
+        campaign_data = CEDCampaignBuilderCampaign().fetch_valid_v2_camp_detail_by_project_id(project_id,
+                                                                                              start_date, end_date, True)
+    else:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="Tab value is invalid.")
+
+    if len(campaign_data) == 0 or campaign_data is None:
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message="Campaign data not found for the given parameters.")
+
+    for campaign in campaign_data:
+        campaign['average_delivery'] = ((campaign.get('delivered_count', 0) if campaign.get('delivered_count', 0) is not None else 0) / campaign.get('ack_count')) * 100
+        campaign['average_clicked'] = ((campaign.get('clicked_count', 0) if campaign.get('clicked_count', 0) is not None else 0) / campaign.get('ack_count')) * 100
+        campaign['average_landing'] = ((campaign.get('landing_count', 0) if campaign.get('landing_count', 0) is not None else 0) / campaign.get('ack_count')) * 100
+
+    log_exit(method_name, "Success")
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=campaign_data)
+
+
+def fetch_campaign_variant_detail(request_body):
+    method_name = "fetch_campaign_variant_detail"
+    log_entry(request_body)
+
+    unique_id = request_body.get("unique_id", None)
+
+    if unique_id is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="Invalid Input")
+
+    campaign_data = CEDCampaignBuilder().get_active_data_by_unique_id(unique_id)
+
+    if len(campaign_data) == 0 or campaign_data is None:
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message="Campaign data not found for the given parameters.")
+
+    campaign_data = campaign_data[0]
+
+    try:
+        request_meta = json.loads(campaign_data.get("request_meta"))
+        camp_builder_id = campaign_data.get("unique_id")
+        is_active = campaign_data.get("is_active")
+        segment_name = campaign_data.get("segment_name")
+
+        campaign_content_details = generate_campaign_segment_and_content_details(campaign_data)
+
+        variant = {'campaign_builder_id': camp_builder_id,
+                   'recurring_detail': json.loads(request_meta.get("recurring_detail")),
+                   'is_active': is_active,
+                   'segment_name': segment_name,
+                   'campaign_content_details': campaign_content_details}
+        schedule_time = []
+
+        # 0th variant only, since only 1 variant would be present for each CB
+        for instance in request_meta.get("variant_detail").get("variants")[0]:
+            variant.setdefault("channel", instance.get("channel"))
+            variant.setdefault("template_info", instance.get("template_info"))
+            schedule_time.append({
+                "start_time": instance.get("start_time"),
+                "end_time": instance.get("end_time")
+            })
+        variant["schedule_time"] = schedule_time
+    except Exception as ex:
+        logger.error(f'Some issue in getting variant details, {str(ex)}')
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message="Unable to collect campaign variant details for this strategy")
+
+    log_exit(method_name, "Success")
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=variant)

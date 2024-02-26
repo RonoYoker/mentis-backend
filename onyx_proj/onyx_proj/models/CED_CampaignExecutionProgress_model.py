@@ -51,3 +51,15 @@ class CEDCampaignExecutionProgress:
         if error is not None:
             update_dict["error_message"] = error
         return update(self.engine, self.table, filter_list, update_dict)
+
+    def get_performance_counts_for_cbc_ids(self, filters):
+        query = """
+                select cep.CampaignBuilderCampaignId as cbc_id,
+                AcknowledgeCount as acknowledge,
+                DeliveredCount as delivery,
+                ClickedCount as clicked,
+                LandingCount as landing
+                from CED_CampaignExecutionProgress as cep WHERE cep.CampaignBuilderCampaignId in ('% s') 
+                AND cep.TestCampaign=0 AND cep.Status in ('PARTIALLY_EXECUTED', 'EXECUTED');
+                """ % filters
+        return dict_fetch_query_all(self.curr, query)

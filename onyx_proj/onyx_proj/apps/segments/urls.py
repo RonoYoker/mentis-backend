@@ -28,6 +28,7 @@ urlpatterns = [
     path("save_sub_segment/", views.save_sub_segment),
     path("get_headers_for_segment/", views.get_headers_for_segment),
     path("check_header_compatibility_with_template/", views.check_header_compatibility_with_template),
-    path("approve_segment_hod/",views.hod_approve_campaign)
+    path("approve_segment_hod/",views.hod_approve_campaign),
+    path("get_segment_stats/", views.get_segment_stats)
     # path("back_fill_encrypted_data/", views.back_fill_segment_data)
 ]

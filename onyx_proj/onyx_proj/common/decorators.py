@@ -13,7 +13,7 @@ from onyx_proj.common.utils.datautils import nested_path_get
 from onyx_proj.exceptions.permission_validation_exception import MethodPermissionValidationException, \
     UnauthorizedException, ValidationFailedException
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
-
+from onyx_proj.models.CED_StrategyBuilder_model import CEDStrategyBuilder
 
 logger = logging.getLogger("apps")
 
@@ -153,6 +153,10 @@ def fetch_project_id_from_conf(conf, *args, **kwargs):
     elif identifier_type == "CONTENT":
         content_type = args[0].get("content_type")
         project_id = app_settings.CONTENT_TABLE_MAPPING[f"{content_type}"]().get_project_id_by_content_id(identifier_id)
+    elif identifier_type == "STRATEGYBUILDER":
+        filter_list = [{"column": "project_id", "value": identifier_id, "op": "=="}]
+        sb_entity = CEDStrategyBuilder().get_strategy_builder_details(filter_list, ['project_id'])
+        project_id = sb_entity[0].project_id
     else:
         raise MethodPermissionValidationException
     return project_id

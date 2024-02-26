@@ -8,6 +8,7 @@ class CED_CampaignBuilder(Base, Orm_helper):
     unique_id = Column("UniqueId", String)
     segment_id = Column("SegmentId", String)
     project_id = Column("ProjectId", String)
+    campaign_reference_id = Column("CampaignReferenceId", String)
     priority = Column("Priority", Integer)
     status = Column("Status", String)
     start_date_time = Column("StartDateTime", DateTime)
@@ -38,6 +39,8 @@ class CED_CampaignBuilder(Base, Orm_helper):
     is_starred = Column("IsStarred", Boolean,default=False)
     request_meta = Column("RequestMeta", String)
     version = Column("Version", String, default="V2")
+    campaign_level = Column("CampaignLevel", String)
+    strategy_id = Column("StrategyId", String, ForeignKey("CED_StrategyBuilder.UniqueId"))
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)

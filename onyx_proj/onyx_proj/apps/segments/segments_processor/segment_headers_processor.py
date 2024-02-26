@@ -336,4 +336,3 @@ def approve_segment_hod(request_data) -> json:
 
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
 
-

@@ -12,8 +12,9 @@ from django.views.decorators.csrf import csrf_exempt
 from onyx_proj.apps.campaign.test_campaign.app_settings import VALIDATE_CAMPAIGN_PROCESSING_ONYX_LOCAL, \
     TEMPLATE_VALIDATION_LOCAL
 from onyx_proj.apps.content.base import Content
-from onyx_proj.apps.content.campaign_content_processor.campaign_content_processor import fetch_user_campaign_data
 from onyx_proj.common.constants import Roles, TEMPLATE_SANDESH_CALLBACK_PATH
+from onyx_proj.apps.content.campaign_content_processor.campaign_content_processor import fetch_user_campaign_data, \
+    fetch_template_stats
 from onyx_proj.apps.content.content_procesor import fetch_campaign_processor, get_content_list, get_content_data, \
     deactivate_content_and_campaign, get_content_list_v2, add_or_remove_url_and_subject_line_from_content, \
     save_content_data, migrate_content_across_projects_with_headers_processing, trigger_template_validation_func, get_template_all_logs_func, template_sandesh_callback_func
@@ -234,3 +235,14 @@ def template_sandesh_callback(request):
 
     return HttpResponse(json.dumps({"details_message": message, "result": "SUCCESS"}, default=str),
                         status=200, content_type="application/json")
+
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def get_template_stats(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    response = fetch_template_stats(request_body)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+

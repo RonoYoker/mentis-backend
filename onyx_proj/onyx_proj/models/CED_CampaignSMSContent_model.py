@@ -4,7 +4,6 @@ from onyx_proj.common.constants import CampaignContentStatus, ContentFetchModes
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignSMSContent
 from onyx_proj.common.sqlalchemy_helper import *
-
 logger = logging.getLogger("apps")
 
 
@@ -137,3 +136,6 @@ class CEDCampaignSMSContent:
         if res is None or len(res) <= 0:
             return None
         return res
+
+    def fetch_content_data_by_query(self, query):
+        return dict_fetch_query_all(self.curr, query)

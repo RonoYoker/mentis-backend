@@ -31,12 +31,14 @@ from onyx_proj.apps.uuid import urls as uuid_urls
 from onyx_proj.apps.admin import urls as admin_controller
 from onyx_proj.apps.otp import urls as otp_urls
 from onyx_proj.apps.dnd import urls as dnd_urls
+from onyx_proj.apps.strategy_campaign import urls as strategy_urls
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include(home_urls)),
     path("segments/", include(segment_urls)),
     path("campaign/", include(campaign_urls)),
+    path("strategy/", include(strategy_urls)),
     path("slots/", include(slot_urls)),
     path("name_matcher/", include(name_matcher_urls)),
     path("user/", include(user_urls)),
