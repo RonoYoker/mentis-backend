@@ -569,7 +569,7 @@ def update_test_campaign_status_data_map(data_map):
 def test_campaign_status(request_data):
     campaign_id = request_data.get("CBC_IDS",None)
     limit = request_data.get("limit",0)
-    request_data[limit]=str(limit)
+    request_data["limit"]=str(limit)
 
     if campaign_id is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
