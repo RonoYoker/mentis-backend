@@ -2802,6 +2802,8 @@ def save_strategy_campaign_details(data_packet):
         request_meta['start_date_time'] = f"{recurring_detail['start_date']} {min_start_time}"
         request_meta['end_date_time'] = f"{recurring_detail['end_date']} {max_end_time}"
         request_meta['variant_detail']['variants'] = [new_variants]
+        request_meta['unique_id'] = None
+
 
         request_data = dict(body=request_meta)
         resp = save_campaign_details(request_data)
@@ -4635,6 +4637,30 @@ def make_content_conf(template_info, channel, campaign_content_dict):
     return resp
 
 
+def prepare_unique_content_list(template_info, channel, campaign_content_dict):
+    method_name = "prepare_unique_content_list"
+    log_entry(template_info, channel)
+
+    if channel == CampaignBuilderCampaignContentType.EMAIL.value:
+        if template_info["subject_line_id"] not in campaign_content_dict["SUBJECTLINE"]:
+            campaign_content_dict["SUBJECTLINE"].append(template_info["subject_line_id"])
+            campaign_content_dict["EMAIL"].append(template_info["email_id"])
+    elif channel == CampaignBuilderCampaignContentType.IVR.value:
+        if template_info["ivr_id"] not in campaign_content_dict[channel.upper()]:
+            campaign_content_dict[channel.upper()].append(template_info["ivr_id"])
+    elif channel == CampaignBuilderCampaignContentType.SMS.value:
+        if template_info["sms_id"] not in campaign_content_dict[channel.upper()]:
+            campaign_content_dict[channel.upper()].append(template_info["sms_id"])
+    elif channel == CampaignBuilderCampaignContentType.WHATSAPP.value:
+        if template_info["whats_app_content_id"] not in campaign_content_dict[channel.upper()]:
+            campaign_content_dict[channel.upper()].append(template_info["whats_app_content_id"])
+    else:
+        raise BadRequestException(method_name=method_name, reason="Channel is missing.")
+
+    log_exit(campaign_content_dict)
+    return campaign_content_dict
+
+
 def make_split_camp_detail(camp_builder_camp):
     method_name = "make_split_camp_detail"
 
@@ -4917,6 +4943,34 @@ def generate_campaign_segment_and_content_details(final_data):
         campaign_content_details["WHATSAPP"] = CEDCampaignWhatsAppContent().get_multiple_content_details(campaign_content_dict['WHATSAPP'])
     if campaign_content_dict['SUBJECTLINE'] is not None and len(campaign_content_dict['SUBJECTLINE']) > 0:
         campaign_content_details["SUBJECTLINE"] = CEDCampaignSubjectLineContent().get_multiple_content_details(campaign_content_dict['SUBJECTLINE'])
+
+    final_data['campaign_content_details'] = campaign_content_details
+
+    return campaign_content_details
+
+
+def generate_campaign_segment_and_content_details_v2(final_data):
+    campaign_content_details = {'SUBJECTLINE': [], 'EMAIL': [], 'IVR': [], 'SMS': [], 'WHATSAPP':[]}
+
+    variant_details = json.loads(final_data['request_meta']).get('variant_detail', None)
+    if variant_details is None:
+        final_data['campaign_segment_details'] = []
+        final_data['campaign_content_details'] = campaign_content_details
+        return
+    campaign_segment_list = variant_details['campaign_segment_list']
+    campaign_content_dict = prepare_unique_content_list(variant_details['variants'][0][0]["template_info"], variant_details['variants'][0][0]["channel"], campaign_content_details)
+    final_data['campaign_segment_details'] = CEDSegment().get_multiple_segment_details(campaign_segment_list)
+
+    if campaign_content_dict['SMS'] is not None and len(campaign_content_dict['SMS']) > 0:
+        campaign_content_details["SMS"] = CEDCampaignSMSContent().get_multiple_content_details(campaign_content_dict['SMS'])
+    if campaign_content_dict['IVR'] is not None and len(campaign_content_dict['IVR']) > 0:
+        campaign_content_details["IVR"] = CEDCampaignIvrContent().get_multiple_content_details(campaign_content_dict['IVR'])
+    if campaign_content_dict['WHATSAPP'] is not None and len(campaign_content_dict['WHATSAPP']) > 0:
+        campaign_content_details["WHATSAPP"] = CEDCampaignWhatsAppContent().get_multiple_content_details(campaign_content_dict['WHATSAPP'])
+    if campaign_content_dict['SUBJECTLINE'] is not None and len(campaign_content_dict['SUBJECTLINE']) > 0:
+        campaign_content_details["SUBJECTLINE"] = CEDCampaignSubjectLineContent().get_multiple_content_details(campaign_content_dict['SUBJECTLINE'])
+    if campaign_content_dict['EMAIL'] is not None and len(campaign_content_dict['EMAIL']) > 0:
+        campaign_content_details["EMAIL"] = CEDCampaignEmailContent().get_multiple_content_details(campaign_content_dict['EMAIL'])
 
     final_data['campaign_content_details'] = campaign_content_details
 
@@ -5285,7 +5339,7 @@ def fetch_campaign_variant_detail(request_body):
         is_active = campaign_data.get("is_active")
         segment_name = campaign_data.get("segment_name")
 
-        campaign_content_details = generate_campaign_segment_and_content_details(campaign_data)
+        campaign_content_details = generate_campaign_segment_and_content_details_v2(campaign_data)
 
         variant = {'campaign_builder_id': camp_builder_id,
                    'recurring_detail': json.loads(request_meta.get("recurring_detail")),

@@ -126,7 +126,8 @@ SELECT
   cbc.IsActive as is_active, 
   cb.IsRecurring as is_recurring, 
   cb.RecurringDetail as recurring_detail, 
-  cb.CreationDate as creation_date 
+  cb.CreationDate as creation_date, 
+  sb.Name as strategy_name
 FROM 
   CED_CampaignExecutionProgress cep 
   JOIN CED_CampaignSchedulingSegmentDetails cssd ON cep.CampaignId = cssd.Id 
@@ -135,6 +136,7 @@ FROM
   LEFT JOIN CED_Segment s ON s.UniqueId = cb.SegmentId 
   LEFT JOIN CED_Segment subs ON subs.UniqueId = cbc.SegmentId 
   LEFT JOIN CED_Segment sp ON subs.ParentId = sp.UniqueId 
+  LEFT JOIN CED_StrategyBuilder sb ON cb.StrategyId = sb.UniqueId 
 WHERE 
   cep.TestCampaign = 0 
   AND cb.Type != "SIMPLE" 

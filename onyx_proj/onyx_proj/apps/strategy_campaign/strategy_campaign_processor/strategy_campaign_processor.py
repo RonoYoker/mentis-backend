@@ -7,7 +7,8 @@ import uuid
 
 from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import \
     update_cb_status_to_approval_pending_by_unique_id, update_campaign_builder_status_by_unique_id, \
-    validate_campaign_builder_campaign_for_scheduled_time, generate_campaign_segment_and_content_details, generate_schedule
+    validate_campaign_builder_campaign_for_scheduled_time, \
+    generate_schedule, generate_campaign_segment_and_content_details_v2
 from onyx_proj.apps.strategy_campaign.app_settings import AsyncCeleryTaskName, PARENT_CHILD_TASK_NAME_MAPPING
 from onyx_proj.celery_app.tasks_processor import execute_celery_child_task_by_unique_id
 from onyx_proj.common.constants import TAG_FAILURE, StrategyBuilderStatus, CeleryTaskLogsStatus, CampaignBuilderStatus, \
@@ -218,7 +219,7 @@ def get_strategy_data(request_body):
             camp_builder_id = cb.get("unique_id")
             is_active = cb.get("is_active")
 
-            campaign_content_details = generate_campaign_segment_and_content_details(cb)
+            campaign_content_details = generate_campaign_segment_and_content_details_v2(cb)
             if is_status_err_or_draft:
                 for recurring_detail, schedule_time in zip(rec_details_from_sb_req_meta[cb['unique_id']][0],
                                                            rec_details_from_sb_req_meta[cb['unique_id']][1]):
@@ -950,7 +951,7 @@ def prepare_strategy_campaign_schedule_details(campaign_builder_list):
                 cb = create_dict_from_object(cb)
                 request_meta = json.loads(cb.get("request_meta"))
 
-                campaign_content_details = generate_campaign_segment_and_content_details(cb)
+                campaign_content_details = generate_campaign_segment_and_content_details_v2(cb)
 
                 variant = {'campaign_content_details': campaign_content_details,
                            "segment_name": cb.get('segment_name')}
