@@ -395,6 +395,9 @@ def send_strategy_builder_for_approval_pending(strategy_builder, unique_id):
     if camp_count is None or camp_count != len(camp_data):
         raise BadRequestException(method_name=method_name,
                                   reason="The campaigns used in the strategy are invalid.")
+    for campaign_builder in camp_data:
+        if campaign_builder.status != CampaignStatus.SAVED.value:
+            raise BadRequestException(method_name=method_name, reason="Campaigns are not in valid state.")
 
     for campaign_builder in camp_data:
         resp = update_cb_status_to_approval_pending_by_unique_id(campaign_builder.unique_id)
@@ -422,13 +425,17 @@ def send_strategy_builder_for_dis_approve(strategy_builder, unique_id, reason):
 
     if strategy_builder.get("status", None) not in [StrategyBuilderStatus.APPROVAL_PENDING.value]:
         raise BadRequestException(method_name=method_name,
-                                  reason="Strategy builder cannot be approved")
+                                  reason="Strategy builder cannot be dis approved")
 
     filter_list = [{"column": "strategy_id", "value": unique_id, "op": "=="}]
     data = CEDCampaignBuilder().get_campaign_builder_details_by_filter_list(filter_list)
     if data is None:
         raise InternalServerError(method_name=method_name,
                                   reason="Unable to find campaign builder details.")
+
+    for campaign_builder in data:
+        if campaign_builder.status != CampaignStatus.APPROVAL_PENDING.value:
+            raise BadRequestException(method_name=method_name, reason="Campaigns are not in valid state")
 
     for campaign_builder in data:
         resp = update_campaign_builder_status_by_unique_id(campaign_builder.unique_id,
@@ -484,6 +491,16 @@ def prepare_and_trigger_celery_job_by_task_name(task_name, callback_key, unique_
 
     from onyx_proj.celery_app.tasks import execute_celery_child_task
 
+    if task_name in [AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_APPROVAL_FLOW.value,
+                     AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_DEACTIVATION.value]:
+        filter_list = prepare_filter_list_of_cb_for_strategy_builder(task_name, unique_id)
+        campaign_builder_list = CEDCampaignBuilder().get_campaign_builder_details_by_filter_list(filter_list)
+        validate_strategy_campaign_status(campaign_builder_list, task_name)
+
+    if campaign_builder_list is None:
+        raise InternalServerError(method_name=method_name,
+                                  reason="Unable to find campaign builder details.")
+
     celery_logs = CED_CeleryTaskLogs()
     celery_logs.unique_id = uuid.uuid4().hex
     celery_logs.request_id = unique_id
@@ -496,14 +513,6 @@ def prepare_and_trigger_celery_job_by_task_name(task_name, callback_key, unique_
         raise InternalServerError(method_name=method_name,
                                   reason="Unable to save celery logs.")
 
-    if task_name in [AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_APPROVAL_FLOW.value,
-                     AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_DEACTIVATION.value]:
-        filter_list = prepare_filter_list_of_cb_for_strategy_builder(task_name, unique_id)
-        campaign_builder_list = CEDCampaignBuilder().get_campaign_builder_details_by_filter_list(filter_list)
-
-    if campaign_builder_list is None:
-        raise InternalServerError(method_name=method_name,
-                                  reason="Unable to find campaign builder details.")
 
     celery_child_unique_id_list = []
     for campaign_builder in campaign_builder_list:
@@ -534,6 +543,17 @@ def prepare_and_trigger_celery_job_by_task_name(task_name, callback_key, unique_
     logger.debug(f"Exit: {method_name}, Success")
     return dict(result=TAG_SUCCESS)
 
+
+def validate_strategy_campaign_status(campaign_builder_list, task_name):
+    method_name = "validate_campaign_for_strategy"
+    logger.debug(f"Entry: {method_name}, campaign_builder_list: {campaign_builder_list}, task_name: {task_name}")
+
+    if task_name == AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_APPROVAL_FLOW.value:
+        for campaign_builder in campaign_builder_list:
+            if campaign_builder.status != CampaignStatus.APPROVAL_PENDING.value:
+                raise BadRequestException(method_name=method_name, reason="Campaigns are not in valid state")
+
+    logger.debug(f"Exit: {method_name}, Success")
 
 def validate_campaign_for_strategy(campaign_builder_ids):
     method_name = "validate_campaign_for_strategy"
