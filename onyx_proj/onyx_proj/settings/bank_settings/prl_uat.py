@@ -42,3 +42,5 @@ ONYX_DOMAIN = "http://onyxuat.hyperiontool.com"  # uat
 
 ONYX_CENTRAL_AUTH_TOKEN = "348691BE-D2AA-4460-9A42-2B4A9FFD3296"
 SANDESH_SEND_COMM = "http://10.0.47.136:8000/api/send_communication"
+
+SHORT_URL_BUCKET_CONFIG = {}

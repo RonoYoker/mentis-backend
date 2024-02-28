@@ -1340,6 +1340,7 @@ class TemplateABTypes(Enum):
 class ProjectValidationConf(Enum):
     DATA_SYNC_REQUIRED = "DATA_SYNC_REQUIRED"
 
+BASE_62_STR_FOR_UUID_MONTH = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 class StrategyBuilderStatus(Enum):
     APPROVAL_PENDING = "APPROVAL_PENDING"

@@ -216,3 +216,10 @@ TEST_CAMPAIGN_ENABLED = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenf
 
 USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN = []
 
+
+SHORT_URL_BUCKET_CONFIG = {
+    "PEGASUS_DECAF_UAT": {
+        "MANDATORY_FIELDS": ["primary_key", "account_id", "channel", "unique_id"],
+        "SHORT_URL_BUCKET_UNIQUE_ID": "SHORTURL_1"
+    }
+}

@@ -50,3 +50,5 @@ SNS_SEGMENT_EVALUATOR = "TEST_HYP_DK_Campaign_Segment_Evaluator"
 
 MKT_CLICKDATA_FLAG = False
 SANDESH_SEND_COMM = "http://m-stage-sandesh-elb-457097445.ap-south-1.elb.amazonaws.com/api/send_communication"
+
+SHORT_URL_BUCKET_CONFIG = {}

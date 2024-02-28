@@ -46,3 +46,4 @@ QUERY_EXECUTION_JOB_BUCKET = "rbl-prod-async-query-execution-response"
 
 MKT_CLICKDATA_FLAG = False
 SANDESH_SEND_COMM = "http://internal-int-rbl-sandesh-48324355.ap-south-1.elb.amazonaws.com/api/send_communication"
+SHORT_URL_BUCKET_CONFIG = {}

@@ -50,3 +50,10 @@ MKT_CLICKDATA_FLAG = True
 
 ETHERA_COMMONS_DOMAIN = "http://m-prod-ethera-commons-elb-245169720.ap-south-1.elb.amazonaws.com"
 SANDESH_SEND_COMM = "http://internal-m-prod-sandesh-ecs-elb-1908545515.ap-south-1.elb.amazonaws.com/api/send_communication"
+
+SHORT_URL_BUCKET_CONFIG = {
+    "PEGASUS_DECAF_PROD": {
+        "MANDATORY_FIELDS": ["primary_key", "account_id", "channel", "unique_id"],
+        "SHORT_URL_BUCKET_UNIQUE_ID": "SHORTURL_1"
+    }
+}

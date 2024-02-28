@@ -71,3 +71,10 @@ AWS_ACCOUNTID = 471070473108
 
 MKT_CLICKDATA_FLAG = False
 SANDESH_SEND_COMM = "http://internal-m-prod-sandesh-elb-1817140403.ap-south-1.elb.amazonaws.com/api/send_communication"
+
+SHORT_URL_BUCKET_CONFIG = {
+    "ETHERA_TELE_ASSIST": {
+        "MANDATORY_FIELDS": ["primary_key", "account_id", "channel", "unique_id"],
+        "SHORT_URL_BUCKET_UNIQUE_ID": "SHORTURL_1"
+    }
+}

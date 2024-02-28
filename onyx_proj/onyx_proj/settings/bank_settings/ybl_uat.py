@@ -64,7 +64,6 @@ ONYX_DOMAIN = "https://onyxuat.hyperiontool.com"  # uat
 ONYX_CENTRAL_AUTH_TOKEN = "348691BE-D2AA-4460-9A42-2B4A9FFD3296"
 
 SEGMENT_AES_KEYS = INFRA_CONF["SEGMENT_AES_KEYS"]
-SHORT_URL_BUCKET_CONFIG = {}
 AWS_REGION = "ap-south-1"
 AWS_ACCOUNTID = INFRA_CONF["AWS_ACCOUNTID"]
 SNS_SEGMENT_EVALUATOR = "TEST_HYP_DK_Campaign_Segment_Evaluator"
@@ -72,3 +71,10 @@ QUERY_EXECUTION_JOB_BUCKET = "ybl-uat-async-query-execution-response"
 
 MKT_CLICKDATA_FLAG = False
 SANDESH_SEND_COMM = "http://m-stage-sandesh-elb-49694380.ap-south-1.elb.amazonaws.com/api/send_communication"
+
+SHORT_URL_BUCKET_CONFIG = {
+    "ETHERA_TELE_ASSIST": {
+        "MANDATORY_FIELDS": ["primary_key", "account_id", "channel", "unique_id"],
+        "SHORT_URL_BUCKET_UNIQUE_ID": "SHORTURL_1"
+    }
+}

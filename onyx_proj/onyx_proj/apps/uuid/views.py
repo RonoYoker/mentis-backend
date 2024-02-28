@@ -3,7 +3,8 @@ import json
 
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import HttpResponse
-from onyx_proj.apps.uuid.uuid_processor import uuid_info_local, encrypt_pi_data, decrypt_pi_data
+from onyx_proj.apps.uuid.uuid_processor import uuid_info_local, encrypt_pi_data, decrypt_pi_data, \
+    generate_url_and_uuid_data, generate_short_url
 from onyx_proj.common.constants import ApplicationName
 from onyx_proj.common.decorators import ReqEncryptDecrypt
 
@@ -39,3 +40,23 @@ def get_decrypted_data(request):
     response = decrypt_pi_data(data)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response["result"], default=str), status=status_code, content_type="application/json")
+
+@csrf_exempt
+def generate_uuid_data(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    data = dict(body=request_body, header=request_headers)
+    response = generate_url_and_uuid_data(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response['result'], default=str), status=status_code, content_type="application/json")
+
+@csrf_exempt
+def generate_short_url_data(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    request_headers = request.headers
+    data = dict(body=request_body, header=request_headers)
+    response = generate_short_url(data)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    # TODO: Uncomment the below line upon adding SSL
+    # return HttpResponse(json.dumps(response['result'], default=str), status=status_code, content_type="application/json")
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
