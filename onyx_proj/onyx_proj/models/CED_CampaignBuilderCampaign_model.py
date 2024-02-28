@@ -1,7 +1,8 @@
 import datetime
 import logging
 
-from onyx_proj.common.constants import Roles, CampaignCategory, ContentType
+from onyx_proj.common.constants import Roles, CampaignCategory, ContentType, CAMPAIGN_CONTENT_MAPPING_TABLE_DICT, \
+    CHANNEL_CONTENT_TABLE_DATA
 from onyx_proj.common.decorators import UserAuth
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_one_row, save_or_update, update, \
@@ -513,3 +514,21 @@ class CEDCampaignBuilderCampaign:
 
     def fetch_cbc_by_query(self, query):
         return dict_fetch_query_all(self.curr, query)
+
+    def fetch_cbc_with_template_info_by_cb_id(self, campaign_builder_id, channel):
+        content_table = CHANNEL_CONTENT_TABLE_DATA[channel]["campaign_table"]
+        query = f"""
+                SELECT cbc.UniqueId as cbc_id, cbc.*,cbt.* from 
+                CED_CampaignBuilderCampaign as cbc 
+                JOIN {content_table} as cbt ON cbc.UniqueId = cbt.MappingId
+                WHERE cbc.CampaignBuilderId = '{campaign_builder_id}' order by cbc.Id desc;
+                """
+        return execute_query(self.engine, query)
+
+    def get_channel_for_each_execution_config_id_by_cb_id(self, campaign_builder_id):
+        query = f"""
+                SELECT ExecutionConfigId, ContentType as channel from CED_CampaignBuilderCampaign 
+                WHERE CampaignBuilderId = '{campaign_builder_id}'
+                GROUP BY ExecutionConfigId;
+                """
+        return execute_query(self.engine, query)

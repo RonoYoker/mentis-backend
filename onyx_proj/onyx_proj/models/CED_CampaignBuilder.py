@@ -284,3 +284,14 @@ class CEDCampaignBuilder:
                  f"HAVING count(distinct cbc.ExecutionConfigId)= 1")
         res = execute_query(self.engine, query)
         return res
+
+
+    def get_campaign_details_with_channel(self, campaign_builder_id):
+        query = f"""
+                SELECT cb.*, cbc.ContentType FROM CED_CampaignBuilder as cb JOIN CED_CampaignBuilderCampaign as cbc
+                ON cb.UniqueId = cbc.CampaignBuilderId
+                WHERE cb.UniqueId = '{campaign_builder_id}'
+                """
+        res = execute_query(self.engine, query)
+        return res
+

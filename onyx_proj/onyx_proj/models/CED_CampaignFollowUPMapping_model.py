@@ -36,3 +36,12 @@ class CEDCampaignFollowUPMapping:
         except Exception as ex:
             return dict(status=False, response=str(ex))
         return dict(status=True, response=res)
+
+    def fetch_details_by_cbc_id(self, cbc_id):
+        query = f"""
+                SELECT ccfu.* From 
+                CED_CampaignContentFollowUPSmsMapping as ccfu 
+                JOIN CED_CampaignFollowUPMapping as cfu ON cfu.IvrFollowUpSmsMappingId	= ccfu.UniqueId
+                WHERE cfu.CampaignBuilderCampaignId = '{cbc_id}';
+                """
+        return execute_query(self.engine, query)

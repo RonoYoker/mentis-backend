@@ -4,7 +4,7 @@ from django.shortcuts import HttpResponse
 from django.conf import settings
 import datetime
 
-from onyx_proj.common.constants import Roles, TAG_FAILURE
+from onyx_proj.common.constants import Roles, TAG_FAILURE, TAG_SUCCESS
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.common.decorators import UserAuth
 from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import fetch_test_campaign_data, \
@@ -23,13 +23,15 @@ from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import 
     approval_action_on_campaign_builder_by_unique_id, get_camps_detail_between_time, get_camps_detail, \
     update_campaign_by_campaign_builder_ids_local, update_campaign_scheduling_time_in_campaign_creation_details, \
     change_approved_campaign_time, replay_campaign_in_error, check_camp_status, prepare_campaign_builder_campaign, \
-    get_v2_camps_detail, fetch_campaign_variant_detail, test_campaign_status,change_approved_campaign_time, replay_campaign_in_error, check_camp_status,prepare_campaign_builder_campaign
+    get_v2_camps_detail, fetch_campaign_variant_detail, test_campaign_status,change_approved_campaign_time, replay_campaign_in_error, check_camp_status,prepare_campaign_builder_campaign, perform_checks_and_move_to_v2
 from onyx_proj.apps.campaign.test_campaign.test_campaign_processor import test_campaign_process, \
     trigger_segment_evaluator_for_test_camp
+from onyx_proj.apps.campaign.test_campaign.test_campaign_processor import test_campaign_process
 from django.views.decorators.csrf import csrf_exempt
 from onyx_proj.apps.campaign.system_validation.system_validation_processor import get_campaign_system_validation_status, process_system_validation_entry
 from onyx_proj.celery_app.tasks import trigger_eng_data, trigger_campaign_system_validation
 from onyx_proj.apps.campaign.campaign_processor.campaign_content_processor import process_favourite
+from onyx_proj.exceptions.permission_validation_exception import BadRequestException
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from onyx_proj.models.CED_User_model import CEDUser
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
@@ -607,5 +609,13 @@ def get_valid_v2_campaigns_detail(request):
 def get_campaign_variant_detail(request):
     request_body = json.loads(request.body.decode("utf-8"))
     response = fetch_campaign_variant_detail(request_body)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+
+@csrf_exempt
+def move_campaign_to_v2(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    response = perform_checks_and_move_to_v2(request_body)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")

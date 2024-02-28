@@ -5364,3 +5364,179 @@ def fetch_campaign_variant_detail(request_body):
 
     log_exit(method_name, "Success")
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=variant)
+
+
+def perform_checks_and_move_to_v2(request_body):
+    mode = request_body.get("mode", None)
+    campaign_builder_id = request_body.get("unique_id", None)
+
+    if campaign_builder_id is None or mode is None:
+        return dict(result=TAG_FAILURE, details_message="Invalid Input", status_code=http.HTTPStatus.BAD_REQUEST)
+
+    try:
+        check_valid_cb_for_conversion_by_mode(campaign_builder_id, mode)
+
+        request_meta = generate_cb_request_meta(campaign_builder_id)
+
+        CEDCampaignBuilder().update_campaign_builder(where_dict={'UniqueId': campaign_builder_id},
+                                                     update_dict={'Version': "V2",
+                                                                  "RequestMeta": json.dumps(request_meta, default=str)})
+    except BadRequestException as ex:
+        return dict(result=TAG_FAILURE, details_message=ex.reason, status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR)
+    except Exception as ex:
+        return dict(result=TAG_FAILURE, details_message="Some Problem in verifying campaign", status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data={"campaign_builder_id": campaign_builder_id})
+
+
+def generate_cb_request_meta(unique_id):
+
+    # fetch campaign builder data
+    campaign_data = CEDCampaignBuilder().fetch_campaign_builder_by_unique_id(unique_id)
+    if campaign_data is None or len(campaign_data) == 0:
+        raise BadRequestException(reason=f"Invalid Campaign: {unique_id}")
+
+    recurring_detail_dict = json.loads(campaign_data.get("RecurringDetail"))
+    execution_conf_to_channels_map = CEDCampaignBuilderCampaign().get_channel_for_each_execution_config_id_by_cb_id(unique_id)
+    if execution_conf_to_channels_map is None or len(execution_conf_to_channels_map) == 0:
+        raise InternalServerError(reason=f"Problem while fetching campaign builder campaigns : {unique_id}")
+
+    channel = execution_conf_to_channels_map[0].get("channel")
+    # fetch cbc data with template info
+    campaign_builder_campaign_list = CEDCampaignBuilderCampaign().fetch_cbc_with_template_info_by_cb_id(unique_id, channel)
+    if campaign_builder_campaign_list is None or len(campaign_builder_campaign_list) == 0:
+        raise InternalServerError(reason=f"Problem while fetching campaign builder campaigns: {unique_id}")
+
+    # sort cbc wrt time slots
+    campaign_builder_campaign_list = sorted(campaign_builder_campaign_list, key=lambda d: (d['StartDateTime'].hour, d['StartDateTime'].minute))
+
+    if channel == ContentType.SMS.value:
+        attribute_ids = {"sms_id": "SmsId", "sender_id": "SenderId", "url_id": "UrlId"}
+    elif channel == ContentType.WHATSAPP.value:
+        attribute_ids = {"whats_app_content_id": "WhatsAppContentId", "cta_id": "CtaId", "footer_id": "FooterId", "header_id": "HeaderId", "media_id": "MediaId", "url_id": "UrlId"}
+    elif channel == ContentType.EMAIL.value:
+        attribute_ids = {"email_id": "EmailId", "subject_line_id": "SubjectLineId", "url_id": "UrlId"}
+    else:
+        attribute_ids = {"ivr_id": "IvrId"}
+        have_follow_up_sms = False
+        # check if IVR has follow up sms
+        have_follow_up_sms_resp = CEDCampaignBuilderIVR().check_have_follow_up_sms_by_cbc_id(campaign_builder_campaign_list[0].get("cbc_id"))
+        # fetch follow up sms list if have_follow_up_sms_resp is True
+        if have_follow_up_sms_resp is not None and len(have_follow_up_sms_resp) > 0 and have_follow_up_sms_resp[0][0] == 1:
+            have_follow_up_sms = True
+            follow_up_sms_data = CEDCampaignFollowUPMapping().fetch_details_by_cbc_id(campaign_builder_campaign_list[0].get("cbc_id"))
+
+    # create single variant details
+    variant_detail = {
+        "channel": channel,
+        "template_info": {
+            **{
+                attribute: campaign_builder_campaign_list[0].get(attribute_ids[attribute]) for attribute in attribute_ids.keys()
+            },
+            "vendor_config_id": campaign_builder_campaign_list[0].get("VendorConfigId")
+        },
+        "start_time": campaign_builder_campaign_list[0].get("StartDateTime").time(),
+        "end_time": campaign_builder_campaign_list[0].get("EndDateTime").time(),
+        "execution_config_id": campaign_builder_campaign_list[0].get("ExecutionConfigId"),
+        "valid_schedule": True
+    }
+    # add follow up sms list in the case of IVR
+    if channel == ContentType.IVR.value:
+        variant_detail.get("template_info")["have_follow_up_sms"] = have_follow_up_sms
+        if have_follow_up_sms:
+            follow_up_sms_list = []
+            for sms in follow_up_sms_data:
+                follow_up_sms = {
+                    "sms_id": sms.get("SmsId", None),
+                    "url_id": sms.get("UrlId", None),
+                    "sender_id": sms.get("SenderId", None),
+                    "type": sms.get("FollowUpSmsType", None),
+                    "vendor_config_id": sms.get("VendorConfigId", None)
+                }
+                follow_up_sms_list.append(follow_up_sms)
+            variant_detail.get("template_info")["follow_up_sms_list"] = follow_up_sms_list
+
+    variant = []
+
+    # create variant dicts and insert in variant list
+    prev_sdt = None
+    for cbc in campaign_builder_campaign_list:
+        curr_sdt = cbc.get('StartDateTime').time()
+        if curr_sdt != prev_sdt:
+            new_variant_dict = variant_detail.copy()
+            new_variant_dict["start_time"] = cbc.get('StartDateTime').time()
+            new_variant_dict["end_time"] = cbc.get('EndDateTime').time()
+            variant.append(new_variant_dict)
+        prev_sdt = curr_sdt
+
+    # prepare request_meta
+    request_meta = {
+        "campaign": recurring_detail_dict.get("campaign"),
+        "version": "V2",
+        "name": campaign_data.get("Name"),
+        "segment_id": campaign_data.get("SegmentId"),
+        "start_date_time": campaign_data.get("StartDateTime"),
+        "end_date_time": campaign_data.get("EndDateTime"),
+        "priority": campaign_data.get("Priority"),
+        "type": campaign_data.get("Type"),
+        "is_recurring": campaign_data.get("IsRecurring"),
+        "recurring_detail": campaign_data.get("RecurringDetail"),
+        "description": campaign_data.get("Description"),
+        "is_manual_validation_mandatory": True if campaign_data.get("IsManualValidationMandatory") == 1 else False,
+        "file_dependency_config": campaign_data.get("FileDependencyConfig"),
+        "is_split": True if campaign_data.get("IsSplit") == 1 else False,
+        "variant_detail": {
+            "variants": [
+                variant
+            ],
+            "segment_id": campaign_data.get("SegmentId"),
+            "campaign_segment_list": [
+                campaign_data.get("SegmentId")
+            ],
+            "campaign_content_dict": {
+                "SMS": [
+                    campaign_builder_campaign_list[0].get("SmsId")
+                ] if channel == ContentType.SMS.value else [],
+                "SUBJECTLINE": [
+                    campaign_builder_campaign_list[0].get("SubjectLineId")
+                ] if channel == ContentType.EMAIL.value else [],
+                "IVR": [
+                    campaign_builder_campaign_list[0].get("IvrId")
+                ] if channel == ContentType.IVR.value else [],
+                "WHATSAPP": [
+                    campaign_builder_campaign_list[0].get("WhatsAppContentId")
+                ] if channel == ContentType.WHATSAPP.value else []
+            }
+        },
+        "strategy_id": campaign_data.get("StrategyId"),
+        "campaign_reference_id": campaign_data.get("CampaignReferenceId")
+    }
+
+    return request_meta
+
+
+def check_valid_cb_for_conversion_by_mode(unique_id, mode):
+    if mode == "STRATEGY_CONVERSION":
+        query = f"""
+                select cb.* from CED_CampaignBuilder as cb 
+                JOIN CED_CampaignBuilderCampaign as cbc
+                ON cb.UniqueId = cbc.CampaignBuilderId
+                where cb.UniqueId = '{unique_id}'
+                and cb.IsSplit = 0 and cb.Version is null
+                GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1;
+                """
+        campaign_data_resp = CEDCampaignBuilder().execute_fetch_campaigns_list_query(query)
+        if campaign_data_resp is None or len(campaign_data_resp) == 0:
+            raise BadRequestException(reason=f"Invalid Campaign: {unique_id}")
+
+        campaign_data = campaign_data_resp[0]
+        recurring_detail_dict = json.loads(campaign_data.get("RecurringDetail"))
+        if recurring_detail_dict.get("campaign") != "recurring_new":
+            raise BadRequestException(reason=f"Invalid Campaign: {unique_id}")
+    else:
+        raise BadRequestException(reason=f"Invalid Mode: {mode}")
+
+    return True
+
+
+

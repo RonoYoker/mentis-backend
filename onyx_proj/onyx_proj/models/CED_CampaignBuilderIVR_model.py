@@ -53,3 +53,12 @@ class CEDCampaignBuilderIVR:
         ]
         res = fetch_one_row(self.engine, self.table, filter_list, return_type='dict')
         return res
+
+    def check_have_follow_up_sms_by_cbc_id(self, cbc_id):
+        query = f"""
+                Select cic.HaveFollowUpSms from 
+                CED_CampaignBuilderIVR as cbi
+                JOIN CED_CampaignIvrContent as cic ON cbi.IvrId = cic.UniqueId
+                WHERE cbi.MappingId = '{cbc_id}'
+                """
+        return query_executor(self.curr, query)
