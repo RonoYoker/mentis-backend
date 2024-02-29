@@ -2576,6 +2576,7 @@ def generate_campaign_approval_status_mail(data: dict):
 def save_campaign_details(request_data):
     method_name = "save_campaign_details"
     body = request_data.get("body", {})
+    body_copy = copy.deepcopy(body)
     unique_id = body.get("unique_id", None)
     campaign_reference_id = body.get("campaign_reference_id", None)
     strategy_id = body.get("strategy_id", None)
@@ -2646,7 +2647,7 @@ def save_campaign_details(request_data):
     project_conf = json.loads(project_entity[0]["validation_config"])
 
     if file_dependency_config is None and project_conf.get(ProjectValidationConf.DATA_SYNC_REQUIRED.value,False):
-        hash_val = hashlib.md5(pprint.pformat(body).encode("utf-8")).hexdigest()
+        hash_val = hashlib.md5(pprint.pformat(body_copy).encode("utf-8")).hexdigest()
         check_otp_status(hash_val, OtpAppName.FILE_DEPENDENCY_OVERRIDE.value)
 
     if unique_id is not None:
