@@ -1434,8 +1434,8 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
             if recurring_detail is not None and len(recurring_detail) > 0:
                 recurring_detail = json.loads(recurring_detail)
                 is_instant = recurring_detail.get("is_instant", False)
-                if is_instant:
-                    check_otp_status(campaign_builder_id, OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value)
+                # if is_instant:
+                #     check_otp_status(campaign_builder_id, OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value)
 
             # check campaign starts atleast 30 minutes before campaign schedule time
             validate_campaign_builder_campaign_for_scheduled_time(campaign_builder_entity_db)
