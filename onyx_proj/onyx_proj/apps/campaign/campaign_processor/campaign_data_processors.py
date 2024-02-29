@@ -2575,7 +2575,7 @@ def generate_campaign_approval_status_mail(data: dict):
 
 def save_campaign_details(request_data):
     method_name = "save_campaign_details"
-    body = request_data.get("body", {})
+    body = copy.deepcopy(request_data.get("body", {}))
     body_copy = copy.deepcopy(body)
     unique_id = body.get("unique_id", None)
     campaign_reference_id = body.get("campaign_reference_id", None)
