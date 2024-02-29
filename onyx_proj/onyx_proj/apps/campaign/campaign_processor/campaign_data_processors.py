@@ -591,7 +591,12 @@ def test_campaign_status(request_data):
     else:
         cb_data = cb_data[0]
 
-    segment_id = cb_data.get("segment_id",None)
+    if cb_data.get('campaign_category', '') in [CampaignCategory.AB_Content.value,
+                                             CampaignCategory.AB_Segment.value]:
+        segment_id = cbc_data.get("segment_id", None)
+    else:
+        segment_id = cb_data.get("segment_id", None)
+
     logger.debug(f"segment_id: {segment_id}")
     if segment_id is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
