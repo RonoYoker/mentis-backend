@@ -1384,15 +1384,15 @@ ASYNC_CELERY_CALLBACK_KEY_MAPPING = {
 
 
 StrategyCTABasedOnStatus = {
-    StrategyBuilderStatus.SAVED: ["EDIT", "DEACTIVATE", "APPROVAL_PENDING", "CLONE", "VIEW"],
-    StrategyBuilderStatus.APPROVAL_PENDING: ["APPROVED", "DIS_APPROVED", "CLONE", "VIEW"],
-    StrategyBuilderStatus.APPROVED: ["DEACTIVATE", "CLONE", "VIEW", "STATS"],
-    StrategyBuilderStatus.DEACTIVATE: ["EDIT", "CLONE", "VIEW"],
+    StrategyBuilderStatus.SAVED: ["EDIT", "DEACTIVATE", "APPROVAL_PENDING", "CLONE", "VIEW", "PREVIEW"],
+    StrategyBuilderStatus.APPROVAL_PENDING: ["APPROVED", "DIS_APPROVED", "CLONE", "VIEW", "DEACTIVATE", "PREVIEW"],
+    StrategyBuilderStatus.APPROVED: ["DEACTIVATE", "CLONE", "VIEW", "STATS", "PREVIEW"],
+    StrategyBuilderStatus.DEACTIVATE: ["EDIT", "CLONE", "VIEW", "PREVIEW"],
     StrategyBuilderStatus.ERROR: ["EDIT", "CLONE", "VIEW"],
-    StrategyBuilderStatus.DIS_APPROVED: ["EDIT", "CLONE", "VIEW"],
+    StrategyBuilderStatus.DIS_APPROVED: ["EDIT", "CLONE", "VIEW", "PREVIEW"],
     StrategyBuilderStatus.DRAFTED: ["VIEW"],
-    StrategyBuilderStatus.APPROVAL_IN_PROGRESS: ["VIEW"],
-    StrategyBuilderStatus.DEACTIVATION_IN_PROGRESS: ["VIEW"]
+    StrategyBuilderStatus.APPROVAL_IN_PROGRESS: ["VIEW", "PREVIEW"],
+    StrategyBuilderStatus.DEACTIVATION_IN_PROGRESS: ["VIEW", "PREVIEW"]
 }
 
 ContentAttributeIdToContentText = {
@@ -1410,4 +1410,9 @@ class CampaignLevel(Enum):
     MAIN = "MAIN"
     INTERNAL = "INTERNAL"
     LIMIT = "LIMIT"
+
+
+class StrategyPreviewScheduleTab(Enum):
+    PREVIEW_BY_DATA = "PREVIEW_BY_DATA"
+    PREVIEW_BY_UID = "PREVIEW_BY_UID"
 

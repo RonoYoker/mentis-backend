@@ -15,12 +15,14 @@ from onyx_proj.common.constants import TAG_FAILURE, StrategyBuilderStatus, Celer
     TAG_SUCCESS, DataSource, AsyncCeleryTaskCallbackKeys, MIN_ALLOWED_REJECTION_REASON_LENGTH, \
     MAX_ALLOWED_REJECTION_REASON_LENGTH, CampaignStatus, Roles
 from onyx_proj.common.decorators import UserAuth
+from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.common.sqlalchemy_helper import create_dict_from_object
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException, InternalServerError, \
     NotFoundException
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.models.CED_ActivityLog_model import CEDActivityLog
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
+from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
 from onyx_proj.models.CED_CeleryChildTaskLogs_model import CEDCeleryChildTaskLogs
 from onyx_proj.models.CED_CeleryTaskLogs_model import CEDCeleryTaskLogs
 from onyx_proj.models.CED_HIS_StrategyBuilder_model import CEDHISStrategyBuilder
@@ -34,6 +36,7 @@ from onyx_proj.orm_models.CED_StrategyBuilder_model import CED_StrategyBuilder
 from onyx_proj.common.constants import *
 import re
 from datetime import datetime
+from django.conf import settings
 
 logger = logging.getLogger("apps")
 
@@ -495,7 +498,7 @@ def prepare_and_trigger_celery_job_by_task_name(task_name, callback_key, unique_
                      AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_DEACTIVATION.value]:
         filter_list = prepare_filter_list_of_cb_for_strategy_builder(task_name, unique_id)
         campaign_builder_list = CEDCampaignBuilder().get_campaign_builder_details_by_filter_list(filter_list)
-        validate_strategy_campaign_status(campaign_builder_list, task_name)
+        campaign_builder_list = validate_strategy_campaign_status(campaign_builder_list, task_name)
 
     if campaign_builder_list is None:
         raise InternalServerError(method_name=method_name,
@@ -552,8 +555,13 @@ def validate_strategy_campaign_status(campaign_builder_list, task_name):
         for campaign_builder in campaign_builder_list:
             if campaign_builder.status != CampaignStatus.APPROVAL_PENDING.value:
                 raise BadRequestException(method_name=method_name, reason="Campaigns are not in valid state")
+    elif task_name == AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_DEACTIVATION.value:
+        for campaign_builder in campaign_builder_list.copy():
+            if campaign_builder.status == CampaignStatus.DEACTIVATE.value:
+                campaign_builder_list.remove(campaign_builder)
 
     logger.debug(f"Exit: {method_name}, Success")
+    return campaign_builder_list
 
 def validate_campaign_for_strategy(campaign_builder_ids):
     method_name = "validate_campaign_for_strategy"
@@ -922,15 +930,34 @@ def fetch_strategy_campaign_schedule_details(request_body):
     start_date = request_body.get("start_date", None)
     end_date = request_body.get("end_date", None)
     campaign_builder_list = request_body.get("campaign_builder_list", [])
+    tab_name = request_body.get('tab_name', None)
+    unique_id = request_body.get('unique_id', None)
 
-    if start_date is None or end_date is None or campaign_builder_list is None or len(campaign_builder_list) < 1:
+    if tab_name == StrategyPreviewScheduleTab.PREVIEW_BY_DATA.value:
+        if start_date is None or end_date is None or campaign_builder_list is None or len(campaign_builder_list) < 1:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Request body has missing fields")
+        validate_strategy_request(request_body)
+
+        campaign_builder_list = prepare_campaign_builder_list(start_date, end_date, campaign_builder_list)
+
+        schedule_detail_list = prepare_strategy_campaign_schedule_details(campaign_builder_list, tab_name)
+    elif tab_name == StrategyPreviewScheduleTab.PREVIEW_BY_UID.value:
+        if unique_id is None:
+            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                        details_message="Strategy id is missing.")
+        strategy_campaign_data = CEDCampaignBuilder().get_campaign_builder_details_by_filter_list(filter_list=[
+            {"column": "strategy_id", "value": unique_id, "op": "=="}
+        ])
+        if strategy_campaign_data is None or len(strategy_campaign_data) == 0:
+            logger.error(f"{method_name} :: Strategy builder id is invalid.")
+            return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                        details_message="Strategy builder id is invalid.")
+        schedule_detail_list = prepare_strategy_campaign_schedule_details(strategy_campaign_data, tab_name)
+
+    else:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                    details_message="Request body has missing fields")
-    validate_strategy_request(request_body)
-
-    campaign_builder_list = prepare_campaign_builder_list(start_date, end_date, campaign_builder_list)
-
-    schedule_detail_list = prepare_strategy_campaign_schedule_details(campaign_builder_list)
+                    details_message="Invalid tab name.")
 
     if schedule_detail_list is None or len(schedule_detail_list) < 1:
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
@@ -939,58 +966,40 @@ def fetch_strategy_campaign_schedule_details(request_body):
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=schedule_detail_list)
 
 
-def prepare_strategy_campaign_schedule_details(campaign_builder_list):
+def prepare_strategy_campaign_schedule_details(campaign_builder_list, tab_name):
     method_name = "prepare_strategy_campaign_schedule_details"
     logger.debug(f"Entry: {method_name}, campaign_builder_list: {campaign_builder_list}")
 
     schedule_detail_list = []
     try:
-        campaign_ids = [cb.get("campaign_builder_id") for cb in campaign_builder_list]
-        strategy_campaign_data = CEDCampaignBuilder().get_campaign_builder_details_by_filter_list(filter_list=[
-            {"column": "unique_id", "value": campaign_ids, "op": "in"}
-        ])
-        if strategy_campaign_data is None or len(strategy_campaign_data) == 0:
-            logger.error(f"{method_name} :: Campaign builder ids are invalid.")
-            return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
-                        details_message="Campaign builder ids are invalid.")
+        if tab_name == StrategyPreviewScheduleTab.PREVIEW_BY_DATA.value:
+            campaign_ids = [cb.get("campaign_builder_id") for cb in campaign_builder_list]
+            strategy_campaign_data = CEDCampaignBuilder().get_campaign_builder_details_by_filter_list(filter_list=[
+                {"column": "unique_id", "value": campaign_ids, "op": "in"}
+            ])
+            if strategy_campaign_data is None or len(strategy_campaign_data) == 0:
+                logger.error(f"{method_name} :: Campaign builder ids are invalid.")
+                return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                            details_message="Campaign builder ids are invalid.")
 
-        rec_details_from_sb_req_meta = {}
+            rec_details_from_sb_req_meta = {}
 
-        for camp_details in campaign_builder_list:
-            campaign_builder_id = camp_details["campaign_builder_id"]
-            recurring_detail = camp_details["recurring_detail"]
-            schedule_time = camp_details['schedule_time']
-            if rec_details_from_sb_req_meta.get(campaign_builder_id) is not None:
-                rec_details_from_sb_req_meta[campaign_builder_id][0].append(recurring_detail)
-                rec_details_from_sb_req_meta[campaign_builder_id][1].append(schedule_time)
-            else:
-                rec_details_from_sb_req_meta[campaign_builder_id] = [[recurring_detail], [schedule_time]]
+            for camp_details in campaign_builder_list:
+                campaign_builder_id = camp_details["campaign_builder_id"]
+                recurring_detail = camp_details["recurring_detail"]
+                schedule_time = camp_details['schedule_time']
+                if rec_details_from_sb_req_meta.get(campaign_builder_id) is not None:
+                    rec_details_from_sb_req_meta[campaign_builder_id][0].append(recurring_detail)
+                    rec_details_from_sb_req_meta[campaign_builder_id][1].append(schedule_time)
+                else:
+                    rec_details_from_sb_req_meta[campaign_builder_id] = [[recurring_detail], [schedule_time]]
+        else:
+            strategy_campaign_data = campaign_builder_list
+            rec_details_from_sb_req_meta = None
 
         for cb in strategy_campaign_data:
             try:
-                cb = create_dict_from_object(cb)
-                request_meta = json.loads(cb.get("request_meta"))
-
-                campaign_content_details = generate_campaign_segment_and_content_details_v2(cb)
-
-                variant = {'campaign_content_details': campaign_content_details,
-                           "segment_name": cb.get('segment_name')}
-                schedule_date_time = []
-                # 0th variant only, since only 1 variant would be present for each CB
-                for instance in request_meta.get("variant_detail").get("variants")[0]:
-                    variant.setdefault("channel", instance.get("channel"))
-                    variant.setdefault("template_info", instance.get("template_info"))
-                    for recurring_detail, schedule_time in zip(rec_details_from_sb_req_meta[cb['unique_id']][0],
-                                                               rec_details_from_sb_req_meta[cb['unique_id']][1]):
-                        recurring_dates = generate_schedule(recurring_detail, schedule_time[0]['start_time'],
-                                                            schedule_time[0]['end_time'])
-                        for dates in recurring_dates:
-                            for time in schedule_time:
-                                schedule_date_time.append({
-                                    "start_date_time": datetime.combine(dates.get("date"), datetime.strptime(time["start_time"],'%H:%M:%S').time()),
-                                    "end_date_time": datetime.combine(dates.get("date"), datetime.strptime(time["end_time"],'%H:%M:%S').time())
-                                })
-                variant["schedule_date_time"] = schedule_date_time
+                variant = prepare_cb_variant_schedule_detail(cb, rec_details_from_sb_req_meta, tab_name)
                 schedule_detail_list.append(variant)
             except Exception as ex:
                 logger.error(f'Some issue in getting variant details, {ex}')
@@ -1004,3 +1013,51 @@ def prepare_strategy_campaign_schedule_details(campaign_builder_list):
 
     logger.debug(f"Exit: {method_name}, Success")
     return schedule_detail_list
+
+
+def prepare_cb_variant_schedule_detail(campaign_builder, rec_details_from_sb_req_meta, tab_name):
+    method_name = "prepare_cb_schedule_detail"
+    logger.debug(f"Entry: {method_name}, cb: {campaign_builder}, ")
+    cb = create_dict_from_object(campaign_builder)
+    request_meta = json.loads(cb.get("request_meta"))
+
+    campaign_content_details = generate_campaign_segment_and_content_details_v2(cb)
+
+    variant = {'campaign_content_details': campaign_content_details,
+               "segment_name": cb.get('segment_name')}
+    schedule_date_time = []
+    if tab_name == StrategyPreviewScheduleTab.PREVIEW_BY_DATA.value:
+        # 0th variant only, since only 1 variant would be present for each CB
+        for instance in request_meta.get("variant_detail").get("variants")[0]:
+            variant.setdefault("channel", instance.get("channel"))
+            variant.setdefault("template_info", instance.get("template_info"))
+            for recurring_detail, schedule_time in zip(rec_details_from_sb_req_meta[cb['unique_id']][0],
+                                                       rec_details_from_sb_req_meta[cb['unique_id']][1]):
+                recurring_dates = generate_schedule(recurring_detail, schedule_time[0]['start_time'],
+                                                    schedule_time[0]['end_time'])
+                for dates in recurring_dates:
+                    for time in schedule_time:
+                        schedule_date_time.append({
+                            "start_date_time": datetime.combine(dates.get("date"),
+                                                                datetime.strptime(time["start_time"], '%H:%M:%S').time()),
+                            "end_date_time": datetime.combine(dates.get("date"),
+                                                              datetime.strptime(time["end_time"], '%H:%M:%S').time())
+                        })
+    elif tab_name == StrategyPreviewScheduleTab.PREVIEW_BY_UID.value:
+        instance = request_meta.get("variant_detail").get("variants")[0][0]
+        variant.setdefault("channel", instance.get("channel"))
+        variant.setdefault("template_info", instance.get("template_info"))
+        filter_list = [{"column": "campaign_builder_id", "value": cb['unique_id'], "op": "=="}]
+        columns_list = ['start_date_time', 'end_date_time']
+        cb_schedule_date_time = CEDCampaignBuilderCampaign().get_details_by_filter_list(filter_list=filter_list, columns_list=columns_list)
+        if cb_schedule_date_time is None or len(cb_schedule_date_time) == 0:
+            logger.error(f"{method_name} :: Unable to found campaign builder details.")
+            raise InternalServerError(method_name=method_name, reason="Unable to found campaign builder details.")
+        for date_time in cb_schedule_date_time:
+            schedule_date_time.append({
+                "start_date_time": date_time.start_date_time,
+                "end_date_time": date_time.end_date_time
+            })
+    variant["schedule_date_time"] = schedule_date_time
+    logger.debug(f"Exit: {method_name}, Success")
+    return variant

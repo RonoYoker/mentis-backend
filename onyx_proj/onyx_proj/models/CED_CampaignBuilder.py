@@ -295,3 +295,15 @@ class CEDCampaignBuilder:
         res = execute_query(self.engine, query)
         return res
 
+    def fetch_last_executed_date_by_cb_uid(self, cmp_ids):
+        campaign_ids_str = " , ".join([f"'{campaign_id}'" for campaign_id in cmp_ids])
+        query = f"""
+                 select cb.UniqueId as unique_id, max(cbc.StartDateTime) as last_executed_date_time from 
+                 CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb on cb.UniqueId = cbc.CampaignBuilderId 
+                 join CED_CampaignExecutionProgress cep on cep.CampaignBuilderCampaignId = cbc.UniqueId and 
+                 cep.TestCampaign = 0 where cb.UniqueId in ({campaign_ids_str}) and cep.TestCampaign = 0 and cep.Status in 
+                 ( 'PARTIALLY_EXECUTED', 'EXECUTED' ) GROUP BY cb.UniqueId
+                 """
+        res = execute_query(self.engine, query)
+        return res
+

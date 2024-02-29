@@ -5303,17 +5303,26 @@ def get_v2_camps_detail(request_body):
     if tab_name == "ALL":
         campaign_data = CEDCampaignBuilderCampaign().fetch_valid_v2_camp_detail_by_project_id(project_id,
                                                                                           start_date, end_date)
-    elif tab_name == "EXCLUDE_STRATEGY":
-        campaign_data = CEDCampaignBuilderCampaign().fetch_valid_v2_camp_detail_by_project_id(project_id,
-                                                                                              start_date, end_date, True)
     else:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="Tab value is invalid.")
 
-    if len(campaign_data) == 0 or campaign_data is None:
+    if campaign_data is None or len(campaign_data) == 0:
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
                     details_message="Campaign data not found for the given parameters.")
 
+    campaign_ids = [cb['unique_id'] for cb in campaign_data]
+    last_executed_date_time_list = CEDCampaignBuilder().fetch_last_executed_date_by_cb_uid(campaign_ids)
+    if last_executed_date_time_list is None or len(last_executed_date_time_list) == 0:
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message="Campaign data not found.")
+    last_executed_date_time_dict = {}
+    for date_time in last_executed_date_time_list:
+        campaign_builder_id = date_time["unique_id"]
+        last_executed_date_time = date_time["last_executed_date_time"]
+        last_executed_date_time_dict[campaign_builder_id] = last_executed_date_time
+
     for campaign in campaign_data:
+        campaign['last_executed_date_time'] = last_executed_date_time_dict[campaign['unique_id']]
         campaign['average_delivery'] = ((campaign.get('delivered_count', 0) if campaign.get('delivered_count', 0) is not None else 0) / campaign.get('ack_count')) * 100
         campaign['average_clicked'] = ((campaign.get('clicked_count', 0) if campaign.get('clicked_count', 0) is not None else 0) / campaign.get('ack_count')) * 100
         campaign['average_landing'] = ((campaign.get('landing_count', 0) if campaign.get('landing_count', 0) is not None else 0) / campaign.get('ack_count')) * 100
