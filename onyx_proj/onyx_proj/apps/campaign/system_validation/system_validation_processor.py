@@ -426,10 +426,11 @@ def get_campaign_system_validation_status(campaign_builder_id):
         return resp.update({"error": "Invalid Campaign Id"})
 
     db_resp_cbc = CEDCampaignBuilderCampaign().fetch_cbc_for_system_validation(campaign_builder_id=campaign_builder_id)
-
+    all_execution_config_id = []
     preprocess_cbc_data = {}
     manual_validation_aggregated_flag = True
     for cbc_row in db_resp_cbc:
+        all_execution_config_id.append(cbc_row["execution_config_id"])
         preprocess_cbc_data.setdefault(cbc_row["campaign_builder_id"], {}).setdefault(cbc_row["execution_config_id"], {}).setdefault("is_validated_system", cbc_row["is_validated_system"])
         preprocess_cbc_data.setdefault(cbc_row["campaign_builder_id"], {}).setdefault(cbc_row["execution_config_id"], {}).setdefault("channel", cbc_row["content_type"])
         preprocess_cbc_data.setdefault(cbc_row["campaign_builder_id"], {}).setdefault(cbc_row["execution_config_id"], {}).setdefault("test_campaign_status", cbc_row["test_campign_state"])
@@ -444,7 +445,9 @@ def get_campaign_system_validation_status(campaign_builder_id):
 
     system_validation_obj = {}
     for sv_row in db_resp_sv:
-
+        if sv_row.get("execution_config_id", "") not in all_execution_config_id:
+            logger.debug(f"Excluding The below execution config ID : {sv_row.get('execution_config_id')}")
+            continue
         channel = preprocess_cbc_data.get(sv_row["campaign_builder_id"], {}).get(sv_row["execution_config_id"], {}).get("channel")
         test_campaign_status = preprocess_cbc_data.get(sv_row["campaign_builder_id"], {}).get(sv_row["execution_config_id"], {}).get("test_campaign_status")
         system_validation_status = preprocess_cbc_data.get(sv_row["campaign_builder_id"], {}).get(sv_row["execution_config_id"], {}).get("is_validated_system")
