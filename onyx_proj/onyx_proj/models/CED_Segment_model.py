@@ -257,7 +257,7 @@ class CEDSegment:
                 ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}' 
                 and cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' 
                 and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' 
-                and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}'  
+                and DATE(cb.CreationDate) >= '{start_time}' and DATE(cb.CreationDate) <= '{end_time}'  
                 GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) as cb ON cb.SegmentId = s.UniqueId
                 JOIN {cbc_table} as cbc ON cbc.CampaignBuilderId = cb.UniqueId 
                 JOIN CED_CampaignExecutionProgress as cep ON cbc.UniqueId = cep.CampaignBuilderCampaignId

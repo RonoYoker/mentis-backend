@@ -502,7 +502,7 @@ class CEDCampaignBuilderCampaign:
                  f"join CED_CampaignExecutionProgress cep on cep.CampaignBuilderCampaignId = cbc.UniqueId and "
                  f"cep.TestCampaign = 0 join CED_Segment s on cb.SegmentId = s.UniqueId join CED_Projects p on "
                  f"p.UniqueId = cb.ProjectId left join CED_StrategyBuilder sb on sb.UniqueId = cb.StrategyId where "
-                 f"p.UniqueId = '{project_id}' and Date(cb.StartDateTime) BETWEEN '{start_date}' and '{end_date}' and "
+                 f"p.UniqueId = '{project_id}' and Date(cb.CreationDate) BETWEEN '{start_date}' and '{end_date}' and "
                  f"cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' "
                  f"and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' and cep.TestCampaign "
                  f"= 0 GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) derived where executed_count > 0")

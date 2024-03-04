@@ -418,7 +418,7 @@ def prepare_query_to_fetch_cbc_for_templates(filters, channel):
                 ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}'
                 and cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' 
                 and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' 
-                and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' 
+                and DATE(cb.CreationDate) >= '{start_time}' and DATE(cb.CreationDate) <= '{end_time}' 
                 {segment_where_clause} GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) cb
                 JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId
                 JOIN CED_CampaignBuilderSMS cbs ON cbc.UniqueId = cbs.MappingId 
@@ -436,7 +436,7 @@ def prepare_query_to_fetch_cbc_for_templates(filters, channel):
                 ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}'
                 and cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' 
                 and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' 
-                and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' 
+                and DATE(cb.CreationDate) >= '{start_time}' and DATE(cb.CreationDate) <= '{end_time}' 
                 {segment_where_clause} GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) cb
                 JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId
                 JOIN CED_CampaignBuilderWhatsApp cbw ON cbc.UniqueId = cbw.MappingId 
@@ -453,7 +453,7 @@ def prepare_query_to_fetch_cbc_for_templates(filters, channel):
                 ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}'
                 and cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' 
                 and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' 
-                and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' 
+                and DATE(cb.CreationDate) >= '{start_time}' and DATE(cb.CreationDate) <= '{end_time}' 
                 {segment_where_clause} GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) cb
                 JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId
                 JOIN CED_CampaignBuilderEmail cbe ON cbc.UniqueId = cbe.MappingId 
@@ -469,7 +469,7 @@ def prepare_query_to_fetch_cbc_for_templates(filters, channel):
                 ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}'
                 and cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' 
                 and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' 
-                and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' 
+                and DATE(cb.CreationDate) >= '{start_time}' and DATE(cb.CreationDate) <= '{end_time}' 
                 {segment_where_clause} GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) cb
                 JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId
                 JOIN CED_CampaignBuilderIVR cbi ON cbc.UniqueId = cbi.MappingId 
