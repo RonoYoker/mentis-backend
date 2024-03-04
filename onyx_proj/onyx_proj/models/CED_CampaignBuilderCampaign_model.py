@@ -504,8 +504,9 @@ class CEDCampaignBuilderCampaign:
                  f"p.UniqueId = cb.ProjectId left join CED_StrategyBuilder sb on sb.UniqueId = cb.StrategyId where "
                  f"p.UniqueId = '{project_id}' and Date(cb.CreationDate) BETWEEN '{start_date}' and '{end_date}' and "
                  f"cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' "
-                 f"and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' and cep.TestCampaign "
-                 f"= 0 GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) derived where executed_count > 0")
+                 f"and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' and cb.IsSplit = 0"
+                 f" and cep.TestCampaign = 0 GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) "
+                 f"derived where executed_count > 0")
         res = execute_query(self.engine, query)
         return res
 
