@@ -28,6 +28,7 @@ from onyx_proj.models.CED_CeleryTaskLogs_model import CEDCeleryTaskLogs
 from onyx_proj.models.CED_HIS_StrategyBuilder_model import CEDHISStrategyBuilder
 from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.models.CED_StrategyBuilder_model import CEDStrategyBuilder
+from onyx_proj.models.CED_User_model import CEDUser
 from onyx_proj.orm_models.CED_ActivityLog_model import CED_ActivityLog
 from onyx_proj.orm_models.CED_CeleryChildTaskLogs_model import CED_CeleryChildTaskLogs
 from onyx_proj.orm_models.CED_CeleryTaskLogs_model import CED_CeleryTaskLogs
@@ -37,6 +38,7 @@ from onyx_proj.common.constants import *
 import re
 from datetime import datetime
 from django.conf import settings
+from django.template.loader import render_to_string
 
 logger = logging.getLogger("apps")
 
@@ -179,6 +181,8 @@ def get_strategy_data(request_body):
         strategy_campaign_data = CEDCampaignBuilder().get_campaign_builder_details_by_filter_list(filter_list=[
             {"column": "strategy_id", "value": strategy_id, "op": "=="}
         ])
+        query = prepare_in_active_camp_instance(strategy_id=strategy_id)
+        deactivated_camp_list = CEDCampaignBuilder().fetch_campaign_data_by_query(query)
     else:
         try:
             is_status_err_or_draft = True
@@ -187,6 +191,8 @@ def get_strategy_data(request_body):
             strategy_campaign_data = CEDCampaignBuilder().get_campaign_builder_details_by_filter_list(filter_list=[
                 {"column": "unique_id", "value": campaign_ids, "op": "in"}
             ])
+            query = prepare_in_active_camp_instance(campaign_ids=campaign_ids)
+            deactivated_camp_list = CEDCampaignBuilder().fetch_campaign_data_by_query(query)
         except Exception as ex:
             logger.error(f'Some issue in getting variant details, {ex}')
             return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
@@ -212,6 +218,8 @@ def get_strategy_data(request_body):
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
                     details_message="No Campaigns present for this strategy")
 
+    deactivated_camp_list = [deactivated_camp["unique_id"] for deactivated_camp in deactivated_camp_list]
+
     final_data = strategy_basic_data
     camp_builder_list = []  # list of campaign info
 
@@ -220,7 +228,7 @@ def get_strategy_data(request_body):
             cb = create_dict_from_object(cb)
             request_meta = json.loads(cb.get("request_meta"))
             camp_builder_id = cb.get("unique_id")
-            is_active = cb.get("is_active")
+            is_active = 0 if camp_builder_id in deactivated_camp_list or cb.get('is_active') == 0 else 1
 
             campaign_content_details = generate_campaign_segment_and_content_details_v2(cb)
             if is_status_err_or_draft:
@@ -268,6 +276,31 @@ def get_strategy_data(request_body):
     logger.debug(f"Exit, {method_name}. SUCCESS.")
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                 data=final_data)
+
+
+def prepare_in_active_camp_instance(**kwargs):
+    method_name = "prepare_in_active_camp_instance"
+    logger.debug(f"Entry: {method_name}, kwargs: {kwargs}")
+    strategy_id = kwargs.get('strategy_id')
+    campaign_ids = kwargs.get('campaign_ids')
+    if strategy_id is not None:
+        query = f"""
+            Select derived.* from (select cb.UniqueId as unique_id, sum( IF( cbc.IsActive = 0, 1, 0 ) ) as active_count 
+            from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb on cb.UniqueId = cbc.CampaignBuilderId where 
+            cb.StrategyId = '{strategy_id}' GROUP BY cb.UniqueId) derived where active_count > 0
+        """
+    elif campaign_ids is not None:
+        campaign_ids = " , ".join([f"'{campaign_id}'" for campaign_id in campaign_ids])
+        query = f"""
+            Select derived.* from (select cb.UniqueId as unique_id, sum( IF( cbc.IsActive = 0, 1, 0 ) ) as active_count 
+            from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb on cb.UniqueId = cbc.CampaignBuilderId 
+            where cb.UniqueId in {campaign_ids} GROUP BY cb.UniqueId) derived where active_count > 0
+        """
+    else:
+        return BadRequestException(method_name=method_name, reason="Unable to found campaigns.")
+
+    logger.debug(f"Exit, {method_name}. SUCCESS.")
+    return query
 
 
 def prepare_and_save_strategy_builder_history_data_and_activity_logs(strategy_builder, strategy_builder_from_db,
@@ -359,6 +392,7 @@ def send_strategy_builder_for_approve(strategy_builder, unique_id, user_name, au
         except Exception as e:
             filter_list = [{"column": "unique_id", "value": unique_id, "op": "=="}]
             CEDStrategyBuilder().update_table(filter_list, dict(status=StrategyBuilderStatus.ERROR.value))
+            generate_strategy_status_mail(strategy_builder.get('unique_id'), StrategyBuilderStatus.ERROR.value)
             raise InternalServerError(method_name=method_name,
                                       reason=f"Unable to trigger celery task, Exception: {str(e)}")
     else:
@@ -475,6 +509,7 @@ def send_strategy_builder_for_deactivate(strategy_builder, unique_id, user_name,
         except Exception as e:
             filter_list = [{"column": "unique_id", "value": unique_id, "op": "=="}]
             CEDStrategyBuilder().update_table(filter_list, dict(status=StrategyBuilderStatus.ERROR.value))
+            generate_strategy_status_mail(strategy_builder.get('unique_id'), StrategyBuilderStatus.ERROR.value)
             raise InternalServerError(method_name=method_name,
                                       reason=f"Unable to trigger celery task, Exception: {str(e)}")
     else:
@@ -1017,7 +1052,7 @@ def prepare_strategy_campaign_schedule_details(campaign_builder_list, tab_name):
 
 def prepare_cb_variant_schedule_detail(campaign_builder, rec_details_from_sb_req_meta, tab_name):
     method_name = "prepare_cb_schedule_detail"
-    logger.debug(f"Entry: {method_name}, cb: {campaign_builder}, ")
+    logger.debug(f"Entry: {method_name}, cb: {campaign_builder}")
     cb = create_dict_from_object(campaign_builder)
     request_meta = json.loads(cb.get("request_meta"))
 
@@ -1061,3 +1096,63 @@ def prepare_cb_variant_schedule_detail(campaign_builder, rec_details_from_sb_req
     variant["schedule_date_time"] = schedule_date_time
     logger.debug(f"Exit: {method_name}, Success")
     return variant
+
+
+def generate_strategy_status_mail(unique_id, status):
+    method_name = "generate_strategy_status_mail"
+    logger.debug(f"Entry: {method_name}, unique_id: {unique_id}, status: {status}")
+    if unique_id is None or status is None:
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Strategy unique id or status is missing.")
+
+    filter_list = [{"column": "unique_id", "value": unique_id, "op": "=="}]
+    strategy_details = CEDStrategyBuilder().get_strategy_builder_details(filter_list)
+
+    if strategy_details is None or len(strategy_details) == 0:
+        logger.error(f"{method_name} :: unable to fetch strategy builder data for unique_id: {unique_id}.")
+        return dict(status_code=http.HTTPStatus.NOT_FOUND, result=TAG_FAILURE,
+                    details_message="Strategy builder id is invalid")
+
+    strategy_details = create_dict_from_object(strategy_details[0])
+
+    if Strategy_STATUS_SUBJECT_MAPPING[status] == "error":
+        subject = f'Strategy {strategy_details.get("name")} went into {Strategy_STATUS_SUBJECT_MAPPING[status]}'
+    else:
+        subject = f'Strategy {strategy_details.get("name")} is {Strategy_STATUS_SUBJECT_MAPPING[status]}'
+
+    users = [strategy_details.get("created_by")]
+    if strategy_details.get("approved_by") is not None:
+        users.append(strategy_details.get('approved_by'))
+
+    email_tos = []
+    for user in users:
+        email = CEDUser().get_user_email_id(user)
+        if email is not None:
+            email_tos.append(email)
+    email_data = {"StrategyName": strategy_details.get("name"), "StrategyId": str(strategy_details.get("id")),
+                  "Status": status}
+
+    if status == "APPROVED":
+        email_data["FinalStatusColorCode"] = "GREEN"
+    elif status == "DIS_APPROVED" or status == "DEACTIVATE" or status == "ERROR":
+        email_data["FinalStatusColorCode"] = "RED"
+    elif status == "SAVED":
+        email_data["FinalStatusColorCode"] = "#FFA500"
+    email_body = render_to_string("mailers/strategy_status.html", email_data)
+
+    email_object = {
+        "tos": email_tos,
+        "ccs": settings.CC_LIST,
+        "bccs": settings.BCC_LIST,
+        "subject": subject,
+        "body": email_body
+    }
+
+    response = RequestClient(
+        url=MAILER_UTILITY_URL,
+        headers={"Content-Type": "application/json"},
+        request_body=json.dumps(email_object),
+        request_type=TAG_REQUEST_POST).get_api_response()
+
+    logger.info(f"Mailer response: {response}.")
+    return

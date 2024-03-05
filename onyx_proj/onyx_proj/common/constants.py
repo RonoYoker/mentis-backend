@@ -1416,3 +1416,12 @@ class StrategyPreviewScheduleTab(Enum):
     PREVIEW_BY_DATA = "PREVIEW_BY_DATA"
     PREVIEW_BY_UID = "PREVIEW_BY_UID"
 
+Strategy_STATUS_SUBJECT_MAPPING = {
+    "APPROVAL_PENDING": "sent for approval",
+    "APPROVED": "approved",
+    "DEACTIVATE": "deactivated",
+    "DEACTIVATE_CBC": "deactivated",
+    "DIS_APPROVED": "disapproved",
+    "ERROR": "error",
+    "SAVED": "saved"
+}

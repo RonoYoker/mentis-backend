@@ -200,6 +200,8 @@ def check_parent_task_completion_status_by_unique_id(unique_id):
 def onyx_approval_flow_strategy_callback_processor(unique_id, status, err_msg=None):
     method_name = "onyx_approval_flow_strategy_callback_processor"
     logger.debug(f"Entry: {method_name}, unique_id: {unique_id}, status: {status}")
+    from onyx_proj.apps.strategy_campaign.strategy_campaign_processor.strategy_campaign_processor import \
+        generate_strategy_status_mail
     try:
         if status == CeleryTaskLogsStatus.SUCCESS.value:
             status = StrategyBuilderStatus.APPROVED.value
@@ -216,6 +218,7 @@ def onyx_approval_flow_strategy_callback_processor(unique_id, status, err_msg=No
         strategy_builder_id = celery_task.request_id
         filter = [{"column": "unique_id", "value": strategy_builder_id, "op": "=="}]
         CEDStrategyBuilder().update_table(filter, dict(status=status, error_msg=err_msg))
+        generate_strategy_status_mail(strategy_builder_id, status)
         logger.debug(f"Exit: {method_name}, Success")
         return dict(result=TAG_SUCCESS)
     except Exception as e:
@@ -227,6 +230,8 @@ def onyx_approval_flow_strategy_callback_processor(unique_id, status, err_msg=No
 def onyx_save_strategy_callback_processor(unique_id, status, err_msg=None):
     method_name = "onyx_save_strategy_callback_processor"
     logger.debug(f"Entry: {method_name}, unique_id: {unique_id}, status: {status}")
+    from onyx_proj.apps.strategy_campaign.strategy_campaign_processor.strategy_campaign_processor import \
+        generate_strategy_status_mail
     try:
         if status == CeleryTaskLogsStatus.SUCCESS.value:
             status = StrategyBuilderStatus.SAVED.value
@@ -243,6 +248,7 @@ def onyx_save_strategy_callback_processor(unique_id, status, err_msg=None):
         strategy_builder_id = celery_task.request_id
         filter = [{"column": "unique_id", "value": strategy_builder_id, "op": "=="}]
         CEDStrategyBuilder().update_table(filter, dict(status=status, error_msg=err_msg))
+        generate_strategy_status_mail(strategy_builder_id, status)
         logger.debug(f"Exit: {method_name}, Success")
         return dict(result=TAG_SUCCESS)
     except Exception as e:
@@ -254,6 +260,8 @@ def onyx_save_strategy_callback_processor(unique_id, status, err_msg=None):
 def onyx_deactivate_strategy_callback_processor(unique_id, status, err_msg=None):
     method_name = "onyx_deactivate_strategy_callback_processor"
     logger.debug(f"Entry: {method_name}, unique_id: {unique_id}")
+    from onyx_proj.apps.strategy_campaign.strategy_campaign_processor.strategy_campaign_processor import \
+        generate_strategy_status_mail
     try:
         if status == CeleryTaskLogsStatus.SUCCESS.value:
             status = StrategyBuilderStatus.DEACTIVATE.value
@@ -270,6 +278,7 @@ def onyx_deactivate_strategy_callback_processor(unique_id, status, err_msg=None)
         strategy_builder_id = celery_task.request_id
         filter = [{"column": "unique_id", "value": strategy_builder_id, "op": "=="}]
         CEDStrategyBuilder().update_table(filter, dict(status=status, is_active=False, error_msg=err_msg))
+        generate_strategy_status_mail(strategy_builder_id, status)
         logger.debug(f"Exit: {method_name}, Success")
         return dict(result=TAG_SUCCESS)
     except Exception as e:

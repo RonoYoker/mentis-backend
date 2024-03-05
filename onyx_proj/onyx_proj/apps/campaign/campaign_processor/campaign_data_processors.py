@@ -2,6 +2,7 @@ import copy
 import datetime
 import hashlib
 import pprint
+import re
 from datetime import timedelta
 import http
 import json
@@ -2801,9 +2802,13 @@ def save_strategy_campaign_details(data_packet):
         # Validate recurring details
         validate_recurring_details(recurring_detail)
 
+        pattern = r"HYPSB_(.*?)_HYPCB"
+        camp_name = re.findall(pattern, request_meta['name'])
+        camp_name = camp_name[0] if len(camp_name) > 0 else request_meta['name']
+
         request_meta['strategy_id'] = strategy_id
         request_meta['campaign_reference_id'] = campaign_builder_id
-        request_meta['name'] = f"{request_meta['name']}_{strategy_builder[0].name}_{uuid.uuid4().hex[0:4]}"
+        request_meta['name'] = f"{strategy_builder[0].name}_HYPSB_{camp_name}_HYPCB_{uuid.uuid4().hex[0:4]}"
         request_meta['recurring_detail'] = json.dumps(recurring_detail)
         request_meta['start_date_time'] = f"{recurring_detail['start_date']} {min_start_time}"
         request_meta['end_date_time'] = f"{recurring_detail['end_date']} {max_end_time}"

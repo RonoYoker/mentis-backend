@@ -307,3 +307,7 @@ class CEDCampaignBuilder:
         res = execute_query(self.engine, query)
         return res
 
+    def fetch_campaign_data_by_query(self, query):
+        res = execute_query(self.engine, query)
+        return res
+
