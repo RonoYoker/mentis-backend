@@ -29,7 +29,7 @@ from onyx_proj.apps.campaign.test_campaign.test_campaign_processor import test_c
 from onyx_proj.apps.campaign.test_campaign.test_campaign_processor import test_campaign_process
 from django.views.decorators.csrf import csrf_exempt
 from onyx_proj.apps.campaign.system_validation.system_validation_processor import get_campaign_system_validation_status, process_system_validation_entry
-from onyx_proj.celery_app.tasks import trigger_eng_data, trigger_campaign_system_validation
+from onyx_proj.celery_app.tasks import trigger_eng_data, trigger_campaign_system_validation,trigger_entry_in_all_channel_response
 from onyx_proj.apps.campaign.campaign_processor.campaign_content_processor import process_favourite
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
@@ -329,6 +329,11 @@ def trigger_camp_eng_data(request):
     return HttpResponse("", status=200, content_type="application/json")
 
 
+def trigger_camp_entry_in_all_channel_response(request):
+    trigger_entry_in_all_channel_response.apply_async(args=["SMS"], queue="celery_heavy_data")
+    return HttpResponse("", status=200, content_type="application/json")
+
+
 @csrf_exempt
 @UserAuth.user_authentication()
 def initiate_test_campaign(request):
@@ -619,3 +624,4 @@ def move_campaign_to_v2(request):
     response = perform_checks_and_move_to_v2(request_body)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+

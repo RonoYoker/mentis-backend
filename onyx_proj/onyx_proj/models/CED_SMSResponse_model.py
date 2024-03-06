@@ -34,3 +34,8 @@ class CEDSMSResponse:
         query = f"SELECT smsr.AccountId as account_id, smsr.Time as delivery_time, smsr.EnMobileNumber as mobile_number, ctMap.EnContentText as content_text, smsr.Uuid as uuid, smsr.Status as delivery_status, smsr.CustomerReferenceId as cust_ref_id FROM CED_SMSResponse_Intermediate smsr LEFT JOIN CED_CampaignContentMapping_Intermediate ctMap ON smsr.CustomerReferenceId = ctMap.CustomerReferenceId WHERE smsr.AccountId = '{account_id}' AND smsr.Time BETWEEN '{start_date}' AND '{end_date}' AND smsr.TestCampaign != 1"
         result = execute_query(self.engine, query)
         return result
+
+    def fetch_last_30_days_data(self, query):
+        result = execute_query(self.engine, query)
+        return result
+

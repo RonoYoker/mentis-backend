@@ -1,13 +1,22 @@
 import datetime
+import logging
+import os
 import time
+from operator import itemgetter
 
 from onyx_proj.apps.campaign.campaign_engagement_data.app_settings import RESPONSE_DATA_THRESHOLD_DAYS
 from onyx_proj.apps.campaign.campaign_engagement_data.engagement_db_helper import fetch_resp_data, \
     insert_or_update_camp_eng_data, fetch_eng_data_by_account_numbers
 from onyx_proj.common.newrelic_helpers import push_custom_parameters_to_newrelic
 from onyx_proj.common.sqlalchemy_helper import SqlAlchemyEngine
+from onyx_proj.common.utils.email_utility import email_utility
+from onyx_proj.models.CED_SMSResponse_model import CEDSMSResponse
+from onyx_proj.orm_models.CED_CampaignFilterData import CED_CampaignFilterData
+from onyx_proj.models.CED_CampaignFilterData_model import CEDCampaignFilterData
 from django.conf import settings
 from celery import task
+logger = logging.getLogger("apps")
+from django.utils import timezone
 
 db_conn = SqlAlchemyEngine().get_connection()
 
@@ -192,3 +201,142 @@ def process_existing_and_new_data(existing_data,new_data):
         new_data[key]["LastSmsClicked"] = choose_max_datetime(new_data[key].get("LastSmsClicked"),row["LastSmsClicked"])
 
     return new_data
+
+
+def process_the_all_channels_response(channel):
+    method_name = 'process_the_all_channels_response'
+    logger.debug(f'{method_name} is started')
+
+    email_template = f"{method_name} is started"
+    env = os.environ["CURR_ENV"].lower()
+    BankName = os.environ.get("BANK_NAME").lower()
+    email_subject = f"Last 5 delivered job - {BankName} - {env}"
+
+    tos = settings.TO_CAMPAIGN_DEACTIVATE_EMAIL_ID
+    ccs = settings.CC_CAMPAIGN_DEACTIVATE_EMAIL_ID
+    bccs = settings.BCC_CAMPAIGN_DEACTIVATE_EMAIL_ID
+
+    email_status = email_utility().send_mail(tos, ccs, bccs, email_subject, email_template)
+    if not email_status.get("status"):
+        return dict(status=False, message=email_status.get("message"))
+
+    if channel == "SMS":
+        query = f"SELECT EnMobileNumber as contact, Status, CreatedDate FROM CED_SMSResponse WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
+    # elif channel == "IVR":
+    #     query = f"SELECT AccountId as contact, Status, CreationDate as CreatedDate FROM CED_IVRResponse WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
+    # elif channel == "EMAIL":
+    #     query = f"SELECT EmailId as contact, Status, CreatedDate FROM CED_EMAILResponse WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
+    # elif channel == "WhatsApp":
+    #     query = f"SELECT MobileNumber as contact, Status, CreatedDate FROM CED_WhatsAppResponse WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
+    # else:
+    #     logger.error(f"method_name :: {method_name}, channel is not in Email, WhatsApp, SMS, IVR")
+    #     return dict(status=False, message='Channel is not Valid')
+
+
+    try:
+        results = CEDSMSResponse().fetch_last_30_days_data(query)
+    except Exception as ex:
+        logger.error(f"method_name :: {method_name}, error while creating campaign builder history object :: {ex}")
+        email_template = f"error in fetching the data from {channel}"
+        email_status = email_utility().send_mail(tos, ccs, bccs, email_subject + "FAILURE", email_template)
+        if not email_status.get("status"):
+            return dict(status=False, message=email_status.get("message"))
+
+        raise ex
+
+    # making list of status and time for  particular number
+    outer_map = {}
+    for result in results:
+        traversing_number = outer_map.get(result.get("contact"), None)
+        if traversing_number is None:
+            outer_map[result.get("contact")] = {'delivery': []}
+
+        outer_map[result.get("contact")]['delivery'].append([result.get("CreatedDate").strftime("%Y-%m-%d %H:%M:%S"), result.get("Status")])
+    logger.debug('made list of status and time for  particular contact')
+
+    # sorting on the bases of the creation date
+    for key in outer_map:
+        output = {}
+        outer_map[key]['delivery'] = sorted(outer_map[key]['delivery'], key=itemgetter(0))
+        output[key] = {'MTD_LastFiveFail': True, 'ThirtyDays_LastFiveFail': True, 'MTD_Successful': 0, 'MTD_Failures': 0, 'ThirtyDays_Successful': 0, 'ThirtyDays_Failures': 0, 'UpdationDate': timezone.now().strftime("%Y-%m-%d %H:%M:%S")}
+        count = 0
+        for time_and_status in outer_map[key]['delivery']:
+            count = count+1
+            # Get the starting datetime for the current month
+            # it's str formatted
+            current_datetime = timezone.now()
+            start_of_month = timezone.datetime(current_datetime.year, current_datetime.month, 1,
+                                                   tzinfo=current_datetime.tzinfo).strftime("%Y-%m-%d %H:%M:%S")
+
+
+            # Get the current datetime
+            current_datetime = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            if count <= 5 and start_of_month <= time_and_status[0] <= current_datetime:
+                output[key]['MTD_LastFiveFail'] = output[key]['MTD_LastFiveFail'] and not (time_and_status[1] == 'Delivered')
+            if count <= 5:
+                output[key]['ThirtyDays_LastFiveFail'] = output[key]['ThirtyDays_LastFiveFail'] and not (time_and_status[1] == 'Delivered')
+
+            # MTD
+            if start_of_month <= time_and_status[0] <= current_datetime:
+                if (time_and_status[1] == 'Delivered'):
+                    output[key]['MTD_Successful'] = output[key]['MTD_Successful'] + 1
+                else:
+                    output[key]['MTD_Failures'] = output[key]['MTD_Failures'] + 1
+
+            # THIRTY_DAYS
+            if (time_and_status[1] == 'Delivered'):
+                output[key]['ThirtyDays_Successful'] = output[key]['ThirtyDays_Successful'] + 1
+            else:
+                output[key]['ThirtyDays_Failures'] = output[key]['ThirtyDays_Failures'] + 1
+
+        #if that contact is not compaigned even 5 times then it is not considered as failure
+        if count < 5:
+            output[key]['MTD_LastFiveFail'] = False
+            output[key]['ThirtyDays_LastFiveFail'] = False
+
+        campaign_filter_data_entity = CED_CampaignFilterData({
+            "Channel": 'SMS',
+            "EnContactIdentifier": key,
+            'MTD_LastFiveFail': output[key]['MTD_LastFiveFail'],
+            'ThirtyDays_LastFiveFail': output[key]['ThirtyDays_LastFiveFail'],
+            'MTD_Successful': output[key]['MTD_Successful'],
+            'MTD_Failures': output[key]['MTD_Failures'],
+            'ThirtyDays_Successful': output[key]['ThirtyDays_Successful'],
+            'ThirtyDays_Failures': output[key]['ThirtyDays_Failures']
+        })
+
+        try:
+            db_res = CEDCampaignFilterData().save_campaign_filter_data_entity(campaign_filter_data_entity)
+            logger.debug(f"successfully made the entry of contact - {key}")
+        except Exception as ex:
+            logger.debug(f"Error while inserting the entry of contact - {key}")
+            email_template = f"Error while inserting the entry of contact - {key}"
+            email_status = email_utility().send_mail(tos, ccs, bccs, email_subject + "FAILURE", email_template)
+            if not email_status.get("status"):
+                return dict(status=False, message=email_status.get("message"))
+
+    email_template = f"{method_name} , Successfully completed"
+    email_status = email_utility().send_mail(tos, ccs, bccs, email_subject + "SUCCESS", email_template)
+    if not email_status.get("status"):
+        return dict(status=False, message=email_status.get("message"))
+
+    return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

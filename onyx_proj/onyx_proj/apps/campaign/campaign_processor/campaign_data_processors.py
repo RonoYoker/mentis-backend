@@ -2770,6 +2770,7 @@ def save_strategy_campaign_details(data_packet):
             raise InternalServerError(method_name=method_name,
                                       reason=f"Unable to find campaign builder details for id {campaign_builder_id}.")
 
+
         strategy_filter_list = [{"column": "unique_id", "value": strategy_id, "op": "=="}]
         strategy_builder = CEDStrategyBuilder().get_strategy_builder_details(strategy_filter_list)
         if strategy_builder is None or len(strategy_builder) < 1:

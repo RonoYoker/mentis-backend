@@ -9,7 +9,7 @@ from onyx_proj.apps.segments.app_settings import AsyncTaskRequestKeys
 from onyx_proj.exceptions.permission_validation_exception import QueryTimeoutException, EmptySegmentException
 
 from onyx_proj.apps.campaign.campaign_engagement_data.engagement_data_processor import \
-    prepare_and_update_campaign_engagement_data
+    prepare_and_update_campaign_engagement_data, process_the_all_channels_response
 from onyx_proj.models.CED_Projects_local import CED_Projects_local
 from onyx_proj.common.utils.newrelic_helpers import push_custom_parameters_to_newrelic
 from onyx_proj.models.custom_query_execution_model import CustomQueryExecution, execute_custom_query
@@ -250,6 +250,11 @@ def callback_resolver(parent_id: str):
 @task
 def trigger_eng_data():
     prepare_and_update_campaign_engagement_data()
+
+
+def trigger_entry_in_all_channel_response(channel):
+    process_the_all_channels_response(channel)
+
 
 @task
 def segment_refresh_for_campaign_approval(cb_id, segment_id, retry_count=0):
