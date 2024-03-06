@@ -328,7 +328,7 @@ def trigger_camp_eng_data(request):
     trigger_eng_data.apply_async(queue="celery_query_executor")
     return HttpResponse("", status=200, content_type="application/json")
 
-
+@csrf_exempt
 def trigger_camp_entry_in_all_channel_response(request):
     trigger_entry_in_all_channel_response.apply_async(args=["SMS"], queue="celery_heavy_data")
     return HttpResponse("", status=200, content_type="application/json")
