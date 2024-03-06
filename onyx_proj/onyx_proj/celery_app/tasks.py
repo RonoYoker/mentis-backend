@@ -251,7 +251,7 @@ def callback_resolver(parent_id: str):
 def trigger_eng_data():
     prepare_and_update_campaign_engagement_data()
 
-
+@task
 def trigger_entry_in_all_channel_response(channel):
     process_the_all_channels_response(channel)
 
