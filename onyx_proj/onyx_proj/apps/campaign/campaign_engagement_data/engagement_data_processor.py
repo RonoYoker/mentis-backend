@@ -221,7 +221,7 @@ def process_the_all_channels_response(channel):
         return dict(status=False, message=email_status.get("message"))
 
     if channel == "SMS":
-        query = f"SELECT EnMobileNumber as contact, Status, CreatedDate FROM CED_SMSResponse WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
+        query = f"SELECT EnMobileNumber as contact, Status, CreatedDate FROM CED_SMSResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
     # elif channel == "IVR":
     #     query = f"SELECT AccountId as contact, Status, CreationDate as CreatedDate FROM CED_IVRResponse WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
     # elif channel == "EMAIL":
