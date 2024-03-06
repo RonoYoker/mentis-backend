@@ -243,3 +243,7 @@ HYPERION_ALERT_FEATURE_SECTION = {
 }
 
 TEMPLATE_VALIDATION_LINK = None
+
+TO_CAMPAIGN_DEACTIVATE_EMAIL_ID = ["devesh.satija@creditas.in", "vanshkumar.dua@creditas.in", "ritik.saini@creditas.in"]
+CC_CAMPAIGN_DEACTIVATE_EMAIL_ID = []
+BCC_CAMPAIGN_DEACTIVATE_EMAIL_ID = []
