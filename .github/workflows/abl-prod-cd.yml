@@ -14,13 +14,16 @@ env:
   ECS_SERVICE: onyxlocal-web-svc
   ECS_SERVICE_2: onyxlocal-celery-callback-resolver-svc
   ECS_SERVICE_3: onyxlocal-celery-query-executor-svc
+  ECS_SERVICE_4: onyxlocal-celery-heavyjobs-svc
   ECS_CLUSTER: prod-onyx
   ECS_TASK_DEFINITION: .aws/task-definition-abl.json
   ECS_TASK_DEFINITION_2: .aws/task-definition-abl2.json
   ECS_TASK_DEFINITION_3: .aws/task-definition-abl3.json
+  ECS_TASK_DEFINITION_4: .aws/task-definition-abl4.json
   CONTAINER_NAME: onyxlocal-web
   CONTAINER_NAME_2: onyxlocal-celery-callback-resolver
   CONTAINER_NAME_3: onyxlocal-celery-query-executor
+  CONTAINER_NAME_4: onyxlocal-celery-heavyjobs
   BANK_NAME: abl
   CURR_ENV: prod
 
@@ -217,5 +220,28 @@ jobs:
         with:
           task-definition: ${{ steps.task-def-3.outputs.task-definition }}
           service: ${{ env.ECS_SERVICE_3 }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Get Latest Task Definition-4
+        run: |
+          OLD_TASK_DEF=$(aws ecs describe-task-definition --task-definition $CONTAINER_NAME_4)
+          FINAL_TASK=$(echo $OLD_TASK_DEF | jq '.taskDefinition|{family: .family, networkMode: .networkMode, volumes: .volumes, containerDefinitions: .containerDefinitions, taskRoleArn: .taskRoleArn, executionRoleArn: .executionRoleArn, requiresCompatibilities: .requiresCompatibilities, cpu: .cpu, memory: .memory}')
+          echo $FINAL_TASK > ${{ env.ECS_TASK_DEFINITION_4 }}            
+
+
+      - name: Fill in the new image ID in the Amazon ECS task definition-4
+        id: task-def-3
+        uses: aws-actions/amazon-ecs-render-task-definition@97587c9d45a4930bf0e3da8dd2feb2a463cf4a3a
+        with:
+          task-definition: ${{ env.ECS_TASK_DEFINITION_4 }}
+          container-name: ${{ env.CONTAINER_NAME_4 }}
+          image: ${{ env.ECR_REPO_URL }}/${{ env.ECR_REPOSITORY }}:${{ steps.get_version.outputs.VERSION }}
+
+      - name: Deploy Amazon ECS task definition-4
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1.4.10
+        with:
+          task-definition: ${{ steps.task-def-3.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE_4 }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
