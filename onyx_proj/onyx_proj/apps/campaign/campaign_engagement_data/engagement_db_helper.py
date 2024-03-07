@@ -43,7 +43,7 @@ def insert_or_update_delivery_data(db_conn, columns, rows):
     values_placeholder =  ', '.join(['%s'] * len(columns))
     rows_to_insert = []
     for row in rows:
-        rows_to_insert.append({k:row[k]} for k in columns)
+        rows_to_insert.append([row[k] for k in columns])
     query = "INSERT into CED_CampaignFilterData ( %s ) VALUES ( %s ) ON DUPLICATE KEY UPDATE %s" % (column_placeholder,values_placeholder,update_placeholder)
     resp = execute_write(db_conn,query,rows_to_insert)
     return resp
