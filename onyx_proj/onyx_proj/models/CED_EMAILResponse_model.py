@@ -33,3 +33,7 @@ class CEDEMAILResponse:
         query = f"SELECT emlr.AccountId as account_id, emlr.CreatedDate as delivery_time, emlr.EnEmailId as email_id, ctMap.EnContentText as content_text, emlr.Uuid as uuid, emlr.Status as delivery_status, emlr.EventType as event_type, emlr.CustomerReferenceId as cust_ref_id FROM CED_EMAILResponse_Intermediate emlr LEFT JOIN CED_CampaignContentMapping_Intermediate ctMap ON emlr.CustomerReferenceId = ctMap.CustomerReferenceId WHERE emlr.AccountId = '{account_id}' AND emlr.Time BETWEEN '{start_date}' AND '{end_date}' AND emlr.TestCampaign != 1"
         result = execute_query(self.engine, query)
         return result
+
+    def fetch_last_30_days_data(self, query):
+        result = execute_query(self.engine, query)
+        return result

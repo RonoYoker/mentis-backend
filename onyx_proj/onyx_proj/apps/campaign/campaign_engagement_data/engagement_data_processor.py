@@ -6,11 +6,15 @@ from operator import itemgetter
 
 from onyx_proj.apps.campaign.campaign_engagement_data.app_settings import RESPONSE_DATA_THRESHOLD_DAYS
 from onyx_proj.apps.campaign.campaign_engagement_data.engagement_db_helper import fetch_resp_data, \
-    insert_or_update_camp_eng_data, fetch_eng_data_by_account_numbers
+    insert_or_update_camp_eng_data, fetch_eng_data_by_account_numbers, insert_or_update_delivery_data
+from onyx_proj.common.constants import TAG_FAILURE, TAG_SUCCESS
 from onyx_proj.common.newrelic_helpers import push_custom_parameters_to_newrelic
 from onyx_proj.common.sqlalchemy_helper import SqlAlchemyEngine
 from onyx_proj.common.utils.email_utility import email_utility
+from onyx_proj.models.CED_EMAILResponse_model import CEDEMAILResponse
+from onyx_proj.models.CED_IVRResponse_model import CEDIVRResponse
 from onyx_proj.models.CED_SMSResponse_model import CEDSMSResponse
+from onyx_proj.models.CED_WHATSAPPResponse_model import CEDWHATSAPPResponse
 from onyx_proj.orm_models.CED_CampaignFilterData import CED_CampaignFilterData
 from onyx_proj.models.CED_CampaignFilterData_model import CEDCampaignFilterData
 from django.conf import settings
@@ -203,45 +207,67 @@ def process_existing_and_new_data(existing_data,new_data):
     return new_data
 
 
-def process_the_all_channels_response(channel):
-    method_name = 'process_the_all_channels_response'
-    logger.debug(f'{method_name} is started')
+def send_status_email(BankName, env, email_template, status = ''):
 
-    email_template = f"{method_name} is started"
-    env = os.environ["CURR_ENV"].lower()
-    BankName = os.environ.get("BANK_NAME").lower()
     email_subject = f"Last 5 delivered job - {BankName} - {env}"
-
+    if status is not '':
+        email_subject+= f' - {status}'
     tos = settings.TO_CAMPAIGN_DEACTIVATE_EMAIL_ID
     ccs = settings.CC_CAMPAIGN_DEACTIVATE_EMAIL_ID
     bccs = settings.BCC_CAMPAIGN_DEACTIVATE_EMAIL_ID
 
-    email_status = email_utility().send_mail(tos, ccs, bccs, email_subject, email_template)
-    if not email_status.get("status"):
-        return dict(status=False, message=email_status.get("message"))
+    return email_utility().send_mail(tos, ccs, bccs, email_subject, email_template)
 
-    if channel == "SMS":
-        query = f"SELECT EnMobileNumber as contact, Status, CreatedDate FROM CED_SMSResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
-    # elif channel == "IVR":
-    #     query = f"SELECT AccountId as contact, Status, CreationDate as CreatedDate FROM CED_IVRResponse WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
-    # elif channel == "EMAIL":
-    #     query = f"SELECT EmailId as contact, Status, CreatedDate FROM CED_EMAILResponse WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
-    # elif channel == "WhatsApp":
-    #     query = f"SELECT MobileNumber as contact, Status, CreatedDate FROM CED_WhatsAppResponse WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
-    # else:
-    #     logger.error(f"method_name :: {method_name}, channel is not in Email, WhatsApp, SMS, IVR")
-    #     return dict(status=False, message='Channel is not Valid')
 
+def fetching_the_data_for_given_channel(channel, BankName, env):
+    method_name="fetching_the_data_for_given_channel"
 
     try:
-        results = CEDSMSResponse().fetch_last_30_days_data(query)
+        if channel == "SMS":
+            query = f"SELECT EnMobileNumber as contact, Status, CreatedDate FROM CED_SMSResponse WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
+            results = CEDSMSResponse().fetch_last_30_days_data(query)
+        elif channel == "IVR":
+            query = f"SELECT AccountId as contact, Status, CreationDate as CreatedDate FROM CED_IVRResponse WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
+            results = CEDIVRResponse().fetch_last_30_days_data(query)
+        elif channel == "EMAIL":
+            query = f"SELECT EmailId as contact, Status, CreatedDate FROM CED_EMAILResponse WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
+            results = CEDEMAILResponse().fetch_last_30_days_data(query)
+        elif channel == "WhatsApp":
+            query = f"SELECT MobileNumber as contact, Status, CreatedDate FROM CED_WhatsAppResponse WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
+            results = CEDWHATSAPPResponse().fetch_last_30_days_data(query)
+        else:
+            logger.error(f"method_name :: {method_name}, channel is not in Email, WhatsApp, SMS, IVR")
+            return dict(status=False, message='Channel is not Valid')
     except Exception as ex:
         logger.error(f"method_name :: {method_name}, error while creating campaign builder history object :: {ex}")
         email_template = f"error in fetching the data from {channel}"
-        email_status = email_utility().send_mail(tos, ccs, bccs, email_subject + "FAILURE", email_template)
+        email_status = send_status_email(BankName, env, email_template, 'FAILURE')
         if not email_status.get("status"):
             return dict(status=False, message=email_status.get("message"))
 
+        raise ex
+    return results
+
+
+def process_the_all_channels_response(channel):
+    method_name = 'process_the_all_channels_response'
+    logger.debug(f'{method_name} is started')
+
+    # extracting bankname and environment
+    env = os.environ["CURR_ENV"].lower()
+    db_conn = SqlAlchemyEngine().get_connection()
+    # bank_name = os.environ["BANK_NAME"].lower()
+    bank_name = 'ibl'
+
+    email_status = send_status_email(bank_name, env, f"{method_name} is started")
+    if not email_status.get("status"):
+        return dict(status=False, message=email_status.get("message"))
+
+    try:
+        results = fetching_the_data_for_given_channel(channel, bank_name, env)
+        if type(results) == dict and not results.get('status', True):
+            return results
+    except Exception as ex:
         raise ex
 
     # making list of status and time for  particular number
@@ -251,51 +277,48 @@ def process_the_all_channels_response(channel):
         if traversing_number is None:
             outer_map[result.get("contact")] = {'delivery': []}
 
-        outer_map[result.get("contact")]['delivery'].append([result.get("CreatedDate").strftime("%Y-%m-%d %H:%M:%S"), result.get("Status")])
+        outer_map[result.get("contact")]['delivery'].append({"time":result.get("CreatedDate").strftime("%Y-%m-%d %H:%M:%S"),"status": result.get("Status")})
     logger.debug('made list of status and time for  particular contact')
 
     # sorting on the bases of the creation date
+    del results
+    logger.debug('deleted results variable')
+    data_to_dump = []
+    error_count = 0
     for key in outer_map:
         output = {}
-        outer_map[key]['delivery'] = sorted(outer_map[key]['delivery'], key=itemgetter(0))
         output[key] = {'MTD_LastFiveFail': True, 'ThirtyDays_LastFiveFail': True, 'MTD_Successful': 0, 'MTD_Failures': 0, 'ThirtyDays_Successful': 0, 'ThirtyDays_Failures': 0, 'UpdationDate': timezone.now().strftime("%Y-%m-%d %H:%M:%S")}
-        count = 0
-        for time_and_status in outer_map[key]['delivery']:
-            count = count+1
-            # Get the starting datetime for the current month
-            # it's str formatted
-            current_datetime = timezone.now()
-            start_of_month = timezone.datetime(current_datetime.year, current_datetime.month, 1,
-                                                   tzinfo=current_datetime.tzinfo).strftime("%Y-%m-%d %H:%M:%S")
 
+        current_datetime = timezone.now()
+        start_of_month = timezone.datetime(current_datetime.year, current_datetime.month, 1,
+                                           tzinfo=current_datetime.tzinfo).strftime("%Y-%m-%d %H:%M:%S")
+        # Get the current datetime
+        current_datetime = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            # Get the current datetime
-            current_datetime = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+        #sorting the data for the with filtering for MTD and last thirty_days
+        mtd_data = sorted([data for data in outer_map[key]['delivery'] if start_of_month <= data["time"] <= current_datetime],key=lambda x:x["time"])
+        total_data = sorted([data for data in outer_map[key]['delivery']],key=lambda x:x["time"])
+        # settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]
 
-            if count <= 5 and start_of_month <= time_and_status[0] <= current_datetime:
-                output[key]['MTD_LastFiveFail'] = output[key]['MTD_LastFiveFail'] and not (time_and_status[1] == 'Delivered')
-            if count <= 5:
-                output[key]['ThirtyDays_LastFiveFail'] = output[key]['ThirtyDays_LastFiveFail'] and not (time_and_status[1] == 'Delivered')
+        output[key]['MTD_LastFiveFail'] = all(
+            [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+             mtd_data[-5:]]) if len(mtd_data) >= 5 else False
+        output[key]['ThirtyDays_LastFiveFail'] = all(
+            [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+             total_data[-5:]]) if len(total_data) >= 5 else False
+        output[key]['MTD_Successful'] = len(
+            [data for data in mtd_data if data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+        output[key]['MTD_Failures'] = len(
+            [data for data in mtd_data if data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+        output[key]['ThirtyDays_Successful'] = len(
+            [data for data in total_data if data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+        output[key]['ThirtyDays_Failures'] = len(
+            [data for data in total_data if data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+        # Get the starting datetime for the current month in str formatted
 
-            # MTD
-            if start_of_month <= time_and_status[0] <= current_datetime:
-                if (time_and_status[1] == 'Delivered'):
-                    output[key]['MTD_Successful'] = output[key]['MTD_Successful'] + 1
-                else:
-                    output[key]['MTD_Failures'] = output[key]['MTD_Failures'] + 1
+        #making the object for CED_CampaignFilterData
 
-            # THIRTY_DAYS
-            if (time_and_status[1] == 'Delivered'):
-                output[key]['ThirtyDays_Successful'] = output[key]['ThirtyDays_Successful'] + 1
-            else:
-                output[key]['ThirtyDays_Failures'] = output[key]['ThirtyDays_Failures'] + 1
-
-        #if that contact is not compaigned even 5 times then it is not considered as failure
-        if count < 5:
-            output[key]['MTD_LastFiveFail'] = False
-            output[key]['ThirtyDays_LastFiveFail'] = False
-
-        campaign_filter_data_entity = CED_CampaignFilterData({
+        data_to_dump.append({
             "Channel": 'SMS',
             "EnContactIdentifier": key,
             'MTD_LastFiveFail': output[key]['MTD_LastFiveFail'],
@@ -305,23 +328,33 @@ def process_the_all_channels_response(channel):
             'ThirtyDays_Successful': output[key]['ThirtyDays_Successful'],
             'ThirtyDays_Failures': output[key]['ThirtyDays_Failures']
         })
+        if len(data_to_dump) >= 1000:
+            #insert data
+            cols = data_to_dump[0].keys()
+            resp = insert_or_update_delivery_data(db_conn,cols,data_to_dump)
+            if resp.get("row_count") is None:
+                logger.error(f"Unable to insert data in db cols::{cols} sample_row::{data_to_dump[0]}")
+                error_count += 1
+            data_to_dump = []
 
-        try:
-            db_res = CEDCampaignFilterData().save_campaign_filter_data_entity(campaign_filter_data_entity)
-            logger.debug(f"successfully made the entry of contact - {key}")
-        except Exception as ex:
-            logger.debug(f"Error while inserting the entry of contact - {key}")
-            email_template = f"Error while inserting the entry of contact - {key}"
-            email_status = email_utility().send_mail(tos, ccs, bccs, email_subject + "FAILURE", email_template)
-            if not email_status.get("status"):
-                return dict(status=False, message=email_status.get("message"))
 
-    email_template = f"{method_name} , Successfully completed"
-    email_status = email_utility().send_mail(tos, ccs, bccs, email_subject + "SUCCESS", email_template)
-    if not email_status.get("status"):
-        return dict(status=False, message=email_status.get("message"))
+    #insert data for remaining data
+    cols = data_to_dump[0].keys()
+    resp = insert_or_update_delivery_data(db_conn, cols, data_to_dump)
+    if resp.get("row_count") is None:
+        logger.error(f"Unable to insert data in db cols::{cols} sample_row::{data_to_dump[0]}")
+        error_count += 1
 
-    return
+    if error_count == 0:
+        email_status = send_status_email(bank_name, env, f"{method_name} is successfully completed", 'SUCCESS')
+        if not email_status.get("status"):
+            return dict(status=False, message=email_status.get("message"))
+    else:
+        email_status = send_status_email(bank_name, env, f"{method_name} is unsuccessful", 'SUCCESS')
+        if not email_status.get("status"):
+            return dict(status=False, message=email_status.get("message"))
+
+    return dict(status=True)
 
 
 

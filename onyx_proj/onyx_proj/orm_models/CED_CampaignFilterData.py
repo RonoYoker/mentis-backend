@@ -1,7 +1,6 @@
 from onyx_proj.orm_models.base_model import *
 
 class CED_CampaignFilterData(Base, Orm_helper):
-    __tablename__ = 'CED_AllChannelsResponse'
     __tablename__ = 'CED_CampaignFilterData'
 
     Id = Column("Id", Integer, autoincrement=True,primary_key=True)

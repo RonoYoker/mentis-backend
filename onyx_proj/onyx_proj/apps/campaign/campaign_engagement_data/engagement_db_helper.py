@@ -35,3 +35,15 @@ def fetch_eng_data_by_account_numbers(db_conn, account_numbers):
     query = "Select AccountNumber, ProjectId, DataId, LastSmsSent, LastSmsDelivered, LastSmsClicked, LastEmailSent, LastEmailDelivered, LastEmailClicked, LastIvrSent, LastIvrDelivered, LastIvrClicked, LastWhatsappSent, LastWhatsappDelivered, LastWhatsappClicked from CED_Hyp_Engagement_Data where AccountNumber in (%s)" % (acc_num_str)
     resp = fetch_all(db_conn,query)
     return resp
+
+
+def insert_or_update_delivery_data(db_conn, columns, rows):
+    column_placeholder = ",".join(columns)
+    update_placeholder = ','.join(x + '=' + 'VALUES(' + x + ')' for x in columns)
+    values_placeholder =  ', '.join(['%s'] * len(columns))
+    rows_to_insert = []
+    for row in rows:
+        rows_to_insert.append({k:row[k]} for k in columns)
+    query = "INSERT into CED_CampaignFilterData ( %s ) VALUES ( %s ) ON DUPLICATE KEY UPDATE %s" % (column_placeholder,values_placeholder,update_placeholder)
+    resp = execute_write(db_conn,query,rows_to_insert)
+    return resp

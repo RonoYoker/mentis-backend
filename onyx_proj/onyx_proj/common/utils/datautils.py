@@ -1,4 +1,5 @@
 import re
+from itertools import islice
 
 
 def nested_path_get(obj, path_str, strict=True, mode='GET', default_return_value=None):
@@ -43,3 +44,22 @@ def nested_path_get(obj, path_str, strict=True, mode='GET', default_return_value
             else:
                 return default_return_value
     return obj
+
+
+def iteration_grouper(iterable, n, chunk_type=tuple):
+    """Yields chunks of any iterable .e.g 5 chunks of size 20 each for a 100 length iterable
+
+    Args:
+        iterable : Iterable like dict,list,tuple etc
+        n (int): size of each chunk
+        chunk_type ( Optional[type]) : Type of chunk to be returned, default is tuple
+
+    Yields: Cchunk of required size and type
+
+    """
+    it = iter(iterable)
+    while True:
+        chunk = tuple(islice(it, n)) if chunk_type is tuple else chunk_type(islice(it, n))
+        if not chunk:
+            return
+        yield chunk
