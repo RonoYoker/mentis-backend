@@ -224,16 +224,16 @@ def fetching_the_data_for_given_channel(channel, BankName, env):
 
     try:
         if channel == "SMS":
-            query = f"SELECT EnMobileNumber as contact, Status, CreatedDate FROM CED_SMSResponse WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
+            query = f"SELECT EnMobileNumber as contact, Status, CreatedDate FROM CED_SMSResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
             results = CEDSMSResponse().fetch_last_30_days_data(query)
         elif channel == "IVR":
-            query = f"SELECT AccountId as contact, Status, CreationDate as CreatedDate FROM CED_IVRResponse WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
+            query = f"SELECT AccountId as contact, Status, CreationDate as CreatedDate FROM CED_IVRResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
             results = CEDIVRResponse().fetch_last_30_days_data(query)
         elif channel == "EMAIL":
-            query = f"SELECT EmailId as contact, Status, CreatedDate FROM CED_EMAILResponse WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
+            query = f"SELECT EmailId as contact, Status, CreatedDate FROM CED_EMAILResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
             results = CEDEMAILResponse().fetch_last_30_days_data(query)
         elif channel == "WhatsApp":
-            query = f"SELECT MobileNumber as contact, Status, CreatedDate FROM CED_WhatsAppResponse WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
+            query = f"SELECT MobileNumber as contact, Status, CreatedDate FROM CED_WhatsAppResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()"
             results = CEDWHATSAPPResponse().fetch_last_30_days_data(query)
         else:
             logger.error(f"method_name :: {method_name}, channel is not in Email, WhatsApp, SMS, IVR")
