@@ -256,8 +256,8 @@ def process_the_all_channels_response(channel):
     # extracting bankname and environment
     env = os.environ["CURR_ENV"].lower()
     db_conn = SqlAlchemyEngine().get_connection()
-    # bank_name = os.environ["BANK_NAME"].lower()
-    bank_name = 'ibl'
+    bank_name = os.environ.get("BANK_NAME","").lower()
+    # bank_name = 'ibl'
 
     email_status = send_status_email(bank_name, env, f"{method_name} is started")
     if not email_status.get("status"):
