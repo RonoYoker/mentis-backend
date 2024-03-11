@@ -2857,7 +2857,7 @@ def save_campaign_builder_details(campaign_builder, campaign_list, unique_id, pr
                                           reason="Unable to save campaign builder details")
             campaign_builder = db_res.get("response")
             prepare_and_save_camp_builder_history_data(campaign_builder)
-            set_followup_sms_details(campaign_list)
+            # set_followup_sms_details(campaign_list)
             return dict(result=TAG_SUCCESS, data=campaign_builder)
         except BadRequestException as ex:
             logger.error(f"{method_name}, BadRequestException :: {ex}  ")
@@ -3095,6 +3095,7 @@ def prepare_and_save_campaign_builder_campaign_details(campaign_builder, campaig
             CEDCampaignBuilderCampaign().save_or_update_campaign_builder_campaign_details(campaign_entity)
             history_id = campaign_builder.history_id
             prepare_and_save_campaign_builder_campaign_history_data(campaign_his_entity, campaign_entity, history_id)
+            campaign["unique_id"] = campaign_entity.unique_id
         except NotFoundException as e:
             logger.error(f"{method_name}, NotFoundException:: {e.reason}")
             raise e
