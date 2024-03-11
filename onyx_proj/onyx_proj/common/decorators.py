@@ -154,7 +154,7 @@ def fetch_project_id_from_conf(conf, *args, **kwargs):
         content_type = args[0].get("content_type")
         project_id = app_settings.CONTENT_TABLE_MAPPING[f"{content_type}"]().get_project_id_by_content_id(identifier_id)
     elif identifier_type == "STRATEGYBUILDER":
-        filter_list = [{"column": "project_id", "value": identifier_id, "op": "=="}]
+        filter_list = [{"column": "unique_id", "value": identifier_id, "op": "=="}]
         sb_entity = CEDStrategyBuilder().get_strategy_builder_details(filter_list, ['project_id'])
         project_id = sb_entity[0].project_id
     else:
