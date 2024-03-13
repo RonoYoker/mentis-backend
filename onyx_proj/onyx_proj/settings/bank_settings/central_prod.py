@@ -380,6 +380,10 @@ OtpAppName.SEGMENT_HOD_APPROVAL.value:  {
         "aman_bindal": {
             "display_name": "Aman Bindal",
             "mobile_number": 9004929159
+        },
+        "love_singhal": {
+            "display_name": "Love Singhal",
+            "mobile_number": 9310390056
         }
     }
 }
