@@ -206,7 +206,7 @@ def update_campaign_segment_data(request_data) -> json:
                     }]
         }
         api_response = json.loads(RequestClient(request_type="POST", url=settings.HYPERION_LOCAL_DOMAIN[project_name]
-                        + LAMBDA_PUSH_PACKET_API_PATH,headers={"Content-Type": "application/json"}, request_body=json.dumps(payload)).get_api_response())
+                        + LAMBDA_PUSH_PACKET_API_PATH,headers={"Content-Type": "application/json"}, request_body=json.dumps(payload,default=str)).get_api_response())
 
         if api_response.get("success",False) is True:
             resp = CEDCampaignSchedulingSegmentDetails().update_scheduling_status(cssd_resp.id,
