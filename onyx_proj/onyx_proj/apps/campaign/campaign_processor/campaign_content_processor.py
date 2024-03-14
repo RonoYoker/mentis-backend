@@ -183,7 +183,7 @@ def update_campaign_segment_data(request_data) -> json:
         segment_details = CEDCampaignBuilderCampaign().get_project_name_seg_query_from_campaign_builder_campaign_id(campaign_builder_campaign_id)
         if segment_details is None:
             raise ValidationFailedException(reason=f"Project not found for mentioned cbc ::{campaign_builder_campaign_id}")
-
+        logger.error(f"segment_details::{segment_details}")
         project_name = segment_details["project_name"]
         sql_query = segment_details["sql_query"]
         campaign_filters = CEDCampaignBuilderFilter().fetch_campaign_filters(segment_details["campaign_builder_id"])
