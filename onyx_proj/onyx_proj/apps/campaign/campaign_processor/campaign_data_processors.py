@@ -20,7 +20,7 @@ from Crypto.Cipher import AES
 from onyx_proj.apps.campaign.campaign_processor.test_campaign_processor import decrypt_test_segment_data
 from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT, DEACTIVATE_CAMP_LOCAL, \
     UPDATE_SCHEDULING_TIME_IN_CCD_API_ENDPOINT, CAMP_SCHEDULING_TIME_UPDATE_ALLOWED_BUFFER,VALIDATE_CAMPAIGN_PROCESSING_ONYX_LOCAL
-from onyx_proj.apps.campaign.app_settings import CBC_DICT
+from onyx_proj.apps.campaign.app_settings import CBC_DICT, CAMPAIGN_FILTERS_CONFIG
 from onyx_proj.apps.campaign.campaign_monitoring.campaign_stats_processor import get_filters_applied_screen
 from onyx_proj.apps.campaign.test_campaign.app_settings import FILE_DATA_API_ENDPOINT, DEACTIVATE_CAMP_LOCAL
 from onyx_proj.apps.otp.app_settings import OtpAppName
@@ -47,6 +47,7 @@ from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.models.CED_ActivityLog_model import CEDActivityLog
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CED_CampaignBuilderCampaign
 from onyx_proj.models.CED_CampaignBuilder import CED_CampaignBuilder
+from onyx_proj.models.CED_CampaignBuilderFilter_model import CEDCampaignBuilderFilter
 from onyx_proj.models.CED_CampaignContentCtaMapping_model import CEDCampaignContentCtaMapping
 from onyx_proj.models.CED_CampaignContentFollowUPSmsMapping_model import CEDCampaignContentFollowUPSmsMapping
 from onyx_proj.models.CED_CampaignContentMediaMapping_model import CEDCampaignContentMediaMapping
@@ -92,6 +93,7 @@ from onyx_proj.models.CED_User_model import CEDUser
 from onyx_proj.models.CreditasCampaignEngine import CED_CampaignBuilder, CED_CampaignSchedulingSegmentDetails, \
     CED_CampaignExecutionProgress, CED_CampaignSubjectLineContent, CED_HIS_CampaignBuilder, CED_ActivityLog
 from onyx_proj.apps.slot_management.app_settings import SLOT_INTERVAL_MINUTES
+from onyx_proj.orm_models.CED_CampaignBuilderFilter_model import CED_CampaignBuilderFilter
 from onyx_proj.orm_models.CED_CampaignCreationDetails_model import CED_CampaignCreationDetails
 from onyx_proj.orm_models.CED_FP_FileData_model import CED_FP_FileData
 from onyx_proj.apps.campaign.test_campaign.db_helper import save_or_update_ccd, save_or_update_fp_file_data
@@ -2595,6 +2597,7 @@ def save_campaign_details(request_data):
     file_dependency_config = body.get("file_dependency_config", None)
     is_split = body.get("is_split", False)
     campaign_category = body.get("campaign_category", CampaignCategory.Recurring.value)
+    campaign_filters = body.get("campaign_filters", None)
     user_session = Session().get_user_session_object()
     user_name = user_session.user.user_name
     is_manual_validation_mandatory = body.get("is_manual_validation_mandatory", True)
@@ -2700,6 +2703,7 @@ def save_campaign_details(request_data):
             raise BadRequestException(method_name=method_name,
                                       reason=saved_cbc_data.get("details_message"))
         campaign_builder = CEDCampaignBuilder().get_campaign_builder_entity_by_unique_id(campaign_builder.unique_id)
+        save_campaign_filters(campaign_builder.unique_id, campaign_filters, project_conf)
     except BadRequestException as ex:
         logger.error(f"Error while prepare and saving campaign builder details BadRequestException ::{ex}")
         campaign_builder.is_active = False
@@ -2744,6 +2748,36 @@ def save_campaign_details(request_data):
         else:
             return dict(status_code=status_code, result=TAG_FAILURE,
                         details_message=campaign_builder.error_msg)
+
+def save_campaign_filters(campaign_builder_id,filters,project_conf):
+    if (filters is None or "filters_applied" not in filters or len(filters["filters_applied"])==0) and project_conf.get(ProjectValidationConf.CAMPAIGN_FILTERS_CONF.value,{}).get("mode") != "AUTO":
+        resp = CEDCampaignBuilderFilter().delete_campaign_filters_bulk(campaign_builder_id)
+        if resp["status"] is not True:
+            raise InternalServerError(reason="Unable to delete existing campaign filters")
+        return
+    if project_conf.get(ProjectValidationConf.CAMPAIGN_FILTERS_CONF.value,None) is None:
+        raise ValidationFailedException(reason="Campaign Filters are not applicable for this project")
+
+    entity_list = []
+
+    if project_conf[ProjectValidationConf.CAMPAIGN_FILTERS_CONF.value].get("mode") is None:
+        raise ValidationFailedException(reason="Invalid Campaign Filter mode")
+
+    resp = CEDCampaignBuilderFilter().delete_campaign_filters_bulk(campaign_builder_id)
+    if resp["status"] is not True:
+        raise InternalServerError(reason="Unable to delete existing campaign filters")
+    if project_conf[ProjectValidationConf.CAMPAIGN_FILTERS_CONF.value]["mode"] == "AUTO":
+        filters = copy.deepcopy(project_conf[ProjectValidationConf.CAMPAIGN_FILTERS_CONF.value])
+
+    for filter_data in filters["filters_applied"]:
+        entity = CED_CampaignBuilderFilter()
+        entity.unique_id = uuid.uuid4().hex
+        entity.campaign_builder_id = campaign_builder_id
+        entity.filter_enum = filter_data["filter_enum"]
+        entity_list.append(entity)
+
+    CEDCampaignBuilderFilter().save_campaign_filters_bulk(entity_list)
+
 
 
 def save_strategy_campaign_details(data_packet):
@@ -5562,3 +5596,21 @@ def check_valid_cb_for_conversion_by_mode(unique_id, mode):
 
 
 
+def get_campaign_filters(request_body):
+    mode = request_body.get("mode", None)
+    project_id = request_body.get("project_id", None)
+
+    if project_id is None:
+        raise ValidationFailedException(reason="Project Id not provided")
+
+    project_entity = CEDProjects().get_project_entity_by_unique_id(project_id)
+    if project_entity is None:
+        raise ValidationFailedException(reason="Invalid ProjectId")
+
+    project_conf = json.loads(project_entity.validation_config)
+
+    final_data = []
+    if project_conf.get(ProjectValidationConf.CAMPAIGN_FILTERS_CONF.value) is not None:
+        final_data = CAMPAIGN_FILTERS_CONFIG["filters"]
+
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data={"filters": final_data})

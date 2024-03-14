@@ -23,7 +23,8 @@ from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import 
     approval_action_on_campaign_builder_by_unique_id, get_camps_detail_between_time, get_camps_detail, \
     update_campaign_by_campaign_builder_ids_local, update_campaign_scheduling_time_in_campaign_creation_details, \
     change_approved_campaign_time, replay_campaign_in_error, check_camp_status, prepare_campaign_builder_campaign, \
-    get_v2_camps_detail, fetch_campaign_variant_detail, test_campaign_status,change_approved_campaign_time, replay_campaign_in_error, check_camp_status,prepare_campaign_builder_campaign, perform_checks_and_move_to_v2
+    get_v2_camps_detail, fetch_campaign_variant_detail, test_campaign_status,change_approved_campaign_time,\
+    replay_campaign_in_error, check_camp_status,prepare_campaign_builder_campaign, perform_checks_and_move_to_v2,get_campaign_filters
 from onyx_proj.apps.campaign.test_campaign.test_campaign_processor import test_campaign_process, \
     trigger_segment_evaluator_for_test_camp
 from onyx_proj.apps.campaign.test_campaign.test_campaign_processor import test_campaign_process
@@ -625,3 +626,10 @@ def move_campaign_to_v2(request):
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
 
+
+@csrf_exempt
+def fetch_campaign_filters(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    response = get_campaign_filters(request_body)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")

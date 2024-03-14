@@ -127,3 +127,5 @@ def get_long_url_by_url_id(details_dict: dict):
             return mapping["url"]["contentText"]
 
     return None
+
+

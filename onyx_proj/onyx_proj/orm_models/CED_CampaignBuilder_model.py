@@ -41,6 +41,7 @@ class CED_CampaignBuilder(Base, Orm_helper):
     version = Column("Version", String, default="V2")
     campaign_level = Column("CampaignLevel", String)
     strategy_id = Column("StrategyId", String, ForeignKey("CED_StrategyBuilder.UniqueId"))
+    campaign_filters = relationship("CED_CampaignBuilderFilter")
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)

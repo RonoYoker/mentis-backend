@@ -47,4 +47,5 @@ urlpatterns = [
     path("get_valid_v2_campaigns_detail/", views.get_valid_v2_campaigns_detail),
     path("get_campaign_variant_detail/", views.get_campaign_variant_detail),
     path("move_campaign_to_v2/", views.move_campaign_to_v2),
+    path("fetch_campaign_filters/", views.fetch_campaign_filters),
 ]

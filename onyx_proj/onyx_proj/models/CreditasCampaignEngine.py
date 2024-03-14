@@ -81,3 +81,4 @@ from onyx_proj.orm_models.CED_ConfigFileDependency_model import CED_ConfigFileDe
 from onyx_proj.orm_models.CED_ProjectDependencyConfigs import CED_ProjectDependencyConfigs
 from onyx_proj.orm_models.CED_FileDependencyCallbacksLogs import CED_FileDependencyCallbacksLogs
 from onyx_proj.orm_models.TemplateLog_model import Template_Log
+from onyx_proj.orm_models.CED_CampaignBuilderFilter_model import CED_CampaignBuilderFilter

@@ -5,6 +5,7 @@ import datetime
 
 from django.conf import settings
 from onyx_proj.apps.async_task_invocation.app_settings import AsyncJobStatus
+from onyx_proj.apps.campaign.app_settings import FILTER_ENUM_CONFIG
 from onyx_proj.apps.campaign.campaign_processor.app_settings import LOCAL_TEST_CAMPAIGN_API_ENDPOINT
 from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import get_project_id_from_cbc_id
 from onyx_proj.apps.segments.app_settings import QueryKeys
@@ -13,6 +14,7 @@ from onyx_proj.common.utils.telegram_utility import TelegramUtility
 from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException, InternalServerError
 from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException
 from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException,InternalServerError
+from onyx_proj.models.CED_CampaignBuilderFilter_model import CEDCampaignBuilderFilter
 from onyx_proj.models.CED_CampaignExecutionProgress_model import CEDCampaignExecutionProgress
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetailsTest_model import CEDCampaignSchedulingSegmentDetailsTest
 from onyx_proj.models.CED_CampaignSchedulingSegmentDetails_model import CEDCampaignSchedulingSegmentDetails
@@ -184,7 +186,7 @@ def update_campaign_segment_data(request_data) -> json:
 
         project_name = segment_details["project_name"]
         sql_query = segment_details["sql_query"]
-
+        campaign_filters = CEDCampaignBuilderFilter().fetch_campaign_filters(segment_details["campaign_builder_id"])
         payload = {
             "campaigns":[{
                         "campaign_builder_campaign_id": campaign_builder_campaign_id,
@@ -198,7 +200,9 @@ def update_campaign_segment_data(request_data) -> json:
                         "is_test": False,
                         "split_details": None,
                         "segment_data_s3_path": task_data["response"]["s3_url"],
-                        "segment_headers": json.dumps(task_data["response"]["headers_list"])
+                        "segment_headers": json.dumps(task_data["response"]["headers_list"]),
+                        "campaign_filters":campaign_filters,
+                        "filters_config": FILTER_ENUM_CONFIG
                     }]
         }
         api_response = json.loads(RequestClient(request_type="POST", url=settings.HYPERION_LOCAL_DOMAIN[project_name]
@@ -225,6 +229,7 @@ def update_campaign_segment_data(request_data) -> json:
         # Update test campaign status
         resp = CEDCampaignSchedulingSegmentDetailsTest().update_scheduling_status(cssd_id_list, "QUERY_EXECUTOR_SUCCESS_TEST_CAMP")
         campaigns = []
+
         for cssd_entity in cssd_entity_list:
             campaigns.append({
                     "campaign_builder_campaign_id": campaign_builder_campaign_id,
@@ -242,6 +247,8 @@ def update_campaign_segment_data(request_data) -> json:
                     "file_id": cssd_entity['local_file_id'],
                     "project_id": project_id,
                     "campaign_schedule_segment_details_id": cssd_entity['id'],
+                    "campaign_filters": [],
+                    "filters_config": FILTER_ENUM_CONFIG
                 })
         rest_object = RequestClient()
         api_response = rest_object.post_onyx_local_api_request(campaigns, settings.ONYX_LOCAL_DOMAIN[project_id],

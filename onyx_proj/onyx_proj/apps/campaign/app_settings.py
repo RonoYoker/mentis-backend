@@ -14,3 +14,43 @@ CBC_DICT = {
 }
 
 CAMPAIGN_ERROR_STATUS_CODES = ["SCHEDULER ERROR", "ERROR"]
+
+
+CAMPAIGN_FILTERS_CONFIG = {
+  "filters": [
+    {
+      "text": "filter with MTD Data",
+      "type": "dropdown",
+      "options": [
+        {
+          "text": "filter users with last 5 consecutive unsuccessful deliveries",
+          "type": "checkbox",
+          "filter_enum": "MTD_LastFiveFail"
+        }
+      ]
+    },
+    {
+      "text": "filter with Last 30 days Data",
+      "type": "dropdown",
+      "options": [
+        {
+          "text": "filter users with last 5 consecutive unsuccessful deliveries",
+          "type": "checkbox",
+          "filter_enum": "ThirtyDays_LastFiveFail"
+        }
+      ]
+    }
+  ]
+}
+
+FILTER_ENUM_CONFIG = {
+
+        "MTD_LastFiveFail":{
+            "type": "BOOL",
+            "col": "MTD_LastFiveFail"
+        },
+        "ThirtyDays_LastFiveFail":{
+            "type": "BOOL",
+            "col": "ThirtyDays_LastFiveFail"
+        }
+}
