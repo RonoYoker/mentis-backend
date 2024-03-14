@@ -223,9 +223,9 @@ class CEDCampaignBuilderCampaign:
                 f"cb.UniqueId = cbc.CampaignBuilderId join CED_Segment s on " \
                  f"cb.SegmentId = s.UniqueId join CED_Projects cp on cp.UniqueId = s.ProjectId where " \
                 f"cbc.UniqueId = '{campaign_id}'"
-        logging.debug(query)
+        # logging.debug(query)
         result = dict_fetch_query_all(self.curr, query)
-        return {"project_name":result[0].get("project_name"),"sql_query":result[0].get("project_name")} if result is not None else None
+        return {"project_name":result[0].get("project_name"),"sql_query":result[0].get("sql_query"),"campaign_builder_id":result[0].get("campaign_builder_id")} if result is not None else None
 
     def delete_campaign_builder_campaign_by_unique_id(self, unique_id):
         return delete_rows_from_table(self.curr, self.table_name, {"campaignBuilderId": unique_id})
