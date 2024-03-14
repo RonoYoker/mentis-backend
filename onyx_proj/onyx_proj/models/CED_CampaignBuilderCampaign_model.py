@@ -219,7 +219,7 @@ class CEDCampaignBuilderCampaign:
         return result[0].get("project_id") if result is not None else None
 
     def get_project_name_seg_query_from_campaign_builder_campaign_id(self, campaign_id):
-        query = f"Select cp.Name as project_name , s.CampaignSqlQuery as sql_query,cb.UniqueId as campaign_builder_id from {self.table_name} cbc join CED_CampaignBuilder cb on " \
+        query = f"Select cp.Name as project_name , s.CampaignSqlQuery as sql_query , cb.UniqueId as campaign_builder_id from {self.table_name} cbc join CED_CampaignBuilder cb on " \
                 f"cb.UniqueId = cbc.CampaignBuilderId join CED_Segment s on " \
                  f"cb.SegmentId = s.UniqueId join CED_Projects cp on cp.UniqueId = s.ProjectId where " \
                 f"cbc.UniqueId = '{campaign_id}'"
