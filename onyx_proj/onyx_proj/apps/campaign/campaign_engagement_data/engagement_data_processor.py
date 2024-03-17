@@ -290,11 +290,9 @@ def process_the_all_channels_response(channel):
     with open(f'/tmp/{results["file"]}', 'r') as csvfile:
         csvreader = csv.DictReader(csvfile)
         for row in csvreader:
-            traversing_number = outer_map.get(row.get("contact"), None)
-            if traversing_number is None:
-                outer_map[row.get("contact")] = {'delivery': []}
-
-            outer_map[row.get("contact")]['delivery'].append({"time":datetime.datetime.strptime(row.get("CreatedDate"),"%Y-%m-%d %H:%M:%S"),"status": row.get("Status")})
+            traversing_number = row["contact"]
+            outer_map.setdefault(traversing_number,{'delivery': []})
+            outer_map[traversing_number]['delivery'].append({"time":datetime.datetime.strptime(row.get("CreatedDate"),"%Y-%m-%d %H:%M:%S"),"status": row.get("Status")})
             if current_contact is None:
                 current_contact = traversing_number
             elif current_contact != traversing_number:
