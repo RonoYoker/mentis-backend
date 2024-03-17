@@ -250,7 +250,7 @@ def fetching_the_data_for_given_channel(channel, BankName, env):
             return dict(status=False, message=email_status.get("message"))
 
         raise ex
-    file_name = f"{file_name}.part00000"
+    file_name = f"{file_name}.part_00000"
     return {"status":True,"bucket": bucket_name,"file":file_name}
 
 
