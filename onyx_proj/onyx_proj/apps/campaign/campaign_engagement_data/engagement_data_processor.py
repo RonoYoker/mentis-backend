@@ -287,9 +287,13 @@ def process_the_all_channels_response(channel):
     current_contact = None
     data_to_dump = []
     error_count = 0
+    no_of_rows = 0
     with open(f'/tmp/{results["file"]}', 'r') as csvfile:
         csvreader = csv.DictReader(csvfile)
         for row in csvreader:
+            no_of_rows+=1
+            if no_of_rows % 10000:
+                logger.debug(f"no of rows processed::{no_of_rows}")
             traversing_number = row["contact"]
             outer_map.setdefault(traversing_number,{'delivery': []})
             outer_map[traversing_number]['delivery'].append({"time":datetime.datetime.strptime(row.get("CreatedDate"),"%Y-%m-%d %H:%M:%S"),"status": row.get("Status")})
@@ -461,7 +465,8 @@ def process_the_all_channels_response(channel):
     if resp.get("row_count") is None:
         logger.error(f"Unable to insert data in db cols::{cols} sample_row::{data_to_dump[0]}")
         error_count += 1
-
+    os.remove(f'/tmp/{results["file"]}')
+    logger.debug("deleted file from storage")
     if error_count == 0:
         email_status = send_status_email(bank_name, env, f"{method_name} is successfully completed", 'SUCCESS')
         if not email_status.get("status"):
