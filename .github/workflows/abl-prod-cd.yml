@@ -230,18 +230,18 @@ jobs:
           echo $FINAL_TASK > ${{ env.ECS_TASK_DEFINITION_4 }}            
 
 
-      - name: Fill in the new image ID in the Amazon ECS task definition-4
-        id: task-def-4
-        uses: aws-actions/amazon-ecs-render-task-definition@97587c9d45a4930bf0e3da8dd2feb2a463cf4a3a
-        with:
-          task-definition: ${{ env.ECS_TASK_DEFINITION_4 }}
-          container-name: ${{ env.CONTAINER_NAME_4 }}
-          image: ${{ env.ECR_REPO_URL }}/${{ env.ECR_REPOSITORY }}:${{ steps.get_version.outputs.VERSION }}
-
-      - name: Deploy Amazon ECS task definition-4
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1.4.10
-        with:
-          task-definition: ${{ steps.task-def-4.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE_4 }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+#      - name: Fill in the new image ID in the Amazon ECS task definition-4
+#        id: task-def-4
+#        uses: aws-actions/amazon-ecs-render-task-definition@97587c9d45a4930bf0e3da8dd2feb2a463cf4a3a
+#        with:
+#          task-definition: ${{ env.ECS_TASK_DEFINITION_4 }}
+#          container-name: ${{ env.CONTAINER_NAME_4 }}
+#          image: ${{ env.ECR_REPO_URL }}/${{ env.ECR_REPOSITORY }}:${{ steps.get_version.outputs.VERSION }}
+#
+#      - name: Deploy Amazon ECS task definition-4
+#        uses: aws-actions/amazon-ecs-deploy-task-definition@v1.4.10
+#        with:
+#          task-definition: ${{ steps.task-def-4.outputs.task-definition }}
+#          service: ${{ env.ECS_SERVICE_4 }}
+#          cluster: ${{ env.ECS_CLUSTER }}
+#          wait-for-service-stability: true
