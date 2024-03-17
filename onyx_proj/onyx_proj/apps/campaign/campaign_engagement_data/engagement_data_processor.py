@@ -228,16 +228,16 @@ def fetching_the_data_for_given_channel(channel, BankName, env):
     bucket_name = settings.QUERY_EXECUTION_JOB_BUCKET
     try:
         if channel == "SMS":
-            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL Select derived.* from ( SELECT EnMobileNumber as contact, Status, CreatedDate FROM CED_SMSResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()) derived order by contact INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY ","  LINES TERMINATED BY "\n" """
+            query = f"""SELECT EnMobileNumber as contact, Status, CreatedDate FROM CED_SMSResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY ","  LINES TERMINATED BY "\n" """
             results = CEDSMSResponse().fetch_last_30_days_data(query)
         elif channel == "IVR":
-            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL Select derived.* from ( SELECT AccountId as contact, Status, CreationDate as CreatedDate FROM CED_IVRResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()) derived order by contact INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY ","  LINES TERMINATED BY "\n" """
+            query = f"""SELECT AccountId as contact, Status, CreationDate as CreatedDate FROM CED_IVRResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY ","  LINES TERMINATED BY "\n" """
             results = CEDIVRResponse().fetch_last_30_days_data(query)
         elif channel == "EMAIL":
-            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL Select derived.* from ( SELECT EmailId as contact, Status, CreatedDate FROM CED_EMAILResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()) derived order by contact INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY "," LINES TERMINATED BY "\n" """
+            query = f"""SELECT EmailId as contact, Status, CreatedDate FROM CED_EMAILResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY "," LINES TERMINATED BY "\n" """
             results = CEDEMAILResponse().fetch_last_30_days_data(query)
         elif channel == "WhatsApp":
-            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL Select derived.* from ( SELECT MobileNumber as contact, Status, CreatedDate FROM CED_WhatsAppResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()) derived order by contact INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY "," LINES TERMINATED BY "\n" """
+            query = f"""SELECT MobileNumber as contact, Status, CreatedDate FROM CED_WhatsAppResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY "," LINES TERMINATED BY "\n" """
             results = CEDWHATSAPPResponse().fetch_last_30_days_data(query)
         else:
             logger.error(f"method_name :: {method_name}, channel is not in Email, WhatsApp, SMS, IVR")
@@ -289,14 +289,14 @@ def process_the_all_channels_response(channel):
     error_count = 0
     no_of_rows = 0
     with open(f'/tmp/{results["file"]}', 'r') as csvfile:
-        csvreader = csv.DictReader(csvfile)
+        csvreader = csv.reader(csvfile)
         for row in csvreader:
             no_of_rows+=1
             if no_of_rows % 10000:
                 logger.debug(f"no of rows processed::{no_of_rows}")
-            traversing_number = row["contact"]
+            traversing_number = row[0]
             outer_map.setdefault(traversing_number,{'delivery': []})
-            outer_map[traversing_number]['delivery'].append({"time":datetime.datetime.strptime(row.get("CreatedDate"),"%Y-%m-%d %H:%M:%S"),"status": row.get("Status")})
+            outer_map[traversing_number]['delivery'].append({"time":datetime.datetime.strptime(row[2],"%Y-%m-%d %H:%M:%S"),"status": row[1]})
             if current_contact is None:
                 current_contact = traversing_number
             elif current_contact != traversing_number:
