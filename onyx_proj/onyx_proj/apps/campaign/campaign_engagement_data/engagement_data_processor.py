@@ -292,7 +292,7 @@ def process_the_all_channels_response(channel):
         csvreader = csv.reader(csvfile)
         for row in csvreader:
             no_of_rows+=1
-            if no_of_rows % 10000:
+            if no_of_rows % 10000 == 0:
                 logger.debug(f"no of rows processed::{no_of_rows}")
             traversing_number = row[0]
             outer_map.setdefault(traversing_number,{'delivery': []})
