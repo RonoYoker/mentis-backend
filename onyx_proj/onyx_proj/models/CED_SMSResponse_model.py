@@ -36,6 +36,6 @@ class CEDSMSResponse:
         return result
 
     def fetch_last_30_days_data(self, query):
-        result = execute_query(self.engine, query)
+        result = fetch_all_with_headers(self.engine, query)
         return result
 

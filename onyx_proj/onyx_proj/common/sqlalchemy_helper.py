@@ -1,5 +1,5 @@
 import logging
-from sqlalchemy import inspect, column
+from sqlalchemy import inspect, column ,text
 from sqlalchemy.orm import Session, joinedload, load_only
 from onyx_proj.common.utils.sql_alchemy_engine import SqlAlchemyEngine
 from onyx_proj.models.CreditasCampaignEngine import CEDTeam, CED_Projects, CEDTeamProjectMapping, CED_User
