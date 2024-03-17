@@ -228,16 +228,16 @@ def fetching_the_data_for_given_channel(channel, BankName, env):
     bucket_name = settings.QUERY_EXECUTION_JOB_BUCKET
     try:
         if channel == "SMS":
-            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL ( SELECT EnMobileNumber as contact, Status, CreatedDate FROM CED_SMSResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact desc ) INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY ","  LINES TERMINATED BY "\n" """
+            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL Select dervied.* from ( SELECT EnMobileNumber as contact, Status, CreatedDate FROM CED_SMSResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()) derived order by contact INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY ","  LINES TERMINATED BY "\n" """
             results = CEDSMSResponse().fetch_last_30_days_data(query)
         elif channel == "IVR":
-            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL ( SELECT AccountId as contact, Status, CreationDate as CreatedDate FROM CED_IVRResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact desc) INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY ","  LINES TERMINATED BY "\n" """
+            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL Select dervied.* from ( SELECT AccountId as contact, Status, CreationDate as CreatedDate FROM CED_IVRResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()) derived order by contact INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY ","  LINES TERMINATED BY "\n" """
             results = CEDIVRResponse().fetch_last_30_days_data(query)
         elif channel == "EMAIL":
-            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL ( SELECT EmailId as contact, Status, CreatedDate FROM CED_EMAILResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact desc) INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY "," LINES TERMINATED BY "\n" """
+            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL Select dervied.* from ( SELECT EmailId as contact, Status, CreatedDate FROM CED_EMAILResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()) derived order by contact INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY "," LINES TERMINATED BY "\n" """
             results = CEDEMAILResponse().fetch_last_30_days_data(query)
         elif channel == "WhatsApp":
-            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL ( SELECT MobileNumber as contact, Status, CreatedDate FROM CED_WhatsAppResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact desc) INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY "," LINES TERMINATED BY "\n" """
+            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL Select dervied.* from ( SELECT MobileNumber as contact, Status, CreatedDate FROM CED_WhatsAppResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW()) derived order by contact INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY "," LINES TERMINATED BY "\n" """
             results = CEDWHATSAPPResponse().fetch_last_30_days_data(query)
         else:
             logger.error(f"method_name :: {method_name}, channel is not in Email, WhatsApp, SMS, IVR")
