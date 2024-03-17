@@ -224,20 +224,20 @@ def send_status_email(BankName, env, email_template, status = ''):
 
 def fetching_the_data_for_given_channel(channel, BankName, env):
     method_name="fetching_the_data_for_given_channel"
-    file_name = f"{datetime.datetime.utcnow().strftime('%d/%m/%Y %H:%M:%S')}_uuid.uuid4().hex"
+    file_name = f"{datetime.datetime.utcnow().strftime('%d-%m-%Y-%H-%M-%S')}_{uuid.uuid4().hex}"
     bucket_name = settings.QUERY_EXECUTION_JOB_BUCKET
     try:
         if channel == "SMS":
-            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL ( SELECT EnMobileNumber as contact, Status, CreatedDate FROM CED_SMSResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact ) INTO OUTFILE S3 "s3://{bucket_name}/{file_name}.csv" FIELDS TERMINATED BY "," ENCLOSED BY "\"" LINES TERMINATED BY "\n" """
+            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL ( SELECT EnMobileNumber as contact, Status, CreatedDate FROM CED_SMSResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact desc ) INTO OUTFILE S3 "s3://{bucket_name}/{file_name}.csv" FIELDS TERMINATED BY "," ENCLOSED BY "\"" LINES TERMINATED BY "\n" """
             results = CEDSMSResponse().fetch_last_30_days_data(query)
         elif channel == "IVR":
-            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL ( SELECT AccountId as contact, Status, CreationDate as CreatedDate FROM CED_IVRResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact ) INTO OUTFILE S3 "s3://{bucket_name}/{file_name}.csv" FIELDS TERMINATED BY "," ENCLOSED BY "\"" LINES TERMINATED BY "\n" """
+            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL ( SELECT AccountId as contact, Status, CreationDate as CreatedDate FROM CED_IVRResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact desc) INTO OUTFILE S3 "s3://{bucket_name}/{file_name}.csv" FIELDS TERMINATED BY "," ENCLOSED BY "\"" LINES TERMINATED BY "\n" """
             results = CEDIVRResponse().fetch_last_30_days_data(query)
         elif channel == "EMAIL":
-            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL ( SELECT EmailId as contact, Status, CreatedDate FROM CED_EMAILResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact ) INTO OUTFILE S3 "s3://{bucket_name}/{file_name}.csv" FIELDS TERMINATED BY "," ENCLOSED BY "\"" LINES TERMINATED BY "\n" """
+            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL ( SELECT EmailId as contact, Status, CreatedDate FROM CED_EMAILResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact desc) INTO OUTFILE S3 "s3://{bucket_name}/{file_name}.csv" FIELDS TERMINATED BY "," ENCLOSED BY "\"" LINES TERMINATED BY "\n" """
             results = CEDEMAILResponse().fetch_last_30_days_data(query)
         elif channel == "WhatsApp":
-            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL ( SELECT MobileNumber as contact, Status, CreatedDate FROM CED_WhatsAppResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact ) INTO OUTFILE S3 "s3://{bucket_name}/{file_name}.csv" FIELDS TERMINATED BY "," ENCLOSED BY "\"" LINES TERMINATED BY "\n" """
+            query = f"""SELECT 'contact' , 'Status', 'CreatedDate' UNION ALL ( SELECT MobileNumber as contact, Status, CreatedDate FROM CED_WhatsAppResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact desc) INTO OUTFILE S3 "s3://{bucket_name}/{file_name}.csv" FIELDS TERMINATED BY "," ENCLOSED BY "\"" LINES TERMINATED BY "\n" """
             results = CEDWHATSAPPResponse().fetch_last_30_days_data(query)
         else:
             logger.error(f"method_name :: {method_name}, channel is not in Email, WhatsApp, SMS, IVR")
@@ -293,19 +293,17 @@ def process_the_all_channels_response(channel):
             if traversing_number is None:
                 outer_map[row.get("contact")] = {'delivery': []}
 
-            outer_map[row.get("contact")]['delivery'].append({"time":row.get("CreatedDate").strftime("%Y-%m-%d %H:%M:%S"),"status": row.get("Status")})
+            outer_map[row.get("contact")]['delivery'].append({"time":datetime.datetime.strptime(row.get("CreatedDate"),"%Y-%m-%d %H:%M:%S"),"status": row.get("Status")})
             if current_contact is None:
                 current_contact = traversing_number
             elif current_contact != traversing_number:
                 output = {'MTD_LastFiveFail': True, 'ThirtyDays_LastFiveFail': True, 'MTD_Successful': 0,
-                               'MTD_Failures': 0, 'ThirtyDays_Successful': 0, 'ThirtyDays_Failures': 0,
-                               'UpdationDate': timezone.now().strftime("%Y-%m-%d %H:%M:%S")}
+                               'MTD_Failures': 0, 'ThirtyDays_Successful': 0, 'ThirtyDays_Failures': 0}
 
-                current_datetime = timezone.now()
-                start_of_month = timezone.datetime(current_datetime.year, current_datetime.month, 1,
-                                                   tzinfo=current_datetime.tzinfo).strftime("%Y-%m-%d %H:%M:%S")
+                current_datetime = datetime.datetime.utcnow()
+                start_of_month = datetime.datetime.utcnow().replace(day=1,hour=0,minute=0,second=0)
                 # Get the current datetime
-                current_datetime = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+                # current_datetime = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
 
                 # sorting the data for the with filtering for MTD and last thirty_days
                 mtd_data = sorted(
@@ -360,14 +358,10 @@ def process_the_all_channels_response(channel):
     logger.debug('made list of status and time for  particular contact')
 
     output = {'MTD_LastFiveFail': True, 'ThirtyDays_LastFiveFail': True, 'MTD_Successful': 0,
-              'MTD_Failures': 0, 'ThirtyDays_Successful': 0, 'ThirtyDays_Failures': 0,
-              'UpdationDate': timezone.now().strftime("%Y-%m-%d %H:%M:%S")}
+              'MTD_Failures': 0, 'ThirtyDays_Successful': 0, 'ThirtyDays_Failures': 0}
 
-    current_datetime = timezone.now()
-    start_of_month = timezone.datetime(current_datetime.year, current_datetime.month, 1,
-                                       tzinfo=current_datetime.tzinfo).strftime("%Y-%m-%d %H:%M:%S")
-    # Get the current datetime
-    current_datetime = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+    current_datetime = datetime.datetime.utcnow()
+    start_of_month = datetime.datetime.utcnow().replace(day=1, hour=0, minute=0, second=0)
 
     # sorting the data for the with filtering for MTD and last thirty_days
     mtd_data = sorted(
