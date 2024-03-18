@@ -3229,10 +3229,17 @@ def make_split_cbc_list(campaign,is_split,recurring_detail):
         camp = copy.deepcopy(campaign)
         camp["start_date_time"] = start_date_time.strftime("%Y-%m-%d %H:%M:%S")
         camp["end_date_time"] = (start_date_time+ timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
-        camp["split_details"] = json.dumps({
-            "total_splits": hours,
-            "current_split": hour
+        if camp["split_details"] is None or camp["split_details"] == "":
+            camp["split_details"] = json.dumps({
+                "total_splits": hours,
+                "current_split": hour
             })
+        else:
+            split_details = json.loads(camp["split_details"])
+            camp["split_details"] = json.dumps(split_details.update({
+                "total_splits": hours,
+                "current_split": hour
+                }))
 
         start_date_time = start_date_time + timedelta(hours=1)
 
@@ -6013,6 +6020,7 @@ def prepare_and_save_acknowledge_campaign(request_body):
         request_meta['percentage'] = percentage if percentage is not None and campaign_level in [CampaignLevel.LIMIT.value, CampaignLevel.MAIN.value] else None
         request_meta['campaign_level'] = campaign_level
         request_meta['unique_id'] = None
+        request_meta['is_split'] = False
         request_meta['auto_approved'] = auto_approved if campaign_level in [CampaignLevel.LIMIT.value, CampaignLevel.MAIN.value] else False
 
         request_data = dict(body=request_meta)
