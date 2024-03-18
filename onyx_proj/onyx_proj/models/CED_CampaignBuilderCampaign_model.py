@@ -343,7 +343,7 @@ class CEDCampaignBuilderCampaign:
     def get_is_split_flag_by_cbc_id(self, cbc_id: str):
         query = f"""
         SELECT 
-            cb.isSplit AS SplitFlag,cb.Name as Name,cb.RecurringDetail as RecurringDetails,cb.CampaignCategory as CampaignCategory
+            cb.isSplit AS SplitFlag,cb.Name as Name,cb.RecurringDetail as RecurringDetails,cb.CampaignCategory as CampaignCategory,cb.CampaignLevel as CampaignLevel
         FROM
             CED_CampaignBuilder cb
                 JOIN

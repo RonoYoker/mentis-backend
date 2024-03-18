@@ -45,7 +45,7 @@ class CEDCampaignBuilder:
            cb.IsActive as active, cb.ErrorMsg as error_message, cb.CampaignCategory as campaign_category,
             cb.IsRecurring AS is_recurring, cb.RecurringDetail AS recurring_details, cb.IsStarred as is_starred,
              cbc.ContentType AS channel, COUNT(*) AS instance_count, cb.Description as description,
-              cb.IsManualValidationMandatory as is_manual_validation_mandatory, cbc.IsValidatedSystem as is_validated_system,
+              cb.IsManualValidationMandatory as is_manual_validation_mandatory, cb.CampaignLevel as campaign_level, cbc.IsValidatedSystem as is_validated_system,
                sb.Name as strategy_name, sb.UniqueId as strategy_id, GROUP_CONCAT( cbc.TestCampignState separator ',' ) as test_campaign_state_list 
                FROM CED_CampaignBuilder cb LEFT JOIN CED_Segment cs ON cs.UniqueId = cb.SegmentId 
                LEFT JOIN CED_StrategyBuilder as sb ON cb.StrategyId = sb.UniqueId 

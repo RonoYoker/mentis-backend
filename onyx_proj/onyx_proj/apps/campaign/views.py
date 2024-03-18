@@ -15,7 +15,7 @@ from onyx_proj.apps.campaign.campaign_monitoring.campaign_stats_processor import
     update_campaign_stats_to_central_db, get_filtered_campaign_stats_v2, get_filtered_campaign_stats_variants
 from onyx_proj.common.utils.telegram_utility import TelegramUtility
 from onyx_proj.common.decorators import *
-from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import save_or_update_campaign_data, \
+from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import (save_or_update_campaign_data, \
     get_filtered_dashboard_tab_data, get_min_max_date_for_scheduler, get_time_range_from_date, \
     get_campaign_data_in_period, validate_campaign, create_campaign_details_in_local_db, \
     get_filtered_recurring_date_time, update_segment_count_and_status_for_campaign, update_campaign_status, filter_list, \
@@ -23,8 +23,11 @@ from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import 
     approval_action_on_campaign_builder_by_unique_id, get_camps_detail_between_time, get_camps_detail, \
     update_campaign_by_campaign_builder_ids_local, update_campaign_scheduling_time_in_campaign_creation_details, \
     change_approved_campaign_time, replay_campaign_in_error, check_camp_status, prepare_campaign_builder_campaign, \
+    get_v2_camps_detail, fetch_campaign_variant_detail, test_campaign_status, change_approved_campaign_time, \
+    replay_campaign_in_error, check_camp_status, prepare_campaign_builder_campaign, perform_checks_and_move_to_v2, \
+    get_campaign_level_state_data, prepare_and_save_acknowledge_campaign,
     get_v2_camps_detail, fetch_campaign_variant_detail, test_campaign_status,change_approved_campaign_time,\
-    replay_campaign_in_error, check_camp_status,prepare_campaign_builder_campaign, perform_checks_and_move_to_v2,get_campaign_filters
+    replay_campaign_in_error, check_camp_status,prepare_campaign_builder_campaign, perform_checks_and_move_to_v2,get_campaign_filters)
 from onyx_proj.apps.campaign.test_campaign.test_campaign_processor import test_campaign_process, \
     trigger_segment_evaluator_for_test_camp
 from onyx_proj.apps.campaign.test_campaign.test_campaign_processor import test_campaign_process
@@ -631,5 +634,21 @@ def move_campaign_to_v2(request):
 def fetch_campaign_filters(request):
     request_body = json.loads(request.body.decode("utf-8"))
     response = get_campaign_filters(request_body)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def get_campaign_level_state(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    response = get_campaign_level_state_data(request_body)
+    status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
+    return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")
+
+@csrf_exempt
+@UserAuth.user_authentication()
+def save_acknowledge_campaign(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    response = prepare_and_save_acknowledge_campaign(request_body)
     status_code = response.pop("status_code", http.HTTPStatus.BAD_REQUEST)
     return HttpResponse(json.dumps(response, default=str), status=status_code, content_type="application/json")

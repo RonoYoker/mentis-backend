@@ -2,6 +2,7 @@ import json
 import logging
 import http
 from datetime import timedelta
+from math import ceil
 
 from onyx_proj.common.constants import *
 from onyx_proj.models.CED_CampaignExecutionProgress_model import *
@@ -196,6 +197,9 @@ def update_campaign_stats_to_central_db(data):
     Function to update campaign stats in the CED_CampaignExecutionProgress table in central DB
     """
     method_name = 'update_campaign_stats_to_central_db'
+    logger.debug(f'Entry: {method_name}, data : {data}')
+    from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import \
+        update_campaign_auto_validation_confs
     body = data.get("body")
     campaign_stats_data = body.get("data")
 
@@ -219,6 +223,9 @@ def update_campaign_stats_to_central_db(data):
     where_dict = {"CampaignId": campaign_id}
     try:
         db_res = CEDCampaignExecutionProgress().update_table_data_by_campaign_id(where_dict, campaign_stats_data)
+        if update_status.lower() in ["executed", "partially_executed"] and campaign_stats_data.get('TestCampaign') == 0:
+            percentage = ceil((campaign_stats_data.get('ClickedCount', 0)/campaign_stats_data.get('AcknowledgeCount', 0)) * 100)
+            update_campaign_auto_validation_confs(campaign_id, percentage)
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                     details_message=f"db_res: {db_res}.")
     except Exception as e:

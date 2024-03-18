@@ -1,9 +1,9 @@
 import logging
 
-from onyx_proj.common.constants import TAG_FAILURE, TAG_GENERATE_OTP
+from onyx_proj.common.constants import TAG_FAILURE, TAG_GENERATE_OTP, TAG_SEND_CAMPAIGN_LEVEL
 from onyx_proj.exceptions.permission_validation_exception import MethodPermissionValidationException, \
     UnauthorizedException, ValidationFailedException, BadRequestException, NotFoundException, InternalServerError, \
-    OtpRequiredException
+    OtpRequiredException, CampaignAcknowledgeRequiredException
 from onyx_proj.models.CED_UserSession_model import CEDUserSession
 from django.http import HttpResponse
 import http
@@ -64,7 +64,7 @@ class HttpRequestInterceptor:
                                 content_type="application/json",
                                 status=http.HTTPStatus.FORBIDDEN)
         elif isinstance(exception,ValidationFailedException):
-            response = dict(result=TAG_FAILURE, details_message=exception.reason)
+            response = dict(result=TAG_FAILURE, details_message=exception.reason, data=exception.data)
             return HttpResponse(json.dumps(response),
                                 content_type="application/json",
                                 status=http.HTTPStatus.BAD_REQUEST)
@@ -85,6 +85,11 @@ class HttpRequestInterceptor:
                                 status=http.HTTPStatus.INTERNAL_SERVER_ERROR)
         elif isinstance(exception, OtpRequiredException):
             response = dict(result=TAG_GENERATE_OTP, data=exception.data, details_message="please generate and validate otp first")
+            return HttpResponse(json.dumps(response),
+                                content_type="application/json",
+                                status=http.HTTPStatus.OK)
+        elif isinstance(exception, CampaignAcknowledgeRequiredException):
+            response = dict(result=TAG_SEND_CAMPAIGN_LEVEL, data=exception.data, details_message="Please check campaign level to be created.")
             return HttpResponse(json.dumps(response),
                                 content_type="application/json",
                                 status=http.HTTPStatus.OK)

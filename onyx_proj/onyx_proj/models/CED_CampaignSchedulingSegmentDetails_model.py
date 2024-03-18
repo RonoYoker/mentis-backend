@@ -64,3 +64,8 @@ class CEDCampaignSchedulingSegmentDetails:
         query = f"SELECT seg.ProjectId as project_id FROM CED_CampaignSchedulingSegmentDetails cssd JOIN CED_Segment seg on cssd.SegmentId = seg.UniqueId WHERE cssd.Id = {campaign_id}"
         res = execute_query(self.engine, query)
         return None if not res or len(res) <= 0 or not res[0].get('project_id') else res[0].get('project_id')
+
+    def fetch_campaign_level_by_campaign_id(self, campaign_id):
+        query = f"SELECT cb.CampaignLevel as campaign_level, cbc.UniqueId as cbc_id ,cb.SegmentId as segment_id ,cbc.ContentType as content_type FROM CED_CampaignSchedulingSegmentDetails cssd JOIN CED_CampaignBuilderCampaign cbc on cssd.CampaignId = cbc.UniqueId JOIN CED_CampaignBuilder cb on cbc.CampaignBuilderId = cb.UniqueId WHERE cssd.Id = {campaign_id}"
+        res = execute_query(self.engine, query)
+        return None if not res or len(res) <= 0 else res[0]
