@@ -300,6 +300,9 @@ def process_the_all_channels_response(channel):
     with open(f'/tmp/{results["file"]}', 'r') as csvfile:
         csvreader = csv.reader(csvfile)
         for row in csvreader:
+            if len(row) != 3:
+                logger.error(f"Invalid data ::{row}")
+                continue
             no_of_rows+=1
             if no_of_rows % 10000 == 0:
                 logger.debug(f"no of rows processed::{no_of_rows}")
