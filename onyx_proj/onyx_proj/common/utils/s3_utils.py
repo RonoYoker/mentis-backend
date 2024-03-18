@@ -25,6 +25,13 @@ class S3Helper:
         bucket = self.client.Bucket(bucket_name)
         bucket.download_file(final_key, '/tmp/' + key)
 
+    def check_file_existence(self,bucket_name, object_key):
+        try:
+            self.client.head_object(Bucket=bucket_name, Key=object_key)
+            return True
+        except Exception as e:
+            return False
+
     def upload_file_to_s3_bucket(self, bucket_name: str, key: str):
         """
         downloads file from s3 bucket using bucket name and file name
