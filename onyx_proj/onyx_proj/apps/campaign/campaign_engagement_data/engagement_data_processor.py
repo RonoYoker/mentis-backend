@@ -276,10 +276,12 @@ def process_the_all_channels_response(channel):
         raise ex
 
     object_found = S3Helper().check_file_existence(results["bucket"],results["file"])
-    while not object_found:
+    retry_count = 0
+    while not object_found and retry_count < 15:
         time.sleep(60)
         logger.error(f"Unable to download file obj::{results}")
         object_found = S3Helper().check_file_existence(results["bucket"], results["file"])
+        retry_count +=1
 
     #download data into tmp file
     try:

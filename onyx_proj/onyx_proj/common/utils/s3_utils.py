@@ -9,6 +9,7 @@ logging.getLogger('urllib3').setLevel(logging.DEBUG)
 class S3Helper:
     def __init__(self, **kwargs):
         self.client = self.get_s3_connection()
+        self.s3_client = boto3.client("s3")
 
     def get_s3_connection(self):
         return boto3.resource('s3', "ap-south-1")
@@ -27,7 +28,7 @@ class S3Helper:
 
     def check_file_existence(self,bucket_name, object_key):
         try:
-            self.client.head_object(Bucket=bucket_name, Key=object_key)
+            self.s3_client.head_object(Bucket=bucket_name, Key=object_key)
             return True
         except Exception as e:
             return False
