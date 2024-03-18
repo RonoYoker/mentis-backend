@@ -10,6 +10,7 @@ class ValidationFailedException(Exception):
         self.method_name = kwargs.get("method_name")
         self.error = kwargs.get("error")
         self.reason = kwargs.get("reason")
+        self.data = kwargs.get("data")
 
 class BadRequestException(Exception):
     def __init__(self, **kwargs):
@@ -30,6 +31,11 @@ class InternalServerError(Exception):
         self.reason = kwargs.get("reason")
 
 class OtpRequiredException(Exception):
+    def __init__(self, **kwargs):
+        self.method_name = kwargs.get("method_name")
+        self.data = kwargs.get("data")
+
+class CampaignAcknowledgeRequiredException(Exception):
     def __init__(self, **kwargs):
         self.method_name = kwargs.get("method_name")
         self.data = kwargs.get("data")

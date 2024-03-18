@@ -28,6 +28,7 @@ class CED_CampaignBuilder(Base, Orm_helper):
     description = Column("Description", String)
     approval_retry = Column("ApprovalRetry", Integer, default=0)
     is_manual_validation_mandatory = Column("IsManualValidationMandatory", Boolean, default=True)
+    campaign_level = Column("CampaignLevel", String)
     creation_date = Column("CreationDate", DateTime, default=datetime.utcnow())
     updation_date = Column("UpdationDate", TIMESTAMP,
                            server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))

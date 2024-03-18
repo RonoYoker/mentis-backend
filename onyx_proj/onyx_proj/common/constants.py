@@ -18,6 +18,7 @@ TAG_SUCCESS = "SUCCESS"
 TAG_FAILURE = "FAILURE"
 TAG_OTP_VALIDATION_FAILURE = "OTP_VALIDATION_FAILURE"
 TAG_GENERATE_OTP = "GENERATE_OTP"
+TAG_SEND_CAMPAIGN_LEVEL = "SEND_CAMPAIGN_LEVEL"
 TAG_REQUEST_POST = "POST"
 TAG_REQUEST_GET = "GET"
 TAG_REQUEST_PUT = "PUT"
@@ -1336,7 +1337,6 @@ class TemplateABTypes(Enum):
     MULTI_SEG = "MULTI_SEG"
 
 
-
 class ProjectValidationConf(Enum):
     DATA_SYNC_REQUIRED = "DATA_SYNC_REQUIRED"
     CAMPAIGN_FILTERS_CONF = "CAMPAIGN_FILTERS_CONF"
@@ -1413,6 +1413,11 @@ class CampaignLevel(Enum):
     LIMIT = "LIMIT"
 
 
+GET_NEXT_CAMPAIGN_LEVEL = {
+    CampaignLevel.INTERNAL.value:CampaignLevel.LIMIT.value,
+    CampaignLevel.LIMIT.value: CampaignLevel.MAIN.value
+}
+
 class StrategyPreviewScheduleTab(Enum):
     PREVIEW_BY_DATA = "PREVIEW_BY_DATA"
     PREVIEW_BY_UID = "PREVIEW_BY_UID"
@@ -1425,4 +1430,30 @@ Strategy_STATUS_SUBJECT_MAPPING = {
     "DIS_APPROVED": "disapproved",
     "ERROR": "error",
     "SAVED": "saved"
+}
+
+MIN_ALLOWED_PERCENTAGE_FOR_CAMPAIGN_LEVEL_LIMIT = 0
+MAX_ALLOWED_PERCENTAGE_FOR_CAMPAIGN_LEVEL_LIMIT = 10
+
+MAX_ALLOWED_COUNT_FOR_CAMPAIGN_LEVEL_LIMIT = 5000
+
+CHANNEL_CONTENT_KEY_MAPPING = {
+    ContentType.SMS.value: "sms_campaign",
+    ContentType.IVR.value: "ivr_campaign",
+    ContentType.WHATSAPP.value: "whatsapp_campaign",
+    ContentType.EMAIL.value: "email_campaign"
+}
+
+CAMPAIGN_THREE_LEVEL_VALIDATION_COLUMN_SEPARATOR = "##"
+
+CAMPAIGN_LEVEL_VALIDATION_RESPONSE = {
+    CampaignLevel.INTERNAL.value:{CampaignLevel.INTERNAL.value: {}},
+    CampaignLevel.LIMIT.value: {
+        CampaignLevel.LIMIT.value: {
+            "min_percentage": MIN_ALLOWED_PERCENTAGE_FOR_CAMPAIGN_LEVEL_LIMIT,
+            "max_percentage": MAX_ALLOWED_PERCENTAGE_FOR_CAMPAIGN_LEVEL_LIMIT
+        },
+        CampaignLevel.INTERNAL.value: {}
+    },
+    CampaignLevel.MAIN.value: {CampaignLevel.MAIN.value: {}}
 }
