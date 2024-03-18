@@ -275,13 +275,17 @@ def process_the_all_channels_response(channel):
     except Exception as ex:
         raise ex
 
+    object_found = False
+    while not object_found:
     #download data into tmp file
-    try:
-        S3Helper().get_file_from_s3_bucket(results["bucket"],results["file"])
-    except Exception as e:
-        logger.error(f"Unable to download file obj::{results}")
-        return
-    logger.debug("Downloaded s3 file into tmp storage")
+        try:
+            S3Helper().get_file_from_s3_bucket(results["bucket"],results["file"])
+            object_found = True
+        except Exception as e:
+            logger.error(f"Unable to download file obj::{results}")
+            return
+        time.sleep(10)
+        logger.debug("Downloaded s3 file into tmp storage")
 
     outer_map = {}
     current_contact = None
