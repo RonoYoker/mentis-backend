@@ -3236,10 +3236,11 @@ def make_split_cbc_list(campaign,is_split,recurring_detail):
             })
         else:
             split_details = json.loads(camp["split_details"])
-            camp["split_details"] = json.dumps(split_details.update({
+            split_details.update({
                 "total_splits": hours,
                 "current_split": hour
-                }))
+            })
+            camp["split_details"] = json.dumps(split_details)
 
         start_date_time = start_date_time + timedelta(hours=1)
 
