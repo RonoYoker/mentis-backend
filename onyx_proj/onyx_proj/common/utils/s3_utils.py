@@ -1,6 +1,10 @@
 import boto3
 from django.conf import settings
-
+import logging
+logging.getLogger('boto3').setLevel(logging.DEBUG)
+logging.getLogger('botocore').setLevel(logging.DEBUG)
+logging.getLogger('s3transfer').setLevel(logging.DEBUG)
+logging.getLogger('urllib3').setLevel(logging.DEBUG)
 
 class S3Helper:
     def __init__(self, **kwargs):
