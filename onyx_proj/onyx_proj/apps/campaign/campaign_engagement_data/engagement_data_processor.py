@@ -304,7 +304,7 @@ def process_the_all_channels_response(channel):
                 logger.error(f"Invalid data ::{row}")
                 continue
             no_of_rows+=1
-            if no_of_rows % 10000 == 0:
+            if no_of_rows % 100000 == 0:
                 logger.debug(f"no of rows processed::{no_of_rows}")
             traversing_number = row[0]
             outer_map.setdefault(traversing_number,{'delivery': []})
