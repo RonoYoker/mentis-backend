@@ -322,9 +322,9 @@ def process_the_all_channels_response(channel):
 
                 # sorting the data for the with filtering for MTD and last thirty_days
                 mtd_data = sorted(
-                    [data for data in outer_map[current_contact]['delivery'] if start_of_month <= data["time"] <= current_datetime],
+                    [data for data in outer_map[current_contact]['delivery'] if start_of_month <= data["time"] <= current_datetime and not any(data["status"].lower().startswith(x) for x in ["snd","hyp"])  ],
                     key=lambda x: x["time"])
-                total_data = sorted([data for data in outer_map[current_contact]['delivery']], key=lambda x: x["time"])
+                total_data = sorted([data for data in outer_map[current_contact]['delivery'] if not any(data["status"].lower().startswith(x) for x in ["snd","hyp"]) ], key=lambda x: x["time"])
                 # settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]
 
                 output['MTD_LastFiveFail'] = all(
