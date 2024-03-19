@@ -5,6 +5,7 @@ from datetime import timedelta
 from math import ceil
 
 from onyx_proj.common.constants import *
+from onyx_proj.exceptions.permission_validation_exception import InternalServerError, BadRequestException
 from onyx_proj.models.CED_CampaignExecutionProgress_model import *
 from onyx_proj.apps.campaign.campaign_monitoring.stats_process_helper import *
 from onyx_proj.models.CED_User_model import CEDUser
@@ -224,8 +225,15 @@ def update_campaign_stats_to_central_db(data):
     try:
         db_res = CEDCampaignExecutionProgress().update_table_data_by_campaign_id(where_dict, campaign_stats_data)
         if update_status.lower() in ["executed", "partially_executed"] and campaign_stats_data.get('TestCampaign') == 0:
-            percentage = ceil((campaign_stats_data.get('ClickedCount', 0)/campaign_stats_data.get('AcknowledgeCount', 0)) * 100)
-            update_campaign_auto_validation_confs(campaign_id, percentage)
+            try:
+                percentage = ceil((campaign_stats_data.get('ClickedCount', 0)/campaign_stats_data.get('AcknowledgeCount', 0)) * 100)
+                update_campaign_auto_validation_confs(campaign_id, percentage)
+            except InternalServerError as i:
+                pass
+            except BadRequestException as b:
+                pass
+            except Exception as e:
+                pass
         return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                     details_message=f"db_res: {db_res}.")
     except Exception as e:
