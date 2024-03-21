@@ -4614,7 +4614,7 @@ def prepare_seg_based_campaign_list(data, recurring_detail):
                 variant_dict["execution_config_id"] = execution_config_id
                 variant['content_type'] = variant_dict["channel"]
                 variant['vendor_config_id'] = variant_dict["template_info"]["vendor_config_id"]
-                variant['variant_id'] = variant_dict["variant_id"]
+                variant['variant_id'] = variant_dict.get("variant_id","")
                 if segment_type == SegmentABTypes.PERCENTAGE.value:
                     variant['split_details'] = json.dumps({"percentage_split": {
                         "from_percentage": percentage,
@@ -4720,7 +4720,7 @@ def prepare_template_based_campaign_list(data, recurring_detail):
                 variant_dict['execution_config_id'] = execution_config_id
                 variant['content_type'] = channel
                 variant['vendor_config_id'] = template_info["vendor_config_id"]
-                variant['variant_id'] = variant_dict["variant_id"]
+                variant['variant_id'] = variant_dict.get("variant_id","")
                 segment_id = variant_dict["segment_id"]
                 if segment_type == SegmentABTypes.PERCENTAGE.value:
                     variant['segment_id'] = segment_id
@@ -5249,7 +5249,7 @@ def prepare_recurring_camp_campaign_list(data, recurring_detail, strategy_id=Non
                 variant_dict["execution_config_id"] = execution_config_id
                 variant['content_type'] = variant_dict["channel"]
                 variant['vendor_config_id'] = variant_dict["template_info"]["vendor_config_id"]
-                variant['variant_id'] = variant_dict["variant_id"]
+                variant['variant_id'] = variant_dict.get("variant_id","")
                 if recurring_detail.get("is_segment_attr_split", False) is True:
                     variant['filter_json'] = json.dumps(variant_dict["filter_json"]["segment_filter"])
                     variant['segment_id'] = variant_dict["filter_json"]["sub_segment_id"]
@@ -5392,7 +5392,7 @@ def prepare_cjb_camp_campaign_list(data, recurring_detail):
                 variant_dict["execution_config_id"] = execution_config_id
                 variant['content_type'] = variant_dict["channel"]
                 variant['vendor_config_id'] = variant_dict["template_info"]["vendor_config_id"]
-                variant['variant_id'] = variant_dict["variant_id"]
+                variant['variant_id'] = variant_dict.get("variant_id","")
                 # variant['segment_id'] = segment_id
                 schedule_details = {
                     "campaign_type": "SCHEDULELATER",
