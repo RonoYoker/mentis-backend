@@ -140,7 +140,7 @@ def generate_test_file_name(channel: str, segment_id: str):
     return file_name
 
 
-def create_file_details_json(campaign_test_segment_details,
+def create_file_details_json(campaign_test_segment_details,validation_object,
                              project_name: str, backwards_compatible=True):
     """
     Create project_details_json for test campaign flow (this data is used in Lambda 1 and Lambda 2)
@@ -158,6 +158,8 @@ def create_file_details_json(campaign_test_segment_details,
     project_details_var = "projectDetail" if backwards_compatible else "project_details"
     cbc_var = "campaignBuilderCampaignId" if backwards_compatible else "campaign_builder_campaign_id"
     segment_type_var = "segmentType" if backwards_compatible else "segment_type"
+    segment_id = "segmentId" if backwards_compatible else "segment_id"
+    segment_title = "segmentTitle" if backwards_compatible else "segment_title"
 
     campaign_scheduling_segment_details_test_entity = generate_campaign_scheduling_segment_entity_details_test_entity(campaign_test_segment_details)
 
@@ -175,6 +177,8 @@ def create_file_details_json(campaign_test_segment_details,
         project_type_var: "AUTO_SCHEDULE_CAMPAIGN",
         file_id_var: campaign_scheduling_segment_details_test_entity.unique_id,
         segment_type_var: campaign_scheduling_segment_details_test_entity.segment_type,
+        segment_id: validation_object["campaign_builder_data"]["segment_data"]["id"],
+        segment_title: validation_object["campaign_builder_data"]["segment_data"]["title"]
     }
 
     set_follow_up_sms_template_details(campaign_scheduling_segment_details_test_entity)

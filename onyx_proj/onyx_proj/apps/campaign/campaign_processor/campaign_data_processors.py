@@ -1834,7 +1834,7 @@ def start_trigger_schedule_lambda_processing(campaign_scheduling_segment_entity,
             campaign_scheduling_segment_entity)
 
         # Trigger lambda
-        trigger_lambda_function_for_campaign_scheduling(campaign_scheduling_segment_entity, project_entity.name,is_instant=is_instant)
+        trigger_lambda_function_for_campaign_scheduling(campaign_scheduling_segment_entity, project_entity.name, segment_entity, is_instant=is_instant)
 
         # Save Campaign Scheduling segment entity with status LAMBDA_TRIGGERED
         campaign_scheduling_segment_entity.status = CampaignSchedulingSegmentStatus.LAMBDA_TRIGGERED.value
@@ -1927,7 +1927,7 @@ def generate_file_name(campaign_scheduling_segment_entity, segment_entity, is_te
     return file_name
 
 
-def trigger_lambda_function_for_campaign_scheduling(campaign_segment_details, project_name, backwords_compatible=True,is_instant=False):
+def trigger_lambda_function_for_campaign_scheduling(campaign_segment_details, project_name, segment_entity, backwords_compatible=True,is_instant=False):
     """
     Method to trigger the lambda function and generate request paylaod
     """
@@ -1945,6 +1945,8 @@ def trigger_lambda_function_for_campaign_scheduling(campaign_segment_details, pr
     pulish_data_var = "publishData" if backwords_compatible else "publish_data"
     segment_type_var = "segmentType" if backwords_compatible else "segment_type"
     project_details_object_var = "project_details_object"
+    segment_id = "segmentId" if backwords_compatible else "segment_id"
+    segment_title = "segmentTitle" if backwords_compatible else "segment_title"
 
     campaign_scheduling_segment_entity = generate_campaign_scheduling_segment_entity_for_camp_scheduling(
         campaign_segment_details)
@@ -1957,6 +1959,8 @@ def trigger_lambda_function_for_campaign_scheduling(campaign_segment_details, pr
         project_type_var: "AUTO_SCHEDULE_CAMPAIGN",
         file_id_var: campaign_scheduling_segment_entity.unique_id,
         segment_type_var: campaign_scheduling_segment_entity.segment_type,
+        segment_id: segment_entity.id,
+        segment_title: segment_entity.title
     }
 
     set_follow_up_sms_template_details(campaign_scheduling_segment_entity)
@@ -4086,6 +4090,9 @@ def create_campaign_details_in_local_db(request: dict):
     ccd_entity.campaign_builder_id = fp_project_details_json["campaignBuilderId"]
     ccd_entity.campaign_category = fp_project_details_json["campaignCategory"]
     ccd_entity.execution_config_id = fp_project_details_json["campaignBuilderCampaignEntity"]["ExecutionConfigId"]
+    ccd_entity.segment_id = project_details_object["segmentId"]
+    ccd_entity.segment_title = project_details_object["segmentTitle"]
+    ccd_entity.vendor_config_id = fp_project_details_json["campaignBuilderCampaignEntity"]["vendorConfigId"]
 
     try:
         if not fp_project_details_json.get("testCampaign"):

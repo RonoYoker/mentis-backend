@@ -167,7 +167,7 @@ def test_campaign_process(request: dict):
     save_or_update_cssdtest(campaign_scheduling_segment_details_test_entity)
 
     # creating project_details json to trigger the Lambda (FileData/Lambda1) via local api
-    project_details_object = create_file_details_json(campaign_scheduling_segment_details_test_entity, project_id)
+    project_details_object = create_file_details_json(campaign_scheduling_segment_details_test_entity, validation_object, project_id)
 
     if project_details_object["success"] is False:
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
