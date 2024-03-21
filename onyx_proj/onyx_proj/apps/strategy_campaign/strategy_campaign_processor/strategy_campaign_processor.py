@@ -218,7 +218,7 @@ def get_strategy_data(request_body):
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
                     details_message="No Campaigns present for this strategy")
 
-    deactivated_camp_list = [deactivated_camp["unique_id"] for deactivated_camp in deactivated_camp_list]
+    deactivated_camp_list = [deactivated_camp["unique_id"] for deactivated_camp in deactivated_camp_list] if deactivated_camp_list is not None else []
 
     final_data = strategy_basic_data
     camp_builder_list = []  # list of campaign info
