@@ -169,8 +169,8 @@ def fetch_test_campaign_data(request_data) -> json:
             record = {header["headerName"] : header.get("defaultValue") for header in headers_list}
         else:
             record = record[0]
-            record_list = decrypt_test_segment_data([record], headers_list, segment_data.get("ProjectId"))
-            record = record_list[0]
+            # record_list = decrypt_test_segment_data([record], headers_list, segment_data.get("ProjectId"))
+            # record = record_list[0]
 
         header_name_list = [header["headerName"].lower() for header in headers_list]
 

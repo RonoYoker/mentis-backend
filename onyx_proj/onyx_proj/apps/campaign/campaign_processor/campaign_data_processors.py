@@ -673,18 +673,18 @@ def test_campaign_status(request_data):
 
             response.update({"campaign_data": decrypted_data})
             updated_local_responses.append(response)
-    logger.debug(f"campaigns_data: {campaigns_data_to_decrypt}")
+    # logger.debug(f"campaigns_data: {campaigns_data_to_decrypt}")
 
-    decrypted_campaign_data = decrypt_test_segment_data(campaigns_data_to_decrypt, headers_list, segment_data.get("ProjectId"))
-    logger.debug(f"decrypted_campaign_data: {decrypted_campaign_data}")
+    # decrypted_campaign_data = decrypt_test_segment_data(campaigns_data_to_decrypt, headers_list, segment_data.get("ProjectId"))
+    # logger.debug(f"decrypted_campaign_data: {decrypted_campaign_data}")
 
-    decrypted_campaign_data_index = 0
-    for test_campaign_dict in updated_local_responses:
-        if test_campaign_dict["campaign_data"] is None:
-            test_campaign_dict["campaign_data"] = {}
-            continue
-        test_campaign_dict["campaign_data"] = decrypted_campaign_data[decrypted_campaign_data_index]
-        decrypted_campaign_data_index += 1
+    # decrypted_campaign_data_index = 0
+    # for test_campaign_dict in updated_local_responses:
+    #     if test_campaign_dict["campaign_data"] is None:
+    #         test_campaign_dict["campaign_data"] = {}
+    #         continue
+    #     test_campaign_dict["campaign_data"] = decrypted_campaign_data[decrypted_campaign_data_index]
+    #     decrypted_campaign_data_index += 1
 
     logger.debug(f"updated_response: {updated_local_responses}")
 
