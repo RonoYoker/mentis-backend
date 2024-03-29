@@ -2802,7 +2802,8 @@ def save_campaign_details(request_data):
     campaign_builder.version = version
     if strategy_id is not None and strategy_id != "":
         campaign_builder.campaign_level = CampaignLevel.MAIN.value
-    campaign_builder.campaign_level = campaign_level
+    else:
+        campaign_builder.campaign_level = campaign_level
 
     try:
         saved_campaign_builder = save_campaign_builder_details(campaign_builder, campaign_list, unique_id, project_id)
