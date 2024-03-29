@@ -85,7 +85,7 @@ def uuid_info_local(request):
         "campaignChannel": decoded_uuid.get('campaignChannel', "")
     }
     push_custom_parameters_to_newrelic({"stage": "UUID_INFO_COMPLETED", "is_decoded_keys": is_decoded})
-    log_exit(method_name, uuid_info)
+    log_exit(method_name)
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=uuid_info)
 
 
