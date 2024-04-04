@@ -4,11 +4,12 @@ import logging
 import sys
 
 from onyx_proj.apps.campaign.test_campaign.app_settings import CampaignStatus
-from onyx_proj.apps.strategy_campaign.app_settings import AsyncCeleryChildTaskName
+from onyx_proj.apps.strategy_campaign.app_settings import AsyncCeleryChildTaskName, AsyncCeleryTaskName
 from onyx_proj.common.constants import TAG_FAILURE, CeleryChildTaskLogsStatus, \
     CeleryTaskLogsStatus, ASYNC_CELERY_CALLBACK_KEY_MAPPING, StrategyBuilderStatus, TAG_SUCCESS
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException, InternalServerError, \
     NotFoundException, ValidationFailedException, OtpRequiredException
+from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 from onyx_proj.models.CED_CeleryTaskLogs_model import CEDCeleryTaskLogs
 from onyx_proj.models.CED_StrategyBuilder_model import CEDStrategyBuilder
 
@@ -49,21 +50,27 @@ def execute_celery_child_task_by_unique_id(unique_id, auth_token):
             # To remove
             logger.debug(f"{method_name} :: campaign_builder_id: {campaign_builder_id}.")
             resp = update_campaign_builder_status_by_unique_id(campaign_builder_id, CampaignStatus.APPROVED.value,
-                                                        None, 0)
+                                                        None, 0, is_strategy_campaign=True)
             # To remove
             logger.debug(f"{method_name} :: resp: {resp}.")
             # resp = dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, details_message="")
-            if resp is None or resp.get('result') != TAG_SUCCESS:
+            if resp is None:
                 raise InternalServerError(method_name=method_name,
                                           reason=f"Unable to update campaign builder id: {campaign_builder_id}")
+            elif resp.get('result') != TAG_SUCCESS:
+                raise InternalServerError(method_name=method_name,
+                                          reason=f"{resp.get('details_message')}, campaign builder id: {campaign_builder_id}")
         elif celery_child_task.child_task_name == AsyncCeleryChildTaskName.ONYX_CAMPAIGN_BUILDER_DEACTIVATION.value:
             campaign_builder_id = data_packet.get('unique_id')
             request_body = dict(campaign_details=dict(campaign_builder_id=[campaign_builder_id]))
             resp = deactivate_campaign_by_campaign_id(request_body)
             # resp = dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, details_message="")
-            if resp is None or resp.get('result') != TAG_SUCCESS:
+            if resp is None:
                 raise InternalServerError(method_name=method_name,
                                           reason=f"Unable to update campaign builder id: {campaign_builder_id}")
+            elif resp.get('result') != TAG_SUCCESS:
+                raise InternalServerError(method_name=method_name,
+                                          reason=f"{resp.get('details_message')}, campaign builder id: {campaign_builder_id}")
 
             filter_list = [{"column": "unique_id", "value": unique_id, "op": "=="}]
             CEDCeleryChildTaskLogs().update_table(filter_list, dict(status=CeleryChildTaskLogsStatus.SUCCESS.value))
@@ -74,10 +81,12 @@ def execute_celery_child_task_by_unique_id(unique_id, auth_token):
 
         elif celery_child_task.child_task_name == AsyncCeleryChildTaskName.ONYX_CAMPAIGN_BUILDER_CREATION.value:
             resp = save_strategy_campaign_details(data_packet)
-            # resp = dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, details_message="")
-            if resp is None or resp.get('result') != TAG_SUCCESS:
+            # resp = dict(status_code=http.HTTPStatus.OK, result=TAG_FAILURE, details_message="")
+            if resp is None:
                 raise InternalServerError(method_name=method_name,
                                           reason=f"Unable to save campaign builder task id: {unique_id}")
+            elif resp.get('result') != TAG_SUCCESS:
+                raise InternalServerError(method_name=method_name, reason=f"{resp.get('details_message')}, task id: {unique_id}")
 
             filter_list = [{"column": "unique_id", "value": unique_id, "op": "=="}]
             CEDCeleryChildTaskLogs().update_table(filter_list, dict(status=CeleryChildTaskLogsStatus.SUCCESS.value))
@@ -150,9 +159,12 @@ def check_parent_task_completion_status_by_unique_id(unique_id):
             raise BadRequestException(method_name=method_name,
                                       reason=f"Celery child task id is invalid. parent task id: {unique_id}")
 
+        task_name = celery_child_task_list[0].child_task_name
         # Check if all child tasks have status 'success'
         all_completed = all(
-            child_task.status == CeleryChildTaskLogsStatus.SUCCESS.value for child_task in celery_child_task_list)
+            child_task.status == CeleryChildTaskLogsStatus.SUCCESS.value
+            or (child_task.status in [CeleryChildTaskLogsStatus.CANNOT_BE_PICKED.value, CeleryChildTaskLogsStatus.TASK_ALREADY_ACHIEVED.value]
+                and task_name == AsyncCeleryChildTaskName.ONYX_CAMPAIGN_BUILDER_DEACTIVATION.value) for child_task in celery_child_task_list)
         if not all_completed:
             return
         else:
@@ -218,6 +230,9 @@ def onyx_approval_flow_strategy_callback_processor(unique_id, status, err_msg=No
         strategy_builder_id = celery_task.request_id
         filter = [{"column": "unique_id", "value": strategy_builder_id, "op": "=="}]
         CEDStrategyBuilder().update_table(filter, dict(status=status, error_msg=err_msg))
+        if status == StrategyBuilderStatus.ERROR.value:
+            cb_filter = [{"column": "strategy_id", "value": strategy_builder_id, "op": "=="}]
+            CEDCampaignBuilder().bulk_update_campaign_builder(cb_filter, update_dict={"status":CampaignStatus.ERROR.value})
         generate_strategy_status_mail(strategy_builder_id, status)
         logger.debug(f"Exit: {method_name}, Success")
         return dict(result=TAG_SUCCESS)
@@ -248,6 +263,9 @@ def onyx_save_strategy_callback_processor(unique_id, status, err_msg=None):
         strategy_builder_id = celery_task.request_id
         filter = [{"column": "unique_id", "value": strategy_builder_id, "op": "=="}]
         CEDStrategyBuilder().update_table(filter, dict(status=status, error_msg=err_msg))
+        if status == StrategyBuilderStatus.ERROR.value:
+            cb_filter = [{"column": "strategy_id", "value": strategy_builder_id, "op": "=="}]
+            CEDCampaignBuilder().bulk_update_campaign_builder(cb_filter, update_dict={"status":CampaignStatus.ERROR.value})
         generate_strategy_status_mail(strategy_builder_id, status)
         logger.debug(f"Exit: {method_name}, Success")
         return dict(result=TAG_SUCCESS)
@@ -278,6 +296,9 @@ def onyx_deactivate_strategy_callback_processor(unique_id, status, err_msg=None)
         strategy_builder_id = celery_task.request_id
         filter = [{"column": "unique_id", "value": strategy_builder_id, "op": "=="}]
         CEDStrategyBuilder().update_table(filter, dict(status=status, is_active=False, error_msg=err_msg))
+        if status == StrategyBuilderStatus.ERROR.value:
+            cb_filter = [{"column": "strategy_id", "value": strategy_builder_id, "op": "=="}]
+            CEDCampaignBuilder().bulk_update_campaign_builder(cb_filter, update_dict={"status":CampaignStatus.ERROR.value})
         generate_strategy_status_mail(strategy_builder_id, status)
         logger.debug(f"Exit: {method_name}, Success")
         return dict(result=TAG_SUCCESS)

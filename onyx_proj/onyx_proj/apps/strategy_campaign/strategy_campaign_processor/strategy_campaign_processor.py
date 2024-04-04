@@ -18,7 +18,7 @@ from onyx_proj.common.decorators import UserAuth
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.common.sqlalchemy_helper import create_dict_from_object
 from onyx_proj.exceptions.permission_validation_exception import BadRequestException, InternalServerError, \
-    NotFoundException
+    NotFoundException, ValidationFailedException
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.models.CED_ActivityLog_model import CEDActivityLog
 from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
@@ -103,6 +103,10 @@ def update_strategy_stage(request_data):
         logger.error(f"Error while updating strategy builder stage InternalServerError ::{i.reason}")
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
                     details_message=i.reason)
+    except ValidationFailedException as v:
+        logger.error(f"Validation Failed for Strategy Campaigns::{v.reason}")
+        return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                    details_message=v.reason)
     except Exception as e:
         logger.error(f"Error while updating strategy builder stage Exception ::{str(e)}")
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
@@ -162,17 +166,16 @@ def get_strategy_data(request_body):
 
     # fetch basic strategy details from the table
     strategy_basic_data_list = CEDStrategyBuilder().get_strategy_builder_details(
-        filter_list=[{"column": "unique_id", "value": strategy_id, "op": "=="}]
+        filter_list=[{"column": "unique_id", "value": strategy_id, "op": "=="}],
+        columns_list=["id", "unique_id", "name", "start_date", "end_date", "status", "created_by", "approved_by",
+                      "request_meta", "description"]
     )
     if strategy_basic_data_list is None or len(strategy_basic_data_list) == 0:
         logger.error(f"{method_name} :: Strategy data not present for request: {request_body}.")
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
                     details_message="Invalid Input")
-    strategy_basic_data = create_dict_from_object(strategy_basic_data_list[0])
-
-    for keys in dict(strategy_basic_data).keys():
-        if keys not in ["id", "unique_id", "name", "start_date", "end_date", "status", "created_by", "approved_by", "request_meta", "description"]:
-            del strategy_basic_data[keys]
+    # strategy_basic_data = create_dict_from_object(strategy_basic_data_list[0])
+    strategy_basic_data = strategy_basic_data_list[0]._asdict(fetch_loaded_only=True)
 
     is_status_err_or_draft = False
 
@@ -382,13 +385,23 @@ def send_strategy_builder_for_approve(strategy_builder, unique_id, user_name, au
         for campaign_builder in campaign_builder_list:
             validate_campaign_builder_campaign_for_scheduled_time(campaign_builder)
 
+        filter_list = prepare_filter_list_of_cb_for_strategy_builder(AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_APPROVAL_FLOW.value, unique_id)
+        campaign_builder_list = CEDCampaignBuilder().get_campaign_builder_details_by_filter_list(filter_list)
+        validated_data = validate_strategy_campaign_status(campaign_builder_list, AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_APPROVAL_FLOW.value)
+        campaign_builder_list = validated_data.get("campaign_builder_list")
+        removed_campaign_list_with_reason = validated_data.get("removed_campaign_list_with_reason")
+
+        if campaign_builder_list is None or len(campaign_builder_list) == 0:
+            raise BadRequestException(method_name=method_name,
+                                      reason="Unable to find campaign builder details.")
+
         filter_list = [{"column": "unique_id", "value": unique_id, "op": "=="}]
         CEDStrategyBuilder().update_table(filter_list, dict(status=StrategyBuilderStatus.APPROVAL_IN_PROGRESS.value,
                                                             approved_by=user_name))
         try:
             resp = prepare_and_trigger_celery_job_by_task_name(
                 AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_APPROVAL_FLOW.value,
-                AsyncCeleryTaskCallbackKeys.ONYX_APPROVAL_FLOW_STRATEGY.value, unique_id, auth_token)
+                AsyncCeleryTaskCallbackKeys.ONYX_APPROVAL_FLOW_STRATEGY.value, unique_id, auth_token, campaign_builder_list, removed_campaign_list_with_reason)
         except Exception as e:
             filter_list = [{"column": "unique_id", "value": unique_id, "op": "=="}]
             CEDStrategyBuilder().update_table(filter_list, dict(status=StrategyBuilderStatus.ERROR.value))
@@ -499,13 +512,25 @@ def send_strategy_builder_for_deactivate(strategy_builder, unique_id, user_name,
     logger.debug(f"Entry: {method_name}, unique_id: {unique_id}")
 
     if strategy_builder.get("status", None) != StrategyBuilderStatus.DEACTIVATE.value:
-        filter_list = [{"column": "unique_id", "value": unique_id, "op": "=="}]
-        CEDStrategyBuilder().update_table(filter_list, dict(status=StrategyBuilderStatus.DEACTIVATION_IN_PROGRESS.value,
-                                                            approved_by=user_name))
+        filter_list = prepare_filter_list_of_cb_for_strategy_builder(
+            AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_DEACTIVATION.value, unique_id)
+        campaign_builder_list = CEDCampaignBuilder().get_campaign_builder_details_by_filter_list(filter_list)
+        validated_data = validate_strategy_campaign_status(campaign_builder_list,
+                                                           AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_DEACTIVATION.value)
+        campaign_builder_list = validated_data.get("campaign_builder_list")
+        removed_campaign_list_with_reason = validated_data.get("removed_campaign_list_with_reason")
+
+        if campaign_builder_list is None or (len(campaign_builder_list) == 0 and len(removed_campaign_list_with_reason) == 0):
+            raise BadRequestException(method_name=method_name,
+                                      reason="Unable to find campaign builder details.")
+
+        if len(campaign_builder_list) > 0:
+            filter_list = [{"column": "unique_id", "value": unique_id, "op": "=="}]
+            CEDStrategyBuilder().update_table(filter_list, dict(status=StrategyBuilderStatus.DEACTIVATION_IN_PROGRESS.value))
         try:
             resp = prepare_and_trigger_celery_job_by_task_name(
                 AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_DEACTIVATION.value,
-                AsyncCeleryTaskCallbackKeys.ONYX_DEACTIVATION_STRATEGY.value, unique_id, auth_token)
+                AsyncCeleryTaskCallbackKeys.ONYX_DEACTIVATION_STRATEGY.value, unique_id, auth_token, campaign_builder_list, removed_campaign_list_with_reason)
         except Exception as e:
             filter_list = [{"column": "unique_id", "value": unique_id, "op": "=="}]
             CEDStrategyBuilder().update_table(filter_list, dict(status=StrategyBuilderStatus.ERROR.value))
@@ -520,24 +545,19 @@ def send_strategy_builder_for_deactivate(strategy_builder, unique_id, user_name,
         raise InternalServerError(method_name=method_name,
                                   reason="Unable to trigger celery.")
 
+    if len(removed_campaign_list_with_reason) > 0 and len(campaign_builder_list) == 0:
+        raise BadRequestException(method_name=method_name,
+                                  reason="All campaigns in this strategy are already in the intended state or have been executed.")
+
+
     logger.debug(f"Exit: {method_name}")
 
 
-def prepare_and_trigger_celery_job_by_task_name(task_name, callback_key, unique_id, auth_token, campaign_builder_list=None):
+def prepare_and_trigger_celery_job_by_task_name(task_name, callback_key, unique_id, auth_token, campaign_builder_list, removed_campaign_list_with_reason=[]):
     method_name = "prepare_and_trigger_celery_job_by_task_name"
     logger.debug(f"Entry: {method_name}, task_name: {task_name}, unique_id: {unique_id}")
 
     from onyx_proj.celery_app.tasks import execute_celery_child_task
-
-    if task_name in [AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_APPROVAL_FLOW.value,
-                     AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_DEACTIVATION.value]:
-        filter_list = prepare_filter_list_of_cb_for_strategy_builder(task_name, unique_id)
-        campaign_builder_list = CEDCampaignBuilder().get_campaign_builder_details_by_filter_list(filter_list)
-        campaign_builder_list = validate_strategy_campaign_status(campaign_builder_list, task_name)
-
-    if campaign_builder_list is None:
-        raise InternalServerError(method_name=method_name,
-                                  reason="Unable to find campaign builder details.")
 
     celery_logs = CED_CeleryTaskLogs()
     celery_logs.unique_id = uuid.uuid4().hex
@@ -550,7 +570,6 @@ def prepare_and_trigger_celery_job_by_task_name(task_name, callback_key, unique_
     if not resp.get('status'):
         raise InternalServerError(method_name=method_name,
                                   reason="Unable to save celery logs.")
-
 
     celery_child_unique_id_list = []
     for campaign_builder in campaign_builder_list:
@@ -570,9 +589,25 @@ def prepare_and_trigger_celery_job_by_task_name(task_name, callback_key, unique_
             raise InternalServerError(method_name=method_name,
                                       reason="Unable to save child celery logs.")
 
-    if len(celery_child_unique_id_list) < 1:
-        raise BadRequestException(method_name=method_name,
-                                  reason="Unable to find campaign builder details.")
+    for campaign_and_reason in removed_campaign_list_with_reason:
+        campaign_builder = campaign_and_reason[0]
+        status = campaign_and_reason[1]
+        rejection_reason = campaign_and_reason[2]
+        data_packet = prepare_child_data_packet_by_task_name(task_name, campaign_builder, unique_id)
+        celery_child_unique_id = uuid.uuid4().hex
+        celery_child_logs = CED_CeleryChildTaskLogs()
+        celery_child_logs.unique_id = celery_child_unique_id
+        celery_child_logs.parent_task_id = celery_logs.unique_id
+        celery_child_logs.task_reference_id = campaign_builder.unique_id \
+            if task_name != AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_CREATION.value else None
+        celery_child_logs.child_task_name = PARENT_CHILD_TASK_NAME_MAPPING.get(task_name)
+        celery_child_logs.data_packet = json.dumps(data_packet)
+        celery_child_logs.status = status
+        celery_child_logs.extra = json.dumps(rejection_reason)
+        resp = CEDCeleryChildTaskLogs().save_or_update_celery_child_task_logs_details(celery_child_logs)
+        if not resp.get('status'):
+            raise InternalServerError(method_name=method_name,
+                                      reason="Unable to save child celery logs.")
 
     for celery_child_unique_id in celery_child_unique_id_list:
         # Execute the child task
@@ -586,17 +621,29 @@ def validate_strategy_campaign_status(campaign_builder_list, task_name):
     method_name = "validate_campaign_for_strategy"
     logger.debug(f"Entry: {method_name}, campaign_builder_list: {campaign_builder_list}, task_name: {task_name}")
 
+    removed_campaign_list_with_reason = []
     if task_name == AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_APPROVAL_FLOW.value:
         for campaign_builder in campaign_builder_list:
             if campaign_builder.status != CampaignStatus.APPROVAL_PENDING.value:
                 raise BadRequestException(method_name=method_name, reason="Campaigns are not in valid state")
     elif task_name == AsyncCeleryTaskName.ONYX_STRATEGY_BUILDER_DEACTIVATION.value:
+        cb_ids = ",".join([f"'{cb.unique_id}'" for cb in campaign_builder_list if cb.status != CampaignStatus.DEACTIVATE.value])
+        to_be_executed_campaigns = CEDCampaignBuilderCampaign().get_executed_campaigns_by_campaign_builder_ids(cb_ids) if len(cb_ids) > 0 else []
+        to_be_executed_campaigns_id = [cb.get("UniqueId") for cb in to_be_executed_campaigns]
         for campaign_builder in campaign_builder_list.copy():
             if campaign_builder.status == CampaignStatus.DEACTIVATE.value:
+                popped_out_camp = campaign_builder
                 campaign_builder_list.remove(campaign_builder)
+                removed_campaign_list_with_reason.append([popped_out_camp, CeleryChildTaskLogsStatus.TASK_ALREADY_ACHIEVED.value,  dict(rejection_reason="campaign deactivation task cannot be picked since the campaign is already deactivated")])
+            elif campaign_builder.unique_id not in to_be_executed_campaigns_id:
+                popped_out_camp = campaign_builder
+                campaign_builder_list.remove(campaign_builder)
+                removed_campaign_list_with_reason.append([popped_out_camp, CeleryChildTaskLogsStatus.CANNOT_BE_PICKED.value, dict(rejection_reason="campaign deactivation task cannot be picked since the campaign has already been executed")])
 
+    data = dict(campaign_builder_list=campaign_builder_list,
+                removed_campaign_list_with_reason=removed_campaign_list_with_reason)
     logger.debug(f"Exit: {method_name}, Success")
-    return campaign_builder_list
+    return data
 
 def validate_campaign_for_strategy(campaign_builder_ids):
     method_name = "validate_campaign_for_strategy"
@@ -682,7 +729,7 @@ def upsert_strategy(request_data):
     strategy_builder.description = description
     strategy_builder.project_id = project_id
     strategy_builder.request_meta = json.dumps(request_data)
-    campaign_builder_list = prepare_campaign_builder_list(start_date, end_date, campaign_builder_list)
+    campaign_builder_list = sync_rec_details_with_strategy_builder(start_date, end_date, campaign_builder_list)
     try:
         saved_strategy_builder = save_strategy_builder_details(strategy_builder, unique_id, project_id)
         if saved_strategy_builder.get("result") == TAG_FAILURE:
@@ -736,8 +783,8 @@ def upsert_strategy(request_data):
                         details_message=strategy_builder.error_msg)
 
 
-def prepare_campaign_builder_list(start_date, end_date, campaign_builder_list):
-    method_name = "prepare_campaign_builder_list"
+def sync_rec_details_with_strategy_builder(start_date, end_date, campaign_builder_list):
+    method_name = "sync_rec_details_with_strategy_builder"
     logger.debug(f"Entry: {method_name}, start_date: {start_date}, end_date: {end_date}, campaign_builder_list: {campaign_builder_list}")
 
     for campaign_builder in campaign_builder_list:
@@ -763,7 +810,7 @@ def validate_strategy_request(request_data):
     campaign_builder_ids = set(campaign_builder['campaign_builder_id'] for campaign_builder
                                in request_data.get('campaign_builder_list'))
     campaign_builder_ids = list(campaign_builder_ids)
-    campaign_builder_list = prepare_campaign_builder_list(request_data.get('start_date'), request_data.get('end_date'),
+    campaign_builder_list = sync_rec_details_with_strategy_builder(request_data.get('start_date'), request_data.get('end_date'),
                                   request_data.get('campaign_builder_list'))
 
     validate_description(request_data.get("description"))
@@ -974,7 +1021,7 @@ def fetch_strategy_campaign_schedule_details(request_body):
                         details_message="Request body has missing fields")
         validate_strategy_request(request_body)
 
-        campaign_builder_list = prepare_campaign_builder_list(start_date, end_date, campaign_builder_list)
+        campaign_builder_list = sync_rec_details_with_strategy_builder(start_date, end_date, campaign_builder_list)
 
         schedule_detail_list = prepare_strategy_campaign_schedule_details(campaign_builder_list, tab_name)
     elif tab_name == StrategyPreviewScheduleTab.PREVIEW_BY_UID.value:

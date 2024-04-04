@@ -311,3 +311,6 @@ class CEDCampaignBuilder:
         res = execute_query(self.engine, query)
         return res
 
+    def bulk_update_campaign_builder(self, filter_list, update_dict):
+        return update(self.engine, self.table, filter_list, update_dict)
+

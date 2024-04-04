@@ -885,7 +885,7 @@ def filter_list(request, session_id):
     logger.debug(f"created_by :: {created_by}")
 
     if tab_name == TabName.APPROVAL_PENDING.value:
-        filters = f" cb.Status = 'APPROVAL_PENDING' and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' and cb.ProjectId='{project_id}' {segment_filter_placeholder}"
+        filters = f" cb.Status = 'APPROVAL_PENDING' and DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' and cb.ProjectId='{project_id}' and cb.StrategyId is null {segment_filter_placeholder} "
     elif tab_name == TabName.ALL.value:
         filters = f" DATE(cb.StartDateTime) >= '{start_time}' and DATE(cb.StartDateTime) <= '{end_time}' and cb.ProjectId ='{project_id}' {segment_filter_placeholder} "
     elif tab_name == TabName.MY_CAMPAIGN.value:
@@ -923,6 +923,31 @@ def filter_list(request, session_id):
                 one_cbc_row.update({"validation": "Validated"})
         except Exception as ex:
             logger.error(f'Some issue in setting validation flag for campaign listing page, cb: {one_cbc_row.get("unique_id")}, {ex}')
+
+        try:
+            if one_cbc_row.get("strategy_id") is not None:
+                cta_buttons = copy.deepcopy(CampaignCTAForStrategyCampaign)
+            else:
+                cta_buttons = copy.deepcopy(CampaignCTABasedOnStatus[CampaignStatus[one_cbc_row.get("status")]])
+
+            if tab_name != TabName.APPROVAL_PENDING.value:
+                for cta in ["REVIEW", "APPROVE", "DIS_APPROVE"]:
+                    cta_buttons.remove(cta) if cta in cta_buttons else None
+            else:
+                for cta in cta_buttons.copy():
+                    cta_buttons.remove(cta) if cta not in ["REVIEW", "APPROVE", "DIS_APPROVE"] else None
+
+            if one_cbc_row.get("active") == 0:
+                for cta in ["APPROVE", "DIS_APPROVE", "SEND_FOR_APPROVAL", "DEACTIVATE"]:
+                    cta_buttons.remove(cta) if cta in cta_buttons else None
+
+            if (one_cbc_row.get("is_recurring") == 1 and one_cbc_row.get("campaign_category") == "Recurring" and one_cbc_row.get("status") == CampaignStatus.APPROVED.value and
+                    one_cbc_row.get("campaign_level") in [CampaignLevel.LIMIT.value, CampaignLevel.INTERNAL.value]):
+                cta_buttons.append("CAMPAIGN_ACKNOWLEDGE")
+            # data[cbc_index]['cta_buttons'] = cta_buttons
+        except Exception as ex:
+            logger.error(f'Some issue in applying CTAs: {one_cbc_row.get("unique_id")}, {ex}')
+        one_cbc_row['cta_buttons'] = cta_buttons
 
 
     resp = parse_data_acc_to_campaign_category(data)
@@ -1399,7 +1424,7 @@ def update_cb_status_to_approval_pending_by_unique_id(campaign_builder_id):
     "param_instance_type": "str",
     "entity_type": "CAMPAIGNBUILDER"
 })
-def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_status, reason, input_is_manual_validation_mandatory, maker_checker_bypass=False):
+def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_status, reason, input_is_manual_validation_mandatory, maker_checker_bypass=False, is_strategy_campaign=False):
     """
         method to update campaign builder status using unique id
     """
@@ -1428,6 +1453,11 @@ def update_campaign_builder_status_by_unique_id(campaign_builder_id, input_statu
             if campaign_builder_entity_db.is_active != 1 or campaign_builder_entity_db.is_deleted != 0:
                 logger.error(f"method_name :: {method_name}, error :: Campaign not in valid state")
                 raise ValidationFailedException(method_name=method_name, reason="Campaign not in valid state")
+
+            strategy_id = campaign_builder_entity_db.strategy_id
+            if is_strategy_campaign is False and strategy_id is not None:
+                logger.error(f"method_name :: {method_name}, error :: Attempt to approve a strategy campaign")
+                raise BadRequestException(method_name=method_name, reason="This is a strategy campaign, cannot be approved independently")
 
             # check for valid test campaign state in campaign builder
             for cbc in campaign_builder_entity_db.campaign_list:

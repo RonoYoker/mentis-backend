@@ -1367,6 +1367,8 @@ class CeleryChildTaskLogsStatus(Enum):
     PICKED = "PICKED"
     SUCCESS = "SUCCESS"
     ERROR = "ERROR"
+    CANNOT_BE_PICKED = "CANNOT_BE_PICKED"
+    TASK_ALREADY_ACHIEVED = "TASK_ALREADY_ACHIEVED"
 
 
 class AsyncCeleryTaskCallbackKeys(Enum):
@@ -1457,3 +1459,16 @@ CAMPAIGN_LEVEL_VALIDATION_RESPONSE = {
     },
     CampaignLevel.MAIN.value: {CampaignLevel.MAIN.value: {}}
 }
+
+CampaignCTABasedOnStatus = {
+    CampaignStatus.SAVED: ["COPY", "EDIT", "SEND_FOR_APPROVAL", "DEACTIVATE"],
+    CampaignStatus.APPROVAL_PENDING: ["COPY", "REVIEW", "APPROVE", "DIS_APPROVE", "VIEW", "DEACTIVATE"],
+    CampaignStatus.APPROVED: ["COPY", "VIEW", "DEACTIVATE"],
+    CampaignStatus.DEACTIVATE: ["COPY", "VIEW"],
+    CampaignStatus.ERROR: ["COPY"],
+    CampaignStatus.DIS_APPROVED: ["COPY", "EDIT", "VIEW", "DEACTIVATE"],
+    CampaignStatus.APPROVAL_IN_PROGRESS: ["COPY", "VIEW"],
+}
+
+CampaignCTAForStrategyCampaign = ["VIEW", "DEACTIVATE"]
+

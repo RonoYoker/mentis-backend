@@ -538,3 +538,10 @@ class CEDCampaignBuilderCampaign:
         if res is None or len(res) <= 0:
             return None
         return res
+
+    def get_executed_campaigns_by_campaign_builder_ids(self, campaign_builder_ids):
+        query = f"""SELECT cb.UniqueId from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder
+         cb on cb.UniqueId = cbc.CampaignBuilderId where cb.UniqueId in ({campaign_builder_ids}) and 
+         cbc.EndDateTime > now() and cb.isActive = 1 and cb.isDeleted = 0 and cbc.isActive = 1 and 
+         cbc.isDeleted = 0 and cbc.EndDateTime is not null Group By cb.UniqueId;"""
+        return dict_fetch_query_all(self.curr, query)

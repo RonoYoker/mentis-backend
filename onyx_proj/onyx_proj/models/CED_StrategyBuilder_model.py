@@ -30,7 +30,7 @@ class CEDStrategyBuilder:
                     SELECT sb.id as id, sb.UniqueId as unique_id, sb.Name as name,
                     count(distinct cb.UniqueId) as campaign_count, count(distinct cbc.UniqueId) as instance_count,
                     sb.StartDate as start_date, sb.EndDate as end_date, sb.Status as status,
-                    sb.CreatedBy as created_by, sb.ApprovedBy as approved_by FROM CED_StrategyBuilder AS sb
+                    sb.CreatedBy as created_by, sb.ApprovedBy as approved_by, sb.ErrorMsg as error_message FROM CED_StrategyBuilder AS sb
                     LEFT JOIN CED_CampaignBuilder as cb ON sb.UniqueId = cb.StrategyId LEFT JOIN CED_CampaignBuilderCampaign
                     as cbc ON cb.UniqueId = cbc.CampaignBuilderId WHERE % s GROUP BY 1, 2, 3;
                     """ % filters
