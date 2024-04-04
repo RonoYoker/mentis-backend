@@ -98,6 +98,10 @@ class Content(ABC):
             for var in variables:
                 var_name = var.get("name")
                 master_id = var.get("master_id")
+
+                if var_name not in content_text:
+                    raise BadRequestException(method_name=method_name, reason="Input Variable name is not present in the input template")
+
                 content_text_without_variable = content_text_without_variable.replace(var_name, "")
                 pattern = re.compile(VAR_MAPPING_REGEX)
 
@@ -129,9 +133,9 @@ class Content(ABC):
                     raise BadRequestException(method_name=method_name,
                                               reason="Vendor variable is not provided")
 
-            var_mapping_regex = re.compile(CONTENT_VAR_NAME_REGEX)
-            if var_mapping_regex.match(content_text_without_variable):
-                raise BadRequestException(method_name=method_name, reason="Variable name is not valid")
+        var_mapping_regex = re.compile(CONTENT_VAR_NAME_REGEX)
+        if var_mapping_regex.search(content_text_without_variable):
+            raise BadRequestException(method_name=method_name, reason="Input Variables were not generated")
 
 
 
