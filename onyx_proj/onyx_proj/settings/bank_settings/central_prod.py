@@ -30,6 +30,8 @@ HYPERION_LOCAL_DOMAIN = {
     "IBL_DC_UPGRADE_Ethera": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
     "IBL_Collections": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
     "IBL_DC_ENBL_Ethera": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
+    "IBL_OSTOEMI": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
+    "IBL_LACL_LBCL": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
     "IBL_ACQ": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
     "IBL_SPLIT_LIMIT": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
     "IBL_CASA": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
@@ -52,6 +54,8 @@ ONYX_LOCAL_DOMAIN = {
     "iblcleitlimitblpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "http://m-prod-onyxlocal-elb-288397383.ap-south-1.elb.amazonaws.com",
     "iblccupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj": "http://m-prod-onyxlocal-elb-288397383.ap-south-1.elb.amazonaws.com",
     "iblocljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "http://m-prod-onyxlocal-elb-288397383.ap-south-1.elb.amazonaws.com",
+    "ibllalblsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "http://m-prod-onyxlocal-elb-288397383.ap-south-1.elb.amazonaws.com",
+    "iblostolsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "http://m-prod-onyxlocal-elb-288397383.ap-south-1.elb.amazonaws.com",
     "iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "http://m-prod-onyxlocal-elb-288397383.ap-south-1.elb.amazonaws.com",
     "ibldcljlsdsmablpxpqclospknifyewmenblhiqxtdjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-288397383.ap-south-1.elb.amazonaws.com",
     "iblcoljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "http://m-prod-onyxlocal-elb-288397383.ap-south-1.elb.amazonaws.com",
@@ -102,6 +106,8 @@ ONYX_LOCAL_CAMP_VALIDATION = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapra
                               "yblccenbldsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                               "yblstejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                               "yblovljlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
+                              "iblostolsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                              "ibllalblsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                               "ibldcupgsdsmablpxpqclospkniackwmveqlhlmztdjplapyndmenfn88nausprj"]
 
 CAMPAIGN_THRESHOLDS_PER_MINUTE = {
@@ -200,6 +206,8 @@ USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN = ["vstethjlsdsmablpxpqclospkni88ewmv
                                               "yblccenbldsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                                               "yblovljlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                                               "yblstejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
+                                              "iblostolsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                                              "ibllalblsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                                               "ibldcupgsdsmablpxpqclospkniackwmveqlhlmztdjplapyndmenfn88nausprj"]
 
 TEST_CAMPAIGN_ENABLED = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj",
@@ -226,6 +234,8 @@ TEST_CAMPAIGN_ENABLED = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenf
                          "iblsplitlimitblpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                          "yblccenbldsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                          "yblovljlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
+                         "iblostolsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                         "ibllalblsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                          "yblstejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                          "ibldcupgsdsmablpxpqclospkniackwmveqlhlmztdjplapyndmenfn88nausprj"]
 
@@ -408,6 +418,8 @@ TEMPLATE_VALIDATION_LINK = {
     "iblcleitlimitblpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "inbl.in",
     "iblccupgsdsmablpxpqclospknifyewmveqlhlmztdjplapyndmenfn88nausprj": "inbl.in",
     "iblocljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "inbl.in",
+    "iblostolsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "inbl.in",
+    "ibllalblsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "inbl.in",
     "iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "inbl.in",
     "ibldcljlsdsmablpxpqclospknifyewmenblhiqxtdjplapyndmenfn11nausprj": "inbl.in",
     "iblcoljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "inbl.in",
