@@ -937,7 +937,7 @@ def migrate_content_across_projects_with_headers_processing(request_data):
 
     if old_project_id is None or new_project_id is None or content_type is None or \
             content_type not in ["SMS", "EMAIL", "WHATSAPP", "SUBJECTLINE", "MEDIA", "URL",
-                                 "TAG"] or content_ids is None or len(content_ids) == 0:
+                                 "TAG", "SEGMENT"] or content_ids is None or len(content_ids) == 0:
         raise ValidationFailedException(reason="Invalid Data")
 
     headers_mapping = migrate_project_headers(old_project_id, new_project_id)
@@ -956,6 +956,8 @@ def migrate_content_across_projects_with_headers_processing(request_data):
         process_url_content(old_project_id, new_project_id, content_ids, headers_mapping)
     elif content_type == "TAG":
         process_tags_content(old_project_id, new_project_id, content_ids, headers_mapping)
+    elif content_type == "SEGMENT":
+        process_segment(old_project_id, new_project_id, content_ids, headers_mapping)
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
 
 
@@ -1241,6 +1243,28 @@ def process_media_content(old_project, new_project, content_ids, headers_mapping
     update_data_in_content_table(new_project, old_project, to_process_ids, "CED_EntityTagMapping")
 
     add_processed_content_list("MEDIA", sms_content_ids_mapping, old_project, new_project)
+
+
+def process_segment(old_project, new_project, content_ids, headers_mapping):
+    if len(content_ids) == 0:
+        return
+    already_processed_ids = get_already_processed_content("SEGMENT", content_ids, old_project, new_project)
+
+    to_process_ids = [idx for idx in content_ids if idx not in already_processed_ids and idx is not None]
+    if len(to_process_ids) == 0:
+        return
+
+    process_ids_mapping = {idx: new_project[:10] + idx[10:] for idx in to_process_ids}
+    data = fetch_relevant_content_ids(content_ids, "SEGMENT")
+
+    tag_ids = list(set([node["tag_id"] for node in data]))
+
+    process_tags_content(old_project, new_project, tag_ids, headers_mapping)
+
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_Segment")
+    update_data_in_content_table(new_project, old_project, to_process_ids, "CED_EntityTagMapping")
+
+    add_processed_content_list("SEGMENT", process_ids_mapping, old_project, new_project)
 
 
 def process_content_variables(old_project, new_project, content_ids, headers_mapping):
