@@ -1819,6 +1819,7 @@ def get_template_all_logs_func(request):
 
 def template_sandesh_callback_func(request):
     body = request
+    logger.info(f'Body_of_callback: {body}')
     cust_ref_id = body.get("cust_ref_id", None)
     CustRefId = body.get("CustRefId", None)
 
@@ -1950,7 +1951,7 @@ def template_sandesh_callback_func(request):
         AckId = body.get("AckId", None)
         SentTimeString = body.get("SentTime", None)
         if SentTimeString is not None:
-            SentTime = datetime.strptime(SentTimeString, "%Y-%m-%d %H: %M: %S")
+            SentTime = datetime.strptime(SentTimeString, "%Y-%m-%d %H:%M:%S")
         else:
             SentTime = None
         VendorResponseId = body.get("VendorResponseId", None)
