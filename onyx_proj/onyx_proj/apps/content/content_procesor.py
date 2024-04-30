@@ -1842,7 +1842,7 @@ def template_sandesh_callback_func(request):
             ack_id = body.get("ack_id", None)
             end_time_string = body.get("end_time", None)
             if end_time_string is not None:
-                end_time = datetime.strptime(end_time_string, "%Y-%m-%d %H: %M: %S")
+                end_time = datetime.strptime(end_time_string, "%Y-%m-%d %H:%M:%S")
             else:
                 end_time = None
             caller_id = body.get("caller_id", None)
@@ -1873,7 +1873,7 @@ def template_sandesh_callback_func(request):
             ack_id = body.get("ack_id", None)
             event_time_string = body.get("event_time", None)
             if event_time_string is not None:
-                event_time = datetime.strptime(event_time_string, "%Y-%m-%d %H: %M: %S")
+                event_time = datetime.strptime(event_time_string, "%Y-%m-%d %H:%M:%S")
             else:
                 event_time = None
             vendor_response_id = body.get("vendor_response_id", None)
@@ -1905,7 +1905,7 @@ def template_sandesh_callback_func(request):
             ack_id = body.get("ack_id", None)
             event_time_string = body.get("event_time", None)
             if event_time_string is not None:
-                event_time = datetime.strptime(event_time_string, "%Y-%m-%d %H: %M: %S")
+                event_time = datetime.strptime(event_time_string, "%Y-%m-%d %H:%M:%S")
             else:
                 event_time = None
             vendor_response_id = body.get("vendor_response_id", None)
