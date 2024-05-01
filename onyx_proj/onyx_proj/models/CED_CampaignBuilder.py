@@ -278,8 +278,8 @@ class CEDCampaignBuilder:
         query = (f"Select cb.UniqueId from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb on cb.UniqueId "
                  f"= cbc.CampaignBuilderId join CED_CampaignExecutionProgress cep on cep.CampaignBuilderCampaignId = "
                  f"cbc.UniqueId where cb.UniqueId in ({campaign_builder_ids}) "
-                 f"and cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = "
-                 f"'Recurring' and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' and "
+                 f"and cb.IsRecurring = 1 and cb.CampaignCategory = "
+                 f"'Recurring' and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and "
                  f"cep.Status in ( 'PARTIALLY_EXECUTED', 'EXECUTED' ) and cep.TestCampaign = 0 GROUP BY cb.UniqueId "
                  f"HAVING count(distinct cbc.ExecutionConfigId)= 1")
         res = execute_query(self.engine, query)
