@@ -756,7 +756,7 @@ def get_schedule_bu_proj_slot(schedule, bu_id, slot_limit_per_min, channel):
 
     slot_limit = slot_limit_per_min * SLOT_INTERVAL_MINUTES
 
-    curr_segments = sorted(schedule, key=lambda x: (x["end"], x["start"]))
+    curr_segments = sorted(schedule, key=lambda x: (x["end"], x["start"]), reverse=True)
     max_time = curr_segments[0]["end"]
     min_time = curr_segments[0]["start"]
     for segment in curr_segments:
