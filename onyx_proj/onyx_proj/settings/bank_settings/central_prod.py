@@ -375,18 +375,6 @@ OTP_APP_USER_MAPPING = {
         }
     },
 OtpAppName.SEGMENT_HOD_APPROVAL.value:  {
-        "arsheen_gujral": {
-            "display_name": "Arsheen Gujral",
-            "mobile_number": 9990701692
-        },
-        "shravan_ganguli": {
-            "display_name": "Shravan Ganguli",
-            "mobile_number": 9353438931
-        },
-        "abhishek_gupta": {
-            "display_name": "Abhishek Gupta",
-            "mobile_number": 9999913305
-        },
         "aman_bindal": {
             "display_name": "Aman Bindal",
             "mobile_number": 9004929159
