@@ -7,8 +7,6 @@ from onyx_proj.common.constants import *
 from email import encoders
 from email.mime.base import MIMEBase
 
-import yagmail
-
 
 class email_utility:
 
@@ -43,14 +41,6 @@ class email_utility:
             session.login(SMTP_USERNAME, SMTP_PASSWORD)
             session.send_message(message)
             session.quit()
-        except Exception as ex:
-            return dict(status=False, message=str(ex))
-        return dict(status=True)
-
-    def send_mail_with_attactment(self, tos: list, ccs: list, bccs: list, subject: str, content: list):
-        try:
-            with yagmail.SMTP(SMTP_USERNAME, SMTP_PASSWORD) as yag:
-                yag.send(to=tos, subject=subject, contents=content, cc=ccs, bcc=bccs)
         except Exception as ex:
             return dict(status=False, message=str(ex))
         return dict(status=True)
