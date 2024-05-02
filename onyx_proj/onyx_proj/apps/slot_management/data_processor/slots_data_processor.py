@@ -1,23 +1,276 @@
 import copy
 import http
 import json
-from datetime import datetime,timedelta
+import csv
+import os
+import tempfile
+from datetime import datetime, timedelta, date
 from copy import deepcopy
 import logging
 from math import ceil
 
+import requests
+
 from onyx_proj.apps.slot_management.app_settings import SLOT_INTERVAL_MINUTES
 from onyx_proj.common.constants import TAG_SUCCESS, TAG_FAILURE, RateLimitationLevels, CHANNELS_LIST, \
-    PROJECT_SLOTS_NR_QUERY, SlotsMode, CAMPAIGN_SLOTS_NR_QUERY, BANK_SLOTS_NR_QUERY
+    PROJECT_SLOTS_NR_QUERY, SlotsMode, CAMPAIGN_SLOTS_NR_QUERY, BANK_SLOTS_NR_QUERY, MAILER_UTILITY_URL, \
+    TAG_REQUEST_POST, BOOKED_AND_APPROVED_CAMPAIGNS_BY_DATE_QUERY
+from onyx_proj.common.request_helper import RequestClient
+from onyx_proj.common.utils.email_utility import email_utility
 from onyx_proj.common.utils.newrelic_helpers import get_data_from_newrelic_by_query
 from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException, InternalServerError, \
     BadRequestException, NotFoundException
+from onyx_proj.middlewares.HttpRequestInterceptor import HttpRequestInterceptor
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
 from onyx_proj.models.CED_Projects import CEDProjects
 from onyx_proj.models.CED_Segment_model import CEDSegment
 from django.conf import settings
+from onyx_proj.models.CED_Segment_model import CEDSegment
+from onyx_proj.models.CED_UserSession_model import CEDUserSession
+from onyx_proj.models.CED_User_model import CEDUser
+from onyx_proj.middlewares.HttpRequestInterceptor import Session
 
+current_time = datetime.now()
 logger = logging.getLogger("apps")
+
+def list_of_dicts_to_html_table(list_of_dicts):
+    html_table = "<table>\n"
+
+    # Adding table headers
+    html_table += "<tr>"
+    for key in list_of_dicts[0].keys():
+        html_table += "<th>{}</th>".format(key)
+    html_table += "</tr>\n"
+
+    # Adding table rows with conditional formatting
+    for dictionary in list_of_dicts:
+        html_table += "<tr style='background-color:{};'>".format('lightgreen' if dictionary['Status'] == 'SUCCESS' else 'red')
+        for key, value in dictionary.items():
+            html_table += "<td>{}</td>".format(value)
+        html_table += "</tr>\n"
+
+    html_table += "</table>"
+    return html_table
+
+
+def dict_to_html_list(dictionary):
+    html_list = "<ul>\n"
+
+    for key, value in dictionary.items():
+        html_list += "<li><strong>{}</strong>: {}</li>\n".format(key, value)
+
+    html_list += "</ul>"
+    return html_list
+
+def make_the_html(intro,dict1, dict2, table):
+
+    html_dict_list1 = dict_to_html_list(dict1)
+    html_dict_list2 = dict_to_html_list(dict2)
+    html_table = list_of_dicts_to_html_table(table)
+    html_template = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <title>HTML Template</title>
+            </head>
+            <body>
+            <h4>{}</h4>
+
+            <h3>Project level Threshold limit</h3>
+            <pre>{}</pre>
+
+            <h3>Bank level Threshold limit</h3>
+            <pre>{}</pre>
+
+            <h3>Successful Execution or Potential Throttling Campaign Table</h3>
+            {}
+
+            </body>
+            </html>
+            """.format(intro, html_dict_list1, html_dict_list2, html_table)
+
+    return html_template
+
+
+def prepare_approved_and_booked_campaigns(date=None):
+    method_name = "prepare_approved_and_booked_campaigns"
+    query_to_fetch = BOOKED_AND_APPROVED_CAMPAIGNS_BY_DATE_QUERY
+    # date format - YYYY-MM-DD
+    query_date = "CURDATE()" if date is None else str("'"+date+"'")
+    query_to_fetch = query_to_fetch.replace("%s%",query_date)
+
+    data_response = CEDCampaignBuilderCampaign().fetch_cbc_by_query(query_to_fetch)
+
+    parent_ids = []
+    for campaign in data_response:
+        parent_id = campaign.get("sub_parent_id") if campaign.get("sub_seg_records") is not None else campaign.get("parent_id")
+        parent_ids.append(parent_id) if parent_id is not None else None
+
+    segment_id_name_mapping = CEDSegment().get_segment_name_by_id_bulk(parent_ids)
+    segment_id_name_mapping_dict = {row.get('segment_id'): row.get('segment_name') for row in segment_id_name_mapping}
+
+    valid_campaigns = {}
+    for campaign in data_response:
+        camp_type = campaign.get("ContentType")
+        if campaign.get("sub_seg_records") is not None:
+            count = campaign.get("sub_seg_records")
+            parent_id = campaign.get("sub_parent_id")
+            segment_name = campaign.get("sub_segment_name")
+        else:
+            count = campaign.get("Records", 0)
+            parent_id = campaign.get("parent_id")
+            segment_name = campaign.get("segment_name")
+
+        if parent_id is not None:
+            segment_name = segment_id_name_mapping_dict.get(parent_id)
+
+        # if parent id is not null, then fetching another row by unique_id
+        # while parent_id is not None:
+        #     temp = CEDSegment().get_parent_id_by_unique_id(parent_id)
+        #     parent_id = temp[0]["segment_parent_id"]
+        #     segment_name = temp[0]["segment_name"]
+
+        campaign_dict = {
+            "start": campaign.get("StartDateTime"),
+            "end": campaign.get("EndDateTime"),
+            "count": int(count),
+            "proj_name": campaign.get("project_name"),
+            "camp_name": campaign.get("campaign_name"),
+            "camp_id": campaign.get("campaign_builder_id"),
+            "bu_name": campaign.get("bu_name"),
+            "cssd_id": campaign.get("campaign_instance_id"),
+            "b_unique_id": campaign.get("bu_unique_id"),
+            "ContentType": campaign.get("ContentType"),
+            "segment_name": segment_name,
+            "slot_limit_of_bank": campaign.get("slot_limit_of_bank"),
+            "project_unique_id": campaign.get("project_unique_id")
+        }
+        if campaign.get("is_split", 0) == 1:
+            split_details = json.loads(campaign["split_details"])
+            campaign_dict["count"] = ceil(campaign_dict["count"] / split_details["total_splits"])
+        if campaign.get("split_details") is not None and campaign.get("is_split", 0) == 0:
+            split_details = json.loads(campaign.get("split_details"))
+            split_details["percentage_split"]["to_percentage"] += 1
+            split_count = get_count_by_split_details(split_details, campaign_dict["count"])
+            campaign_dict["count"] = split_count
+        valid_campaigns.setdefault(camp_type, []).append(campaign_dict)
+
+    return valid_campaigns
+
+
+def send_email_via_lembda_api(email_tos, email_subject, email_body):
+    api_url = "https://2poqg6bgm5.execute-api.ap-south-1.amazonaws.com/prod/sendemail"
+    todo = {"tos": email_tos, "subject": email_subject,
+            "body": email_body}
+    headers = {"Content-Type": "application/json"}
+    return requests.post(api_url, data=json.dumps(todo), headers=headers)
+
+
+def fetch_campaigns_and_notify_users(request_data):
+    method_name = "fetch_campaigns_and_notify_users"
+    logger.debug(f"{method_name} :: request_data: {request_data}")
+
+    campaigns_list = prepare_approved_and_booked_campaigns(request_data.get("date", None))
+
+    campaigns_per_project = {}
+
+    # making the list of dictionary per project
+    for content_type in campaigns_list:
+        for campaign in campaigns_list[content_type]:
+            project_name = campaign.get('proj_name')
+            campaigns_per_project.setdefault(project_name,{}).setdefault(content_type,[]).append(campaign)
+
+    # permissions of projects for particular users
+    formatted_time = current_time.strftime("%Y-%m-%d %H:%M:%S")
+    filter_list = [{"column": "state", "value": "Active", "op": "=="},
+                   {"column": "is_active", "value": 1, "op": "=="},
+                   {"column": "expiry_time", "value": formatted_time, "op": ">="}]
+    relationships_list = ['user_project_mapping_list.roles.roles_permissions_mapping_list.permission']
+    project_permissions = CEDUser().get_details_by_filter_list(filter_list=filter_list, relationships_list=relationships_list)
+
+    #fetching all the admins
+    filter_list_for_admins = [{"column": "state", "value": "Active", "op": "=="},
+                              {"column": "is_active", "value": 1, "op": "=="},
+                              {"column": "expiry_time", "value": formatted_time, "op": ">="},
+                              {"column": "user_type", "value": 'Admin', "op": "=="}]
+    admin_permissions = CEDUser().get_details_by_filter_list(filter_list_for_admins, ['email_id'], [])
+
+    #making the list of users for the specific project id
+    users_for_project_id = {}
+    for user in project_permissions:
+        for mapping in user.user_project_mapping_list:
+            project_id_of_this_user = mapping.project_id
+            users_for_project_id.setdefault(project_id_of_this_user, []).append(user.email_id)
+
+    # making set for admin users
+    admin_users = {admin.email_id for admin in admin_permissions}
+
+    final_data = [] # FOR TESTING TO BE REMOVED LATER
+    for project in campaigns_per_project:
+        project_unique_id = None
+        cbc_with_status = {}
+        for channel in campaigns_per_project[project]:
+            slot_limit_of_bank = json.loads(campaigns_per_project[project][channel][0].get("slot_limit_of_bank"))
+            response = get_schedule_bu_proj_slot(copy.deepcopy(campaigns_per_project[project][channel]),
+                                                 campaigns_per_project[project][channel][0].get("b_unique_id"),
+                                                 slot_limit_of_bank.get(channel), channel)
+
+            # ### FOR TESTING
+            # response_copy = deepcopy({"response": response, "channel": channel, "project": project})
+            # new_resp_slots = {str(slot_key): response_copy["response"].get("slots_seg_count")[slot_key] for slot_key in response_copy["response"].get("slots_seg_count").keys()}
+            # response_copy["response"]["slots_seg_count"] = new_resp_slots
+            # final_data.append(response_copy)
+            # ###
+
+            if (response.get('slots_seg_count') is not None and response.get('proj_limit') is not None and
+                    response['proj_limit'].get(project) is not None):
+                slots_seg_count = response['slots_seg_count']
+                slot_limit_of_project = response["proj_limit"][project]
+            else:
+                raise InternalServerError(method_name=method_name,
+                                          reason="Slots are conflicting it might effect campaigns")
+
+            for slots in slots_seg_count:
+                total_count = 0
+                for campaign in slots_seg_count[slots]:
+                    total_count += campaign["count"]
+
+                status = "SUCCESS" if total_count <= slot_limit_of_bank.get(channel) * SLOT_INTERVAL_MINUTES else "THROTTLED"
+
+                for campaign in slots_seg_count[slots]:
+                    project_unique_id = campaign["project_unique_id"] # project id of this project and finding the users
+                    output = {"CampaignId": campaign["campaign_id"], "CampaignTitle": campaign["camp_name"], "Channel": channel,
+                              "InstanceId": campaign["instance_id"], "SegmentTitle": campaign["segment_title"],
+                              "SegmentCount": cbc_with_status.get(campaign["instance_id"], {}).get("SegmentCount", 0) + campaign["count"],
+                              "StartDateTime": campaign["start_date"],
+                              "EndDateTime": campaign["end_date"], "Status": status}
+                    if cbc_with_status.get(campaign["instance_id"], None) is None:
+                        cbc_with_status[campaign["instance_id"]] = output
+                    else:
+                        if cbc_with_status.get(campaign["instance_id"]).get("Status") == "THROTTLED":
+                            cbc_with_status.get(campaign["instance_id"])["SegmentCount"] = output.get("SegmentCount")
+                            continue
+                        cbc_with_status[campaign["instance_id"]] = output
+
+        cbc_with_status_list = [cbc for cbc in cbc_with_status.values()]
+
+        if users_for_project_id.get(project_unique_id) is None:
+            continue
+
+        intro = """Hi Everyone,"""
+        email_body = f"""{make_the_html(intro, slot_limit_of_project, slot_limit_of_bank, cbc_with_status_list)}"""
+        email_subject = f"{project}: {date.today().strftime('%B %d, %Y')}, Campaign Update"
+        email_tos_set = set(users_for_project_id.get(project_unique_id))
+        email_tos = list(email_tos_set.union(admin_users))
+        email_tos = ['kushagra.agrawal@creditas.in', 'vanshkumar.dua@creditas.in', 'ritik.saini@creditas.in',
+                     'rashmi.mishra@creditas.in', 'gagan.rajput@creditas.in']
+
+        email_status = send_email_via_lembda_api(email_tos, email_subject, email_body)
+        if email_status.status_code != 200:
+            return dict(status=False, message="Error!, Email is not sent properly")
+
+    return dict(status_code=200, result=TAG_SUCCESS, data=final_data)
+
 
 def vaildate_campaign_for_scheduling(request_data):
     method_name = "vaildate_campaign_for_scheduling"
@@ -485,7 +738,6 @@ def get_schedule_bu_proj_slot(schedule, bu_id, slot_limit_per_min, channel):
 
     proj_limit = {}
     filled_segment_count = {}
-
     bu_projects_limit = CEDProjects().get_project_bu_limits_by_bu_id(bu_id)
 
     if not bu_projects_limit or len(bu_projects_limit) < 1:
@@ -493,6 +745,8 @@ def get_schedule_bu_proj_slot(schedule, bu_id, slot_limit_per_min, channel):
 
     for bu_project_limit in bu_projects_limit:
         proj_limit[bu_project_limit["project_name"]] = json.loads(bu_project_limit["project_limit"])
+
+    project_limit_per_minute = deepcopy(proj_limit)
 
     for proj_name, limit in proj_limit.items():
         limit["SMS"] = limit["SMS"] * SLOT_INTERVAL_MINUTES
@@ -502,7 +756,7 @@ def get_schedule_bu_proj_slot(schedule, bu_id, slot_limit_per_min, channel):
 
     slot_limit = slot_limit_per_min * SLOT_INTERVAL_MINUTES
 
-    curr_segments = sorted(schedule, key=lambda x: (x["end"], x["start"]), reverse=True)
+    curr_segments = sorted(schedule, key=lambda x: (x["end"], x["start"]))
     max_time = curr_segments[0]["end"]
     min_time = curr_segments[0]["start"]
     for segment in curr_segments:
@@ -529,7 +783,13 @@ def get_schedule_bu_proj_slot(schedule, bu_id, slot_limit_per_min, channel):
                 plot_dict = {
                     "campaign_id": curr_camp_data['camp_id'],
                     "project_name": curr_camp_data['proj_name'],
-                    "count": used_limit
+                    "count": used_limit,
+                    "instance_id": curr_camp_data.get('cssd_id'),
+                    "start_date": curr_camp_data.get('start'),
+                    "end_date": curr_camp_data.get('end'),
+                    "segment_title": curr_camp_data.get("segment_name"),
+                    "project_unique_id": curr_camp_data.get("project_unique_id"),
+                    "camp_name": curr_camp_data.get('camp_name')
                 }
                 filled_segment_count[slot_key_pair].append(plot_dict)
                 temp_slot_limit -= used_limit
@@ -552,12 +812,18 @@ def get_schedule_bu_proj_slot(schedule, bu_id, slot_limit_per_min, channel):
                     plot_dict = {
                         "campaign_id": curr_camp_data['camp_id'],
                         "project_name": curr_camp_data['proj_name'],
-                        "count": curr_camp_data.get('count')
+                        "count": curr_camp_data.get('count'),
+                        "instance_id": curr_camp_data.get('cssd_id'),
+                        "start_date": curr_camp_data.get('start'),
+                        "end_date": curr_camp_data.get('end'),
+                        "segment_title": curr_camp_data.get("segment_name"),
+                        "project_unique_id": curr_camp_data.get("project_unique_id"),
+                        "camp_name": curr_camp_data.get('camp_name')
                     }
                     filled_segment_count[slot_key_pair].append(plot_dict)
                     curr_camp_data['count'] = 0
 
-    return {"success": True, "slots_seg_count": filled_segment_count}
+    return {"success": True, "slots_seg_count": filled_segment_count, "proj_limit": project_limit_per_minute}
 
 
 def fetch_bu_campaigns(business_unit_id, date):

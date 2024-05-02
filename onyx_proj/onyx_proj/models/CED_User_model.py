@@ -1,7 +1,6 @@
 from onyx_proj.common.mysql_helper import *
-from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, save, update, execute_query
+from onyx_proj.common.sqlalchemy_helper import fetch_rows, sql_alchemy_connect, save, update, execute_query, fetch_rows_limited
 from onyx_proj.models.CreditasCampaignEngine import CED_User
-
 
 class CEDUser:
     def __init__(self, **kwargs):
@@ -69,3 +68,16 @@ class CEDUser:
     def get_user_personal_data_by_user_name(self, user_name):
         query = f"SELECT cu.FirstName, cu.LastName, cu.MobileNumber, cu.EmailId FROM CED_User cu WHERE cu.UserName = '{user_name}' AND cu.State not in ('Deleted', 'Blocked', 'Dormant') "
         return dict_fetch_query_all(self.curr, query)
+
+    def get_details_by_filter_list(self, filter_list, columns_list=[], relationships_list=[]):
+        res = fetch_rows_limited(self.engine, self.table, filter_list, columns=columns_list,relationships=relationships_list)
+        if res is None or len(res) <= 0:
+            return None
+        return res
+
+    def get_details_of_admins_by_filter_list(self,filter_list, columns_list=[], relationships_list=[]):
+        res = fetch_rows_limited(self.engine, self.table, filter_list, columns=columns_list,
+                                 relationships=relationships_list)
+        if res is None or len(res) <= 0:
+            return None
+        return res

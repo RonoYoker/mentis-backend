@@ -314,3 +314,9 @@ def check_parent_task_completion_status(unique_id):
 def get_callback_function_name_by_key(callback_key):
     from onyx_proj.common.constants import ASYNC_CELERY_CALLBACK_KEY_MAPPING
     return ASYNC_CELERY_CALLBACK_KEY_MAPPING[callback_key]
+
+
+@task
+def fetch_campaigns_details_and_notify_users(data):
+    from onyx_proj.apps.slot_management.data_processor.slots_data_processor import fetch_campaigns_and_notify_users
+    fetch_campaigns_and_notify_users(data)

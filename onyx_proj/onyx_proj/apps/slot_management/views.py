@@ -28,4 +28,9 @@ def get_used_slots_detail(request):
     return HttpResponse(json.dumps(response, default=str), status=status_code)
 
 
-
+def check_campaign_and_send_email_to_users(request):
+    request_decoded = request.body.decode("utf-8")
+    request_body = json.loads(request_decoded) if len(request_decoded) > 0 else {}
+    response = fetch_campaigns_and_notify_users(request_body)
+    status_code = response.pop("status_code", 500)
+    return HttpResponse(json.dumps(response, default=str), status=status_code)

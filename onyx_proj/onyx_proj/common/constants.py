@@ -1462,6 +1462,54 @@ CAMPAIGN_LEVEL_VALIDATION_RESPONSE = {
     CampaignLevel.MAIN.value: {CampaignLevel.MAIN.value: {}}
 }
 
+BOOKED_AND_APPROVED_CAMPAIGNS_BY_DATE_QUERY = """ SELECT 
+                                cbc.ContentType as ContentType, 
+                                cbc.UniqueId as UniqueId, 
+                                s.Records as Records, 
+                                s.ParentId as parent_id,
+                                s.Title as segment_name,
+                                cbc.StartDateTime as StartDateTime, 
+                                cbc.EndDateTime as EndDateTime, 
+                                cb.IsSplit as is_split, 
+                                cbc.SplitDetails as split_details,
+                                sub_seg.Records as sub_seg_records, 
+                                sub_seg.ParentId as sub_parent_id,
+                                sub_seg.Title as sub_segment_name,
+                                p.Name as project_name, 
+                                cb.Name as campaign_name,
+                                p.UniqueId as project_unique_id,
+                                cb.Id as campaign_builder_id, 
+                                bu.Name as bu_name, 
+                                cbc.CampaignBuilderId as cbc_id,
+                                cbc.ContentType as channel,
+                                bu.UniqueId as bu_unique_id,
+                                bu.CampaignThreshold as slot_limit_of_bank,
+                                cb.CampaignCategory as campaign_category,
+                                cssd.Id as campaign_instance_id
+                            FROM 
+                                CED_CampaignBuilderCampaign cbc 
+                            JOIN 
+                                CED_CampaignBuilder cb ON cb.UniqueId = cbc.CampaignBuilderId 
+                            LEFT JOIN 
+                                CED_Segment s ON cb.SegmentId = s.UniqueId 
+                            JOIN 
+                                CED_Projects p ON p.UniqueId = cb.ProjectId 
+                            JOIN 
+                                CED_BusinessUnit bu ON bu.UniqueId = p.BusinessUnitId 
+                            LEFT JOIN 
+                                CED_Segment sub_seg ON sub_seg.UniqueId = cbc.SegmentId 
+                            JOIN 
+                                CED_CampaignSchedulingSegmentDetails cssd ON cssd.CampaignId = cbc.UniqueId    
+                            WHERE 
+                                Date(cbc.StartDateTime) = %s%
+                                AND cbc.IsActive = 1 
+                                AND cbc.IsDeleted = 0 
+                                AND cb.IsActive = 1 
+                                AND cb.IsDeleted = 0
+                                AND cb.Status = 'APPROVED';
+
+                            """
+
 CampaignCTABasedOnStatus = {
     CampaignStatus.SAVED: ["COPY", "EDIT", "SEND_FOR_APPROVAL", "DEACTIVATE"],
     CampaignStatus.APPROVAL_PENDING: ["COPY", "REVIEW", "APPROVE", "DIS_APPROVE", "VIEW", "DEACTIVATE"],

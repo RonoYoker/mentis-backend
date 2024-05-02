@@ -111,6 +111,10 @@ class CEDSegment:
             res = [entity._asdict(fetch_loaded_only=True) for entity in res]
         return res
 
+    def get_parent_id_by_unique_id(self,unique_id):
+        query = f"""SELECT Parent_Id as segment_parent_id,Title as segment_name FROM CED_Segment WHERE UniqueId = '{unique_id}'"""
+        return dict_fetch_query_all(self.curr, query)
+
     def check_segment_type_by_unique_id(self, unique_id):
         query = f"""SELECT Type FROM CED_Segment WHERE UniqueId = '{unique_id}'"""
         return dict_fetch_query_all(self.curr, query)
@@ -265,5 +269,11 @@ class CEDSegment:
                 and cbc.IsActive = 1 and cbc.IsDeleted = 0 
                 AND cep.TestCampaign=0 AND cep.Status in ('PARTIALLY_EXECUTED', 'EXECUTED')
                 order by s.id desc;
+                """
+        return dict_fetch_query_all(self.curr, query)
+
+    def get_segment_name_by_id_bulk(self, ids):
+        query = f"""
+                    select UniqueId as segment_id,Title as segment_name FROM CED_Segment WHERE UniqueId in ({"'"+"','".join(ids)+"'"});
                 """
         return dict_fetch_query_all(self.curr, query)
