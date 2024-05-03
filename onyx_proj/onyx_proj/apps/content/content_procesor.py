@@ -1801,6 +1801,8 @@ def trigger_template_validation_func(request):
     config_id = body.get("config_id", None)
     media_id = body.get("media_id", None)
     header_id = body.get("header_id", None)
+    user_mobile = body.get("user_mobile", None)
+    user_email = body.get("user_email", None)
     footer_id = body.get("footer_id", None)
     subject_line_id = body.get("subject_line_id", None)
     unique_id = get_random_uuid(64)
@@ -1808,8 +1810,12 @@ def trigger_template_validation_func(request):
     request_id = "HYPR_CEN_" + get_random_uuid(55)
 
     # user details
-    user_session = Session().get_user_session_object()
-    user_name = user_session.user.user_name
+    if user_mobile is None or user_email is None:
+        user_session = Session().get_user_session_object()
+        user_name = user_session.user.user_name
+    else:
+        user_name = user_mobile if user_mobile is not None else user_email
+
 
     # adding to data
     body.update({"unique_id": unique_id})
