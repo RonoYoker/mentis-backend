@@ -12,6 +12,7 @@ urlpatterns = {
     path("content_action/", views.content_action),
     path("migrate_content/", views.migrate_content_across_projects),
     path("trigger_template_validation", views.trigger_template_validation),
+    path("trigger_all_template_validations", views.trigger_all_template_validations),
     path("get_template_all_logs", views.get_template_all_logs),
     path("template_sandesh_callback", views.template_sandesh_callback),
     path("local/messageData", views.fetch_campaign_data_by_account_id),

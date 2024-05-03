@@ -55,6 +55,7 @@ from onyx_proj.orm_models.CED_CampaignContentUrlMapping_model import CED_Campaig
 from onyx_proj import settings
 from onyx_proj.orm_models.TemplateLog_model import Template_Log
 from onyx_proj.settings import TEMPLATE_VALIDATION_LINK
+from onyx_proj.celery_app.tasks import task_trigger_template_validation_func
 
 logger = logging.getLogger("apps")
 
@@ -1378,10 +1379,12 @@ def get_sms_sandesh_payload(data):
     var_data = body.get("var_data")
     request_id = body.get("request_id", None)
     cust_ref_id = body.get("cust_ref_id", None)
+    user_mobile = body.get("user_mobile", None)
 
     # user details
-    user_session = Session().get_user_session_object()
-    user_mobile = str(user_session.user.mobile_number)
+    if user_mobile is None:
+        user_session = Session().get_user_session_object()
+        user_mobile = str(user_session.user.mobile_number)
 
     # checking content ID
     content_body = dict(content_type="SMS", content_id=content_id)
@@ -1438,10 +1441,12 @@ def get_whatsapp_sandesh_payload(data):
     footer_id = body.get("footer_id", None)
     request_id = body.get("request_id", None)
     cust_ref_id = body.get("cust_ref_id", None)
+    user_mobile = body.get("user_mobile", None)
 
     # user details
-    user_session = Session().get_user_session_object()
-    user_mobile = str(user_session.user.mobile_number)
+    if user_mobile is None:
+        user_session = Session().get_user_session_object()
+        user_mobile = str(user_session.user.mobile_number)
 
     # Check header and media should not be together
     if header_id is not None and media_id is not None:
@@ -1525,10 +1530,12 @@ def get_ivr_sandesh_payload(data):
     var_data = body.get("var_data")
     request_id = body.get("request_id", None)
     cust_ref_id = body.get("cust_ref_id", None)
+    user_mobile = body.get("user_mobile", None)
 
     # user details
-    user_session = Session().get_user_session_object()
-    user_mobile = str(user_session.user.mobile_number)
+    if user_mobile is None:
+        user_session = Session().get_user_session_object()
+        user_mobile = str(user_session.user.mobile_number)
 
     # checking content ID
     content_body = dict(content_type="IVR", content_id=content_id)
@@ -1584,10 +1591,12 @@ def get_email_sandesh_payload(data):
     subject_line_id = body.get("subject_line_id", None)
     request_id = body.get("request_id", None)
     cust_ref_id = body.get("cust_ref_id", None)
+    user_email = body.get("user_email", None)
 
     # user details
-    user_session = Session().get_user_session_object()
-    user_email = user_session.user.email_id
+    if user_email is None:
+        user_session = Session().get_user_session_object()
+        user_email = str(user_session.user.email_id)
 
     # checking content ID
     content_body = dict(content_type="EMAIL", content_id=content_id)
@@ -1673,10 +1682,118 @@ def send_req_template_validation(request, project_id):
     return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
                 details_message="Request sent successfully", ack_id=ack_id)
 
+def get_contents_data_project_id(project_id,channel):
+    if channel == "SMS":
+        try:
+            contents_data = CEDCampaignSMSContent().get_content_list(project_id)
+        except Exception as ex:
+            return dict(details_message=str(ex), success="False")
+
+    elif channel == "WHATSAPP":
+        try:
+            contents_data = CEDCampaignWhatsAppContent().get_content_list(project_id)
+        except Exception as ex:
+            return dict(details_message=str(ex), success="False")
+
+    elif channel == "IVR":
+        try:
+            contents_data = CEDCampaignIvrContent().get_content_list(project_id)
+        except Exception as ex:
+            return dict(details_message=str(ex), success="False")
+
+    elif channel == "EMAIL":
+        try:
+            contents_data = CEDCampaignEmailContent().get_content_list(project_id)
+        except Exception as ex:
+            return dict(details_message=str(ex), success="False")
+    else:
+        return dict(details_message="Wrong Channel", success="False")
+
+    return dict(success="True", data=contents_data)
+
+
+def trigger_all_template_validations_func(request_body):
+    project_id = request_body.get("project_id", None)
+    channel = request_body.get("channel", None)
+    config_id = request_body.get("config_id", None)
+    user_mobile = request_body.get("user_mobile", None)
+    user_email = request_body.get("user_email", None)
+
+    response = get_contents_data_project_id(project_id, channel.upper())
+
+    if response.get("success") == "False":
+        return dict(details_message=response.get("details_message"), success="False")
+    contents_data = response.get("data")
+    if len(contents_data) == 0:
+        return dict(details_message="No Content data is present for given project id and channel", success="False")
+
+    logger.info(f'contents_data_length: {len(contents_data)}')
+
+    for content_data in contents_data:
+        content_id = content_data.get("unique_id", None)
+        variables_data = content_data.get("variables",None)
+        var_data = {}
+        for variable_data in variables_data:
+            var_master_id = variable_data["master_id"]
+            var_name = variable_data["name"]
+            if var_master_id != '{#URL#}':
+                var_data.update({var_name: "abc"})
+
+        request_payload = {
+            "channel": channel,
+            "config_id": config_id,
+            "content_id": content_id,
+            "var_data": var_data,
+            "user_mobile": user_mobile,
+            "user_email": user_email,
+        }
+
+        if channel == "EMAIL":
+            # Subject line id adding
+            subject_mapping = content_data.get("subject_mapping", [])
+            if len(subject_mapping) != 0:
+                subject_line = subject_mapping[0].get("subject_line", {})
+                if subject_line is not None:
+                    subject_line_id = subject_line.get("unique_id")
+                    request_payload.update({"subject_line_id": subject_line_id})
+
+        if channel == "WHATSAPP":
+            # Media id adding
+            media_mapping = content_data.get("media_mapping", [])
+            if len(media_mapping) != 0:
+                media = media_mapping[0].get("media", {})
+                if media is not None:
+                    media_id = media.get("unique_id")
+                    request_payload.update({"media_id": media_id})
+
+            # Footer id adding
+            footer_mapping = content_data.get("footer_mapping", [])
+            if len(footer_mapping) != 0:
+                footer = footer_mapping[0].get("textual", {})
+                if footer is not None:
+                    footer_id = footer.get("unique_id")
+                    request_payload.update({"footer_id": footer_id})
+
+            # Header id adding
+            header_mapping = content_data.get("header_mapping", [])
+            if len(header_mapping) != 0:
+                header = header_mapping[0].get("textual", {})
+                if header is not None and request_payload.get("media_id") is None:
+                    header_id = header.get("unique_id")
+                    request_payload.update({"header_id": header_id})
+
+        async_trigger_template_validation(request_payload)
+    return dict(success="True", details_message="All triggered")
+
+
+def async_trigger_template_validation(request_payload):
+    task_trigger_template_validation_func.apply_async(queue="celery_template_validations",
+                                                      kwargs={"request_payload": request_payload})
+
 
 def trigger_template_validation_func(request):
     body = request
-
+    logger.info(f'trigger_template_validation_func_payload: {request}')
     # Getting Body Data
     channel = body.get("channel", None)
     var_data = body.get("var_data", None)
@@ -1704,24 +1821,28 @@ def trigger_template_validation_func(request):
         try:
             payload_request_response = get_sms_sandesh_payload(body)
         except Exception as ex:
+            logger.error(f'{content_id}_error: SMS_Sandesh_Payload_error_{content_id} : {str(ex)}')
             return dict(details_message=str(ex), success="False")
 
     elif channel == "WHATSAPP":
         try:
             payload_request_response = get_whatsapp_sandesh_payload(body)
         except Exception as ex:
+            logger.error(f'{content_id}_error: WHATSAPP_Sandesh_Payload_error_{content_id} : {str(ex)}')
             return dict(details_message=str(ex), success="False")
 
     elif channel == "IVR":
         try:
             payload_request_response = get_ivr_sandesh_payload(body)
         except Exception as ex:
+            logger.error(f'{content_id}_error: IVR_Sandesh_Payload_error_{content_id} : {str(ex)}')
             return dict(details_message=str(ex), success="False")
 
     elif channel == "EMAIL":
         try:
             payload_request_response = get_email_sandesh_payload(body)
         except Exception as ex:
+            logger.error(f'{content_id}_error: EMAIL_Sandesh_Payload_error_{content_id} : {str(ex)}')
             return dict(details_message=str(ex), success="False")
     else:
         return dict(details_message="Wrong Channel", success="False")
@@ -1767,16 +1888,18 @@ def trigger_template_validation_func(request):
     res = TemplateLog().save_template_log(logs_entry)
 
     if not res.get("status"):
+        logger.error(f'{content_id}_error: Log_Entry_error')
         return dict(details_message="Log Entry error", success="False")
 
     # Sending HTTPS request
     comm_response = send_req_template_validation(sandesh_payload, project_id)
 
     # Update ack_id message
-    ack_id = comm_response.get("ack_id",None)
+    ack_id = comm_response.get("ack_id", None)
     if ack_id is not None:
         res = TemplateLog().update_ack_id(cust_ref_id, ack_id)
         if not res.get("status"):
+            logger.error(f'{content_id}_error: Ack_id Update error and Communication Failure')
             return dict(details_message="Ack_id Update error and Communication Failure", success="False")
 
     if comm_response.get("result") == TAG_FAILURE:
@@ -1785,18 +1908,22 @@ def trigger_template_validation_func(request):
         # Update Status to error
         res = TemplateLog().update_template_log_status(cust_ref_id, "ERROR")
         if not res.get("status"):
+            logger.error(f'{content_id}_error: Status "Error" Update Error and Communication Failure')
             return dict(details_message="Status 'Error' Update Error and Communication Failure", success="False")
 
         # Update Error message
         res = TemplateLog().update_template_error_message(cust_ref_id, error_message)
         if not res.get("status"):
+            logger.error(f'{content_id}_error: Error Message Update error and Communication Failure')
             return dict(details_message="Error Message Update error and Communication Failure", success="False")
 
+        logger.error(f'{content_id}_error: {error_message}')
         return dict(details_message=error_message, success="False")
 
     # Update Status to sent
     res = TemplateLog().update_template_log_status(cust_ref_id, "SENT")
     if not res.get("status"):
+        logger.error(f'{content_id}_error: Status "Sent" Update Error')
         return dict(details_message="Status 'Sent' Update Error", success="False")
 
     return dict(details_message="OK", success="True")

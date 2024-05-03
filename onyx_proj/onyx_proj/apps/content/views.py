@@ -17,7 +17,9 @@ from onyx_proj.apps.content.campaign_content_processor.campaign_content_processo
     fetch_template_stats
 from onyx_proj.apps.content.content_procesor import fetch_campaign_processor, get_content_list, get_content_data, \
     deactivate_content_and_campaign, get_content_list_v2, add_or_remove_url_and_subject_line_from_content, \
-    save_content_data, migrate_content_across_projects_with_headers_processing, trigger_template_validation_func, get_template_all_logs_func, template_sandesh_callback_func
+    save_content_data, migrate_content_across_projects_with_headers_processing, trigger_template_validation_func, \
+    get_template_all_logs_func, template_sandesh_callback_func, get_contents_data_project_id, \
+    trigger_all_template_validations_func
 from onyx_proj.common.decorators import UserAuth
 from onyx_proj.common.request_helper import RequestClient
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
@@ -200,6 +202,20 @@ def trigger_template_validation(request):
                             content_type="application/json")
 
     return HttpResponse(json.dumps({"details_message": "OK", "result": "SUCCESS"}, default=str),
+                        status=200, content_type="application/json")
+
+
+def trigger_all_template_validations(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+
+    response = trigger_all_template_validations_func(request_body)
+
+    if response.get("success") == "False":
+        message = response.get("details_message")
+        return HttpResponse(json.dumps({"details_message": message, "result": "FAILURE"}, default=str), status=400,
+                            content_type="application/json")
+
+    return HttpResponse(json.dumps({"details_message": response.get("details_message"), "result": "SUCCESS"}, default=str),
                         status=200, content_type="application/json")
 
 

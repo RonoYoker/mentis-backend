@@ -315,6 +315,10 @@ def get_callback_function_name_by_key(callback_key):
     from onyx_proj.common.constants import ASYNC_CELERY_CALLBACK_KEY_MAPPING
     return ASYNC_CELERY_CALLBACK_KEY_MAPPING[callback_key]
 
+@task
+def task_trigger_template_validation_func(request_payload):
+    from onyx_proj.apps.content.content_procesor import trigger_template_validation_func
+    trigger_template_validation_func(request_payload)
 
 @task
 def fetch_campaigns_details_and_notify_users(data):
