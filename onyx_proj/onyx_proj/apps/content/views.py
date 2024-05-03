@@ -204,7 +204,8 @@ def trigger_template_validation(request):
     return HttpResponse(json.dumps({"details_message": "OK", "result": "SUCCESS"}, default=str),
                         status=200, content_type="application/json")
 
-
+@csrf_exempt
+@UserAuth.user_authentication()
 def trigger_all_template_validations(request):
     request_body = json.loads(request.body.decode("utf-8"))
 
