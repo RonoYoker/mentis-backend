@@ -37,8 +37,10 @@ def get_filtered_campaign_stats(data) -> json:
     data = CEDCampaignExecutionProgress().execute_customised_query(sql_query)
     last_refresh_time = get_last_refresh_time(data)
     for row in data:
-        if row["sub_segment_count"] is not None:
+        if row["SubSegmentId"] is not None:
             row["TriggeredCount"] = row["sub_segment_count"]
+            row["SegmentTitle"] = row["SubSegmentTitle"]
+            row["SegmentId"] = row["SubSegmentId"]
     return dict(status_code=http.HTTPStatus.OK, data=data, last_refresh_time=last_refresh_time)
 
 
@@ -67,8 +69,10 @@ def get_filtered_campaign_stats_variants(data) -> json:
     cb_data = {}
     final_resp =[]
     for row in data:
-        if row["sub_segment_count"] is not None:
+        if row["SubSegmentId"] is not None:
             row["TriggeredCount"] = row["sub_segment_count"]
+            row["SegmentTitle"] = row["SubSegmentTitle"]
+            row["SegmentId"] = row["SubSegmentId"]
         cb_data.setdefault(row["CampaignId"],{}).setdefault(row["ExecutionConfigId"],[])
         cb_data[row["CampaignId"]][row["ExecutionConfigId"]].append(row)
 

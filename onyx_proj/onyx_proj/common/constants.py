@@ -440,7 +440,9 @@ FILTER_BASED_CONDITIONS_MAPPING = {
 STATS_VIEW_BASE_QUERY = """SELECT 
     cb.Name AS CampaignTitle,
     s.Title AS SegmentTitle,
+    subs.Title AS SubSegmentTitle,
     s.Id AS SegmentId,
+    subs.Id AS SubSegmentId,
     cbc.ContentType AS Channel,
     cep.StartDateTime AS StartDate,
     cep.EndDateTime AS CompletionDate,
