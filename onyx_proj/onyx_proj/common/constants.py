@@ -513,7 +513,7 @@ FROM
     CED_CampaignBuilderCampaign cbc ON cbc.UniqueId = cep.CampaignBuilderCampaignId
         JOIN
     CED_CampaignBuilder cb ON cb.UniqueId = cbc.CampaignBuilderId
-        JOIN
+        LEFT JOIN
     CED_Segment s ON s.UniqueId = cb.SegmentId
             JOIN
     CED_CampaignSchedulingSegmentDetails cssd ON cssd.CampaignId = cep.CampaignBuilderCampaignId
