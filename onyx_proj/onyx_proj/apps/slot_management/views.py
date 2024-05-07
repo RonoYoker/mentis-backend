@@ -28,6 +28,7 @@ def get_used_slots_detail(request):
     return HttpResponse(json.dumps(response, default=str), status=status_code)
 
 
+@csrf_exempt
 def check_campaign_and_send_email_to_users(request):
     request_decoded = request.body.decode("utf-8")
     request_body = json.loads(request_decoded) if len(request_decoded) > 0 else {}

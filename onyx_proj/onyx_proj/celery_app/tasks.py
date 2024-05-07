@@ -321,6 +321,6 @@ def task_trigger_template_validation_func(request_payload):
     trigger_template_validation_func(request_payload)
 
 @task
-def fetch_campaigns_details_and_notify_users(data):
+def fetch_campaigns_details_and_notify_users(data=None):
     from onyx_proj.apps.slot_management.data_processor.slots_data_processor import fetch_campaigns_and_notify_users
     fetch_campaigns_and_notify_users(data)
