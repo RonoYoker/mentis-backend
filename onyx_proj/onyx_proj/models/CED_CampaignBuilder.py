@@ -135,7 +135,7 @@ class CEDCampaignBuilder:
         return update(self.engine, self.table, filter, update_dict)
 
     def fetch_campaign_approval_status_details(self, unique_id):
-        query = f"SELECT cb.Id, cb.Name, cb.CreatedBy, cb.ApprovedBy, cb.Id, cb.Status FROM CED_CampaignBuilder cb  WHERE cb.UniqueId = '{unique_id}'"
+        query = f"SELECT cb.Id, cb.Name, cb.CreatedBy, cb.ApprovedBy, cb.Id, cb.Status, cb.SegmentName FROM CED_CampaignBuilder cb  WHERE cb.UniqueId = '{unique_id}'"
         return execute_query(self.engine, query)
 
     def mark_campaign_as_error(self, unique_id, reason):

@@ -3,6 +3,7 @@ import logging
 import http
 from datetime import timedelta
 from math import ceil
+import os
 
 from onyx_proj.common.constants import *
 from onyx_proj.exceptions.permission_validation_exception import InternalServerError, BadRequestException
@@ -14,6 +15,9 @@ from onyx_proj.common.decorators import fetch_project_id_from_conf_from_given_id
 from onyx_proj.models.CED_CampaignBuilderCampaign_model import CEDCampaignBuilderCampaign
 from django.conf import settings
 
+from django.template.loader import render_to_string
+from onyx_proj.common.request_helper import RequestClient
+from onyx_proj.models.CED_CampaignBuilder import CEDCampaignBuilder
 logger = logging.getLogger("apps")
 
 
@@ -217,6 +221,7 @@ def update_campaign_stats_to_central_db(data):
     project_id = fetch_project_id_from_conf_from_given_identifier("CAMPAIGNBUILDERCAMPAIGN",
                                                                   campaign_builder_campaign_id)
     update_status = campaign_stats_data.get("Status", None)
+    alert_resp = False
     if update_status in CAMPAIGN_STATUS_FOR_ALERTING:
         try:
             alerting_text = f'Campaign Instance ID : {campaign_id}, {update_status}, ERROR: Campaign Needs attention'
@@ -224,6 +229,12 @@ def update_campaign_stats_to_central_db(data):
                                                                   feature_section=settings.HYPERION_ALERT_FEATURE_SECTION.get("CAMPAIGN", "DEFAULT"))
         except Exception as ex:
             logger.error(f'Unable to process telegram alerting, method_name: {method_name}, Exp : {ex}')
+        try:
+            if alert_resp.get("success", False):
+                unique_id = CEDCampaignBuilderCampaign().get_cb_id_is_rec_by_cbc_id(campaign_builder_campaign_id)[0]["UniqueId"]
+                generate_campaign_alert_status_mail({"unique_id": unique_id, "status": update_status, "campaign_id": campaign_id})
+        except Exception as ex:
+            logger.error(f'Unable to process email, method_name: {method_name}, Exp : {ex}')
 
     where_dict = {"CampaignId": campaign_id}
     try:
@@ -310,3 +321,46 @@ def get_filtered_campaign_stats_v2(data) -> json:
     last_refresh_time = get_last_refresh_time_v2(data)
 
     return dict(status_code=http.HTTPStatus.OK, data=data, last_refresh_time=last_refresh_time)
+
+
+def generate_campaign_alert_status_mail(data: dict):
+    method_name = 'generate_campaign_alert_status_mail'
+    if not data.get("unique_id", None):
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Campaign Builder Unique Id missing in request.")
+    campaign_details = CEDCampaignBuilder().fetch_campaign_approval_status_details(data.get("unique_id"))[0]
+    start_date_time = CEDCampaignBuilderCampaign().fetch_min_start_time_by_cb_id(data.get("unique_id"))
+    campaign_status = data.get("status")
+    email_tos = []
+    email = CEDUser().get_user_email_id(campaign_details.get("CreatedBy"))
+    if email is not None:
+        email_tos.append(email)
+    email_data = {"CampaignName": campaign_details.get("Name"), "CampaignId": str(data.get("campaign_id")),
+                  "Segment": campaign_details.get("SegmentName"),
+                  "Status": campaign_status,
+                  "Start": (start_date_time + timedelta(minutes=330)).strftime("%Y-%m-%d %H:%M:%S")}
+    if campaign_status == "ERROR" or campaign_status == "QUERY_ERROR":
+        subject = f'Campaign {campaign_details.get("Name")} went into "ERROR'
+    elif campaign_status == "EMPTY_SEGMENT":
+        subject = f'Campaign {campaign_details.get("Name")} has "EMPTY_SEGMENT"'
+    else:
+        subject = f'Campaign {campaign_details.get("Name")} is "PARTIALLY_EXECUTED"'
+    if campaign_status == "ERROR" or campaign_status == "QUERY_ERROR":
+        email_data["FinalStatusColorCode"] = "RED"
+    elif campaign_status == "PARTIALLY_EXECUTED" or campaign_status == "EMPTY_SEGMENT":
+        email_data["FinalStatusColorCode"] = "#FFA500"
+    email_body = render_to_string("mailers/campaign_approval_status.html", email_data)
+    email_object = {
+        "tos": email_tos,
+        "ccs": [],
+        "bccs": [],
+        "subject": subject,
+        "body": email_body
+    }
+    response = RequestClient(
+        url=MAILER_UTILITY_URL,
+        headers={"Content-Type": "application/json"},
+        request_body=json.dumps(email_object),
+        request_type=TAG_REQUEST_POST).get_api_response()
+    logger.info(f"Mailer response: {response}.")
+    return
