@@ -229,11 +229,16 @@ def get_template_stats(project_id, start_time, end_time, channel, segment_id=Non
 
     prev_row = None
     for row in template_data_response:
+        rec_details = row.get('recurring_detail')
+        if rec_details is not None:
+            rec_details = json.loads(rec_details)
+            if rec_details.get('is_segment_attr_split', False):
+                continue
         if prev_row is None or (prev_row.get(template_id) != row.get(template_id)):
             template_stats.append({
                 "unique_id": row.get(template_id),
                 "channel": channel,
-                "associate_mapping": [{**{k: row.get(k) for k in attribute_ids.keys() if k != template_id and row.get(k) is not None}, "campaign_builder_id": row.get("cb_id")}]
+                "associate_mapping": [{**{k: row.get(k) for k in attribute_ids.keys() if k != template_id and row.get(k) is not None}, "campaign_builder_id": row.get("cb_id"), "status": row.get("status")}]
             })
             template_stats_len += 1
         else:
@@ -245,7 +250,7 @@ def get_template_stats(project_id, start_time, end_time, channel, segment_id=Non
                         break
             if new_mapping:
                 template_stats[template_stats_len - 1]["associate_mapping"].append(
-                    {**{k: row.get(k) for k in attribute_ids.keys() if k != template_id and row.get(k) is not None}, "campaign_builder_id": row.get("cb_id")}
+                    {**{k: row.get(k) for k in attribute_ids.keys() if k != template_id and row.get(k) is not None}, "campaign_builder_id": row.get("cb_id"), "status": row.get("status")}
                 )
         for key in attribute_ids.keys():
             attribute_ids.get(key).add(row.get(key)) if row.get(key) is not None else None
@@ -296,6 +301,7 @@ def get_template_stats(project_id, start_time, end_time, channel, segment_id=Non
                 template_stats[template_index]["associate_mapping"][associate_mapping_index]["total_acknowledge"] = template_stats[template_index]["associate_mapping"][associate_mapping_index].get("total_acknowledge",0) + cbc_exec_progress.get("acknowledge", 0)
             elif len(template_stats[template_index]["associate_mapping"]) == 1 and len(template_stats[template_index]["associate_mapping"][associate_mapping_index]) == 1:  # if associate_mapping is invalid
                 template_stats[template_index]["campaign_builder_id"] = template_stats[template_index]["associate_mapping"][associate_mapping_index].get("campaign_builder_id")
+                template_stats[template_index]["status"] = template_stats[template_index]["associate_mapping"][associate_mapping_index].get("status")
 
     template_without_any_valid_cbc = []  # contains templates which does not have a single valid CBC
 
@@ -412,71 +418,19 @@ def prepare_query_to_fetch_cbc_for_templates(filters, channel):
 
     if channel == ContentType.SMS.value:
         query = f"""
-                select cbs.SmsId as sms_id, cbs.SenderId as sender_id, cbs.UrlId as url_id, 
-                cbc.UniqueId as cbc_id, cbc.CampaignBuilderId as cb_id
-                from ( SELECT cb.* FROM CED_CampaignBuilder as cb JOIN CED_CampaignBuilderCampaign as cbc
-                ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}'
-                and cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' 
-                and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' and cb.IsSplit = 0 
-                and DATE(cb.CreationDate) >= '{start_time}' and DATE(cb.CreationDate) <= '{end_time}' 
-                {segment_where_clause} GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) cb
-                JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId
-                JOIN CED_CampaignBuilderSMS cbs ON cbc.UniqueId = cbs.MappingId 
-                JOIN CED_CampaignExecutionProgress as cep ON cbc.UniqueId = cep.CampaignBuilderCampaignId 
-                Where cbc.IsActive = 1 and cbc.IsDeleted = 0 
-                AND cep.TestCampaign=0 AND cep.Status in ('PARTIALLY_EXECUTED', 'EXECUTED')
-                ORDER BY cbs.SmsId, cbs.SenderId, cbs.UrlId;
+                select cbs.SmsId as sms_id, cbs.SenderId as sender_id, cbs.UrlId as url_id, cbc.UniqueId as cbc_id, cbc.CampaignBuilderId as cb_id, cb.Status as status, cb.RecurringDetail as recurring_detail from ( SELECT cb.* FROM CED_CampaignBuilder as cb JOIN CED_CampaignBuilderCampaign as cbc ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}' and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and DATE(cb.CreationDate) >= '{start_time}' and DATE(cb.CreationDate) <= '{end_time}' {segment_where_clause} GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) cb JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId JOIN CED_CampaignBuilderSMS cbs ON cbc.UniqueId = cbs.MappingId JOIN CED_CampaignExecutionProgress as cep ON cbc.UniqueId = cep.CampaignBuilderCampaignId Where cep.TestCampaign = 0 AND cep.Status in ( 'PARTIALLY_EXECUTED', 'EXECUTED' ) ORDER BY cbs.SmsId, cbs.SenderId, cbs.UrlId;
                 """
     elif channel == ContentType.WHATSAPP.value:
         query = f"""
-                select cbw.WhatsAppContentId as whatsapp_content_id, cbw.UrlId as url_id, cbw.CtaId as cta_id, cbw.FooterId as footer_id,
-                cbw.HeaderId as header_id, cbw.MediaId as media_id,  
-                cbc.UniqueId as cbc_id, cbc.CampaignBuilderId as cb_id
-                from ( SELECT cb.* FROM CED_CampaignBuilder as cb JOIN CED_CampaignBuilderCampaign as cbc
-                ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}'
-                and cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' 
-                and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' and cb.IsSplit = 0 
-                and DATE(cb.CreationDate) >= '{start_time}' and DATE(cb.CreationDate) <= '{end_time}' 
-                {segment_where_clause} GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) cb
-                JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId
-                JOIN CED_CampaignBuilderWhatsApp cbw ON cbc.UniqueId = cbw.MappingId 
-                JOIN CED_CampaignExecutionProgress as cep ON cbc.UniqueId = cep.CampaignBuilderCampaignId
-                Where cbc.IsActive = 1 and cbc.IsDeleted = 0 
-                AND cep.TestCampaign=0 AND cep.Status in ('PARTIALLY_EXECUTED', 'EXECUTED')
-                ORDER BY 1,2,3,4,5,6;
+                select cbw.WhatsAppContentId as whatsapp_content_id, cbw.UrlId as url_id, cbw.CtaId as cta_id, cbw.FooterId as footer_id, cbw.HeaderId as header_id, cbw.MediaId as media_id, cbc.UniqueId as cbc_id, cbc.CampaignBuilderId as cb_id, cb.Status as status, cb.RecurringDetail as recurring_detail from ( SELECT cb.* FROM CED_CampaignBuilder as cb JOIN CED_CampaignBuilderCampaign as cbc ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}' and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and DATE(cb.CreationDate) >= '{start_time}' and DATE(cb.CreationDate) <= '{end_time}' {segment_where_clause} GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) cb JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId JOIN CED_CampaignBuilderWhatsApp cbw ON cbc.UniqueId = cbw.MappingId JOIN CED_CampaignExecutionProgress as cep ON cbc.UniqueId = cep.CampaignBuilderCampaignId Where cep.TestCampaign = 0 AND cep.Status in ( 'PARTIALLY_EXECUTED', 'EXECUTED' ) ORDER BY 1, 2, 3, 4, 5, 6;
                 """
     elif channel == ContentType.EMAIL.value:
         query = f"""
-                select cbe.EmailId as email_id, cbe.SubjectLineId as subject_line_id, cbe.UrlId as url_id,
-                cbc.UniqueId as cbc_id, cbc.CampaignBuilderId as cb_id
-                from ( SELECT cb.* FROM CED_CampaignBuilder as cb JOIN CED_CampaignBuilderCampaign as cbc
-                ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}'
-                and cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' 
-                and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' and cb.IsSplit = 0 
-                and DATE(cb.CreationDate) >= '{start_time}' and DATE(cb.CreationDate) <= '{end_time}' 
-                {segment_where_clause} GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) cb
-                JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId
-                JOIN CED_CampaignBuilderEmail cbe ON cbc.UniqueId = cbe.MappingId 
-                JOIN CED_CampaignExecutionProgress as cep ON cbc.UniqueId = cep.CampaignBuilderCampaignId
-                Where cbc.IsActive = 1 and cbc.IsDeleted = 0 
-                AND cep.TestCampaign=0 AND cep.Status in ('PARTIALLY_EXECUTED', 'EXECUTED')
-                ORDER BY 1,2,3;
+                select cbe.EmailId as email_id, cbe.SubjectLineId as subject_line_id, cbe.UrlId as url_id, cbc.UniqueId as cbc_id, cbc.CampaignBuilderId as cb_id, cb.Status as status, cb.RecurringDetail as recurring_detail from ( SELECT cb.* FROM CED_CampaignBuilder as cb JOIN CED_CampaignBuilderCampaign as cbc ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}' and cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and DATE(cb.CreationDate) >= '{start_time}' and DATE(cb.CreationDate) <= '{end_time}' {segment_where_clause} GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) cb JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId JOIN CED_CampaignBuilderEmail cbe ON cbc.UniqueId = cbe.MappingId JOIN CED_CampaignExecutionProgress as cep ON cbc.UniqueId = cep.CampaignBuilderCampaignId Where cep.TestCampaign = 0 AND cep.Status in ( 'PARTIALLY_EXECUTED', 'EXECUTED' ) ORDER BY 1, 2, 3;
                 """
     elif channel == ContentType.IVR.value:
         query = f"""
-                select cbi.IvrId as ivr_id, cbc.UniqueId as cbc_id, cbc.CampaignBuilderId as cb_id
-                from ( SELECT cb.* FROM CED_CampaignBuilder as cb JOIN CED_CampaignBuilderCampaign as cbc
-                ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}'
-                and cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' 
-                and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' and cb.IsSplit = 0 
-                and DATE(cb.CreationDate) >= '{start_time}' and DATE(cb.CreationDate) <= '{end_time}' 
-                {segment_where_clause} GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) cb
-                JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId
-                JOIN CED_CampaignBuilderIVR cbi ON cbc.UniqueId = cbi.MappingId 
-                JOIN CED_CampaignExecutionProgress as cep ON cbc.UniqueId = cep.CampaignBuilderCampaignId
-                Where cbc.IsActive = 1 and cbc.IsDeleted = 0 
-                AND cep.TestCampaign=0 AND cep.Status in ('PARTIALLY_EXECUTED', 'EXECUTED')
-                ORDER BY 1;
+                select cbi.IvrId as ivr_id, cbc.UniqueId as cbc_id, cbc.CampaignBuilderId as cb_id, cb.Status as status, cb.RecurringDetail as recurring_detail from ( SELECT cb.* FROM CED_CampaignBuilder as cb JOIN CED_CampaignBuilderCampaign as cbc ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}' and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and DATE(cb.CreationDate) >= '{start_time}' and DATE(cb.CreationDate) <= '{end_time}' {segment_where_clause} GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) cb JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId JOIN CED_CampaignBuilderIVR cbi ON cbc.UniqueId = cbi.MappingId JOIN CED_CampaignExecutionProgress as cep ON cbc.UniqueId = cep.CampaignBuilderCampaignId Where cep.TestCampaign = 0 AND cep.Status in ( 'PARTIALLY_EXECUTED', 'EXECUTED' ) ORDER BY 1;
                 """
     else:
         logger.error(f"Query preparation failed, Invalid channel")

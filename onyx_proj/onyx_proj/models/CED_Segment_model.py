@@ -253,22 +253,7 @@ class CEDSegment:
             cbc_table = "CED_CampaignBuilderCampaign"
 
         query = f"""
-                select s.Id as id, s.UniqueId as unique_id, s.Title as title, s.Records as records,
-                s.RefreshDate as refresh_date, cbc.UniqueId as cbc_id, cbc.CampaignBuilderId as campaign_builder_id
-                FROM CED_Segment as s
-                JOIN
-                (SELECT cb.* FROM CED_CampaignBuilder as cb JOIN CED_CampaignBuilderCampaign as cbc
-                ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}' 
-                and cb.IsActive = 1 and cb.IsDeleted = 0 and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' 
-                and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and cb.Status = 'APPROVED' and cb.IsSplit = 0 
-                and DATE(cb.CreationDate) >= '{start_time}' and DATE(cb.CreationDate) <= '{end_time}'  
-                GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) as cb ON cb.SegmentId = s.UniqueId
-                JOIN {cbc_table} as cbc ON cbc.CampaignBuilderId = cb.UniqueId 
-                JOIN CED_CampaignExecutionProgress as cep ON cbc.UniqueId = cep.CampaignBuilderCampaignId
-                WHERE cb.ProjectId = s.ProjectId AND s.ParentId is null
-                and cbc.IsActive = 1 and cbc.IsDeleted = 0 
-                AND cep.TestCampaign=0 AND cep.Status in ('PARTIALLY_EXECUTED', 'EXECUTED')
-                order by s.id desc;
+                select s.Id as id, s.UniqueId as unique_id, s.Title as title, s.Records as records, s.RefreshDate as refresh_date, cbc.UniqueId as cbc_id, cbc.CampaignBuilderId as campaign_builder_id, cb.Status as status, cb.RecurringDetail as recurring_detail FROM CED_Segment as s JOIN ( SELECT cb.* FROM CED_CampaignBuilder as cb JOIN CED_CampaignBuilderCampaign as cbc ON cb.UniqueId = cbc.CampaignBuilderId WHERE cb.ProjectId = '{project_id}' and cb.IsRecurring = 1 and cb.CampaignCategory = 'Recurring' and cb.Version = 'V2' and cb.CampaignLevel = 'MAIN' and DATE(cb.CreationDate) >= '{start_time}' and DATE(cb.CreationDate) <= '{end_time}' GROUP BY cb.UniqueId HAVING count(distinct cbc.ExecutionConfigId)= 1 ) as cb ON cb.SegmentId = s.UniqueId JOIN {cbc_table} as cbc ON cbc.CampaignBuilderId = cb.UniqueId JOIN CED_CampaignExecutionProgress as cep ON cbc.UniqueId = cep.CampaignBuilderCampaignId WHERE cb.ProjectId = s.ProjectId AND s.ParentId is null AND cep.TestCampaign = 0 AND cep.Status in ( 'PARTIALLY_EXECUTED', 'EXECUTED' ) order by s.id desc;
                 """
         return dict_fetch_query_all(self.curr, query)
 

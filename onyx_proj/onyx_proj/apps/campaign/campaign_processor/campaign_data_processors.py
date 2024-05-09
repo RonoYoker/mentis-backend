@@ -5531,8 +5531,17 @@ def get_v2_camps_detail(request_body):
     if campaign_data is None or len(campaign_data) == 0:
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
                     details_message="Campaign data not found for the given parameters.")
+    valid_campaign_list = []
+    for campaign in campaign_data:
+        rec_details = campaign.get('recurring_detail')
+        if rec_details is not None:
+            rec_details = json.loads(rec_details)
+            if rec_details.get('is_segment_attr_split', False):
+                continue
+        valid_campaign_list.append(campaign)
 
-    campaign_ids = [cb['unique_id'] for cb in campaign_data]
+
+    campaign_ids = [cb['unique_id'] for cb in valid_campaign_list]
     last_executed_date_time_list = CEDCampaignBuilder().fetch_last_executed_date_by_cb_uid(campaign_ids)
     if last_executed_date_time_list is None or len(last_executed_date_time_list) == 0:
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
@@ -5543,14 +5552,14 @@ def get_v2_camps_detail(request_body):
         last_executed_date_time = date_time["last_executed_date_time"]
         last_executed_date_time_dict[campaign_builder_id] = last_executed_date_time
 
-    for campaign in campaign_data:
+    for campaign in valid_campaign_list:
         campaign['last_executed_date_time'] = last_executed_date_time_dict[campaign['unique_id']]
         campaign['average_delivery'] = ((campaign.get('delivered_count', 0) if campaign.get('delivered_count', 0) is not None else 0) / campaign.get('ack_count')) * 100
         campaign['average_clicked'] = ((campaign.get('clicked_count', 0) if campaign.get('clicked_count', 0) is not None else 0) / campaign.get('ack_count')) * 100
         campaign['average_landing'] = ((campaign.get('landing_count', 0) if campaign.get('landing_count', 0) is not None else 0) / campaign.get('ack_count')) * 100
 
     log_exit(method_name, "Success")
-    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=campaign_data)
+    return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=valid_campaign_list)
 
 
 def fetch_campaign_variant_detail(request_body):
@@ -5562,7 +5571,7 @@ def fetch_campaign_variant_detail(request_body):
     if unique_id is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="Invalid Input")
 
-    campaign_data = CEDCampaignBuilder().get_active_data_by_unique_id(unique_id)
+    campaign_data = CEDCampaignBuilder().get_campaign_details(unique_id)
 
     if len(campaign_data) == 0 or campaign_data is None:
         return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
@@ -5573,14 +5582,14 @@ def fetch_campaign_variant_detail(request_body):
     try:
         request_meta = json.loads(campaign_data.get("request_meta"))
         camp_builder_id = campaign_data.get("unique_id")
-        is_active = campaign_data.get("is_active")
         segment_name = campaign_data.get("segment_name")
 
         campaign_content_details = generate_campaign_segment_and_content_details_v2(campaign_data)
 
         variant = {'campaign_builder_id': camp_builder_id,
                    'recurring_detail': json.loads(request_meta.get("recurring_detail")),
-                   'is_active': is_active,
+                   'is_active': True,
+                   'status': campaign_data.get('status'),
                    'segment_name': segment_name,
                    'campaign_content_details': campaign_content_details}
         schedule_time = []

@@ -243,7 +243,8 @@ def get_strategy_data(request_body):
                                'is_active': is_active,
                                'campaign_reference_id': camp_builder_id,
                                'campaign_content_details': campaign_content_details,
-                               'segment_name':cb.get('segment_name'),
+                               'segment_name': cb.get('segment_name'),
+                               'status': cb.get('status'),
                                'schedule_time': schedule_time}
                     # 0th variant only, since only 1 variant would be present for each CB
                     for instance in request_meta.get("variant_detail").get("variants")[0]:

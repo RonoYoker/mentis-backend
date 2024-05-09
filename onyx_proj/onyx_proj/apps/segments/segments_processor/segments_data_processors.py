@@ -667,6 +667,11 @@ def fetch_segment_stats(request_body):
     # Note: segment_data_response is sorted w.r.t segment id in desc order
     # fill 'all_cbc' and make 'cbc_index_to_seg_index' and 'segment_stats'
     for row in segment_data_response:
+        rec_details = row.get('recurring_detail')
+        if rec_details is not None:
+            rec_details = json.loads(rec_details)
+            if rec_details.get('is_segment_attr_split', False):
+                continue
         if (row.get("id") is not None and row.get("id") != prev_id) or prev_id is None:
             if prev_id is not None:
                 cbc_index_to_seg_index[len(all_cbc)] = len(segment_stats) - 1
