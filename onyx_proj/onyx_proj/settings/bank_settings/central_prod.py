@@ -425,5 +425,5 @@ TEMPLATE_VALIDATION_LINK = {
     "yblccenbldsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "ccybl.in",
     "ybltxntoemimablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "ccybl.in",
     "yblccujlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "ccybl.in",
-    "ablethjlsdsmablpxpqcloaxlnifyewmveqlhiacldjplapyndmenfn44nausprj": "pay.axisbank.com/st/MjWqxNebvt"
+    "ablethjlsdsmablpxpqcloaxlnifyewmveqlhiacldjplapyndmenfn44nausprj": "https://pay.axisbank.com/"
 }
