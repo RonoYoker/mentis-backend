@@ -33,66 +33,105 @@ from onyx_proj.middlewares.HttpRequestInterceptor import Session
 current_time = datetime.now()
 logger = logging.getLogger("apps")
 
-def list_of_dicts_to_html_table(list_of_dicts):
-    html_table = "<table>\n"
+def first_table_maker(slot_limit_of_projects,project_name_through_project_id):
+    html_table = "<table border='1px solid black'>\n"
 
-    # Adding table headers
     html_table += "<tr>"
-    for key in list_of_dicts[0].keys():
+    html_table += "<th>Project Name</th>"
+    inner_keys = next(iter(slot_limit_of_projects.values())).keys()  # Get the keys from the first inner dictionary
+    for key in inner_keys:
         html_table += "<th>{}</th>".format(key)
     html_table += "</tr>\n"
 
-    # Adding table rows with conditional formatting
-    for dictionary in list_of_dicts:
-        html_table += "<tr style='background-color:{};'>".format('lightgreen' if dictionary['Status'] == 'SUCCESS' else 'red')
-        for key, value in dictionary.items():
+    for key, inner_dict in slot_limit_of_projects.items():
+        html_table += "<tr>"
+
+        html_table += "<td>{}</td>".format(project_name_through_project_id.get(key))
+
+        for value in inner_dict.values():
             html_table += "<td>{}</td>".format(value)
+
         html_table += "</tr>\n"
+
+    html_table += "</table>"
+
+    return html_table
+
+def dict_to_table(dict, bank_name):
+    html_table = "<table border='1px solid black'>\n"
+
+    # Add table headers dynamically based on the keys of the dictionary
+    html_table += "<tr>"
+    html_table += "<th>Bank Name</th>"
+    for key in dict.keys():
+        html_table += "<th>{}</th>".format(key)
+    html_table += "</tr>\n"
+
+    # Add table rows
+    html_table += "<tr>"
+    html_table += "<td>{}</td>".format(bank_name)
+    for value in dict.values():
+        html_table += "<td>{}</td>".format(value)
+    html_table += "</tr>\n"
+
+    # Close the table
+    html_table += "</table>"
+
+    return html_table
+
+def list_of_dicts_to_html_table(list_of_dicts):
+    html_table = "<table>\n"
+
+    first_list = next(iter(list_of_dicts.values()))
+    html_table += "<tr>"
+    for key in first_list[0].keys():
+        html_table += "<th>{}</th>".format(key)
+    html_table += "</tr>\n"
+
+
+    for key,value in list_of_dicts.items():
+
+        # Adding table rows with conditional formatting
+        for dictionary in value:
+            html_table += "<tr style='background-color:{};'>".format('lightgreen' if dictionary['Status'] == 'SUCCESS' else 'red')
+            for key, value2 in dictionary.items():
+                html_table += "<td>{}</td>".format(value2)
+            html_table += "</tr>\n"
 
     html_table += "</table>"
     return html_table
 
 
-def dict_to_html_list(dictionary):
-    html_list = "<ul>\n"
-
-    for key, value in dictionary.items():
-        html_list += "<li><strong>{}</strong>: {}</li>\n".format(key, value)
-
-    html_list += "</ul>"
-    return html_list
-
-def make_the_html(intro,dict1, dict2, table):
-
-    html_dict_list1 = dict_to_html_list(dict1)
-    html_dict_list2 = dict_to_html_list(dict2)
-    html_table = list_of_dicts_to_html_table(table)
+def make_the_html(intro, slot_limit_per_project_id, slot_limit_per_bank, value, project_name_through_project_id,bank_name):
+    project_table = first_table_maker(slot_limit_per_project_id,project_name_through_project_id)
+    bank_table = dict_to_table(slot_limit_per_bank, bank_name)
+    campaign_table = list_of_dicts_to_html_table(value)
     html_template = """
-            <!DOCTYPE html>
-            <html>
-            <head>
-            <title>HTML Template</title>
-            </head>
-            <body>
-            <h4>{}</h4>
+                <!DOCTYPE html>
+                <html>
+                <head>
+                <title>HTML Template</title>
+                </head>
+                <body>
+                <h4>{}</h4>
 
-            <h3>Project level Threshold limit</h3>
-            <pre>{}</pre>
+                <h3>Project level Threshold limit Table</h3>
+                <pre>{}</pre>
 
-            <h3>Bank level Threshold limit</h3>
-            <pre>{}</pre>
+                <h3>Bank level Threshold limit Table</h3>
+                <pre>{}</pre>
 
-            <h3>Successful Execution or Potential Throttling Campaign Table</h3>
-            {}
+                <h3>Successful Execution or Potential Throttling Campaign Table</h3>
+                {}
 
-            </body>
-            </html>
-            """.format(intro, html_dict_list1, html_dict_list2, html_table)
+                </body>
+                </html>
+                """.format(intro, project_table, bank_table, campaign_table)
 
     return html_template
 
 
-def prepare_approved_and_booked_campaigns(date=None):
+def prepare_approved_and_booked_campaigns(date= None):
     method_name = "prepare_approved_and_booked_campaigns"
     query_to_fetch = BOOKED_AND_APPROVED_CAMPAIGNS_BY_DATE_QUERY
     # date format - YYYY-MM-DD
@@ -145,7 +184,7 @@ def prepare_approved_and_booked_campaigns(date=None):
             "slot_limit_of_bank": campaign.get("slot_limit_of_bank"),
             "project_unique_id": campaign.get("project_unique_id")
         }
-        if campaign.get("is_split", 0) == 1:
+        if campaign.get("is_split", 0) == 1 and campaign.get("split_details") is not None:
             split_details = json.loads(campaign["split_details"])
             campaign_dict["count"] = ceil(campaign_dict["count"] / split_details["total_splits"])
         if campaign.get("split_details") is not None and campaign.get("is_split", 0) == 0:
@@ -182,6 +221,7 @@ def fetch_campaigns_and_notify_users(request_data):
 
     # permissions of projects for particular users
     formatted_time = current_time.strftime("%Y-%m-%d %H:%M:%S")
+
     filter_list = [{"column": "state", "value": "Active", "op": "=="},
                    {"column": "is_active", "value": 1, "op": "=="},
                    {"column": "expiry_time", "value": formatted_time, "op": ">="}]
@@ -205,12 +245,17 @@ def fetch_campaigns_and_notify_users(request_data):
     # making set for admin users
     admin_users = {admin.email_id for admin in admin_permissions}
 
-    final_data = [] # FOR TESTING TO BE REMOVED LATER
+    final_data = {} # FOR TESTING TO BE REMOVED LATER
+    slot_limit_per_project={}
+    slot_limit_per_bank={}
+    project_name_through_project_id={}
     for project in campaigns_per_project:
         project_unique_id = None
         cbc_with_status = {}
         for channel in campaigns_per_project[project]:
+            bank_name = campaigns_per_project[project][channel][0].get('bu_name')
             slot_limit_of_bank = json.loads(campaigns_per_project[project][channel][0].get("slot_limit_of_bank"))
+            slot_limit_per_bank[bank_name]=slot_limit_of_bank
             response = get_schedule_bu_proj_slot(copy.deepcopy(campaigns_per_project[project][channel]),
                                                  campaigns_per_project[project][channel][0].get("b_unique_id"),
                                                  slot_limit_of_bank.get(channel), channel)
@@ -239,36 +284,45 @@ def fetch_campaigns_and_notify_users(request_data):
 
                 for campaign in slots_seg_count[slots]:
                     project_unique_id = campaign["project_unique_id"] # project id of this project and finding the users
-                    output = {"CampaignId": campaign["campaign_id"], "CampaignTitle": campaign["camp_name"], "Channel": channel,
-                              "InstanceId": campaign["instance_id"], "SegmentTitle": campaign["segment_title"],
-                              "SegmentCount": cbc_with_status.get(campaign["instance_id"], {}).get("SegmentCount", 0) + campaign["count"],
-                              "StartDateTime": campaign["start_date"],
-                              "EndDateTime": campaign["end_date"], "Status": status}
+                    slot_limit_per_project.setdefault(bank_name,{}).setdefault(project_unique_id,slot_limit_of_project)
+                    project_name_through_project_id[project_unique_id] = project
+                    output = {"Campaign Id": campaign["campaign_id"], "Project Name": project,
+                              "Campaign Title": campaign["camp_name"], "Channel": channel,
+                              "Instance Id": campaign["instance_id"], "Segment Title": campaign["segment_title"],
+                              "Segment Count": cbc_with_status.get(campaign["instance_id"], {}).get("SegmentCount", 0) + campaign["count"],
+                              "Start Date Time": campaign["start_date"],
+                              "End Date Time": campaign["end_date"], "Status": status}
                     if cbc_with_status.get(campaign["instance_id"], None) is None:
                         cbc_with_status[campaign["instance_id"]] = output
                     else:
                         if cbc_with_status.get(campaign["instance_id"]).get("Status") == "THROTTLED":
-                            cbc_with_status.get(campaign["instance_id"])["SegmentCount"] = output.get("SegmentCount")
+                            cbc_with_status.get(campaign["instance_id"])["Segment Count"] = output.get("Segment Count")
                             continue
                         cbc_with_status[campaign["instance_id"]] = output
 
         cbc_with_status_list = [cbc for cbc in cbc_with_status.values()]
 
-        if users_for_project_id.get(project_unique_id) is None:
-            continue
+        final_data.setdefault(bank_name, {}).setdefault(project_unique_id, []).extend(cbc_with_status_list)
 
+    for bank,value in final_data.items():
         intro = """Hi Everyone,"""
-        email_body = f"""{make_the_html(intro, slot_limit_of_project, slot_limit_of_bank, cbc_with_status_list)}"""
-        email_subject = f"{project}: {date.today().strftime('%B %d, %Y')}, Campaign Update"
-        email_tos_set = set(users_for_project_id.get(project_unique_id))
-        email_tos = list(email_tos_set.union(admin_users))
-        email_tos = ['kushagra.agrawal@creditas.in', 'vanshkumar.dua@creditas.in', 'ritik.saini@creditas.in',
-                     'rashmi.mishra@creditas.in', 'gagan.rajput@creditas.in']
+        date_to_mention = date.today().strftime('%B %d, %Y') if request_data.get('date', None) is None \
+                else datetime.strptime(request_data.get('date'), '%Y-%m-%d').strftime('%B %d, %Y')
+        email_subject = f"{bank}: {date_to_mention}, Campaign Update"
+        for project_unique_id,campaigns in value.items():
+            email_tos = set(users_for_project_id.get(project_unique_id))
+        email_tos = list(email_tos.union(admin_users))
+        if email_tos is None or len(email_tos) < 1:
+            continue
+        email_body = f"""{make_the_html(intro, slot_limit_per_project[bank], slot_limit_per_bank.get(bank),
+                                        value, project_name_through_project_id, bank)}"""
 
+        email_tos = ['kushagra.agrawal@creditas.in', 'vanshkumar.dua@creditas.in', 'dhruv.rai@creditas.in']
         email_status = send_email_via_lembda_api(email_tos, email_subject, email_body)
         if email_status.status_code != 200:
+            logger.debug(f"Error {method_name}, email_status: {email_status}")
             return dict(status=False, message="Error!, Email is not sent properly")
-
+    logger.debug(f"Exit {method_name}, Success")
     return dict(status_code=200, result=TAG_SUCCESS, data=final_data)
 
 
@@ -756,7 +810,7 @@ def get_schedule_bu_proj_slot(schedule, bu_id, slot_limit_per_min, channel):
 
     slot_limit = slot_limit_per_min * SLOT_INTERVAL_MINUTES
 
-    curr_segments = sorted(schedule, key=lambda x: (x["end"], x["start"]), reverse=True)
+    curr_segments = sorted(schedule, key=lambda x: (x["end"], x["start"]))
     max_time = curr_segments[0]["end"]
     min_time = curr_segments[0]["start"]
     for segment in curr_segments:
