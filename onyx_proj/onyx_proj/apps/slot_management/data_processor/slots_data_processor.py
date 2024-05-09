@@ -603,13 +603,11 @@ def fetch_valid_bu_campaigns(content_date_keys_to_validate,dates_to_validate,bus
         campaign = {
             "start": campaign.get("StartDateTime"),
             "end": campaign.get("EndDateTime"),
-            "count": int(count if count is not None else 0)
+            "count": int(count if count is not None else 0),
+            "split_details": campaign.get("split_details")
         }
 
-        if campaign.get("is_split",False) is True:
-            split_details = json.loads(campaign["split_details"])
-            campaign["count"] = ceil(campaign["count"]/split_details["total_splits"])
-        if campaign.get("split_details") is not None and campaign.get("is_split", False) is False:
+        if campaign.get("split_details") is not None:
             split_count = get_count_by_split_details(json.loads(campaign.get("split_details")), campaign["count"])
             campaign["count"] = split_count
         valid_bu_campaigns.setdefault(key, []).append(campaign)
@@ -647,12 +645,10 @@ def fetch_valid_project_campaigns(content_date_keys_to_validate, dates_to_valida
         campaign = {
             "start": campaign.get("StartDateTime"),
             "end": campaign.get("EndDateTime"),
-            "count": int(count if count is not None else 0)
+            "count": int(count if count is not None else 0),
+            "split_details": campaign.get("split_details")
         }
-        if campaign.get("is_split",False) is True:
-            split_details = json.loads(campaign["split_details"])
-            campaign["count"] = ceil(campaign["count"]/split_details["total_splits"])
-        if campaign.get("split_details") is not None and campaign.get("is_split", False) is False:
+        if campaign.get("split_details") is not None:
             split_count = get_count_by_split_details(json.loads(campaign.get("split_details")), campaign["count"])
             campaign["count"] = split_count
         valid_project_campaigns.setdefault(key, []).append(campaign)
@@ -903,12 +899,11 @@ def fetch_bu_campaigns(business_unit_id, date):
             "count": int(count),
             "proj_name": campaign.get("project_name"),
             "camp_id": campaign.get("campaign_builder_id"),
-            "bu_name": campaign.get("bu_name")
+            "bu_name": campaign.get("bu_name"),
+            "is_split": campaign.get("is_split"),
+            "split_details": campaign.get("split_details")
         }
-        if campaign.get("is_split", False) is True:
-            split_details = json.loads(campaign["split_details"])
-            campaign["count"] = ceil(campaign["count"]/split_details["total_splits"])
-        if campaign.get("split_details") is not None and campaign.get("is_split", False) is False:
+        if campaign.get("split_details") is not None:
             split_count = get_count_by_split_details(json.loads(campaign.get("split_details")), campaign["count"])
             campaign["count"] = split_count
         valid_bu_campaigns.setdefault(camp_type, []).append(campaign)
