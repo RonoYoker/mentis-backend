@@ -93,7 +93,14 @@ def list_of_dicts_to_html_table(list_of_dicts):
 
         # Adding table rows with conditional formatting
         for dictionary in value:
-            html_table += "<tr style='background-color:{};'>".format('lightgreen' if dictionary['Status'] == 'SUCCESS' else 'red')
+            row_color = None
+            if dictionary['Status'] == 'IMPLICIT':
+                row_color = "orange"
+            elif dictionary['Status'] == 'SUCCESS':
+                row_color = "lightgreen"
+            else:
+                row_color = "red"
+            html_table += "<tr style='background-color:{};'>".format(row_color)
             for key, value2 in dictionary.items():
                 html_table += "<td>{}</td>".format(value2)
             html_table += "</tr>\n"
@@ -131,7 +138,7 @@ def make_the_html(intro, slot_limit_per_project_id, slot_limit_per_bank, value, 
     return html_template
 
 
-def prepare_approved_and_booked_campaigns(date= None):
+def prepare_approved_and_booked_campaigns(date = None):
     method_name = "prepare_approved_and_booked_campaigns"
     query_to_fetch = BOOKED_AND_APPROVED_CAMPAIGNS_BY_DATE_QUERY
     # date format - YYYY-MM-DD
@@ -219,13 +226,12 @@ def fetch_campaigns_and_notify_users(request_data):
             project_name = campaign.get('proj_name')
             campaigns_per_project.setdefault(project_name,{}).setdefault(content_type,[]).append(campaign)
 
-    # permissions of projects for particular users
+    # fetching permissions of projects for particular users
     formatted_time = current_time.strftime("%Y-%m-%d %H:%M:%S")
-
     filter_list = [{"column": "state", "value": "Active", "op": "=="},
                    {"column": "is_active", "value": 1, "op": "=="},
                    {"column": "expiry_time", "value": formatted_time, "op": ">="}]
-    relationships_list = ['user_project_mapping_list.roles.roles_permissions_mapping_list.permission']
+    relationships_list = ['user_project_mapping_list.roles.roles_permissions_mapping_list.permission']  # no need of all relations list
     project_permissions = CEDUser().get_details_by_filter_list(filter_list=filter_list, relationships_list=relationships_list)
 
     #fetching all the admins
@@ -245,17 +251,17 @@ def fetch_campaigns_and_notify_users(request_data):
     # making set for admin users
     admin_users = {admin.email_id for admin in admin_permissions}
 
-    final_data = {} # FOR TESTING TO BE REMOVED LATER
-    slot_limit_per_project={}
-    slot_limit_per_bank={}
-    project_name_through_project_id={}
+    final_data = {}  # FOR TESTING TO BE REMOVED LATER
+    slot_limit_per_project = {}
+    slot_limit_per_bank = {}
+    project_name_through_project_id = {}
     for project in campaigns_per_project:
         project_unique_id = None
         cbc_with_status = {}
         for channel in campaigns_per_project[project]:
             bank_name = campaigns_per_project[project][channel][0].get('bu_name')
             slot_limit_of_bank = json.loads(campaigns_per_project[project][channel][0].get("slot_limit_of_bank"))
-            slot_limit_per_bank[bank_name]=slot_limit_of_bank
+            slot_limit_per_bank[bank_name] = slot_limit_of_bank
             response = get_schedule_bu_proj_slot(copy.deepcopy(campaigns_per_project[project][channel]),
                                                  campaigns_per_project[project][channel][0].get("b_unique_id"),
                                                  slot_limit_of_bank.get(channel), channel)
@@ -281,7 +287,8 @@ def fetch_campaigns_and_notify_users(request_data):
                     total_count += campaign["count"]
 
                 status = "SUCCESS" if total_count <= slot_limit_of_bank.get(channel) * SLOT_INTERVAL_MINUTES else "THROTTLED"
-
+                if len(slots_seg_count[slots]) == 0:
+                    project_unique_id = campaigns_per_project[project][channel][0].get("project_unique_id")
                 for campaign in slots_seg_count[slots]:
                     project_unique_id = campaign["project_unique_id"] # project id of this project and finding the users
                     slot_limit_per_project.setdefault(bank_name,{}).setdefault(project_unique_id,slot_limit_of_project)
@@ -289,7 +296,7 @@ def fetch_campaigns_and_notify_users(request_data):
                     output = {"Campaign Id": campaign["campaign_id"], "Project Name": project,
                               "Campaign Title": campaign["camp_name"], "Channel": channel,
                               "Instance Id": campaign["instance_id"], "Segment Title": campaign["segment_title"],
-                              "Segment Count": cbc_with_status.get(campaign["instance_id"], {}).get("SegmentCount", 0) + campaign["count"],
+                              "Segment Count": cbc_with_status.get(campaign["instance_id"], {}).get("Segment Count", 0) + campaign["count"],
                               "Start Date Time": campaign["start_date"],
                               "End Date Time": campaign["end_date"], "Status": status}
                     if cbc_with_status.get(campaign["instance_id"], None) is None:
@@ -300,6 +307,10 @@ def fetch_campaigns_and_notify_users(request_data):
                             continue
                         cbc_with_status[campaign["instance_id"]] = output
 
+        for cbc in cbc_with_status.values():
+            if cbc.get("Segment Count") == 0:
+                cbc["Status"] = "IMPLICIT"
+
         cbc_with_status_list = [cbc for cbc in cbc_with_status.values()]
 
         final_data.setdefault(bank_name, {}).setdefault(project_unique_id, []).extend(cbc_with_status_list)
@@ -309,15 +320,16 @@ def fetch_campaigns_and_notify_users(request_data):
         date_to_mention = date.today().strftime('%B %d, %Y') if request_data.get('date', None) is None \
                 else datetime.strptime(request_data.get('date'), '%Y-%m-%d').strftime('%B %d, %Y')
         email_subject = f"{bank}: {date_to_mention}, Campaign Update"
+        email_tos = set()
         for project_unique_id,campaigns in value.items():
-            email_tos = set(users_for_project_id.get(project_unique_id))
+            email_tos = email_tos.union(set(users_for_project_id.get(project_unique_id)))
         email_tos = list(email_tos.union(admin_users))
         if email_tos is None or len(email_tos) < 1:
             continue
         email_body = f"""{make_the_html(intro, slot_limit_per_project[bank], slot_limit_per_bank.get(bank),
                                         value, project_name_through_project_id, bank)}"""
 
-        email_tos = ['kushagra.agrawal@creditas.in', 'vanshkumar.dua@creditas.in', 'dhruv.rai@creditas.in']
+        email_tos = ['kushagra.agrawal@creditas.in', 'vanshkumar.dua@creditas.in', 'dhruv.rai@creditas.in', 'gagan.rajput@creditas.in', 'rishi.tiwari@creditas.in']
         email_status = send_email_via_lembda_api(email_tos, email_subject, email_body)
         if email_status.status_code != 200:
             logger.debug(f"Error {method_name}, email_status: {email_status}")
@@ -872,6 +884,25 @@ def get_schedule_bu_proj_slot(schedule, bu_id, slot_limit_per_min, channel):
                     }
                     filled_segment_count[slot_key_pair].append(plot_dict)
                     curr_camp_data['count'] = 0
+            elif curr_camp_data['start'] == slot_start_time and curr_camp_data.get('count') == 0:
+                campaign_flag = False
+                for plot in filled_segment_count[slot_key_pair]:
+                    if plot['campaign_id'] == curr_camp_data['camp_id']:
+                        campaign_flag = True
+                        break
+                if not campaign_flag:
+                    plot_dict = {
+                        "campaign_id": curr_camp_data['camp_id'],
+                        "project_name": curr_camp_data['proj_name'],
+                        "count": curr_camp_data.get('count'),
+                        "instance_id": curr_camp_data.get('cssd_id'),
+                        "start_date": curr_camp_data.get('start'),
+                        "end_date": curr_camp_data.get('end'),
+                        "segment_title": curr_camp_data.get("segment_name"),
+                        "project_unique_id": curr_camp_data.get("project_unique_id"),
+                        "camp_name": curr_camp_data.get('camp_name')
+                    }
+                    filled_segment_count[slot_key_pair].append(plot_dict)
 
     return {"success": True, "slots_seg_count": filled_segment_count, "proj_limit": project_limit_per_minute}
 
