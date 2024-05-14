@@ -290,6 +290,7 @@ def fetch_campaigns_and_notify_users(request_data):
                 if len(slots_seg_count[slots]) == 0:
                     project_unique_id = campaigns_per_project[project][channel][0].get("project_unique_id")
                 for campaign in slots_seg_count[slots]:
+                    utc_ist_time_diff = timedelta(hours=5) + timedelta(minutes=30)
                     project_unique_id = campaign["project_unique_id"] # project id of this project and finding the users
                     slot_limit_per_project.setdefault(bank_name,{}).setdefault(project_unique_id,slot_limit_of_project)
                     project_name_through_project_id[project_unique_id] = project
@@ -297,8 +298,8 @@ def fetch_campaigns_and_notify_users(request_data):
                               "Campaign Title": campaign["camp_name"], "Channel": channel,
                               "Instance Id": campaign["instance_id"], "Segment Title": campaign["segment_title"],
                               "Segment Count": cbc_with_status.get(campaign["instance_id"], {}).get("Segment Count", 0) + campaign["count"],
-                              "Start Date Time": campaign["start_date"],
-                              "End Date Time": campaign["end_date"], "Status": status}
+                              "Start Date Time": campaign["start_date"] + utc_ist_time_diff,
+                              "End Date Time": campaign["end_date"] + utc_ist_time_diff, "Status": status}
                     if cbc_with_status.get(campaign["instance_id"], None) is None:
                         cbc_with_status[campaign["instance_id"]] = output
                     else:
