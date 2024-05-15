@@ -69,6 +69,7 @@ class WhatsAppContent(Content):
         description = content_data.get('description')
         unique_id = content_data.get('unique_id')
         vendor_template_id = content_data.get('vendor_template_id')
+        template_category = content_data.get('template_category')
 
         user_session = Session().get_user_session_object()
         user_name = user_session.user.user_name
@@ -107,6 +108,7 @@ class WhatsAppContent(Content):
         wa_content.vendor_template_id = vendor_template_id
         wa_content.extra = extra
         wa_content.description = description
+        wa_content.template_category = template_category
 
         try:
             wa_content_resp = self.save_or_update_whatsapp_content_and_history(wa_content)
@@ -149,6 +151,7 @@ class WhatsAppContent(Content):
                             details_message=wa_content.error_msg)
 
     def validate(self, content_data):
+        from onyx_proj.apps.content.app_settings import TemplateCategory
         method_name = "validate"
         log_entry(content_data)
 
@@ -160,6 +163,10 @@ class WhatsAppContent(Content):
 
         if content_data.get('strength') is None or content_data.get('strength') == "":
             raise BadRequestException(method_name=method_name, reason="Strength is not provided")
+
+        if (content_data.get('template_category') is None or content_data.get('template_category') == "" or
+                content_data.get("template_category") not in [category.value for category in TemplateCategory]):
+            raise BadRequestException(method_name=method_name, reason="template_category is invalid")
 
         self.validate_description(content_data.get('description'))
         # self.validate_content_title(content_data.get('title'))

@@ -25,6 +25,7 @@ from onyx_proj.orm_models.CED_CampaignSMSContent_model import CED_CampaignSMSCon
 from onyx_proj.orm_models.CED_CampaignSubjectLineContent_model import CED_CampaignSubjectLineContent
 from onyx_proj.orm_models.CED_CampaignTextualContent_model import CED_CampaignTextualContent
 from onyx_proj.orm_models.CED_CampaignWhatsAppContent_model import CED_CampaignWhatsAppContent
+from enum import Enum
 
 CONTENT_TABLE_MAPPING = {
     "SMS": CEDCampaignSMSContent,
@@ -88,3 +89,9 @@ FETCH_CONTENT_MODE_FILTERS = {
 
 
 CAMPAIGN_CONTENT_DATA_CHANNEL_LIST = ["SMS", "WHATSAPP", "EMAIL", "IVR", "URL", "TAG", "SUBJECTLINE", "MEDIA", "TEXTUAL"]
+
+
+class TemplateCategory(Enum):
+    UTILITY = "Utility"
+    AUTHENTICATION = "Authentication"
+    MARKETING = "Marketing"

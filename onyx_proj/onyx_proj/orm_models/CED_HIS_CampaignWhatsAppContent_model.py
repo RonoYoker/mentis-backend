@@ -26,6 +26,7 @@ class CED_HIS_CampaignWhatsAppContent(Base, Orm_helper):
     vendor_mapping_enabled = Column("IsVendorMappingEnabled", Integer, default=0)
     vendor_template_id = Column("VendorTemplateId", String)
     comment = Column("Comment", String)
+    template_category = Column("TemplateCategory", String)
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)

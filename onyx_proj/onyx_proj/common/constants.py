@@ -1024,7 +1024,8 @@ SNAKE_TO_CAMEL_CONVERTER_FOR_CAMPAIGN_APPROVAL = {
     'is_validated': 'isValidated',
     'user_data': 'userData',
     'local_file_id': 'localFileId',
-    'campaign_data': 'campaignData'
+    'campaign_data': 'campaignData',
+    'template_category': 'templateCategory'
 }
 CAMEL_TO_SNAKE_CONVERTER_FOR_TEST_CAMPAIGN_STATUS = {
     'CampaignId': 'campaign_id',
@@ -1048,6 +1049,7 @@ CAMEL_TO_SNAKE_CONVERTER_FOR_TEST_CAMPAIGN_STATUS = {
     'VendorMessageId': 'vendor_message_id',
     'VendorResponseId': 'vendor_response_id',
     'campaign_data': 'campaign_data',
+    'template_category': 'templateCategory'
 }
 
 CAMPAIGN_APPROVAL_STATUS_SUBJECT_MAPPING = {
