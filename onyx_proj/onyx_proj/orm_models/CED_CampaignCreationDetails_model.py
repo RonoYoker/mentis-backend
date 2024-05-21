@@ -36,6 +36,7 @@ class CED_CampaignCreationDetails(Base, Orm_helper):
     segment_id = Column("SegmentId", Integer)
     segment_title = Column("SegmentTitle", String)
     vendor_config_id = Column("VendorConfigId", String)
+    template_category = Column("TemplateCategory", String)
 
     def __init__(self, data={}):
         Orm_helper.__init__(self, data)

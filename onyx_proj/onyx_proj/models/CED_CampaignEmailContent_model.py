@@ -67,7 +67,7 @@ class CEDCampaignEmailContent:
         res = fetch_rows_limited(self.engine, self.table, filter_list, ["id", "unique_id", "title", "strength",
                                             "project_id", "is_deleted", "history_id", "extra", "vendor_template_id",
                                             "created_by", "approved_by", "status", "is_contain_url","language_name",
-                                            "is_active", "rejection_reason", "creation_date", "updation_date"],
+                                            "is_active", "rejection_reason", "creation_date", "updation_date", "template_category"],
                                  ["variables.master_header", "url_mapping.url.variables", "subject_mapping.subject_line"])
         if res is None or len(res) <= 0:
             return None

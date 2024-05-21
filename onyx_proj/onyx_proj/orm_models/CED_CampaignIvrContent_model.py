@@ -31,6 +31,7 @@ class CED_CampaignIvrContent(Base, Orm_helper):
     is_starred = Column("IsStarred", Boolean, default=False)
     is_validated = Column("IsValidated", Boolean, default=False)
     variables = relationship("CED_CampaignContentVariableMapping")
+    template_category = Column("TemplateCategory", String)
 
     tag_mapping = relationship("CED_EntityTagMapping")
     follow_up_sms_list = relationship('CED_CampaignContentFollowUPSmsMapping')

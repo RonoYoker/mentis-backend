@@ -4061,7 +4061,6 @@ def create_campaign_details_in_local_db(request: dict):
 
     # parse content specific data from request object
     content_data = get_campaign_content_data_by_channel(fp_project_details_json)
-
     # prepare fp_file_data entity
     fp_file_data_entity = CED_FP_FileData()
     fp_file_data_entity.file_name = fp_project_details_json["fileName"]
@@ -4124,6 +4123,7 @@ def create_campaign_details_in_local_db(request: dict):
     ccd_entity.segment_id = project_details_object["segmentId"]
     ccd_entity.segment_title = project_details_object["segmentTitle"]
     ccd_entity.vendor_config_id = fp_project_details_json["campaignBuilderCampaignEntity"]["vendorConfigId"]
+    ccd_entity.template_category = content_data.get("template_category")
 
     try:
         if not fp_project_details_json.get("testCampaign"):
