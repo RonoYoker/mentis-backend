@@ -439,7 +439,7 @@ def process_the_all_channels_response(channel):
                         error_count += 1
                     data_to_dump = []
                 if traversing_number != current_contact:
-                    logger.info(f"popping {current_contact} from outer_map: {outer_map}")
+                    # logger.info(f"popping {current_contact} from outer_map: {outer_map}")
                     outer_map.pop(current_contact)
                 current_contact = traversing_number
                 current_category = traversing_category
