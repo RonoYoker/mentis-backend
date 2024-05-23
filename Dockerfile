@@ -32,7 +32,8 @@ RUN \
                 libtool-ltdl-devel && \
  yum install -y nginx && \
  yum install -y screen && \
- pip install supervisor && \
+ pip install --upgrade pip && \
+ pip install --trusted-host pypi.python.org --trusted-host pypi.org --trusted-host=api.github.com supervisor --no-cache-dir && \
 
 
  mkdir -p /var/log/supervisor /etc/supervisord.d /logs /opt/logs && \
