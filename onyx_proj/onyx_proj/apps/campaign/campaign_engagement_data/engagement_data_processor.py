@@ -228,16 +228,16 @@ def fetching_the_data_for_given_channel(channel, BankName, env):
     bucket_name = settings.QUERY_EXECUTION_JOB_BUCKET
     try:
         if channel == "SMS":
-            query = f"""SELECT EnMobileNumber as contact, Status, CreatedDate FROM CED_SMSResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY ","  LINES TERMINATED BY "\n" """
+            query = f"""SELECT sri.EnMobileNumber as contact, sri.Status as Status, sri.CreatedDate as CreatedDate, ccd.TemplateCategory as template_category FROM CED_SMSResponse_Intermediate as sri JOIN CED_CampaignCreationDetails ccd ON sri.CampaignId = ccd.CampaignId AND sri.TestCampaign = ccd.TestCampaign WHERE sri.CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND sri.CreatedDate <= NOW() AND ccd.TestCampaign = 0 order by contact, template_category desc INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY ","  LINES TERMINATED BY "\n" """
             results = CEDSMSResponse().fetch_last_30_days_data(query)
         elif channel == "IVR":
-            query = f"""SELECT AccountId as contact, Status, CreationDate as CreatedDate FROM CED_IVRResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY ","  LINES TERMINATED BY "\n" """
+            query = f"""SELECT sri.EnMobileNumber as contact, sri.Status as Status, sri.CreationDate as CreatedDate, ccd.TemplateCategory as template_category FROM CED_IVRResponse as sri JOIN CED_CampaignCreationDetails ccd ON sri.CampaignId = ccd.CampaignId AND sri.TestCampaign = ccd.TestCampaign WHERE sri.CreationDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND sri.CreationDate <= NOW() AND ccd.TestCampaign = 0 order by contact, template_category desc INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY ","  LINES TERMINATED BY "\n" """
             results = CEDIVRResponse().fetch_last_30_days_data(query)
         elif channel == "EMAIL":
-            query = f"""SELECT EmailId as contact, Status, CreatedDate FROM CED_EMAILResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY "," LINES TERMINATED BY "\n" """
+            query = f"""SELECT sri.EnEmailId as contact, sri.Status as Status, sri.CreatedDate as CreatedDate, ccd.TemplateCategory as template_category FROM CED_EMAILResponse_Intermediate as sri JOIN CED_CampaignCreationDetails ccd ON sri.CampaignId = ccd.CampaignId AND sri.TestCampaign = ccd.TestCampaign WHERE sri.CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND sri.CreatedDate <= NOW() AND ccd.TestCampaign = 0 order by contact, template_category desc INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY "," LINES TERMINATED BY "\n" """
             results = CEDEMAILResponse().fetch_last_30_days_data(query)
-        elif channel == "WhatsApp":
-            query = f"""SELECT MobileNumber as contact, Status, CreatedDate FROM CED_WhatsAppResponse_Intermediate WHERE CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND CreatedDate <= NOW() order by contact INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY "," LINES TERMINATED BY "\n" """
+        elif channel == "WHATSAPP":
+            query = f"""SELECT sri.EnMobileNumber as contact, sri.Status as Status, sri.CreatedDate as CreatedDate, ccd.TemplateCategory as template_category FROM CED_WhatsAppResponse_Intermediate as sri JOIN CED_CampaignCreationDetails ccd ON sri.CampaignId = ccd.CampaignId AND sri.TestCampaign = ccd.TestCampaign WHERE sri.CreatedDate >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND sri.CreatedDate <= NOW() AND ccd.TestCampaign = 0 order by contact, template_category desc INTO OUTFILE S3 "s3://{bucket_name}/{file_name}" FIELDS TERMINATED BY "," LINES TERMINATED BY "\n" """
             results = CEDWHATSAPPResponse().fetch_last_30_days_data(query)
         else:
             logger.error(f"method_name :: {method_name}, channel is not in Email, WhatsApp, SMS, IVR")
@@ -294,24 +294,29 @@ def process_the_all_channels_response(channel):
 
     outer_map = {}
     current_contact = None
+    current_category = None
     data_to_dump = []
     error_count = 0
     no_of_rows = 0
+    # with open(f'{results["file"]}', 'r') as csvfile:
     with open(f'/tmp/{results["file"]}', 'r') as csvfile:
         csvreader = csv.reader(csvfile)
         for row in csvreader:
-            if len(row) != 3:
+            if len(row) != 4:
                 logger.error(f"Invalid data ::{row}")
                 continue
             no_of_rows+=1
             if no_of_rows % 100000 == 0:
                 logger.debug(f"no of rows processed::{no_of_rows}")
             traversing_number = row[0]
-            outer_map.setdefault(traversing_number,{'delivery': []})
-            outer_map[traversing_number]['delivery'].append({"time":datetime.datetime.strptime(row[2],"%Y-%m-%d %H:%M:%S"),"status": row[1]})
+            traversing_category = row[3]
+            outer_map.setdefault(traversing_number,{'delivery': {}})
+            outer_map.get(traversing_number).get("delivery").setdefault(traversing_category,[])
+            outer_map[traversing_number]['delivery'][traversing_category].append({"time":datetime.datetime.strptime(row[2],"%Y-%m-%d %H:%M:%S"),"status": row[1]})
             if current_contact is None:
                 current_contact = traversing_number
-            elif current_contact != traversing_number:
+                current_category = traversing_category
+            elif current_contact != traversing_number or current_category != traversing_category:
                 output = {'MTD_LastFiveFail': True, 'ThirtyDays_LastFiveFail': True, 'MTD_Successful': 0,
                                'MTD_Failures': 0, 'ThirtyDays_Successful': 0, 'ThirtyDays_Failures': 0}
 
@@ -320,45 +325,111 @@ def process_the_all_channels_response(channel):
                 # Get the current datetime
                 # current_datetime = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
 
-                # sorting the data for the with filtering for MTD and last thirty_days
-                mtd_data = sorted(
-                    [data for data in outer_map[current_contact]['delivery'] if start_of_month <= data["time"] <= current_datetime and not any(data["status"].lower().startswith(x) for x in ["snd","hyp"])  ],
-                    key=lambda x: x["time"])
-                total_data = sorted([data for data in outer_map[current_contact]['delivery'] if not any(data["status"].lower().startswith(x) for x in ["snd","hyp"]) ], key=lambda x: x["time"])
-                # settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]
+                if current_category != "\\N":
+                    # sorting the data for the with filtering for MTD and last thirty_days
+                    mtd_data = sorted(
+                        [data for data in outer_map[current_contact]['delivery'][current_category] if start_of_month <= data["time"] <= current_datetime and not any(data["status"].lower().startswith(x) for x in ["snd","hyp"]) ],
+                        key=lambda x: x["time"])
+                    total_data = sorted([data for data in outer_map[current_contact]['delivery'][current_category] if not any(data["status"].lower().startswith(x) for x in ["snd","hyp"]) ], key=lambda x: x["time"])
+                    # settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]
 
-                output['MTD_LastFiveFail'] = all(
-                    [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
-                     mtd_data[-5:]]) if len(mtd_data) >= 5 else False
-                output['ThirtyDays_LastFiveFail'] = all(
-                    [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
-                     total_data[-5:]]) if len(total_data) >= 5 else False
-                output['MTD_Successful'] = len(
-                    [data for data in mtd_data if
-                     data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
-                output['MTD_Failures'] = len(
-                    [data for data in mtd_data if
-                     data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
-                output['ThirtyDays_Successful'] = len(
-                    [data for data in total_data if
-                     data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
-                output['ThirtyDays_Failures'] = len(
-                    [data for data in total_data if
-                     data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+                    output['MTD_LastFiveFail'] = all(
+                        [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+                         mtd_data[-5:]]) if len(mtd_data) >= 5 else False
+                    output['ThirtyDays_LastFiveFail'] = all(
+                        [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+                         total_data[-5:]]) if len(total_data) >= 5 else False
+                    output['MTD_Successful'] = len(
+                        [data for data in mtd_data if
+                         data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+                    output['MTD_Failures'] = len(
+                        [data for data in mtd_data if
+                         data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+                    output['ThirtyDays_Successful'] = len(
+                        [data for data in total_data if
+                         data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+                    output['ThirtyDays_Failures'] = len(
+                        [data for data in total_data if
+                         data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+                    output['ThirtyDays_LastTwoFail'] = all(
+                        [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+                         total_data[-2:]]) if len(total_data) >= 2 else False
+                    output['ThirtyDays_LastThreeFail'] = all(
+                        [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+                         total_data[-3:]]) if len(total_data) >= 3 else False
+                    output['ThirtyDays_LastFourFail'] = all(
+                        [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+                         total_data[-4:]]) if len(total_data) >= 4 else False
+
+                    data_to_dump.append({
+                        "Channel": channel,
+                        "EnContactIdentifier": current_contact,
+                        "TemplateCategory": current_category,
+                        'MTD_LastFiveFail': output['MTD_LastFiveFail'],
+                        'ThirtyDays_LastFiveFail': output['ThirtyDays_LastFiveFail'],
+                        'MTD_Successful': output['MTD_Successful'],
+                        'MTD_Failures': output['MTD_Failures'],
+                        'ThirtyDays_Successful': output['ThirtyDays_Successful'],
+                        'ThirtyDays_Failures': output['ThirtyDays_Failures'],
+                        'ThirtyDays_LastTwoFail': output['ThirtyDays_LastTwoFail'],
+                        'ThirtyDays_LastThreeFail': output['ThirtyDays_LastThreeFail'],
+                        'ThirtyDays_LastFourFail': output['ThirtyDays_LastFourFail']
+                    })
+
+                if current_contact != traversing_number:
+                    all_data_for_current_cont = []
+                    for data in outer_map[current_contact]['delivery'].values():
+                        all_data_for_current_cont.extend(data)
+                    mtd_data_agg = sorted(
+                        [data for data in all_data_for_current_cont if start_of_month <= data["time"] <= current_datetime and not any(data["status"].lower().startswith(x) for x in ["snd","hyp"]) ],
+                        key=lambda x: x["time"])
+                    total_data_agg = sorted([data for data in all_data_for_current_cont if not any(data["status"].lower().startswith(x) for x in ["snd","hyp"]) ], key=lambda x: x["time"])
+                    output['MTD_LastFiveFail_agg'] = all(
+                        [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+                         mtd_data_agg[-5:]]) if len(mtd_data_agg) >= 5 else False
+                    output['ThirtyDays_LastFiveFail_agg'] = all(
+                        [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+                         total_data_agg[-5:]]) if len(total_data_agg) >= 5 else False
+                    output['MTD_Successful_agg'] = len(
+                        [data for data in mtd_data_agg if
+                         data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+                    output['MTD_Failures_agg'] = len(
+                        [data for data in mtd_data_agg if
+                         data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+                    output['ThirtyDays_Successful_agg'] = len(
+                        [data for data in total_data_agg if
+                         data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+                    output['ThirtyDays_Failures_agg'] = len(
+                        [data for data in total_data_agg if
+                         data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+                    output['ThirtyDays_LastTwoFail_agg'] = all(
+                        [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+                         total_data_agg[-2:]]) if len(total_data_agg) >= 2 else False
+                    output['ThirtyDays_LastThreeFail_agg'] = all(
+                        [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+                         total_data_agg[-3:]]) if len(total_data_agg) >= 3 else False
+                    output['ThirtyDays_LastFourFail_agg'] = all(
+                        [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+                         total_data_agg[-4:]]) if len(total_data_agg) >= 4 else False
+                    data_to_dump.append({
+                        "Channel": channel,
+                        "EnContactIdentifier": current_contact,
+                        "TemplateCategory": None,
+                        'MTD_LastFiveFail': output['MTD_LastFiveFail_agg'],
+                        'ThirtyDays_LastFiveFail': output['ThirtyDays_LastFiveFail_agg'],
+                        'MTD_Successful': output['MTD_Successful_agg'],
+                        'MTD_Failures': output['MTD_Failures_agg'],
+                        'ThirtyDays_Successful': output['ThirtyDays_Successful_agg'],
+                        'ThirtyDays_Failures': output['ThirtyDays_Failures_agg'],
+                        'ThirtyDays_LastTwoFail': output['ThirtyDays_LastTwoFail_agg'],
+                        'ThirtyDays_LastThreeFail': output['ThirtyDays_LastThreeFail_agg'],
+                        'ThirtyDays_LastFourFail': output['ThirtyDays_LastFourFail_agg']
+                    })
+
                 # Get the starting datetime for the current month in str formatted
 
                 # making the object for CED_CampaignFilterData
 
-                data_to_dump.append({
-                    "Channel": 'SMS',
-                    "EnContactIdentifier": current_contact,
-                    'MTD_LastFiveFail': output['MTD_LastFiveFail'],
-                    'ThirtyDays_LastFiveFail': output['ThirtyDays_LastFiveFail'],
-                    'MTD_Successful': output['MTD_Successful'],
-                    'MTD_Failures': output['MTD_Failures'],
-                    'ThirtyDays_Successful': output['ThirtyDays_Successful'],
-                    'ThirtyDays_Failures': output['ThirtyDays_Failures']
-                })
                 if len(data_to_dump) >= 1000:
                     # insert data
                     cols = data_to_dump[0].keys()
@@ -367,116 +438,191 @@ def process_the_all_channels_response(channel):
                         logger.error(f"Unable to insert data in db cols::{cols} sample_row::{data_to_dump[0]}")
                         error_count += 1
                     data_to_dump = []
-                outer_map.pop(current_contact)
+                if traversing_number != current_contact:
+                    logger.info(f"popping {current_contact} from outer_map: {outer_map}")
+                    outer_map.pop(current_contact)
                 current_contact = traversing_number
+                current_category = traversing_category
 
     logger.debug('made list of status and time for  particular contact')
 
-    output = {'MTD_LastFiveFail': True, 'ThirtyDays_LastFiveFail': True, 'MTD_Successful': 0,
-              'MTD_Failures': 0, 'ThirtyDays_Successful': 0, 'ThirtyDays_Failures': 0}
+    if current_contact is not None:
+        output = {'MTD_LastFiveFail': True, 'ThirtyDays_LastFiveFail': True, 'MTD_Successful': 0,
+                  'MTD_Failures': 0, 'ThirtyDays_Successful': 0, 'ThirtyDays_Failures': 0}
 
-    current_datetime = datetime.datetime.utcnow()
-    start_of_month = datetime.datetime.utcnow().replace(day=1, hour=0, minute=0, second=0)
+        current_datetime = datetime.datetime.utcnow()
+        start_of_month = datetime.datetime.utcnow().replace(day=1, hour=0, minute=0, second=0)
 
-    # sorting the data for the with filtering for MTD and last thirty_days
-    mtd_data = sorted(
-        [data for data in outer_map[current_contact]['delivery'] if start_of_month <= data["time"] <= current_datetime],
-        key=lambda x: x["time"])
-    total_data = sorted([data for data in outer_map[current_contact]['delivery']], key=lambda x: x["time"])
-    # settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]
+        if current_category != "\\N":
+            # sorting the data for the with filtering for MTD and last thirty_days
+            mtd_data = sorted(
+                [data for data in outer_map[current_contact]['delivery'][current_category] if
+                 start_of_month <= data["time"] <= current_datetime and not any(
+                     data["status"].lower().startswith(x) for x in ["snd", "hyp"])],
+                key=lambda x: x["time"])
+            total_data = sorted([data for data in outer_map[current_contact]['delivery'][current_category] if
+                                 not any(data["status"].lower().startswith(x) for x in ["snd", "hyp"])],
+                                key=lambda x: x["time"])
+            # settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]
 
-    output['MTD_LastFiveFail'] = all(
-        [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
-         mtd_data[-5:]]) if len(mtd_data) >= 5 else False
-    output['ThirtyDays_LastFiveFail'] = all(
-        [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
-         total_data[-5:]]) if len(total_data) >= 5 else False
-    output['MTD_Successful'] = len(
-        [data for data in mtd_data if
-         data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
-    output['MTD_Failures'] = len(
-        [data for data in mtd_data if
-         data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
-    output['ThirtyDays_Successful'] = len(
-        [data for data in total_data if
-         data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
-    output['ThirtyDays_Failures'] = len(
-        [data for data in total_data if
-         data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+            output['MTD_LastFiveFail'] = all(
+                [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+                 mtd_data[-5:]]) if len(mtd_data) >= 5 else False
+            output['ThirtyDays_LastFiveFail'] = all(
+                [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+                 total_data[-5:]]) if len(total_data) >= 5 else False
+            output['MTD_Successful'] = len(
+                [data for data in mtd_data if
+                 data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+            output['MTD_Failures'] = len(
+                [data for data in mtd_data if
+                 data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+            output['ThirtyDays_Successful'] = len(
+                [data for data in total_data if
+                 data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+            output['ThirtyDays_Failures'] = len(
+                [data for data in total_data if
+                 data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+            output['ThirtyDays_LastTwoFail'] = all(
+                [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+                 total_data[-2:]]) if len(total_data) >= 2 else False
+            output['ThirtyDays_LastThreeFail'] = all(
+                [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+                 total_data[-3:]]) if len(total_data) >= 3 else False
+            output['ThirtyDays_LastFourFail'] = all(
+                [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+                 total_data[-4:]]) if len(total_data) >= 4 else False
 
-    data_to_dump.append({
-        "Channel": 'SMS',
-        "EnContactIdentifier": current_contact,
-        'MTD_LastFiveFail': output['MTD_LastFiveFail'],
-        'ThirtyDays_LastFiveFail': output['ThirtyDays_LastFiveFail'],
-        'MTD_Successful': output['MTD_Successful'],
-        'MTD_Failures': output['MTD_Failures'],
-        'ThirtyDays_Successful': output['ThirtyDays_Successful'],
-        'ThirtyDays_Failures': output['ThirtyDays_Failures']
-    })
+            data_to_dump.append({
+                "Channel": channel,
+                "EnContactIdentifier": current_contact,
+                "TemplateCategory": current_category,
+                'MTD_LastFiveFail': output['MTD_LastFiveFail'],
+                'ThirtyDays_LastFiveFail': output['ThirtyDays_LastFiveFail'],
+                'MTD_Successful': output['MTD_Successful'],
+                'MTD_Failures': output['MTD_Failures'],
+                'ThirtyDays_Successful': output['ThirtyDays_Successful'],
+                'ThirtyDays_Failures': output['ThirtyDays_Failures'],
+                'ThirtyDays_LastTwoFail': output['ThirtyDays_LastTwoFail'],
+                'ThirtyDays_LastThreeFail': output['ThirtyDays_LastThreeFail'],
+                'ThirtyDays_LastFourFail': output['ThirtyDays_LastFourFail']
+            })
 
-    # sorting on the bases of the creation date
-    # for key in outer_map:
-    #     output = {}
-    #     output[key] = {'MTD_LastFiveFail': True, 'ThirtyDays_LastFiveFail': True, 'MTD_Successful': 0, 'MTD_Failures': 0, 'ThirtyDays_Successful': 0, 'ThirtyDays_Failures': 0, 'UpdationDate': timezone.now().strftime("%Y-%m-%d %H:%M:%S")}
-    #
-    #     current_datetime = timezone.now()
-    #     start_of_month = timezone.datetime(current_datetime.year, current_datetime.month, 1,
-    #                                        tzinfo=current_datetime.tzinfo).strftime("%Y-%m-%d %H:%M:%S")
-    #     # Get the current datetime
-    #     current_datetime = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
-    #
-    #     #sorting the data for the with filtering for MTD and last thirty_days
-    #     mtd_data = sorted([data for data in outer_map[key]['delivery'] if start_of_month <= data["time"] <= current_datetime],key=lambda x:x["time"])
-    #     total_data = sorted([data for data in outer_map[key]['delivery']],key=lambda x:x["time"])
-    #     # settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]
-    #
-    #     output[key]['MTD_LastFiveFail'] = all(
-    #         [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
-    #          mtd_data[-5:]]) if len(mtd_data) >= 5 else False
-    #     output[key]['ThirtyDays_LastFiveFail'] = all(
-    #         [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
-    #          total_data[-5:]]) if len(total_data) >= 5 else False
-    #     output[key]['MTD_Successful'] = len(
-    #         [data for data in mtd_data if data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
-    #     output[key]['MTD_Failures'] = len(
-    #         [data for data in mtd_data if data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
-    #     output[key]['ThirtyDays_Successful'] = len(
-    #         [data for data in total_data if data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
-    #     output[key]['ThirtyDays_Failures'] = len(
-    #         [data for data in total_data if data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
-    #     # Get the starting datetime for the current month in str formatted
-    #
-    #     #making the object for CED_CampaignFilterData
-    #
-    #     data_to_dump.append({
-    #         "Channel": 'SMS',
-    #         "EnContactIdentifier": key,
-    #         'MTD_LastFiveFail': output[key]['MTD_LastFiveFail'],
-    #         'ThirtyDays_LastFiveFail': output[key]['ThirtyDays_LastFiveFail'],
-    #         'MTD_Successful': output[key]['MTD_Successful'],
-    #         'MTD_Failures': output[key]['MTD_Failures'],
-    #         'ThirtyDays_Successful': output[key]['ThirtyDays_Successful'],
-    #         'ThirtyDays_Failures': output[key]['ThirtyDays_Failures']
-    #     })
-    #     output.pop(key,None)
-    #
-    #     if len(data_to_dump) >= 1000:
-    #         #insert data
-    #         cols = data_to_dump[0].keys()
-    #         resp = insert_or_update_delivery_data(db_conn,cols,data_to_dump)
-    #         if resp.get("row_count") is None:
-    #             logger.error(f"Unable to insert data in db cols::{cols} sample_row::{data_to_dump[0]}")
-    #             error_count += 1
-    #         data_to_dump = []
+        all_data_for_current_cont = []
+        for data in outer_map[current_contact]['delivery'].values():
+            all_data_for_current_cont.extend(data)
+        mtd_data_agg = sorted(
+            [data for data in all_data_for_current_cont if
+             start_of_month <= data["time"] <= current_datetime and not any(
+                 data["status"].lower().startswith(x) for x in ["snd", "hyp"])],
+            key=lambda x: x["time"])
+        total_data_agg = sorted([data for data in all_data_for_current_cont if
+                                 not any(data["status"].lower().startswith(x) for x in ["snd", "hyp"])],
+                                key=lambda x: x["time"])
+        output['MTD_LastFiveFail_agg'] = all(
+            [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+             mtd_data_agg[-5:]]) if len(mtd_data_agg) >= 5 else False
+        output['ThirtyDays_LastFiveFail_agg'] = all(
+            [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+             total_data_agg[-5:]]) if len(total_data_agg) >= 5 else False
+        output['MTD_Successful_agg'] = len(
+            [data for data in mtd_data_agg if
+             data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+        output['MTD_Failures_agg'] = len(
+            [data for data in mtd_data_agg if
+             data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+        output['ThirtyDays_Successful_agg'] = len(
+            [data for data in total_data_agg if
+             data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+        output['ThirtyDays_Failures_agg'] = len(
+            [data for data in total_data_agg if
+             data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+        output['ThirtyDays_LastTwoFail_agg'] = all(
+            [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+             total_data_agg[-2:]]) if len(total_data_agg) >= 2 else False
+        output['ThirtyDays_LastThreeFail_agg'] = all(
+            [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+             total_data_agg[-3:]]) if len(total_data_agg) >= 3 else False
+        output['ThirtyDays_LastFourFail_agg'] = all(
+            [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+             total_data_agg[-4:]]) if len(total_data_agg) >= 4 else False
+        data_to_dump.append({
+            "Channel": channel,
+            "EnContactIdentifier": current_contact,
+            "TemplateCategory": None,
+            'MTD_LastFiveFail': output['MTD_LastFiveFail_agg'],
+            'ThirtyDays_LastFiveFail': output['ThirtyDays_LastFiveFail_agg'],
+            'MTD_Successful': output['MTD_Successful_agg'],
+            'MTD_Failures': output['MTD_Failures_agg'],
+            'ThirtyDays_Successful': output['ThirtyDays_Successful_agg'],
+            'ThirtyDays_Failures': output['ThirtyDays_Failures_agg'],
+            'ThirtyDays_LastTwoFail': output['ThirtyDays_LastTwoFail_agg'],
+            'ThirtyDays_LastThreeFail': output['ThirtyDays_LastThreeFail_agg'],
+            'ThirtyDays_LastFourFail': output['ThirtyDays_LastFourFail_agg']
+        })
+
+        # sorting on the bases of the creation date
+        # for key in outer_map:
+        #     output = {}
+        #     output[key] = {'MTD_LastFiveFail': True, 'ThirtyDays_LastFiveFail': True, 'MTD_Successful': 0, 'MTD_Failures': 0, 'ThirtyDays_Successful': 0, 'ThirtyDays_Failures': 0, 'UpdationDate': timezone.now().strftime("%Y-%m-%d %H:%M:%S")}
+        #
+        #     current_datetime = timezone.now()
+        #     start_of_month = timezone.datetime(current_datetime.year, current_datetime.month, 1,
+        #                                        tzinfo=current_datetime.tzinfo).strftime("%Y-%m-%d %H:%M:%S")
+        #     # Get the current datetime
+        #     current_datetime = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+        #
+        #     #sorting the data for the with filtering for MTD and last thirty_days
+        #     mtd_data = sorted([data for data in outer_map[key]['delivery'] if start_of_month <= data["time"] <= current_datetime],key=lambda x:x["time"])
+        #     total_data = sorted([data for data in outer_map[key]['delivery']],key=lambda x:x["time"])
+        #     # settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]
+        #
+        #     output[key]['MTD_LastFiveFail'] = all(
+        #         [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+        #          mtd_data[-5:]]) if len(mtd_data) >= 5 else False
+        #     output[key]['ThirtyDays_LastFiveFail'] = all(
+        #         [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
+        #          total_data[-5:]]) if len(total_data) >= 5 else False
+        #     output[key]['MTD_Successful'] = len(
+        #         [data for data in mtd_data if data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+        #     output[key]['MTD_Failures'] = len(
+        #         [data for data in mtd_data if data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+        #     output[key]['ThirtyDays_Successful'] = len(
+        #         [data for data in total_data if data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+        #     output[key]['ThirtyDays_Failures'] = len(
+        #         [data for data in total_data if data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]])
+        #     # Get the starting datetime for the current month in str formatted
+        #
+        #     #making the object for CED_CampaignFilterData
+        #
+        #     data_to_dump.append({
+        #         "Channel": 'SMS',
+        #         "EnContactIdentifier": key,
+        #         'MTD_LastFiveFail': output[key]['MTD_LastFiveFail'],
+        #         'ThirtyDays_LastFiveFail': output[key]['ThirtyDays_LastFiveFail'],
+        #         'MTD_Successful': output[key]['MTD_Successful'],
+        #         'MTD_Failures': output[key]['MTD_Failures'],
+        #         'ThirtyDays_Successful': output[key]['ThirtyDays_Successful'],
+        #         'ThirtyDays_Failures': output[key]['ThirtyDays_Failures']
+        #     })
+        #     output.pop(key,None)
+        #
+        #     if len(data_to_dump) >= 1000:
+        #         #insert data
+        #         cols = data_to_dump[0].keys()
+        #         resp = insert_or_update_delivery_data(db_conn,cols,data_to_dump)
+        #         if resp.get("row_count") is None:
+        #             logger.error(f"Unable to insert data in db cols::{cols} sample_row::{data_to_dump[0]}")
+        #             error_count += 1
+        #         data_to_dump = []
 
 
-    #insert data for remaining data
-    cols = data_to_dump[0].keys()
-    resp = insert_or_update_delivery_data(db_conn, cols, data_to_dump)
-    if resp.get("row_count") is None:
-        logger.error(f"Unable to insert data in db cols::{cols} sample_row::{data_to_dump[0]}")
-        error_count += 1
+        #insert data for remaining data
+        cols = data_to_dump[0].keys()
+        resp = insert_or_update_delivery_data(db_conn, cols, data_to_dump)
+        if resp.get("row_count") is None:
+            logger.error(f"Unable to insert data in db cols::{cols} sample_row::{data_to_dump[0]}")
+            error_count += 1
     os.remove(f'/tmp/{results["file"]}')
     logger.debug("deleted file from storage")
     if error_count == 0:

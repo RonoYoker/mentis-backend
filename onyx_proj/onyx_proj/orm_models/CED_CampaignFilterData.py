@@ -13,6 +13,7 @@ class CED_CampaignFilterData(Base, Orm_helper):
     ThirtyDays_Successful = Column("ThirtyDays_Successful", Integer, default=0)
     ThirtyDays_Failures = Column("ThirtyDays_Failures", Integer, default=0)
     UpdationDate = Column("UpdationDate", DateTime, default=func.now())
+    TemplateCategory = Column("TemplateCategory", String)
 
 
     def __init__(self, data={}):

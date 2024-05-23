@@ -4,6 +4,7 @@ from django.shortcuts import HttpResponse
 from django.conf import settings
 import datetime
 
+from onyx_proj.apps.campaign.campaign_engagement_data.engagement_data_processor import process_the_all_channels_response
 from onyx_proj.common.constants import Roles, TAG_FAILURE, TAG_SUCCESS
 from onyx_proj.common.utils.AES_encryption import AesEncryptDecrypt
 from onyx_proj.common.decorators import UserAuth
@@ -334,7 +335,11 @@ def trigger_camp_eng_data(request):
 
 @csrf_exempt
 def trigger_camp_entry_in_all_channel_response(request):
-    trigger_entry_in_all_channel_response.apply_async(args=["SMS"], queue="celery_heavy_data")
+    request_body = json.loads(request.body.decode("utf-8"))
+    channel = request_body.get("channel")
+    logger.info(f"method_name: trigger_camp_entry_in_all_channel_response :: channel : {channel}")
+    trigger_entry_in_all_channel_response.apply_async(args=[channel], queue="celery_heavy_data")
+    # process_the_all_channels_response("SMS")
     return HttpResponse("", status=200, content_type="application/json")
 
 
