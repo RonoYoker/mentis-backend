@@ -360,6 +360,11 @@ def process_the_all_channels_response(channel):
                     output['ThirtyDays_LastFourFail'] = all(
                         [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
                          total_data[-4:]]) if len(total_data) >= 4 else False
+                    total_str = ",".join([str(data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]) for data in
+                         total_data])
+                    output['ThirtyDays_LastSuccessTwoFail'] = "False,False,True" in total_str
+                    output['ThirtyDays_LastSuccessThreeFail'] = "False,False,False,True" in total_str
+                    output['ThirtyDays_LastSuccessFourFail'] = "False,False,False,False,True" in total_str
 
                     data_to_dump.append({
                         "Channel": channel,
@@ -373,7 +378,10 @@ def process_the_all_channels_response(channel):
                         'ThirtyDays_Failures': output['ThirtyDays_Failures'],
                         'ThirtyDays_LastTwoFail': output['ThirtyDays_LastTwoFail'],
                         'ThirtyDays_LastThreeFail': output['ThirtyDays_LastThreeFail'],
-                        'ThirtyDays_LastFourFail': output['ThirtyDays_LastFourFail']
+                        'ThirtyDays_LastFourFail': output['ThirtyDays_LastFourFail'],
+                        'ThirtyDays_LastSuccessTwoFail': output['ThirtyDays_LastSuccessTwoFail'],
+                        'ThirtyDays_LastSuccessThreeFail': output['ThirtyDays_LastSuccessThreeFail'],
+                        'ThirtyDays_LastSuccessFourFail': output['ThirtyDays_LastSuccessFourFail']
                     })
 
                 if current_contact != traversing_number:
@@ -411,10 +419,17 @@ def process_the_all_channels_response(channel):
                     output['ThirtyDays_LastFourFail_agg'] = all(
                         [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
                          total_data_agg[-4:]]) if len(total_data_agg) >= 4 else False
+                    total_str = ",".join(
+                        [str(data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]) for data in
+                         total_data])
+                    output['ThirtyDays_LastSuccessTwoFail'] = "False,False,True" in total_str
+                    output['ThirtyDays_LastSuccessThreeFail'] = "False,False,False,True" in total_str
+                    output['ThirtyDays_LastSuccessFourFail'] = "False,False,False,False,True" in total_str
+
                     data_to_dump.append({
                         "Channel": channel,
                         "EnContactIdentifier": current_contact,
-                        "TemplateCategory": None,
+                        "TemplateCategory": "ALL",
                         'MTD_LastFiveFail': output['MTD_LastFiveFail_agg'],
                         'ThirtyDays_LastFiveFail': output['ThirtyDays_LastFiveFail_agg'],
                         'MTD_Successful': output['MTD_Successful_agg'],
@@ -423,7 +438,10 @@ def process_the_all_channels_response(channel):
                         'ThirtyDays_Failures': output['ThirtyDays_Failures_agg'],
                         'ThirtyDays_LastTwoFail': output['ThirtyDays_LastTwoFail_agg'],
                         'ThirtyDays_LastThreeFail': output['ThirtyDays_LastThreeFail_agg'],
-                        'ThirtyDays_LastFourFail': output['ThirtyDays_LastFourFail_agg']
+                        'ThirtyDays_LastFourFail': output['ThirtyDays_LastFourFail_agg'],
+                        'ThirtyDays_LastSuccessTwoFail': output['ThirtyDays_LastSuccessTwoFail_agg'],
+                        'ThirtyDays_LastSuccessThreeFail': output['ThirtyDays_LastSuccessThreeFail_agg'],
+                        'ThirtyDays_LastSuccessFourFail': output['ThirtyDays_LastSuccessFourFail_agg']
                     })
 
                 # Get the starting datetime for the current month in str formatted
@@ -492,6 +510,11 @@ def process_the_all_channels_response(channel):
             output['ThirtyDays_LastFourFail'] = all(
                 [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
                  total_data[-4:]]) if len(total_data) >= 4 else False
+            total_str = ",".join([str(data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]) for data in
+                                  total_data])
+            output['ThirtyDays_LastSuccessTwoFail'] = "False,False,True" in total_str
+            output['ThirtyDays_LastSuccessThreeFail'] = "False,False,False,True" in total_str
+            output['ThirtyDays_LastSuccessFourFail'] = "False,False,False,False,True" in total_str
 
             data_to_dump.append({
                 "Channel": channel,
@@ -505,7 +528,10 @@ def process_the_all_channels_response(channel):
                 'ThirtyDays_Failures': output['ThirtyDays_Failures'],
                 'ThirtyDays_LastTwoFail': output['ThirtyDays_LastTwoFail'],
                 'ThirtyDays_LastThreeFail': output['ThirtyDays_LastThreeFail'],
-                'ThirtyDays_LastFourFail': output['ThirtyDays_LastFourFail']
+                'ThirtyDays_LastFourFail': output['ThirtyDays_LastFourFail'],
+                'ThirtyDays_LastSuccessTwoFail': output['ThirtyDays_LastSuccessTwoFail'],
+                'ThirtyDays_LastSuccessThreeFail': output['ThirtyDays_LastSuccessThreeFail'],
+                'ThirtyDays_LastSuccessFourFail': output['ThirtyDays_LastSuccessFourFail']
             })
 
         all_data_for_current_cont = []
@@ -546,10 +572,15 @@ def process_the_all_channels_response(channel):
         output['ThirtyDays_LastFourFail_agg'] = all(
             [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
              total_data_agg[-4:]]) if len(total_data_agg) >= 4 else False
+        total_str = ",".join([str(data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]) for data in
+                              total_data])
+        output['ThirtyDays_LastSuccessTwoFail'] = "False,False,True" in total_str
+        output['ThirtyDays_LastSuccessThreeFail'] = "False,False,False,True" in total_str
+        output['ThirtyDays_LastSuccessFourFail'] = "False,False,False,False,True" in total_str
         data_to_dump.append({
             "Channel": channel,
             "EnContactIdentifier": current_contact,
-            "TemplateCategory": None,
+            "TemplateCategory": "ALL",
             'MTD_LastFiveFail': output['MTD_LastFiveFail_agg'],
             'ThirtyDays_LastFiveFail': output['ThirtyDays_LastFiveFail_agg'],
             'MTD_Successful': output['MTD_Successful_agg'],
@@ -558,7 +589,10 @@ def process_the_all_channels_response(channel):
             'ThirtyDays_Failures': output['ThirtyDays_Failures_agg'],
             'ThirtyDays_LastTwoFail': output['ThirtyDays_LastTwoFail_agg'],
             'ThirtyDays_LastThreeFail': output['ThirtyDays_LastThreeFail_agg'],
-            'ThirtyDays_LastFourFail': output['ThirtyDays_LastFourFail_agg']
+            'ThirtyDays_LastFourFail': output['ThirtyDays_LastFourFail_agg'],
+            'ThirtyDays_LastSuccessTwoFail': output['ThirtyDays_LastSuccessTwoFail_agg'],
+            'ThirtyDays_LastSuccessThreeFail': output['ThirtyDays_LastSuccessThreeFail_agg'],
+            'ThirtyDays_LastSuccessFourFail': output['ThirtyDays_LastSuccessFourFail_agg']
         })
 
         # sorting on the bases of the creation date
