@@ -421,10 +421,10 @@ def process_the_all_channels_response(channel):
                          total_data_agg[-4:]]) if len(total_data_agg) >= 4 else False
                     total_str = ",".join(
                         [str(data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]) for data in
-                         total_data])
-                    output['ThirtyDays_LastSuccessTwoFail'] = "False,False,True" in total_str
-                    output['ThirtyDays_LastSuccessThreeFail'] = "False,False,False,True" in total_str
-                    output['ThirtyDays_LastSuccessFourFail'] = "False,False,False,False,True" in total_str
+                         total_data_agg])
+                    output['ThirtyDays_LastSuccessTwoFail_agg'] = "False,False,True" in total_str
+                    output['ThirtyDays_LastSuccessThreeFail_agg'] = "False,False,False,True" in total_str
+                    output['ThirtyDays_LastSuccessFourFail_agg'] = "False,False,False,False,True" in total_str
 
                     data_to_dump.append({
                         "Channel": channel,
@@ -573,10 +573,10 @@ def process_the_all_channels_response(channel):
             [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
              total_data_agg[-4:]]) if len(total_data_agg) >= 4 else False
         total_str = ",".join([str(data["status"] in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]) for data in
-                              total_data])
-        output['ThirtyDays_LastSuccessTwoFail'] = "False,False,True" in total_str
-        output['ThirtyDays_LastSuccessThreeFail'] = "False,False,False,True" in total_str
-        output['ThirtyDays_LastSuccessFourFail'] = "False,False,False,False,True" in total_str
+                              total_data_agg])
+        output['ThirtyDays_LastSuccessTwoFail_agg'] = "False,False,True" in total_str
+        output['ThirtyDays_LastSuccessThreeFail_agg'] = "False,False,False,True" in total_str
+        output['ThirtyDays_LastSuccessFourFail_agg'] = "False,False,False,False,True" in total_str
         data_to_dump.append({
             "Channel": channel,
             "EnContactIdentifier": current_contact,
