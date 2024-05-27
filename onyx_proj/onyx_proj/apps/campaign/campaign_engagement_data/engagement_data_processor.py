@@ -365,6 +365,9 @@ def process_the_all_channels_response(channel):
                     output['ThirtyDays_LastSuccessTwoFail'] = "False,False,True" in total_str
                     output['ThirtyDays_LastSuccessThreeFail'] = "False,False,False,True" in total_str
                     output['ThirtyDays_LastSuccessFourFail'] = "False,False,False,False,True" in total_str
+                    output['ThirtyDays_AnyTwoFail'] = "False,False" in total_str
+                    output['ThirtyDays_AnyThreeFail'] = "False,False,False" in total_str
+                    output['ThirtyDays_AnyFourFail'] = "False,False,False,False" in total_str
 
                     data_to_dump.append({
                         "Channel": channel,
@@ -381,7 +384,10 @@ def process_the_all_channels_response(channel):
                         'ThirtyDays_LastFourFail': output['ThirtyDays_LastFourFail'],
                         'ThirtyDays_LastSuccessTwoFail': output['ThirtyDays_LastSuccessTwoFail'],
                         'ThirtyDays_LastSuccessThreeFail': output['ThirtyDays_LastSuccessThreeFail'],
-                        'ThirtyDays_LastSuccessFourFail': output['ThirtyDays_LastSuccessFourFail']
+                        'ThirtyDays_LastSuccessFourFail': output['ThirtyDays_LastSuccessFourFail'],
+                        'ThirtyDays_AnyTwoFail': output['ThirtyDays_AnyTwoFail'],
+                        'ThirtyDays_AnyThreeFail': output['ThirtyDays_AnyThreeFail'],
+                        'ThirtyDays_AnyFourFail': output['ThirtyDays_AnyFourFail']
                     })
 
                 if current_contact != traversing_number:
@@ -425,6 +431,9 @@ def process_the_all_channels_response(channel):
                     output['ThirtyDays_LastSuccessTwoFail_agg'] = "False,False,True" in total_str
                     output['ThirtyDays_LastSuccessThreeFail_agg'] = "False,False,False,True" in total_str
                     output['ThirtyDays_LastSuccessFourFail_agg'] = "False,False,False,False,True" in total_str
+                    output['ThirtyDays_AnyTwoFail_agg'] = "False,False" in total_str
+                    output['ThirtyDays_AnyThreeFail_agg'] = "False,False,False" in total_str
+                    output['ThirtyDays_AnyFourFail_agg'] = "False,False,False,False" in total_str
 
                     data_to_dump.append({
                         "Channel": channel,
@@ -441,7 +450,10 @@ def process_the_all_channels_response(channel):
                         'ThirtyDays_LastFourFail': output['ThirtyDays_LastFourFail_agg'],
                         'ThirtyDays_LastSuccessTwoFail': output['ThirtyDays_LastSuccessTwoFail_agg'],
                         'ThirtyDays_LastSuccessThreeFail': output['ThirtyDays_LastSuccessThreeFail_agg'],
-                        'ThirtyDays_LastSuccessFourFail': output['ThirtyDays_LastSuccessFourFail_agg']
+                        'ThirtyDays_LastSuccessFourFail': output['ThirtyDays_LastSuccessFourFail_agg'],
+                        'ThirtyDays_AnyTwoFail': output['ThirtyDays_AnyTwoFail_agg'],
+                        'ThirtyDays_AnyThreeFail': output['ThirtyDays_AnyThreeFail_agg'],
+                        'ThirtyDays_AnyFourFail': output['ThirtyDays_AnyFourFail_agg']
                     })
 
                 # Get the starting datetime for the current month in str formatted
@@ -515,6 +527,9 @@ def process_the_all_channels_response(channel):
             output['ThirtyDays_LastSuccessTwoFail'] = "False,False,True" in total_str
             output['ThirtyDays_LastSuccessThreeFail'] = "False,False,False,True" in total_str
             output['ThirtyDays_LastSuccessFourFail'] = "False,False,False,False,True" in total_str
+            output['ThirtyDays_AnyTwoFail'] = "False,False" in total_str
+            output['ThirtyDays_AnyThreeFail'] = "False,False,False" in total_str
+            output['ThirtyDays_AnyFourFail'] = "False,False,False,False" in total_str
 
             data_to_dump.append({
                 "Channel": channel,
@@ -531,7 +546,10 @@ def process_the_all_channels_response(channel):
                 'ThirtyDays_LastFourFail': output['ThirtyDays_LastFourFail'],
                 'ThirtyDays_LastSuccessTwoFail': output['ThirtyDays_LastSuccessTwoFail'],
                 'ThirtyDays_LastSuccessThreeFail': output['ThirtyDays_LastSuccessThreeFail'],
-                'ThirtyDays_LastSuccessFourFail': output['ThirtyDays_LastSuccessFourFail']
+                'ThirtyDays_LastSuccessFourFail': output['ThirtyDays_LastSuccessFourFail'],
+                'ThirtyDays_AnyTwoFail': output['ThirtyDays_AnyTwoFail'],
+                'ThirtyDays_AnyThreeFail': output['ThirtyDays_AnyThreeFail'],
+                'ThirtyDays_AnyFourFail': output['ThirtyDays_AnyFourFail']
             })
 
         all_data_for_current_cont = []
@@ -577,6 +595,9 @@ def process_the_all_channels_response(channel):
         output['ThirtyDays_LastSuccessTwoFail_agg'] = "False,False,True" in total_str
         output['ThirtyDays_LastSuccessThreeFail_agg'] = "False,False,False,True" in total_str
         output['ThirtyDays_LastSuccessFourFail_agg'] = "False,False,False,False,True" in total_str
+        output['ThirtyDays_AnyTwoFail_agg'] = "False,False" in total_str
+        output['ThirtyDays_AnyThreeFail_agg'] = "False,False,False" in total_str
+        output['ThirtyDays_AnyFourFail_agg'] = "False,False,False,False" in total_str
         data_to_dump.append({
             "Channel": channel,
             "EnContactIdentifier": current_contact,
@@ -592,7 +613,10 @@ def process_the_all_channels_response(channel):
             'ThirtyDays_LastFourFail': output['ThirtyDays_LastFourFail_agg'],
             'ThirtyDays_LastSuccessTwoFail': output['ThirtyDays_LastSuccessTwoFail_agg'],
             'ThirtyDays_LastSuccessThreeFail': output['ThirtyDays_LastSuccessThreeFail_agg'],
-            'ThirtyDays_LastSuccessFourFail': output['ThirtyDays_LastSuccessFourFail_agg']
+            'ThirtyDays_LastSuccessFourFail': output['ThirtyDays_LastSuccessFourFail_agg'],
+            'ThirtyDays_AnyTwoFail': output['ThirtyDays_AnyTwoFail_agg'],
+            'ThirtyDays_AnyThreeFail': output['ThirtyDays_AnyThreeFail_agg'],
+            'ThirtyDays_AnyFourFail': output['ThirtyDays_AnyFourFail_agg']
         })
 
         # sorting on the bases of the creation date
