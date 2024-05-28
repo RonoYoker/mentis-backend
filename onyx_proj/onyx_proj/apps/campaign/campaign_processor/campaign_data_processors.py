@@ -1,6 +1,7 @@
 import copy
 import datetime
 import hashlib
+import math
 import pprint
 import re
 from datetime import timedelta
@@ -334,6 +335,7 @@ def get_filtered_recurring_date_time(data):
         "days": data["body"].get('days'),
         "dates": data["body"].get('dates'),
         "number_of_days": data["body"].get('number_of_days'),
+        "weeks": data["body"].get('weeks')
     }
     multi_slot = data["body"].get("multi_slot",[])
     is_segment_attr_split = data["body"].get("is_segment_attr_split",False)
@@ -375,6 +377,7 @@ def generate_schedule(sched_data, start_time, end_time, execution_config_id=None
     days = sched_data.get('days')
     number_of_days = sched_data.get('number_of_days')
     repeat_dates = sched_data.get('dates')
+    weeks = sched_data.get('weeks')
 
     start_date_ts = datetime.datetime.strptime(start_date,'%Y-%m-%d').date()
     end_date_ts = datetime.datetime.strptime(end_date,'%Y-%m-%d').date()
@@ -408,6 +411,47 @@ def generate_schedule(sched_data, start_time, end_time, execution_config_id=None
         all_dates_between_dates = get_all_dates_between_dates(start_date, end_date)
         for index in range(0, len(all_dates_between_dates), int(number_of_days)):
             dates.append((datetime.datetime.strptime(all_dates_between_dates[index], '%Y-%m-%d')).strftime('%Y-%m-%d'))
+
+    if campaign_type == "SCHEDULELATER" and repeat_type == "ALTERNATIVE_WEEKS":
+        all_dates_between_dates = get_all_dates_between_dates(start_date, end_date)   #['2024-05-13', '2024-05-14', '2024-05-15']
+        starting_week = 0
+
+        if weeks is None or len(weeks) is not 1 or days is None:
+            raise ValidationFailedException(reason="Mandatory Params missing !!")
+        if weeks[0] < 2:
+            raise ValidationFailedException(reason=f"ALERT, Value of weeks can't be less than 2 for {repeat_type} !!")
+
+        gap_temp = weeks[0]
+        for date_between_dates in all_dates_between_dates:
+            date_obj = datetime.datetime.strptime(date_between_dates, '%Y-%m-%d')
+            # Find the weekday (Sunday=0, saturday=6)
+            day = (date_obj.weekday() + 1) % 7
+            day = 7 if day == 0 else day # making sunday as 7
+
+            if day in days and (starting_week % gap_temp) == 0:
+                dates.append(date_between_dates)
+            # increasing the week at the last of week that is saturday
+            if day == 6:
+                starting_week += 1
+
+    if campaign_type == "SCHEDULELATER" and repeat_type == "DEFINED_WEEKS":
+        all_dates_between_dates = get_all_dates_between_dates(start_date, end_date)
+        if weeks is None or days is None or len(weeks) == 0:
+            raise ValidationFailedException(reason="Mandatory Params missing !!")
+
+        for date_between_dates in all_dates_between_dates:
+            date_obj = datetime.datetime.strptime(date_between_dates, '%Y-%m-%d')
+            # Find the weekday (Sunday=0, saturday=6)
+            weekday = (date_obj.weekday() + 1) % 7
+            # Getting the number of days except the last week days
+            day_left_except_last_week = date_obj.day - weekday - 1
+            #making sunday as 7
+            weekday = 7 if weekday == 0 else weekday
+
+            week_number = math.ceil(1 + (day_left_except_last_week/7))
+            if week_number in weeks and weekday in days:
+                dates.append(date_between_dates)
+
 
     recurring_date_time = []
     time = datetime.datetime.strptime(start_time, '%H:%M:%S').time()

@@ -330,6 +330,7 @@ def fetch_campaigns_and_notify_users(request_data):
         email_body = f"""{make_the_html(intro, slot_limit_per_project[bank], slot_limit_per_bank.get(bank),
                                         value, project_name_through_project_id, bank)}"""
 
+
         email_tos = ['kushagra.agrawal@creditas.in', 'vanshkumar.dua@creditas.in', 'dhruv.rai@creditas.in', 'gagan.rajput@creditas.in', 'rishi.tiwari@creditas.in']
         email_status = send_email_via_lembda_api(email_tos, email_subject, email_body)
         if email_status.status_code != 200:
