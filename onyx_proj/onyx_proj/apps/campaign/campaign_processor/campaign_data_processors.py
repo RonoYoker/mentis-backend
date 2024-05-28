@@ -3667,6 +3667,9 @@ def validate_content_status(campaign):
         campaign_email_content = CEDCampaignEmailContent().get_email_content_by_unqiue_id_and_status(email_id, status_list)
         if campaign_email_content is None or len(campaign_email_content) == 0:
             return dict(result=TAG_FAILURE, details_message="Email Content not found")
+        if campaign_email_content[0].get("template_category") is None:
+            return dict(result=TAG_FAILURE,
+                        details_message="Template category can not be NULL")
         if campaign_email_content[0].get("is_contain_url") is not None and campaign_email_content[0].get("is_contain_url") == 1:
             url_id = email_campaign.get("url_id")
             if url_id is None:
@@ -3679,6 +3682,15 @@ def validate_content_status(campaign):
         return dict(result=TAG_SUCCESS, details_message="Email Url mapping found")
 
     elif campaign.get("content_type") == CampaignBuilderCampaignContentType.IVR.value:
+        ivr_campaign = campaign.get("ivr_campaign")
+        ivr_id = ivr_campaign.get("ivr_id")
+        campaign_ivr_content = CEDCampaignIvrContent().get_ivr_content_by_unqiue_id_and_status(ivr_id,
+                                                                                                     status_list)
+        if campaign_ivr_content is None or len(campaign_ivr_content) != 1:
+            return dict(result=TAG_FAILURE, details_message="IVR Content not found")
+        if campaign_ivr_content[0].get("template_category") is None:
+            return dict(result=TAG_FAILURE,
+                        details_message="Template category can not be NULL")
         return dict(result=TAG_SUCCESS, details_message="IVR content mapping found")
     elif campaign.get("content_type") == CampaignBuilderCampaignContentType.SMS.value:
         sms_campaign = campaign.get("sms_campaign")
@@ -3687,6 +3699,9 @@ def validate_content_status(campaign):
         campaign_sms_content = CEDCampaignSMSContent().get_sms_content_by_unique_id(sms_id, status_list)
         if campaign_sms_content is None or len(campaign_sms_content) == 0:
             return dict(result=TAG_FAILURE, details_message="Sms Content not found")
+        if campaign_sms_content[0].get("template_category") is None:
+            return dict(result=TAG_FAILURE,
+                        details_message="Template category can not be NULL")
         if campaign_sms_content[0].get("is_contain_url") is not None and campaign_sms_content[0].get("is_contain_url") == 1:
             url_id = sms_campaign.get("url_id")
             if url_id is None:
@@ -3713,6 +3728,9 @@ def validate_content_status(campaign):
         campaign_whatsapp_content = CEDCampaignWhatsAppContent().get_whatsapp_content_by_unique_id(whatsapp_content_id, status_list)
         if campaign_whatsapp_content is None or len(campaign_whatsapp_content) == 0:
             return dict(result=TAG_FAILURE, details_message="whatsapp Content not found")
+        if campaign_whatsapp_content[0].get("template_category") is None:
+            return dict(result=TAG_FAILURE,
+                        details_message="Template category can not be NULL")
         if campaign_whatsapp_content[0].get("contain_url") is not None and campaign_whatsapp_content[0].get("contain_url") == 1:
             url_id = whatsapp_campaign.get("url_id")
             if url_id is None:

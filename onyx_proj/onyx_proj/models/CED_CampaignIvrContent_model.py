@@ -126,3 +126,13 @@ class CEDCampaignIvrContent:
 
     def fetch_content_data_by_query(self, query):
         return dict_fetch_query_all(self.curr, query)
+
+    def get_ivr_content_by_unqiue_id_and_status(self, ivr_id, status_list):
+        filter_list = [
+            {"column": "unique_id", "value": ivr_id, "op": "=="},
+            {"column": "is_deleted", "value": 0, "op": "=="},
+            {"column": "is_active", "value": 1, "op": "=="},
+            {"column": "status", "value": status_list, "op": "in"}
+        ]
+        res = fetch_rows(self.engine, self.table, filter_list)
+        return res
