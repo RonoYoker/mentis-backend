@@ -328,9 +328,9 @@ def process_the_all_channels_response(channel):
                 if current_category != "\\N":
                     # sorting the data for the with filtering for MTD and last thirty_days
                     mtd_data = sorted(
-                        [data for data in outer_map[current_contact]['delivery'][current_category] if start_of_month <= data["time"] <= current_datetime and not any(data["status"].lower().startswith(x) for x in ["snd","hyp"]) ],
+                        [data for data in outer_map[current_contact]['delivery'][current_category] if start_of_month <= data["time"] <= current_datetime and not any(data["status"].lower().startswith(x) for x in ["snd","hyp","SENT","UNKNOWN"])],
                         key=lambda x: x["time"])
-                    total_data = sorted([data for data in outer_map[current_contact]['delivery'][current_category] if not any(data["status"].lower().startswith(x) for x in ["snd","hyp"]) ], key=lambda x: x["time"])
+                    total_data = sorted([data for data in outer_map[current_contact]['delivery'][current_category] if not any(data["status"].lower().startswith(x) for x in ["snd","hyp","SENT","UNKNOWN"]) ], key=lambda x: x["time"])
                     # settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel]
 
                     output['MTD_LastFiveFail'] = all(
@@ -395,9 +395,9 @@ def process_the_all_channels_response(channel):
                     for data in outer_map[current_contact]['delivery'].values():
                         all_data_for_current_cont.extend(data)
                     mtd_data_agg = sorted(
-                        [data for data in all_data_for_current_cont if start_of_month <= data["time"] <= current_datetime and not any(data["status"].lower().startswith(x) for x in ["snd","hyp"]) ],
+                        [data for data in all_data_for_current_cont if start_of_month <= data["time"] <= current_datetime and not any(data["status"].lower().startswith(x) for x in ["snd","hyp","SENT","UNKNOWN"]) ],
                         key=lambda x: x["time"])
-                    total_data_agg = sorted([data for data in all_data_for_current_cont if not any(data["status"].lower().startswith(x) for x in ["snd","hyp"]) ], key=lambda x: x["time"])
+                    total_data_agg = sorted([data for data in all_data_for_current_cont if not any(data["status"].lower().startswith(x) for x in ["snd","hyp","SENT","UNKNOWN"]) ], key=lambda x: x["time"])
                     output['MTD_LastFiveFail_agg'] = all(
                         [data["status"] not in settings.TEST_CAMPAIGN_DELIVERY_VALIDATION[channel] for data in
                          mtd_data_agg[-5:]]) if len(mtd_data_agg) >= 5 else False
