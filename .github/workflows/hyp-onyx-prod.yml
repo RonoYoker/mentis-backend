@@ -133,7 +133,7 @@ jobs:
 
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@master
+        uses: aws-actions/amazon-ecs-render-task-definition@97587c9d45a4930bf0e3da8dd2feb2a463cf4a3a
         with:
           task-definition: ${{ env.ECS_TASK_DEFINITION }}
           container-name: ${{ env.CONTAINER_NAME }}
@@ -157,7 +157,7 @@ jobs:
 
       - name: Fill in the new image ID in the Amazon ECS task definition 2
         id: task-def-2
-        uses: aws-actions/amazon-ecs-render-task-definition@master
+        uses: aws-actions/amazon-ecs-render-task-definition@97587c9d45a4930bf0e3da8dd2feb2a463cf4a3a
         with:
           task-definition: ${{ env.ECS_TASK_DEFINITION_2 }}
           container-name: onyx-celery
@@ -180,7 +180,7 @@ jobs:
 
       - name: Fill in the new image ID in the Amazon ECS task definition 3
         id: task-def-3
-        uses: aws-actions/amazon-ecs-render-task-definition@master
+        uses: aws-actions/amazon-ecs-render-task-definition@97587c9d45a4930bf0e3da8dd2feb2a463cf4a3a
         with:
           task-definition: ${{ env.ECS_TASK_DEFINITION_3 }}
           container-name: onyx-celery-callback
