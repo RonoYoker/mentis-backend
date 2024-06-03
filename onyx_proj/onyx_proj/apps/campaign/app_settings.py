@@ -37,6 +37,11 @@ CAMPAIGN_FILTERS_CONFIG = {
           "text": "filter users with last 5 consecutive unsuccessful deliveries",
           "type": "checkbox",
           "filter_enum": "ThirtyDays_LastFiveFail"
+        },
+        {
+          "text": "filter users with last 3 consecutive unsuccessful deliveries",
+          "type": "checkbox",
+          "filter_enum": "ThirtyDays_LastThreeFail"
         }
       ]
     }
@@ -52,5 +57,9 @@ FILTER_ENUM_CONFIG = {
         "ThirtyDays_LastFiveFail":{
             "type": "BOOL",
             "col": "ThirtyDays_LastFiveFail"
+        },
+        "ThirtyDays_LastThreeFail":{
+            "type": "BOOL",
+            "col": "ThirtyDays_LastThreeFail"
         }
 }
