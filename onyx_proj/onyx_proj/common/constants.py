@@ -749,8 +749,9 @@ ASYNC_QUERY_EXECUTION_ENABLED = ["VST_Ethera", "TEST_VST", "IBL_CRD_Ethera", "IB
                                  "TEST_IBL_CC_UPGRADE", "TEST_IBL_DC_UPGRADE", "TEST_IBL_OCL", "IBL_OCL_Ethera",
                                  "TEST_IBL_CASA", "TEST_IBL", "IBL_CASA", "IBL_CC_UPGRADE_Ethera", "YBL_CLE_Ethera",
                                  "TEST_YBL_CC_UPG","TEST_YBL_ACQ","IBL_DC_ENBL_Ethera","TEST_ABL", "ABL_Ethera",
-                                 "IBL_Collections","YBL_ACQ","YBL_CC_UPG","IBL_OSTOEMI","IBL_LACL_LBCL","IBL_ACQ","YBL_STE", "TEST_YBL_TXN_TO_EMI", "YBL_TXN_TO_EMI",
-                                 "TEST_IBL_SPLIT_LIMIT","IBL_DC_UPGRADE_Ethera", "TEST_IBL_CLE"]
+                                 "IBL_Collections","YBL_ACQ","YBL_CC_UPG","IBL_OSTOEMI","IBL_LACL_LBCL","IBL_ACQ",
+                                 "YBL_STE", "TEST_YBL_TXN_TO_EMI", "YBL_TXN_TO_EMI",
+                                 "TEST_IBL_SPLIT_LIMIT", "IBL_DC_UPGRADE_Ethera", "TEST_IBL_CLE", "TEST_SBI_Collection", "SBI_Collection"]
 
 
 class CampaignStatus(Enum):

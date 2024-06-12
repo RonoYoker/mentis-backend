@@ -43,7 +43,8 @@ HYPERION_LOCAL_DOMAIN = {
     "YBL_STE": "http://m-prod-ybl-hyp-elb-173392471.ap-south-1.elb.amazonaws.com/",
     "YBL_CC_ENBL": "http://m-prod-ybl-hyp-elb-173392471.ap-south-1.elb.amazonaws.com/",
     "YBL_TXN_TO_EMI": "http://m-prod-ybl-hyp-elb-173392471.ap-south-1.elb.amazonaws.com/",
-    "ABL_Ethera": "http://m-prod-abl-hyp-elb-1486215713.ap-south-1.elb.amazonaws.com/"
+    "ABL_Ethera": "http://m-prod-abl-hyp-elb-1486215713.ap-south-1.elb.amazonaws.com/",
+    "SBI_Collection": "http://m-prod-sbi-hyp-elb-731016172.ap-south-1.elb.amazonaws.com/",
 }
 
 ONYX_LOCAL_DOMAIN = {
@@ -75,7 +76,8 @@ ONYX_LOCAL_DOMAIN = {
     "yblccenbldsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
     "ybltxntoemimablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
     "yblccujlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
-    "ablethjlsdsmablpxpqcloaxlnifyewmveqlhiacldjplapyndmenfn44nausprj": "http://m-prod-onyxlocal-elb-961447055.ap-south-1.elb.amazonaws.com"
+    "ablethjlsdsmablpxpqcloaxlnifyewmveqlhiacldjplapyndmenfn44nausprj": "http://m-prod-onyxlocal-elb-961447055.ap-south-1.elb.amazonaws.com",
+    "sbicoljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-1756808427.ap-south-1.elb.amazonaws.com",
 }
 
 ONYX_LOCAL_CAMP_VALIDATION = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj",
@@ -98,6 +100,7 @@ ONYX_LOCAL_CAMP_VALIDATION = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapra
                               "yblccujlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                               "yblacqjlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                               "ybltxntoemimablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
+                              "sbicoljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                               "ibldcljlsdsmablpxpqclospknifyewmenblhiqxtdjplapyndmenfn11nausprj",
                               "ablethjlsdsmablpxpqcloaxlnifyewmveqlhiacldjplapyndmenfn44nausprj",
                               "iblcoljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
@@ -202,6 +205,7 @@ USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN = ["vstethjlsdsmablpxpqclospkni88ewmv
                                               "hsbcwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                                               "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd",
                                               "ybltxntoemimablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
+                                              "sbicoljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                                               "iblsplitlimitblpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                                               "yblccenbldsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                                               "yblovljlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
@@ -237,7 +241,9 @@ TEST_CAMPAIGN_ENABLED = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenf
                          "iblostolsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                          "ibllalblsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                          "yblstejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
-                         "ibldcupgsdsmablpxpqclospkniackwmveqlhlmztdjplapyndmenfn88nausprj"]
+                         "ibldcupgsdsmablpxpqclospkniackwmveqlhlmztdjplapyndmenfn88nausprj",
+                         "sbicoljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
+                         ]
 
 HYPERION_TEST_CAMPAIGN_URL = "https://hyperiontool.com/hyperioncampaigntooldashboard/campaignbuilder/testcampaign/"
 
@@ -425,5 +431,6 @@ TEMPLATE_VALIDATION_LINK = {
     "yblccenbldsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "ccybl.in",
     "ybltxntoemimablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "ccybl.in",
     "yblccujlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "ccybl.in",
-    "ablethjlsdsmablpxpqcloaxlnifyewmveqlhiacldjplapyndmenfn44nausprj": "https://pay.axisbank.com/"
+    "ablethjlsdsmablpxpqcloaxlnifyewmveqlhiacldjplapyndmenfn44nausprj": "https://pay.axisbank.com/",
+    "sbiclejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "https://uatpay.com/",
 }
