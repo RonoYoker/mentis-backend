@@ -170,3 +170,13 @@ class CEDCampaignWhatsAppContent:
 
     def fetch_content_data_by_query(self, query):
         return dict_fetch_query_all(self.curr, query)
+
+    def filter_cb_with_no_template_category(self, campaigns_id_list):
+        query = f"""
+                select cb.UniqueId as unique_id from CED_CampaignBuilder cb 
+                JOIN CED_CampaignBuilderCampaign cbc ON cb.UniqueId = cbc.CampaignBuilderId
+                JOIN CED_CampaignBuilderWhatsApp cbs ON cbc.UniqueId = cbs.MappingId
+                JOIN CED_CampaignWhatsAppContent csc ON cbs.WhatsAppContentId = csc.UniqueId
+                where cb.UniqueId in ({"'"+"','".join(campaigns_id_list)+"'"}) and csc.TemplateCategory is not null
+                """
+        return dict_fetch_query_all(self.curr, query)

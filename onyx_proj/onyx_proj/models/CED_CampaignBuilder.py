@@ -275,7 +275,7 @@ class CEDCampaignBuilder:
         return delete_rows_from_table(self.curr, self.table_name, upd_dict)
 
     def fetch_valid_v2_camp_detail_by_unique_id(self, campaign_builder_ids):
-        query = (f"Select cb.UniqueId from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb on cb.UniqueId "
+        query = (f"Select cb.UniqueId as unique_id, cbc.ContentType as channel from CED_CampaignBuilderCampaign cbc join CED_CampaignBuilder cb on cb.UniqueId "
                  f"= cbc.CampaignBuilderId join CED_CampaignExecutionProgress cep on cep.CampaignBuilderCampaignId = "
                  f"cbc.UniqueId where cb.UniqueId in ({campaign_builder_ids}) "
                  f"and cb.IsRecurring = 1 and cb.CampaignCategory = "

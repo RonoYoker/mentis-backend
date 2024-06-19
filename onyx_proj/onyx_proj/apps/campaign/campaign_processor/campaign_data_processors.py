@@ -378,6 +378,7 @@ def generate_schedule(sched_data, start_time, end_time, execution_config_id=None
     number_of_days = sched_data.get('number_of_days')
     repeat_dates = sched_data.get('dates')
     weeks = sched_data.get('weeks')
+    is_relative_strategy = sched_data.get('is_relative_strategy', False)
 
     start_date_ts = datetime.datetime.strptime(start_date,'%Y-%m-%d').date()
     end_date_ts = datetime.datetime.strptime(end_date,'%Y-%m-%d').date()
@@ -459,7 +460,7 @@ def generate_schedule(sched_data, start_time, end_time, execution_config_id=None
     for date in dates:
         date = datetime.datetime.strptime(date, '%Y-%m-%d').date()
         combined = datetime.datetime.combine(date, time)
-        if combined < curr_datetime_60_mints and campaign_type !="INSTANT" or date > end_date_ts or date < start_date_ts:
+        if (is_relative_strategy is False and combined < curr_datetime_60_mints) and campaign_type !="INSTANT" or date > end_date_ts or date < start_date_ts:
             pass
         else:
             recurring_date_time.append({"date": date, "start_time": start_time, "end_time": end_time,"execution_config_id":execution_config_id})
@@ -5587,6 +5588,7 @@ def get_v2_camps_detail(request_body):
     if tab_name == "ALL":
         campaign_data = CEDCampaignBuilderCampaign().fetch_valid_v2_camp_detail_by_project_id(project_id,
                                                                                           start_date, end_date)
+        campaign_data = filter_campaigns_with_no_template_category(campaign_data)
     else:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE, details_message="Tab value is invalid.")
 
@@ -6157,3 +6159,43 @@ def prepare_and_save_acknowledge_campaign(request_body):
         print(exc_type, fname, exc_tb.tb_lineno)
         logger.error(f"Error while prepare and saving campaign builder details Exception ::{str(e)}")
         raise e
+
+
+def filter_campaigns_with_no_template_category(campaigns):
+    method_name = "filter_campaigns_with_no_template_category"
+    log_entry(campaigns)
+    sms_camps = []
+    email_camps = []
+    whatsapp_camps = []
+    ivr_camps = []
+    for campaign in campaigns:
+        channel = campaign.get("channel")
+        sms_camps.append(campaign.get("unique_id")) if channel == CampaignChannel.SMS.value else None
+        email_camps.append(campaign.get("unique_id")) if channel == CampaignChannel.EMAIL.value else None
+        whatsapp_camps.append(campaign.get("unique_id")) if channel == CampaignChannel.WHATSAPP.value else None
+        ivr_camps.append(campaign.get("unique_id")) if channel == CampaignChannel.IVR.value else None
+
+    sms_cbs_with_tc = CEDCampaignSMSContent().filter_cb_with_no_template_category(sms_camps) if len(sms_camps) > 0 else []
+    ivr_cbs_with_tc = CEDCampaignIvrContent().filter_cb_with_no_template_category(ivr_camps) if len(ivr_camps) > 0 else []
+    email_cbs_with_tc = CEDCampaignEmailContent().filter_cb_with_no_template_category(email_camps) if len(email_camps) > 0 else []
+    wp_cbs_with_tc = CEDCampaignWhatsAppContent().filter_cb_with_no_template_category(whatsapp_camps) if len(whatsapp_camps) > 0 else []
+
+    sms_cbs_with_tc = [cb.get("unique_id") for cb in sms_cbs_with_tc]
+    ivr_cbs_with_tc = [cb.get("unique_id") for cb in ivr_cbs_with_tc]
+    email_cbs_with_tc = [cb.get("unique_id") for cb in email_cbs_with_tc]
+    wp_cbs_with_tc = [cb.get("unique_id") for cb in wp_cbs_with_tc]
+
+    final_campaigns = []
+    for campaign in campaigns:
+        channel = campaign.get("channel")
+        unique_id = campaign.get("unique_id")
+        if channel == CampaignChannel.SMS.value and unique_id in sms_cbs_with_tc:
+            final_campaigns.append(campaign)
+        elif channel == CampaignChannel.IVR.value and unique_id in ivr_cbs_with_tc:
+            final_campaigns.append(campaign)
+        elif channel == CampaignChannel.EMAIL.value and unique_id in email_cbs_with_tc:
+            final_campaigns.append(campaign)
+        elif channel == CampaignChannel.WHATSAPP.value and unique_id in wp_cbs_with_tc:
+            final_campaigns.append(campaign)
+    logger.info(f"campaign_data count: {len(campaigns)}, filtered_camps count: {len(final_campaigns)}")
+    return final_campaigns

@@ -821,6 +821,7 @@ class CampaignExecutionProgressStatus(Enum):
 class DataSource(Enum):
     CAMPAIGN_BUILDER = "CAMPAIGN_BUILDER"
     STRATEGY_BUILDER = "STRATEGY_BUILDER"
+    STRATEGY_CONFIGURATION = "STRATEGY_CONFIGURATION"
     CONTENT = "CONTENT"
     DATAID = "DATAID"
     PROJECT = "PROJECT"
@@ -1526,4 +1527,26 @@ CampaignCTABasedOnStatus = {
 }
 
 CampaignCTAForStrategyCampaign = ["VIEW", "DEACTIVATE"]
+
+
+class StrategyConfigurationStatus(Enum):
+    APPROVAL_PENDING = "APPROVAL_PENDING"
+    APPROVAL_IN_PROGRESS = "APPROVAL_IN_PROGRESS"
+    APPROVED = "APPROVED"
+    DEACTIVATE = "DEACTIVATE"
+    DEACTIVATION_IN_PROGRESS = "DEACTIVATION_IN_PROGRESS"
+    DIS_APPROVED = "DIS_APPROVED"
+    SAVED = "SAVED"
+    ERROR = "ERROR"
+
+
+StrategyConfigurationCTABasedOnStatus = {
+    StrategyConfigurationStatus.SAVED: ["EDIT", "DEACTIVATE", "APPROVAL_PENDING", "CLONE", "VIEW", "PREVIEW"],
+    StrategyConfigurationStatus.APPROVAL_PENDING: ["APPROVED", "DIS_APPROVED", "CLONE", "VIEW", "DEACTIVATE", "PREVIEW", "REVIEW"],
+    StrategyConfigurationStatus.APPROVED: ["DEACTIVATE", "CLONE", "VIEW", "PREVIEW", "TRIGGER"],
+    StrategyConfigurationStatus.DEACTIVATE: ["EDIT", "CLONE", "VIEW", "PREVIEW"],
+    StrategyConfigurationStatus.ERROR: ["EDIT", "CLONE", "VIEW"],
+    StrategyConfigurationStatus.DIS_APPROVED: ["EDIT", "CLONE", "VIEW", "PREVIEW"],
+    StrategyConfigurationStatus.DEACTIVATION_IN_PROGRESS: ["VIEW", "PREVIEW"]
+}
 

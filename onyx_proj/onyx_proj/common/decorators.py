@@ -14,6 +14,7 @@ from onyx_proj.exceptions.permission_validation_exception import MethodPermissio
     UnauthorizedException, ValidationFailedException
 from onyx_proj.middlewares.HttpRequestInterceptor import Session
 from onyx_proj.models.CED_StrategyBuilder_model import CEDStrategyBuilder
+from onyx_proj.models.CED_StrategyConfiguration_model import CEDStrategyConfiguration
 
 logger = logging.getLogger("apps")
 
@@ -157,6 +158,10 @@ def fetch_project_id_from_conf(conf, *args, **kwargs):
         filter_list = [{"column": "unique_id", "value": identifier_id, "op": "=="}]
         sb_entity = CEDStrategyBuilder().get_strategy_builder_details(filter_list, ['project_id'])
         project_id = sb_entity[0].project_id
+    elif identifier_type == "STRATEGYCONFIGURATION":
+        filter_list = [{"column": "unique_id", "value": identifier_id, "op": "=="}]
+        sc_entity = CEDStrategyConfiguration().get_strategy_configuration_details(filter_list, ['project_id'])
+        project_id = sc_entity[0].project_id
     else:
         raise MethodPermissionValidationException
     return project_id
