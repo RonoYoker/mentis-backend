@@ -426,6 +426,8 @@ def trigger_strategy_processor(request_body):
     sc_request_meta["end_date"] = datetime.strftime(strategy_end_date, "%Y-%m-%d")
     sc_request_meta.pop("trigger_mode", None)
     sc_request_meta["name"] = f"{sc_request_meta['name']}_HYPSB_{uuid.uuid4().hex[0:4]}"
+    if sc_request_meta.get('unique_id') is not None:
+        sc_request_meta.pop('unique_id')
     response = upsert_strategy(sc_request_meta)
     return response
 
