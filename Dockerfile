@@ -1,43 +1,45 @@
-FROM centos:7
+# Use Ubuntu as the base image
+FROM ubuntu:20.04
 LABEL maintainer="Creditas Team"
 
-RUN \
- yum install -y epel-release && \
- yum install -y wget \
-                git \
-                which \
-                make \
-                python-setuptools \
-                python-pip \
-                python-dev \
-                zlib-devel \
-                openssl-devel \
-                mysql-devel \
-                python-devel \
-                gcc-c++ \
-                snappy-devel \
-                gcc \
-                postgresql \
-                postgresql-devel \
-                sqlite-devel \
-                expat-devel \
-                bzip2-devel \
-                libffi-devel \
-                zlib-devel \
-                libxslt-devel \
-                libxml2-devel \
-                python-argparse \
-                xmlsec1-devel \
-                xmlsec1-openssl-devel \
-                libtool-ltdl-devel && \
- yum install -y nginx && \
- yum install -y screen && \
- pip install --upgrade pip && \
- pip install --trusted-host pypi.python.org --trusted-host pypi.org --trusted-host=api.github.com supervisor --no-cache-dir && \
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    LANG=C.UTF-8 \
+    DEBIAN_FRONTEND=noninteractive \
+    PYTHON_VERSION=3.8
+RUN apt-get update && apt-get install -y \
+    wget \
+    git \
+    make \
+    python3-setuptools \
+    python3-pip \
+    python3-dev \
+    zlib1g-dev \
+    libssl-dev \
+    default-libmysqlclient-dev \
+    libpq-dev \
+    libsqlite3-dev \
+    libexpat1-dev \
+    libbz2-dev \
+    libffi-dev \
+    libxslt1-dev \
+    libxml2-dev \
+    xmlsec1 \
+    libxmlsec1-dev \
+    perl \
+    libpcre3-dev \
+    libtool \
+    nginx \
+    supervisor \
+    ffmpeg \
+    xfonts-75dpi \
+    xfonts-base \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-
- mkdir -p /var/log/supervisor /etc/supervisord.d /logs /opt/logs && \
- yum clean all
+# Install supervisor
+RUN pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org supervisor && \
+    mkdir -p /var/log/supervisor /etc/supervisord.d /logs /opt/logs
 
 EXPOSE 80
 EXPOSE 8080
@@ -87,8 +89,6 @@ COPY onyx_proj/config/nginx/uwsgi_params /etc/nginx/conf.d/uwsgi_params
 COPY onyx_proj/config/uwsgi/onyx_uwsgi.ini /etc/onyx_uwsgi.ini
 COPY onyx_proj/config/uwsgi/onyx.conf /etc/nginx/conf.d/onyx.conf
 COPY onyx_proj/config/newrelic/* /etc/newrelic/
-
-RUN /usr/local/python3.8/bin/pip3.8 install --upgrade pip
 
 COPY onyx_proj/config/pip/requirements.txt /etc/pip/requirements.txt
 RUN /usr/local/python3.8/bin/pip3.8 install -r /etc/pip/requirements.txt

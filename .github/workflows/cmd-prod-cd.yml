@@ -6,7 +6,7 @@ on:
     tags:
       - prod-cmd*
 env:
-  ECR_REPO_URL: ${{ secrets.CMD_PROD_ECR_REPO }}
+  ECR_REPO_URL: 217510739764.dkr.ecr.ap-south-1.amazonaws.com
   DOCKER_COMPOSE_FILE: docker-compose-local-prod.yml
   HEALTHCHECK_URL: http://localhost:8080/ping
   AWS_REGION: ${{ secrets.PROD_AWS_REGION }}
