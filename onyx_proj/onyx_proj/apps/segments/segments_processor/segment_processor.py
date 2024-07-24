@@ -149,11 +149,14 @@ def deactivate_segment_by_segment_id(request_body, request_headers):
         deactivation_request_body = {"campaign_details": {"campaign_builder_id": cb_id_list}}
         response = deactivate_campaign_by_campaign_id(deactivation_request_body)
         if response.get("result", TAG_SUCCESS) == TAG_FAILURE:
-            logger.error(
-                f"deactivate_segment_by_segment_id :: unable to deactivate campaigns aligned with segment_id: {segment_id},"
-                f"message: {response.get('message', '')}")
-            return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
-                        details_message="Unable to deactivate campaigns aligned for the given segment.")
+            if response.get('is_empty') is not None and response.get('is_empty') is True:
+                pass
+            else:
+                logger.error(
+                    f"deactivate_segment_by_segment_id :: unable to deactivate campaigns aligned with segment_id: {segment_id},"
+                    f"message: {response.get('message', '')}")
+                return dict(status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR, result=TAG_FAILURE,
+                            details_message="Unable to deactivate campaigns aligned for the given segment.")
 
     status = SegmentStatusKeys.DEACTIVATE.value
     flag = 0

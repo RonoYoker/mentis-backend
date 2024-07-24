@@ -1088,7 +1088,7 @@ def deactivate_campaign_by_campaign_id(request_body):
         if not response.get("status"):
             logger.error(f"response::{response}")
             return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message=response.get("message"))
+                        details_message=response.get("message"), is_empty=response.get("is_empty"))
         campaign_details = response.get("campaign_details")
 
     elif 'campaign_builder_campaign_id' in campaign_ids.keys() and len(campaign_ids) == 1:
@@ -1133,7 +1133,7 @@ def deactivate_campaign_by_campaign_builder_id(campaign_builder_id, user_name):
     cb_ids = ",".join([f"'{cb_id}'" for cb_id in campaign_builder_id])
     campaign_details = CEDCampaignBuilderCampaign().get_campaign_data_by_cb_id(cb_ids)
     if len(campaign_details) == 0:
-        return dict(status=False, message="No campaign data found or campaign has been executed")
+        return dict(status=False, message="No campaign data found or campaign has been executed", is_empty=True)
 
     cbc_id_list = []
     for cbc_data in campaign_details:
