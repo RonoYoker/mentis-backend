@@ -285,7 +285,8 @@ def process_the_all_channels_response(channel):
 
     #download data into tmp file
     try:
-        S3Helper().get_file_from_s3_bucket(results["bucket"],results["file"])
+        S3Helper().get_file_from_s3_bucket(results["bucket"],results["file        file_name = f"{uuid.uuid4().hex}_{datetime.datetime.utcnow().strftime('%Y%m%d')}"
+"])
         object_found = True
     except Exception as e:
         logger.error(f"Unable to download file obj::{results}")
