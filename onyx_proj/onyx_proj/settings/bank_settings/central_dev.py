@@ -196,7 +196,8 @@ TEMPLATE_VALIDATION_LINK = {
     "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd": "rblp.in",
     "prlethjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapradmenfn11nausprj": "prlf.in",
     "vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj": "vstp.in",
-    "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "locl.in"
+    "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "locl.in",
+    "ablloansb1jlsdsmablpxp82lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "https://pay.axisbank.com/"
 }
 
 TEST_CAMPAIGN_ENABLED = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj",

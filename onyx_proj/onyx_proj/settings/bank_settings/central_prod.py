@@ -46,6 +46,12 @@ HYPERION_LOCAL_DOMAIN = {
     "YBL_TXN_TO_EMI": "http://m-prod-ybl-hyp-elb-173392471.ap-south-1.elb.amazonaws.com/",
     "ABL_Ethera": "http://m-prod-abl-hyp-elb-1486215713.ap-south-1.elb.amazonaws.com/",
     "SBI_Collection": "http://m-prod-sbi-hyp-elb-731016172.ap-south-1.elb.amazonaws.com/",
+    "ABL_LOANS_B1": "http://m-prod-abl-hyp-elb-1486215713.ap-south-1.elb.amazonaws.com/",
+    "ABL_LOANS_B2/3": "http://m-prod-abl-hyp-elb-1486215713.ap-south-1.elb.amazonaws.com/",
+    "ABL_LOANS_WO": "http://m-prod-abl-hyp-elb-1486215713.ap-south-1.elb.amazonaws.com/",
+    "ABL_CARDS_B1": "http://m-prod-abl-hyp-elb-1486215713.ap-south-1.elb.amazonaws.com/",
+    "ABL_CARDS_B2/3": "http://m-prod-abl-hyp-elb-1486215713.ap-south-1.elb.amazonaws.com/",
+    "ABL_CARDS_WO": "http://m-prod-abl-hyp-elb-1486215713.ap-south-1.elb.amazonaws.com/"
 }
 
 ONYX_LOCAL_DOMAIN = {
@@ -80,6 +86,12 @@ ONYX_LOCAL_DOMAIN = {
     "yblccujlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
     "ablethjlsdsmablpxpqcloaxlnifyewmveqlhiacldjplapyndmenfn44nausprj": "http://m-prod-onyxlocal-elb-961447055.ap-south-1.elb.amazonaws.com",
     "sbicoljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-1756808427.ap-south-1.elb.amazonaws.com",
+    "ablloansb1jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-961447055.ap-south-1.elb.amazonaws.com",
+    "ablloansb2jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-961447055.ap-south-1.elb.amazonaws.com",
+    "ablloanswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-961447055.ap-south-1.elb.amazonaws.com",
+    "ablcardsb1jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-961447055.ap-south-1.elb.amazonaws.com",
+    "ablcardsb2jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-961447055.ap-south-1.elb.amazonaws.com",
+    "ablcardswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-961447055.ap-south-1.elb.amazonaws.com",
 }
 
 ONYX_LOCAL_CAMP_VALIDATION = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj",
@@ -114,6 +126,12 @@ ONYX_LOCAL_CAMP_VALIDATION = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapra
                               "yblovljlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                               "iblostolsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                               "ibllalblsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                              "ablloansb1jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
+                              "ablloansb2jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
+                              "ablloanswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
+                              "ablcardsb1jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
+                              "ablcardsb2jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
+                              "ablcardswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
                               "ibldcupgsdsmablpxpqclospkniackwmveqlhlmztdjplapyndmenfn88nausprj"]
 
 CAMPAIGN_THRESHOLDS_PER_MINUTE = {
@@ -216,6 +234,12 @@ USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN = ["vstethjlsdsmablpxpqclospkni88ewmv
                                               "yblactjlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                                               "iblostolsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                                               "ibllalblsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                                              "ablloansb1jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
+                                              "ablloansb2jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
+                                              "ablloanswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
+                                              "ablcardsb1jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
+                                              "ablcardsb2jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
+                                              "ablcardswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
                                               "ibldcupgsdsmablpxpqclospkniackwmveqlhlmztdjplapyndmenfn88nausprj"]
 
 TEST_CAMPAIGN_ENABLED = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj",
@@ -247,6 +271,12 @@ TEST_CAMPAIGN_ENABLED = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenf
                          "yblstejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                          "yblactjlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                          "ibldcupgsdsmablpxpqclospkniackwmveqlhlmztdjplapyndmenfn88nausprj",
+                         "ablloansb1jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
+                         "ablloansb2jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
+                         "ablloanswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
+                         "ablcardsb1jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
+                         "ablcardsb2jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
+                         "ablcardswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
                          "sbicoljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                          ]
 
@@ -439,4 +469,10 @@ TEMPLATE_VALIDATION_LINK = {
     "yblccujlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "ccybl.in",
     "ablethjlsdsmablpxpqcloaxlnifyewmveqlhiacldjplapyndmenfn44nausprj": "https://pay.axisbank.com/",
     "sbiclejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "https://uatpay.com/",
+    "ablloansb1jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "https://pay.axisbank.com/",
+    "ablloansb2jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "https://pay.axisbank.com/",
+    "ablloanswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "https://pay.axisbank.com/",
+    "ablcardsb1jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "https://pay.axisbank.com/",
+    "ablcardsb2jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "https://pay.axisbank.com/",
+    "ablcardswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "https://pay.axisbank.com/",
 }
