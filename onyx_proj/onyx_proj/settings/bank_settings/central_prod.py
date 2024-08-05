@@ -51,7 +51,8 @@ HYPERION_LOCAL_DOMAIN = {
     "ABL_LOANS_WO": "http://m-prod-abl-hyp-elb-1486215713.ap-south-1.elb.amazonaws.com/",
     "ABL_CARDS_B1": "http://m-prod-abl-hyp-elb-1486215713.ap-south-1.elb.amazonaws.com/",
     "ABL_CARDS_B2/3": "http://m-prod-abl-hyp-elb-1486215713.ap-south-1.elb.amazonaws.com/",
-    "ABL_CARDS_WO": "http://m-prod-abl-hyp-elb-1486215713.ap-south-1.elb.amazonaws.com/"
+    "ABL_CARDS_WO": "http://m-prod-abl-hyp-elb-1486215713.ap-south-1.elb.amazonaws.com/",
+    "IBL_CLI": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/"
 }
 
 ONYX_LOCAL_DOMAIN = {
@@ -92,6 +93,7 @@ ONYX_LOCAL_DOMAIN = {
     "ablcardsb1jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-961447055.ap-south-1.elb.amazonaws.com",
     "ablcardsb2jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-961447055.ap-south-1.elb.amazonaws.com",
     "ablcardswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-961447055.ap-south-1.elb.amazonaws.com",
+    "iblclidswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-288397383.ap-south-1.elb.amazonaws.com",
 }
 
 ONYX_LOCAL_CAMP_VALIDATION = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj",
@@ -126,6 +128,7 @@ ONYX_LOCAL_CAMP_VALIDATION = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapra
                               "yblovljlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                               "iblostolsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                               "ibllalblsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                              "iblclidswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
                               "ablloansb1jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
                               "ablloansb2jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
                               "ablloanswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
@@ -234,6 +237,7 @@ USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN = ["vstethjlsdsmablpxpqclospkni88ewmv
                                               "yblactjlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                                               "iblostolsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                                               "ibllalblsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
+                                              "iblclidswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
                                               "ablloansb1jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
                                               "ablloansb2jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
                                               "ablloanswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
@@ -271,6 +275,7 @@ TEST_CAMPAIGN_ENABLED = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenf
                          "yblstejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                          "yblactjlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                          "ibldcupgsdsmablpxpqclospkniackwmveqlhlmztdjplapyndmenfn88nausprj",
+                         "iblclidswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
                          "ablloansb1jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
                          "ablloansb2jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
                          "ablloanswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
@@ -469,6 +474,7 @@ TEMPLATE_VALIDATION_LINK = {
     "yblccujlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "ccybl.in",
     "ablethjlsdsmablpxpqcloaxlnifyewmveqlhiacldjplapyndmenfn44nausprj": "https://pay.axisbank.com/",
     "sbiclejlsdsmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "https://uatpay.com/",
+    "iblclidswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "inbl.in",
     "ablloansb1jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "https://pay.axisbank.com/",
     "ablloansb2jlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "https://pay.axisbank.com/",
     "ablloanswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "https://pay.axisbank.com/",
