@@ -194,19 +194,23 @@ OTP_APP_USER_MAPPING = {
     OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value: {
         "divyansh_jain": {
             "display_name": "Divyansh Jain",
-            "mobile_number": 8929294241
+            "mobile_number": 8929294241,
+            "email_id": "divyansh.jain@creditas.in"
         },
         "ritik_saini": {
             "display_name": "Ritik Saini",
-            "mobile_number": 9871880272
+            "mobile_number": 9871880272,
+            "email_id": "ritik.saini@creditas.in"
         },
         "sanjeev_juyal": {
-            "display_name": "Divyansh Jain",
-            "mobile_number": 8929294241
+            "display_name": "Sanjeev Juyal",
+            "mobile_number": 8929294241,
+            "email_id": "sanjeev.juyal@creditas.in"
         },
         "devesh_satija": {
             "display_name": "Devesh Satija",
-            "mobile_number": 9953095877
+            "mobile_number": 9953095877,
+            "email_id": "devesh.satija@creditas.in"
         },
         "vivek_phogat": {
             "display_name": "Vivek Phogat",
@@ -216,19 +220,23 @@ OTP_APP_USER_MAPPING = {
     OtpAppName.CAMP_SCHEDULE_TIME_UPDATE.value: {
         "divyansh_jain": {
             "display_name": "Divyansh Jain",
-            "mobile_number": 8929294241
+            "mobile_number": 8929294241,
+            "email_id": "divyansh.jain@creditas.in"
         },
         "ritik_saini": {
             "display_name": "Ritik Saini",
-            "mobile_number": 9871880272
+            "mobile_number": 9871880272,
+            "email_id": "ritik.saini@creditas.in"
         },
         "sanjeev_juyal": {
-            "display_name": "Divyansh Jain",
-            "mobile_number": 8929294241
+            "display_name": "Sanjeev Juyal",
+            "mobile_number": 8929294241,
+            "email_id": "sanjeev.juyal@creditas.in"
         },
         "devesh_satija": {
             "display_name": "Devesh Satija",
-            "mobile_number": 9953095877
+            "mobile_number": 9953095877,
+            "email_id": "devesh.satija@creditas.in"
         },
         "vivek_phogat": {
             "display_name": "Vivek Phogat",
@@ -238,19 +246,23 @@ OTP_APP_USER_MAPPING = {
     OtpAppName.FILE_DEPENDENCY_OVERRIDE.value: {
         "divyansh_jain": {
             "display_name": "Divyansh Jain",
-            "mobile_number": 8929294241
+            "mobile_number": 8929294241,
+            "email_id": "divyansh.jain@creditas.in"
         },
         "ritik_saini": {
             "display_name": "Ritik Saini",
-            "mobile_number": 9871880272
+            "mobile_number": 9871880272,
+            "email_id": "ritik.saini@creditas.in"
         },
         "sanjeev_juyal": {
-            "display_name": "Divyansh Jain",
-            "mobile_number": 8929294241
+            "display_name": "Sanjeev Juyal",
+            "mobile_number": 8929294241,
+            "email_id": "sanjeev.juyal@creditas.in"
         },
         "devesh_satija": {
             "display_name": "Devesh Satija",
-            "mobile_number": 9953095877
+            "mobile_number": 9953095877,
+            "email_id": "devesh.satija@creditas.in"
         },
         "vivek_phogat": {
             "display_name": "Vivek Phogat",
@@ -260,12 +272,24 @@ OTP_APP_USER_MAPPING = {
     OtpAppName.SEGMENT_HOD_APPROVAL.value: {
         "ritik_saini": {
             "display_name": "Ritik Saini",
-            "mobile_number": 9871880272
+            "mobile_number": 9871880272,
+            "email_id": "ritik.saini@creditas.in"
         },
         "sanjeev_juyal": {
             "display_name": "Sanjeev Juyal",
-            "mobile_number": 7055146287
-        }
+            "mobile_number": 7055146287,
+            "email_id": "sanjeev.juyal@creditas.in"
+        },
+        "samratt_verma": {
+            "display_name": "Samratt Verma",
+            "mobile_number": 9811818476,
+            "email_id": "samratt.verma@creditas.in"
+        },
+        "vansh_kumar": {
+            "display_name": "Vansh Dua",
+            "mobile_number": 8126664705,
+            "email_id": "vanshkumar.dua@creditas.in"
+        },
     }
 }
 

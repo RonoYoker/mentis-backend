@@ -103,65 +103,79 @@ OTP_APP_USER_MAPPING = {
     OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value: {
         "divyansh_jain": {
             "display_name": "Divyansh Jain",
-            "mobile_number": 8929294241
+            "mobile_number": 8929294241,
+            "email_id": "divyansh.jain@creditas.in"
         },
         "ritik_saini": {
             "display_name": "Ritik Saini",
-            "mobile_number": 9871880272
+            "mobile_number": 9871880272,
+            "email_id": "ritik.saini@creditas.in"
         },
         "sanjeev_juyal": {
-            "display_name": "Divyansh Jain",
-            "mobile_number": 8929294241
+            "display_name": "Sanjeev Juyal",
+            "mobile_number": 8929294241,
+            "email_id": "sanjeev.juyal@creditas.in"
         },
         "devesh_satija": {
             "display_name": "Devesh Satija",
-            "mobile_number": 9953095877
+            "mobile_number": 9953095877,
+            "email_id": "devesh.satija@creditas.in"
         }
     },
     OtpAppName.CAMP_SCHEDULE_TIME_UPDATE.value: {
         "divyansh_jain": {
             "display_name": "Divyansh Jain",
-            "mobile_number": 8929294241
+            "mobile_number": 8929294241,
+            "email_id": "divyansh.jain@creditas.in"
         },
         "ritik_saini": {
             "display_name": "Ritik Saini",
-            "mobile_number": 9871880272
+            "mobile_number": 9871880272,
+            "email_id": "ritik.saini@creditas.in"
         },
         "sanjeev_juyal": {
-            "display_name": "Divyansh Jain",
-            "mobile_number": 8929294241
+            "display_name": "Sanjeev Juyal",
+            "mobile_number": 8929294241,
+            "email_id": "sanjeev.juyal@creditas.in"
         },
         "devesh_satija": {
             "display_name": "Devesh Satija",
-            "mobile_number": 9953095877
+            "mobile_number": 9953095877,
+            "email_id": "devesh.satija@creditas.in"
         }
     },
     OtpAppName.FILE_DEPENDENCY_OVERRIDE.value: {
         "divyansh_jain": {
             "display_name": "Divyansh Jain",
-            "mobile_number": 8929294241
+            "mobile_number": 8929294241,
+            "email_id": "divyansh.jain@creditas.in"
         },
         "ritik_saini": {
             "display_name": "Ritik Saini",
-            "mobile_number": 9871880272
+            "mobile_number": 9871880272,
+            "email_id": "ritik.saini@creditas.in"
         },
         "sanjeev_juyal": {
-            "display_name": "Divyansh Jain",
-            "mobile_number": 8929294241
+            "display_name": "Sanjeev Juyal",
+            "mobile_number": 8929294241,
+            "email_id": "sanjeev.juyal@creditas.in"
         },
         "devesh_satija": {
             "display_name": "Devesh Satija",
-            "mobile_number": 9953095877
+            "mobile_number": 9953095877,
+            "email_id": "devesh.satija@creditas.in"
         }
     },
     OtpAppName.SEGMENT_HOD_APPROVAL.value: {
         "arsheen_gujral": {
             "display_name": "Arsheen Gujral",
-            "mobile_number": 9990701692
+            "mobile_number": 9990701692,
+            "email_id": "arsheen.gujral@creditas.in"
         },
         "shravan_ganguli": {
             "display_name": "Shravan Ganguli",
-            "mobile_number": 9353438931
+            "mobile_number": 9353438931,
+            "email_id": "shravan.ganguli@creditas.in"
         }
     }
 }

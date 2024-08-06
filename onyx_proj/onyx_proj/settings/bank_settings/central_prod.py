@@ -293,141 +293,174 @@ OTP_APP_USER_MAPPING = {
     OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value: {
         "arsheen_gujral": {
             "display_name": "Arsheen Gujral",
-            "mobile_number": 9990701692
+            "mobile_number": 9990701692,
+            "email_id": "arsheen.gujral@creditas.in"
         },
         "abhishek_gupta": {
             "display_name": "Abhishek Gupta",
-            "mobile_number": 9999913305
+            "mobile_number": 9999913305,
+            "email_id": "abhishek.gupta@creditas.in"
         },
         "devesh_satija": {
             "display_name": "Devesh Satija",
-            "mobile_number": 9953095877
+            "mobile_number": 9953095877,
+            "email_id": "devesh.satija@creditas.in"
         },
         "ankur_srivastava": {
             "display_name": "Ankur Srivastava",
-            "mobile_number": 7048909209
+            "mobile_number": 7048909209,
+            "email_id": "ankur.srivastava@creditas.in"
         },
         "vivek_phogat": {
             "display_name": "Vivek Phogat",
-            "mobile_number": 9999332793
+            "mobile_number": 9999332793,
+            "email_id": "vivek.phogat@creditas.in"
         },
         "gagan_rajput": {
             "display_name": "Gagan Rajput",
-            "mobile_number": 9999576578
+            "mobile_number": 9999576578,
+            "email_id": "gagan.rajput@creditas.in"
         },
         "rajdeep_gottumukkala": {
             "display_name": "Rajdeep Gottumukkala",
-            "mobile_number": 9444397336
+            "mobile_number": 9444397336,
+            "email_id": "rajdeep.gottumukkala@creditas.in"
         },
         "rashmi_mishra": {
             "display_name": "Rashmi Mishra",
-            "mobile_number": 9987062389
+            "mobile_number": 9987062389,
+            "email_id": "rashmi.mishra@creditas.in"
         },
         "akanshi_gupta": {
             "display_name": "Akanshi Gupta",
-            "mobile_number": 7838018747
+            "mobile_number": 7838018747,
+            "email_id": "akanshi.gupta@creditas.in"
         },
         "navinder_rajput": {
             "display_name": "Navinder Rajput",
-            "mobile_number": 9999248486
+            "mobile_number": 9999248486,
+            "email_id": "navinder.rajput@creditas.in"
         },
         "aman_bindal": {
             "display_name": "Aman Bindal",
-            "mobile_number": 9004929159
+            "mobile_number": 9004929159,
+            "email_id": "aman@creditas.in"
         }
     },
     OtpAppName.CAMP_SCHEDULE_TIME_UPDATE.value: {
         "arsheen_gujral": {
             "display_name": "Arsheen Gujral",
-            "mobile_number": 9990701692
+            "mobile_number": 9990701692,
+            "email_id": "arsheen.gujral@creditas.in"
         },
         "abhishek_gupta": {
             "display_name": "Abhishek Gupta",
-            "mobile_number": 9999913305
+            "mobile_number": 9999913305,
+            "email_id": "abhishek.gupta@creditas.in"
         },
         "devesh_satija": {
             "display_name": "Devesh Satija",
-            "mobile_number": 9953095877
+            "mobile_number": 9953095877,
+            "email_id": "devesh.satija@creditas.in"
         },
         "ankur_srivastava": {
             "display_name": "Ankur Srivastava",
-            "mobile_number": 7048909209
+            "mobile_number": 7048909209,
+            "email_id": "ankur.srivastava@creditas.in"
         },
         "vivek_phogat": {
             "display_name": "Vivek Phogat",
-            "mobile_number": 9999332793
+            "mobile_number": 9999332793,
+            "email_id": "vivek.phogat@creditas.in"
         },
         "gagan_rajput": {
             "display_name": "Gagan Rajput",
-            "mobile_number": 9999576578
+            "mobile_number": 9999576578,
+            "email_id": "gagan.rajput@creditas.in"
         },
         "rajdeep_gottumukkala": {
             "display_name": "Rajdeep Gottumukkala",
-            "mobile_number": 9444397336
+            "mobile_number": 9444397336,
+            "email_id": "rajdeep.gottumukkala@creditas.in"
         },
         "rashmi_mishra": {
             "display_name": "Rashmi Mishra",
-            "mobile_number": 9987062389
+            "mobile_number": 9987062389,
+            "email_id": "rashmi.mishra@creditas.in"
         },
         "akanshi_gupta": {
             "display_name": "Akanshi Gupta",
-            "mobile_number": 7838018747
+            "mobile_number": 7838018747,
+            "email_id": "akanshi.gupta@creditas.in"
         },
         "navinder_rajput": {
             "display_name": "Navinder Rajput",
-            "mobile_number": 9999248486
+            "mobile_number": 9999248486,
+            "email_id": "navinder.rajput@creditas.in"
         }
     },
     OtpAppName.FILE_DEPENDENCY_OVERRIDE.value:  {
         "arsheen_gujral": {
             "display_name": "Arsheen Gujral",
-            "mobile_number": 9990701692
+            "mobile_number": 9990701692,
+            "email_id": "arsheen.gujral@creditas.in"
         },
         "abhishek_gupta": {
             "display_name": "Abhishek Gupta",
-            "mobile_number": 9999913305
+            "mobile_number": 9999913305,
+            "email_id": "abhishek.gupta@creditas.in"
         },
         "devesh_satija": {
             "display_name": "Devesh Satija",
-            "mobile_number": 9953095877
+            "mobile_number": 9953095877,
+            "email_id": "devesh.satija@creditas.in"
         },
         "ankur_srivastava": {
             "display_name": "Ankur Srivastava",
-            "mobile_number": 7048909209
+            "mobile_number": 7048909209,
+            "email_id": "ankur.srivastava@creditas.in"
         },
         "vivek_phogat": {
             "display_name": "Vivek Phogat",
-            "mobile_number": 9999332793
+            "mobile_number": 9999332793,
+            "email_id": "vivek.phogat@creditas.in"
         },
         "gagan_rajput": {
             "display_name": "Gagan Rajput",
-            "mobile_number": 9999576578
+            "mobile_number": 9999576578,
+            "email_id": "gagan.rajput@creditas.in"
         },
         "rajdeep_gottumukkala": {
             "display_name": "Rajdeep Gottumukkala",
-            "mobile_number": 9444397336
+            "mobile_number": 9444397336,
+            "email_id": "rajdeep.gottumukkala@creditas.in"
         },
         "rashmi_mishra": {
             "display_name": "Rashmi Mishra",
-            "mobile_number": 9987062389
+            "mobile_number": 9987062389,
+            "email_id": "rashmi.mishra@creditas.in"
         },
         "akanshi_gupta": {
             "display_name": "Akanshi Gupta",
-            "mobile_number": 7838018747
+            "mobile_number": 7838018747,
+            "email_id": "akanshi.gupta@creditas.in"
         },
         "navinder_rajput": {
             "display_name": "Navinder Rajput",
-            "mobile_number": 9999248486
+            "mobile_number": 9999248486,
+            "email_id": "navinder.rajput@creditas.in"
         }
     },
 OtpAppName.SEGMENT_HOD_APPROVAL.value:  {
         "aman_bindal": {
             "display_name": "Aman Bindal",
-            "mobile_number": 9004929159
+            "mobile_number": 9004929159,
+            "email_id": "aman@creditas.in"
         },
         "love_singhal": {
             "display_name": "Love Singhal",
-            "mobile_number": 9310390056
+            "mobile_number": 9310390056,
+            "email_id": "love.singhal@creditas.in"
         }
     }
 }

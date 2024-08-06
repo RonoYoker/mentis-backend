@@ -24,6 +24,7 @@ from onyx_proj.models.CED_OtpRequest_model import CEDOtpRequest
 from onyx_proj.models.CED_User_model import CEDUser
 from onyx_proj.orm_models.CED_OtpApproval_model import CED_OtpApproval
 from onyx_proj.orm_models.CED_OtpRequest_model import CED_OtpRequest
+from onyx_proj.common.utils.email_utility import email_utility
 logger = logging.getLogger("apps")
 
 def otp_generator(request_data):
@@ -65,6 +66,8 @@ def otp_generator(request_data):
 
     # Fetch mobile number
     mobile_number = allowed_user_group[receiver_user_name]["mobile_number"]
+    #fetch email id
+    email_id = allowed_user_group[receiver_user_name]["email_id"]
 
     generate_otp_res = generate_and_save_otp(request_id, mobile_number)
     if generate_otp_res is None or generate_otp_res.get("otp", None) is None:
@@ -81,6 +84,14 @@ def otp_generator(request_data):
                           headers={"Content-Type": "application/json"}).get_api_response())
     except Exception as ex:
         logger.error(f"method_name :: {method_name}, Error while initiating OTP reqeust with sandesh, Error: {ex}")
+        CEDOtpRequest().update_otp_request_status_by_unique_id(generate_otp_res['unique_id'], OtpRequest.ERROR.value)
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Error while triggering OTP")
+    try:
+        email_utility().send_mail([email_id], [], [], f"{otp_app_name.replace('_',' ')} OTP",
+                                  OTP_APP_TEMPLATE_MAPPING[otp_app_name].replace("{#OTP#}", otp))
+    except Exception as ex:
+        logger.error(f"method_name :: {method_name}, Error while initiating Email OTP reqeust, Error: {ex}")
         CEDOtpRequest().update_otp_request_status_by_unique_id(generate_otp_res['unique_id'], OtpRequest.ERROR.value)
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Error while triggering OTP")
