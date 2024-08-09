@@ -76,7 +76,7 @@ def otp_generator(request_data):
     otp = generate_otp_res["otp"]
     request_payload = {"usermessage": OTP_APP_TEMPLATE_MAPPING[otp_app_name].replace("{#OTP#}", otp),
                        "mobileNumber": mobile_number,
-                       "senderId": "CMDSMS",
+                       "senderId": "Credas",
                        "client": "HYPERION_CENTRAL"}
     try:
         api_response = json.loads(

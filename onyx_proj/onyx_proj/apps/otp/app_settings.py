@@ -10,10 +10,10 @@ class OtpAppName(Enum):
 
 
 OTP_APP_TEMPLATE_MAPPING = {
-    OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value: "{#OTP#} is your OTP. - Clearmydues",
-    OtpAppName.CAMP_SCHEDULE_TIME_UPDATE.value: "{#OTP#} is your OTP. - Clearmydues",
-    OtpAppName.SEGMENT_HOD_APPROVAL.value: "{#OTP#} is your OTP. - Clearmydues",
-    OtpAppName.FILE_DEPENDENCY_OVERRIDE.value: "{#OTP#} is your OTP. - Clearmydues"
+    OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value: "{#OTP#} is your OTP to login into your account - Creditas",
+    OtpAppName.CAMP_SCHEDULE_TIME_UPDATE.value: "{#OTP#} is your OTP to login into your account - Creditas",
+    OtpAppName.SEGMENT_HOD_APPROVAL.value: "{#OTP#} is your OTP to login into your account - Creditas",
+    OtpAppName.FILE_DEPENDENCY_OVERRIDE.value: "{#OTP#} is your OTP to login into your account - Creditas"
 }
 
 class OtpRequest(Enum):
