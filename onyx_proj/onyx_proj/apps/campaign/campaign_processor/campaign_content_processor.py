@@ -89,6 +89,15 @@ def update_campaign_segment_data(request_data) -> json:
     if campaign_builder_campaign_id is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Invalid Payload.")
+    project_id = get_project_id_from_cbc_id(campaign_builder_campaign_id)
+    project_entity = CEDProjects().get_project_data_by_project_id(project_id)
+    if (project_entity is None or len(project_entity) < 1 or "ValidationConfig" not in project_entity[0]
+            or len(project_entity[0]['ValidationConfig']) == 0):
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="No project configuration found, Invalid campaign builder id")
+    project_entity = project_entity[0]
+    project_validations = json.loads(project_entity.get("ValidationConfig", "{}"))
+    dnd_enabled = project_validations.get("DND_ENABLED", True)
 
     is_split_flag_db_resp = CEDCampaignBuilderCampaign().get_is_split_flag_by_cbc_id(campaign_builder_campaign_id)
 
@@ -186,7 +195,9 @@ def update_campaign_segment_data(request_data) -> json:
         logger.error(f"segment_details::{segment_details}")
         project_name = segment_details["project_name"]
         sql_query = segment_details["sql_query"]
-        campaign_filters = CEDCampaignBuilderFilter().fetch_campaign_filters(segment_details["campaign_builder_id"])
+        enabled_channels_for_filter = project_validations.get("CAMPAIGN_FILTERS_CONF", {}).get("enabled_channels", [])
+        is_filter_enabled_for_this_channel = True if cbc["ContentType"] in enabled_channels_for_filter else False
+        campaign_filters = CEDCampaignBuilderFilter().fetch_campaign_filters(segment_details["campaign_builder_id"]) if is_filter_enabled_for_this_channel else []
         payload = {
             "campaigns":[{
                         "campaign_builder_campaign_id": campaign_builder_campaign_id,
@@ -202,6 +213,7 @@ def update_campaign_segment_data(request_data) -> json:
                         "segment_data_s3_path": task_data["response"]["s3_url"],
                         "segment_headers": json.dumps(task_data["response"]["headers_list"]),
                         "campaign_filters":campaign_filters,
+                        "dnd_enabled": dnd_enabled,
                         "filters_config": FILTER_ENUM_CONFIG
                     }]
         }
@@ -224,7 +236,6 @@ def update_campaign_segment_data(request_data) -> json:
         if cssd_entity_list is None or len(cssd_entity_list) <= 0:
             logger.debug("method_name: update_campaign_segment_data, No test campaign available to run.")
             return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS)
-        project_id = get_project_id_from_cbc_id(campaign_builder_campaign_id)
         cssd_id_list = [cssd_entity['id'] for cssd_entity in cssd_entity_list]
         # Update test campaign status
         resp = CEDCampaignSchedulingSegmentDetailsTest().update_scheduling_status(cssd_id_list, "QUERY_EXECUTOR_SUCCESS_TEST_CAMP")
