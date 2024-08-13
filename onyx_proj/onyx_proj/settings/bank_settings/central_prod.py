@@ -54,7 +54,8 @@ HYPERION_LOCAL_DOMAIN = {
     "ABL_CARDS_WO": "http://m-prod-abl-hyp-elb-1486215713.ap-south-1.elb.amazonaws.com/",
     "IBL_CLI": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
     "IBL_PLCC": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
-    "YBL_365_Activation_WO_DND": "http://m-prod-ybl-hyp-elb-173392471.ap-south-1.elb.amazonaws.com/"
+    "YBL_365_Activation_WO_DND": "http://m-prod-ybl-hyp-elb-173392471.ap-south-1.elb.amazonaws.com/",
+    "YBL_Card_Auto_Renewal": "http://m-prod-ybl-hyp-elb-173392471.ap-south-1.elb.amazonaws.com/",
 }
 
 ONYX_LOCAL_DOMAIN = {
@@ -98,6 +99,7 @@ ONYX_LOCAL_DOMAIN = {
     "iblclidswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-288397383.ap-south-1.elb.amazonaws.com",
     "iblplccloksmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-elb-288397383.ap-south-1.elb.amazonaws.com",
     "yblactdndksmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
+    "yblcardautorenewalqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "http://m-prod-onyxlocal-alb-1226588988.ap-south-1.elb.amazonaws.com",
 }
 
 ONYX_LOCAL_CAMP_VALIDATION = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj",
@@ -141,6 +143,7 @@ ONYX_LOCAL_CAMP_VALIDATION = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapra
                               "ablcardswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
                               "iblplccloksmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                               "yblactdndksmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
+                              "yblcardautorenewalqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                               "ibldcupgsdsmablpxpqclospkniackwmveqlhlmztdjplapyndmenfn88nausprj"]
 
 CAMPAIGN_THRESHOLDS_PER_MINUTE = {
@@ -252,6 +255,7 @@ USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN = ["vstethjlsdsmablpxpqclospkni88ewmv
                                               "ablcardswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
                                               "iblplccloksmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                                               "yblactdndksmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
+                                              "yblcardautorenewalqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                                               "ibldcupgsdsmablpxpqclospkniackwmveqlhlmztdjplapyndmenfn88nausprj"]
 
 TEST_CAMPAIGN_ENABLED = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenfn11nausprj",
@@ -293,6 +297,7 @@ TEST_CAMPAIGN_ENABLED = ["vstethjlsdsmablpxpqclospkni88ewmveqlhiqxtdjplapradmenf
                          "sbicoljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
                          "iblplccloksmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                          "yblactdndksmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
+                         "yblcardautorenewalqclospknifyewmveqlhiacldjplapyndmenfn11nausprj",
                          ]
 
 HYPERION_TEST_CAMPAIGN_URL = "https://hyperiontool.com/hyperioncampaigntooldashboard/campaignbuilder/testcampaign/"
@@ -526,4 +531,5 @@ TEMPLATE_VALIDATION_LINK = {
     "ablcardswojlsdsmablpxp55lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "https://pay.axisbank.com/",
     "iblplccloksmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "inbl.in",
     "yblactdndksmablpxpqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "ccybl.in",
+    "yblcardautorenewalqclospknifyewmveqlhiacldjplapyndmenfn11nausprj": "ccybl.in",
 }
