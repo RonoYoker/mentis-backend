@@ -1,7 +1,9 @@
 import datetime
 
+from onyx_proj.common.constants import PROJECT_INGESTION_QUERIES
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import *
+from onyx_proj.models.custom_query_execution_model import CustomQueryExecution
 
 
 class CEDProjects:
@@ -87,6 +89,17 @@ class CEDProjects:
         ]
         return fetch_rows(self.engine, self.table, filter_list)
 
+    def insert_project_with_reference(self, project_id, referred_project_id, project_name, campaign_threshold, validation_config=None, infra="central"):
+        if infra == "central":
+            query = PROJECT_INGESTION_QUERIES[f"{self.table_name}_{infra}"].format(PROJECT_ID=project_id, PROJECT_NAME=project_name, REF_PROJECT_ID=referred_project_id, CAMPAIGN_THRESHOLD=campaign_threshold, VALIDATION_CONFIG=validation_config)
+        elif infra == "local":
+            query = PROJECT_INGESTION_QUERIES[f"{self.table_name}_{infra}"].format(PROJECT_ID=project_id, PROJECT_NAME=project_name, REF_PROJECT_ID=referred_project_id, CAMPAIGN_THRESHOLD=campaign_threshold)
+        else:
+            return dict(success=False, details_message="unknown infra provided")
+        return CustomQueryExecution().execute_write_query(query)
+
+    def get_project_data_by_project_name(self, name: str) -> list:
+        return dict_fetch_all(self.curr, self.table_name, {"Name": name})
     def get_local_domain_data(self):
         query = f""" select Name,UniqueId,HyperionLocalDomain,OnyxLocalDomain, TemplateValidationLink from CED_Projects """
         return dict_fetch_query_all(self.curr, query)

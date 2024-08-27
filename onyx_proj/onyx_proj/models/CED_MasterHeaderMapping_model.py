@@ -1,5 +1,7 @@
+from onyx_proj.common.constants import PROJECT_INGESTION_QUERIES
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows
+from onyx_proj.models.custom_query_execution_model import CustomQueryExecution
 from onyx_proj.orm_models.CED_MasterHeaderMapping_model import CED_MasterHeaderMapping
 
 
@@ -27,3 +29,6 @@ class CEDMasterHeaderMapping:
         res = fetch_rows(self.engine, self.table, filter_list)
         return res
 
+    def insert_master_header_mapping_with_reference(self, project_id, referred_project_id, project_prefix):
+        query = PROJECT_INGESTION_QUERIES[self.table_name].format(PROJECT_ID=project_id, PROJECT_PREFIX=project_prefix, REF_PROJECT_ID=referred_project_id, SUFFIX_LENGTH=64-len(project_prefix))
+        return CustomQueryExecution().execute_write_query(query)

@@ -1,7 +1,10 @@
+from onyx_proj.common.constants import PROJECT_INGESTION_QUERIES
 from onyx_proj.common.mysql_helper import *
 from onyx_proj.common.sqlalchemy_helper import sql_alchemy_connect, fetch_rows, fetch_columns, \
     fetch_rows_limited
+from onyx_proj.exceptions.permission_validation_exception import ValidationFailedException
 from onyx_proj.models.CreditasCampaignEngine import CED_DataID_Details
+from onyx_proj.models.custom_query_execution_model import CustomQueryExecution
 
 
 class CEDDataIDDetails:
@@ -55,3 +58,8 @@ class CEDDataIDDetails:
         if res is None or len(res) <= 0:
             return None
         return res[0]
+
+    def insert_data_id_details_with_reference(self, project_id, referred_project_id, file_id, data_uid):
+        query = PROJECT_INGESTION_QUERIES[self.table_name].format(PROJECT_ID=project_id, DATA_UID=data_uid, FILE_ID=file_id, REF_PROJECT_ID=referred_project_id)
+        return CustomQueryExecution().execute_write_query(query)
+

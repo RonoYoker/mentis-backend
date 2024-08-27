@@ -81,7 +81,10 @@ REFRESH_COUNT_LOCAL_API_PATH = "hyperioncampaigntooldashboard/segment/localdb/tr
 
 TEST_CAMPAIGN_VALIDATION_API_PATH = "campaign/local/check_test_campaign_validation_status/"
 
-# LOCAL_CAMPAIGN_SCHEDULING_DATA_PACKET_HANDLER = "hyperioncampaigntooldashboard/campaignbuilder/localbd/campaignrequest"
+INGEST_PROJECT_LOCAL_PATH = "project/local/insert_project_details_in_local/"
+
+LOCAL_CAMPAIGN_SCHEDULING_DATA_PACKET_HANDLER = "hyperioncampaigntooldashboard/campaignbuilder/localbd/campaignrequest"
+
 
 SEGMENT_RECORDS_COUNT_API_PATH = "hyperioncampaigntooldashboard/segment/recordcount"
 
@@ -1541,5 +1544,13 @@ StrategyConfigurationCTABasedOnStatus = {
     StrategyConfigurationStatus.ERROR: ["EDIT", "CLONE", "VIEW"],
     StrategyConfigurationStatus.DIS_APPROVED: ["EDIT", "CLONE", "VIEW", "PREVIEW"],
     StrategyConfigurationStatus.DEACTIVATION_IN_PROGRESS: ["VIEW", "PREVIEW"]
+}
+
+PROJECT_INGESTION_QUERIES = {
+    "CED_DataID_Details": """ INSERT INTO `CED_DataID_Details` ( `Id`, `ProjectId`, `FileName`, `UniqueId`, `IsDeleted`, `IsActive`, `Status`, `MainTableName`, `AuroraTableName`, `HistoryTableName`, `CampaignTrailTableName`, `NoOfRecords`, `UserUID`, `IsBusyFileProcessing`, `DetailedStatus`, `FileId`, `ExpireDate`, `HaveSuccessFile`, `HaveMobile`, `HaveEmail`, `HaveAccountNumber` ) ( select null, '{PROJECT_ID}' as ProjectId, d.FileName, '{DATA_UID}' as UniqueId, d.IsDeleted, d.IsActive, d.Status, d.MainTableName, d.AuroraTableName, d.HistoryTableName, d.CampaignTrailTableName, d.NoOfRecords, d.UserUID, d.IsBusyFileProcessing, d.DetailedStatus, '{FILE_ID}' as FileId, d.ExpireDate, d.HaveSuccessFile, d.HaveMobile, d.HaveEmail, d.HaveAccountNumber from CED_DataID_Details d where d.ProjectId = '{REF_PROJECT_ID}' ) """,
+    "CED_MasterHeaderMapping": """ INSERT INTO CED_MasterHeaderMapping( UniqueId, HeaderName, ColumnName, FileDataFieldType, Comment, ProjectId, MappingType, UserUid, Status, IsActive, RejectionReason, IsDeleted, ContentType, Encrypted ) ( SELECT concat( '{PROJECT_PREFIX}', RIGHT(p.UniqueId, {SUFFIX_LENGTH}) ), p.HeaderName, p.ColumnName, p.FileDataFieldType, p.Comment, '{PROJECT_ID}', p.MappingType, p.UserUid, p.Status, p.IsActive, p.RejectionReason, p.IsDeleted, p.ContentType, p.Encrypted FROM CED_MasterHeaderMapping p WHERE p.ProjectId = '{REF_PROJECT_ID}' ); """,
+    "CED_CampaignSenderIdContent": """ INSERT INTO `CED_CampaignSenderIdContent` ( `Id`, `UniqueId`, `Title`, `ProjectId`, `ContentText`, `Description`, `CreatedBy`, `Status`, `IsActive`, `IsDeleted`, `ErrorMessage`, `HistoryId` ) ( select null, concat( '{PROJECT_PREFIX}', LEFT( UUID(), 7 ), RIGHT(d.UniqueId, ({SUFFIX_LENGTH}-7)) ), d.Title, '{PROJECT_ID}' as ProjectId, d.ContentText, d.Description, d.CreatedBy, d.Status, d.IsActive, d.IsDeleted, d.ErrorMessage, d.HistoryId from CED_CampaignSenderIdContent d where d.ProjectId = '{REF_PROJECT_ID}' ); """,
+    "CED_Projects_central": """ INSERT INTO `CED_Projects` ( `Id`, `Name`, `Comment`, `UserUID`, `UniqueId`, `BusinessUnitId`, `CampaginStartTime`, `CampaginEndTime`, `IsActive`, `IsDeleted`, `HistoryId`, `BankName`, `SMSServiceVendor`, `EmailServiceVendor`, `IvrServiceVendor`, `WhatsAppServiceVendor`, `TelegramServiceVendor`, `VendorConfig`, `AlertConfig`, `CampaignThreshold`, `ValidationConfig`, `DataRefreshTime`, `DataRefreshStatus`, `HyperionLocalDomain`, `OnyxLocalDomain`, `TemplateValidationLink` ) ( select null, '{PROJECT_NAME}' as Name, '{PROJECT_NAME}' as Comment, d.UserUID, '{PROJECT_ID}' as UniqueId, d.BusinessUnitId, d.CampaginStartTime, d.CampaginEndTime, d.IsActive, d.IsDeleted, d.HistoryId, d.BankName, d.SMSServiceVendor, d.EmailServiceVendor, d.IvrServiceVendor, d.WhatsAppServiceVendor, d.TelegramServiceVendor, d.VendorConfig, d.AlertConfig, '{CAMPAIGN_THRESHOLD}' as CampaignThreshold, '{VALIDATION_CONFIG}' as ValidationConfig, d.DataRefreshTime, d.DataRefreshStatus, d.HyperionLocalDomain, d.OnyxLocalDomain, d.TemplateValidationLink from CED_Projects d where d.UniqueId = '{REF_PROJECT_ID}' ); """,
+    "CED_Projects_local": """ INSERT INTO `CED_Projects` ( `Id`, `Name`, `Comment`, `UserUID`, `UniqueId`, `BusinessUnitId`, `CampaginStartTime`, `CampaginEndTime`, `IsActive`, `IsDeleted`, `HistoryId`, `BankName`, `SMSServiceVendor`, `EmailServiceVendor`, `IvrServiceVendor`, `WhatsAppServiceVendor`, `VendorConfig`, `CampaignThreshold`, `ProjectConfig` ) ( select null, '{PROJECT_NAME}' as Name, '{PROJECT_NAME}' as Comment, d.UserUID, '{PROJECT_ID}' as UniqueId, d.BusinessUnitId, d.CampaginStartTime, d.CampaginEndTime, d.IsActive, d.IsDeleted, null, d.BankName, d.SMSServiceVendor, d.EmailServiceVendor, d.IvrServiceVendor, d.WhatsAppServiceVendor, d.VendorConfig, '{CAMPAIGN_THRESHOLD}' as CampaignThreshold, d.ProjectConfig from CED_Projects d where d.UniqueId = '{REF_PROJECT_ID}' ); """
 }
 
