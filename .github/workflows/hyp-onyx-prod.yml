@@ -26,7 +26,7 @@ env:
 
 jobs:
   ecr-repo-creation:
-    runs-on: hyp-deploy-server
+    runs-on: prod-hyp-deploy-server
 
     steps:
       - name: create ECR repository
@@ -55,7 +55,7 @@ jobs:
   build-test-push:
     needs: ecr-repo-creation
     
-    runs-on: hyp-deploy-server
+    runs-on: prod-hyp-deploy-server
     #if: ${{ github.event_name == 'push' && github.event.base_ref == 'refs/heads/release' }}
 
     steps:
@@ -115,7 +115,7 @@ jobs:
   deploy:
     needs: build-test-push
 
-    runs-on: hyp-deploy-server
+    runs-on: prod-hyp-deploy-server
     #if: ${{ github.event_name == 'push' && github.event.base_ref == 'refs/heads/release' }}
 
     steps:
