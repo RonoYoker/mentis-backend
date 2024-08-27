@@ -29,9 +29,6 @@ if bank_name == "central":
 
         HYPERION_LOCAL_DOMAIN[project_name] = hyp_local_domain
         ONYX_LOCAL_DOMAIN[project_uid] = onyx_local_domain
-        ONYX_LOCAL_CAMP_VALIDATION.append(project_uid)
-        USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN.append(project_uid)
-        TEST_CAMPAIGN_ENABLED.append(project_uid)
         TEMPLATE_VALIDATION_LINK[project_uid] = template_validation_link
 
     # Test Configs
