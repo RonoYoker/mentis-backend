@@ -125,11 +125,10 @@ def fetch_test_campaign_data(request_data) -> json:
                         dict(query=count_sql_query, response_format="json",
                              query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)]
 
-        if segment_data.get("ProjectId") in settings.USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN:
-            queries_data = [dict(query=sql_query + " LIMIT 10", response_format="json",
-                                 query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
-                            dict(query=count_sql_query, response_format="json",
-                                 query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)]
+        queries_data = [dict(query=sql_query + " LIMIT 10", response_format="json",
+                             query_key=QueryKeys.SAMPLE_SEGMENT_DATA.value),
+                        dict(query=count_sql_query, response_format="json",
+                             query_key=QueryKeys.UPDATE_SEGMENT_COUNT.value)]
 
         request_body = dict(
             source=AsyncTaskSourceKeys.ONYX_CENTRAL.value,
@@ -297,12 +296,8 @@ def fetch_test_campaign_validation_status(request_data) -> json:
                         details_message=f"Project not found for campaign_builder_campaign_id : {campaign_builder_campaign_id}.")
         project_id = project_details[0]['UniqueId']
 
-    if project_id not in settings.ONYX_LOCAL_CAMP_VALIDATION:
-        result["system_validated"] = True
-        return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS, data=result,
-                    details_message="")
-
     domain = settings.ONYX_LOCAL_DOMAIN.get(project_id, None)
+
     if not domain or domain is None:
         return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
                     details_message="Onyx Local domain not found")

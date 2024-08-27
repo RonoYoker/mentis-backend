@@ -25,6 +25,7 @@ from onyx_proj.apps.campaign.test_campaign.db_helper import save_or_update_cssdt
     save_or_update_campaign_progress_entity
 from onyx_proj.common.constants import CampaignExecutionProgressStatus
 from onyx_proj.common.request_helper import RequestClient
+from onyx_proj.settings import HYPERION_LOCAL_DOMAIN,ONYX_LOCAL_DOMAIN
 
 logger = logging.getLogger("apps")
 
@@ -40,6 +41,8 @@ def test_campaign_process(request: dict):
     """
     method_name = "test_campaign_process"
     logger.debug(f"{method_name} :: request_body: {request}")
+    logger.debug(f"HYPERION_LOCAL_DOMAIN : {HYPERION_LOCAL_DOMAIN}")
+    logger.debug(f"ONYX_LOCAL_DOMAIN : {ONYX_LOCAL_DOMAIN}")
 
     validation_object = validate_test_campaign_data(request)
 
@@ -85,21 +88,6 @@ def test_campaign_process(request: dict):
                     details_message="Unable to fetch project details")
     else:
         project_id = validation_object["campaign_builder_data"]["segment_data"]["project_id"]
-
-    if project_id not in settings.TEST_CAMPAIGN_ENABLED:
-        url = settings.HYPERION_TEST_CAMPAIGN_URL
-        payload = json.dumps({"campaignId": request["campaign_id"]})
-        headers = {"Content-Type": "application/json", "X-AuthToken": request.get("auth_token")}
-
-        response = requests.post(url, data=payload, headers=headers, verify=False)
-        if response.status_code == http.HTTPStatus.OK:
-            return dict(status_code=http.HTTPStatus.OK, result=TAG_SUCCESS,
-                        details_message="Test campaign has been initiated! Please wait while you receive the communication.")
-        else:
-            logger.error(
-                f"{method_name} :: Error while redirecting flow to Hyperion test campaign for request. Exception: {str(response.text)}, Status_code: {response.status_code}")
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Error while scheduling test campaign")
 
     # create entries in CED_CampaignSchedulingSegmentDetailsTEST and CED_CampaignExecutionProgress
     # creating CED_CampaignSchedulingSegmentDetailsTEST entity
@@ -179,40 +167,37 @@ def test_campaign_process(request: dict):
     # push decrypted segment data to local api as well as a use_cached_data flag
 
     segment_data = validation_object["campaign_builder_data"]["segment_data"]
-    if project_id in settings.USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN:
-        extra_data = json.loads(
-                AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
-                                  iv=settings.SEGMENT_AES_KEYS["AES_IV"],
-                                  mode=AES.MODE_CBC).decrypt_aes_cbc(segment_data.get("extra", "")))
-        if extra_data is None or extra_data == "":
-            return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
-                        details_message="Segment data seems to be empty! Please check segment.", cssd_test_id=cssd_test_id)
-        else:
-            try:
-                sample_data = json.loads(extra_data.get("sample_data", ""))
-            except TypeError:
-                sample_data = extra_data.get("sample_data", [])
-            headers_list = extra_data.get("headers_list", [])
-            if len(sample_data) > 0:
-                test_campaign_data = sample_data[0]
-            else:
-                logger.debug(f"headers::{headers_list}")
-                test_campaign_data = {header["headerName"]: header.get("defaultValue") for header in headers_list if header.get("encrypted",False) == 0}
-                test_camp_data_enc = {header["headerName"]: header.get("defaultValue") for header in headers_list if header.get("encrypted",False) == 1}
-
-
-                keys_to_enc = list(test_camp_data_enc.keys())
-                val_to_enc = list(test_camp_data_enc.values())
-                val_to_enc = encrypt_pi_data(val_to_enc,project_id)
-                test_camp_data_enc = dict(zip(keys_to_enc,val_to_enc))
-                test_campaign_data.update(test_camp_data_enc)
-
-
-            request_body = dict(is_test_campaign=True, project_details_object=project_details_object,
-                                segment_data=segment_data, user_data=user_dict, cached_test_campaign_data=test_campaign_data, cssd_test_id=cssd_test_id)
+    extra_data = json.loads(
+        AesEncryptDecrypt(key=settings.SEGMENT_AES_KEYS["AES_KEY"],
+                          iv=settings.SEGMENT_AES_KEYS["AES_IV"],
+                          mode=AES.MODE_CBC).decrypt_aes_cbc(segment_data.get("extra", "")))
+    if extra_data is None or extra_data == "":
+        return dict(status_code=http.HTTPStatus.BAD_REQUEST, result=TAG_FAILURE,
+                    details_message="Segment data seems to be empty! Please check segment.", cssd_test_id=cssd_test_id)
     else:
+        try:
+            sample_data = json.loads(extra_data.get("sample_data", ""))
+        except TypeError:
+            sample_data = extra_data.get("sample_data", [])
+        headers_list = extra_data.get("headers_list", [])
+        if len(sample_data) > 0:
+            test_campaign_data = sample_data[0]
+        else:
+            logger.debug(f"headers::{headers_list}")
+            test_campaign_data = {header["headerName"]: header.get("defaultValue") for header in headers_list if
+                                  header.get("encrypted", False) == 0}
+            test_camp_data_enc = {header["headerName"]: header.get("defaultValue") for header in headers_list if
+                                  header.get("encrypted", False) == 1}
+
+            keys_to_enc = list(test_camp_data_enc.keys())
+            val_to_enc = list(test_camp_data_enc.values())
+            val_to_enc = encrypt_pi_data(val_to_enc, project_id)
+            test_camp_data_enc = dict(zip(keys_to_enc, val_to_enc))
+            test_campaign_data.update(test_camp_data_enc)
+
         request_body = dict(is_test_campaign=True, project_details_object=project_details_object,
-                            segment_data=segment_data, user_data=user_dict, cssd_test_id=cssd_test_id)
+                            segment_data=segment_data, user_data=user_dict,
+                            cached_test_campaign_data=test_campaign_data, cssd_test_id=cssd_test_id)
 
     # call local API to populate data or the given test_campaign in local db tables
     rest_object = RequestClient()

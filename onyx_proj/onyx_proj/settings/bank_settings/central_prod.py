@@ -1,5 +1,6 @@
 from onyx_proj.apps.otp.app_settings import OtpAppName
 from onyx_proj.common.secret_manager import fetch_secrets_from_secret_manager
+from onyx_proj.models.CED_Projects import CEDProjects
 
 DEBUG = True
 

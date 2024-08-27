@@ -86,3 +86,7 @@ class CEDProjects:
             {"column": "unique_id", "value": project_id, "op": "=="}
         ]
         return fetch_rows(self.engine, self.table, filter_list)
+
+    def get_local_domain_data(self):
+        query = f""" select Name,UniqueId,HyperionLocalDomain,OnyxLocalDomain, TemplateValidationLink from CED_Projects """
+        return dict_fetch_query_all(self.curr, query)

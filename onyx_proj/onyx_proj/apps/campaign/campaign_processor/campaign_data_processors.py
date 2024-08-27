@@ -2062,46 +2062,30 @@ def trigger_lambda_function_for_campaign_scheduling(campaign_segment_details, pr
     process_file_data_dict[project_details_var] = project_details_map
     process_file_data_dict[cbc_var] = campaign_scheduling_segment_entity.campaign_id
 
-    if not CAMPAIGN_APPROVAL_VIA_ONYX_LOCAL:
-        # create request map
-        req_map = {
-            pulish_data_var: json.dumps(process_file_data_dict, default=datetime_converter)
-        }
-        # call local to push data to sns to be processed
-        logger.debug(f"method_name: {method_name}, request_created: {req_map}")
-        request_response = RequestClient.post_local_api_request(req_map, project_name,
-                                                                LOCAL_CAMPAIGN_SCHEDULING_DATA_PACKET_HANDLER,
-                                                                send_dict=True)
-        logger.debug(f"method_name: {method_name}, request response: {request_response}")
-        if request_response is None:
-            raise BadRequestException(method_name=method_name,
-                                      reason="Error while calling hyperion local to publish data to SNS")
+    # create request map
+    req_map = {
+        project_details_object_var: json.dumps(process_file_data_dict, default=datetime_converter)
+    }
+    logger.debug(f"method_name: {method_name}, request_created: {req_map}")
+    # call local API to populate data or the given test_campaign in local db tables
+    rest_object = RequestClient()
+    request_response = rest_object.post_onyx_local_api_request(req_map, settings.ONYX_LOCAL_DOMAIN[project_id],
+                                                               FILE_DATA_API_ENDPOINT)
+    logger.debug(f"{method_name} :: local api request_response: {request_response}")
+    # from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import create_campaign_details_in_local_db
+    # request_response = create_campaign_details_in_local_db(json.dumps(request_body, default=str))
 
-    if CAMPAIGN_APPROVAL_VIA_ONYX_LOCAL:
-        # create request map
-        req_map = {
-            project_details_object_var: json.dumps(process_file_data_dict, default=datetime_converter)
-        }
-        logger.debug(f"method_name: {method_name}, request_created: {req_map}")
-        # call local API to populate data or the given test_campaign in local db tables
-        rest_object = RequestClient()
-        request_response = rest_object.post_onyx_local_api_request(req_map, settings.ONYX_LOCAL_DOMAIN[project_id],
-                                                                   FILE_DATA_API_ENDPOINT)
-        logger.debug(f"{method_name} :: local api request_response: {request_response}")
-        # from onyx_proj.apps.campaign.campaign_processor.campaign_data_processors import create_campaign_details_in_local_db
-        # request_response = create_campaign_details_in_local_db(json.dumps(request_body, default=str))
-
-        if request_response is None or request_response.get("success", False) is False:
-            # mark error in CED_CampaignExecutionProgress
-            error_message = None if request_response is None else request_response.get("details_message", None)
-            CEDCampaignExecutionProgress().update_campaign_status_by_cbc_id(campaign_scheduling_segment_entity.campaign_id,
-                                                                            CampaignExecutionProgressStatus.ERROR.value, error_message)
-            raise BadRequestException(method_name=method_name,
-                                      reason="Error while calling hyperion local to publish data to SNS")
-
-        # if successfully created entry in local tables then update the CED_CampaignExecutionProgress as scheduled
+    if request_response is None or request_response.get("success", False) is False:
+        # mark error in CED_CampaignExecutionProgress
+        error_message = None if request_response is None else request_response.get("details_message", None)
         CEDCampaignExecutionProgress().update_campaign_status_by_cbc_id(campaign_scheduling_segment_entity.campaign_id,
-                                                                        CampaignExecutionProgressStatus.SCHEDULED.value)
+                                                                        CampaignExecutionProgressStatus.ERROR.value, error_message)
+        raise BadRequestException(method_name=method_name,
+                                  reason="Error while calling hyperion local to publish data to SNS")
+
+    # if successfully created entry in local tables then update the CED_CampaignExecutionProgress as scheduled
+    CEDCampaignExecutionProgress().update_campaign_status_by_cbc_id(campaign_scheduling_segment_entity.campaign_id,
+                                                                    CampaignExecutionProgressStatus.SCHEDULED.value)
     if is_instant:
         process_campaigns_for_query_executor(campaign_scheduling_segment_entity)
 

@@ -23,63 +23,11 @@ BANK_LEVEL_CAMPAIGN_THRESHOLDS_PER_MINUTE = {
 ACTIVE_DATABASE = "creditascampaignengine"
 
 HYPERION_LOCAL_DOMAIN = {
-    "TEST_TCL": "https://tclctpay.tatacapital.com/",  # https://tclctpay.tatacapital.com/hyperioncampaigntooldashboard
-    "TEST_IBL": "http://uatpay.indusind.com/",
-    "TEST_IBL_CLE": "http://uatpay.indusind.com/",
-    "TEST_KOTAK": "http://uatpay.kotak.com/",
-    "IBL_Ethera": "http://m-prod-indus-hyp-2094481502.ap-south-1.elb.amazonaws.com/",
-    "TCL_Ethera": "http://m-prod-tatacapital-hyp-1407059969.ap-south-1.elb.amazonaws.com/",
-    "KOTAK_Ethera": "https://pay.kotak.com/",
-    "TEST_RBL": "http://uat-pay.rblbank.com/",
-    "TEST_ABL": "http://uatpay.axisbank.com/",
-    "TEST_PRL": "http://uatpay.piramalfinance.com/",
-    "TEST_VST": "http://uatpay.vastuhfc.com/",
-    "TEST_HDB": "http://m-stage-uatwebservers-elb-2081502586.ap-south-1.elb.amazonaws.com/",
-    "TEST_IBL_ACQ": "http://uatpay.indusind.com/",
-    "TEST_IBL_OCL": "http://uatpay.indusind.com/",
-    "TEST_IBL_DC_UPGRADE": "http://uatpay.indusind.com/",
-    "TEST_IBL_CC_UPGRADE": "http://uatpay.indusind.com/",
-    "TEST_IBL_CRD": "http://uatpay.indusind.com/",
-    "TEST_IBL_CASA": "http://uatpay.indusind.com/",
-    "TEST_IBL_AOC": "http://uatpay.indusind.com/",
-    "TEST_IBL_DC_ENBL": "http://uatpay.indusind.com/",
-    "TEST_YBL_CLE": "http://m-stage-uat-web-1463991111.ap-south-1.elb.amazonaws.com/",
-    "TEST_YBL_CC_UPG": "http://m-stage-uat-web-1463991111.ap-south-1.elb.amazonaws.com/",
-    "TEST_YBL_ACQ": "http://m-stage-uat-web-1463991111.ap-south-1.elb.amazonaws.com/",
-    "TEST_YBL_OVL": "http://m-stage-uat-web-1463991111.ap-south-1.elb.amazonaws.com/",
-    "TEST_YBL_CC_ENBL": "http://m-stage-uat-web-1463991111.ap-south-1.elb.amazonaws.com/",
-    "TEST_YBL_TXN_TO_EMI": "http://m-stage-uat-web-1463991111.ap-south-1.elb.amazonaws.com/",
-    "TEST_YBL_STE": "http://m-stage-uat-web-1463991111.ap-south-1.elb.amazonaws.com/",
-    "TEST_IBL_SPLIT_LIMIT": "http://uatpay.indusind.com/",
-    "TEST_SBI_Collection": "http://m-stage-web-2028795110.ap-south-1.elb.amazonaws.com/",
-    "TEST_ABL_LOANS_B1": "http://uatpay.axisbank.com/",
+
 }
 
 ONYX_LOCAL_DOMAIN = {
-    "vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyx-elb-1846785611.ap-south-1.elb.amazonaws.com",
-    "iblcrdjlsdsmablpx55clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
-    "iblaocjlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
-    "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
-    "iblclejlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
-    "iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
-    "ibldcuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
-    "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
-    "iblccuplsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
-    "iblocljlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
-    "prlhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausbrd": "http://m-stage-onyxlocal-elb-1682498119.ap-south-1.elb.amazonaws.com",
-    "rblhwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn22nauszzd": "http://m-stage-onyxlocal-elb-978631915.ap-south-1.elb.amazonaws.com",
-    "vstaocnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nauspr": "http://m-stage-onyx-elb-1846785611.ap-south-1.elb.amazonaws.com",
-    "yblclejlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-alb-1016107848.ap-south-1.elb.amazonaws.com",
-    "yblccujlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-alb-1016107848.ap-south-1.elb.amazonaws.com",
-    "yblacqjlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-alb-1016107848.ap-south-1.elb.amazonaws.com",
-    "yblovljlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-alb-1016107848.ap-south-1.elb.amazonaws.com",
-    "yblccenbljlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nprj": "http://m-stage-onyxlocal-alb-1016107848.ap-south-1.elb.amazonaws.com",
-    "ybltxntoemimabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-alb-1016107848.ap-south-1.elb.amazonaws.com",
-    "yblstejlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-alb-1016107848.ap-south-1.elb.amazonaws.com",
-    "ablhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd": "http://m-stage-onyx-elb-716423500.ap-south-1.elb.amazonaws.com",
-    "iblspllimdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyxlocal-elb-515567446.ap-south-1.elb.amazonaws.com",
-    "sbicoljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyx-elb-406684330.ap-south-1.elb.amazonaws.com",
-    "ablloansb1jlsdsmablpxp82lospknifyeqlhiqxtdjplapyndmenfn11nausprj": "http://m-stage-onyx-elb-716423500.ap-south-1.elb.amazonaws.com",
+
 }
 
 
@@ -171,24 +119,7 @@ USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN = ["vsthwnjlsdsmabbnkpqclosp99ifyewmv
                                               "ablhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
                                               "ablloansb1jlsdsmablpxp82lospknifyeqlhiqxtdjplapyndmenfn11nausprj"]
 
-TEST_CAMPAIGN_ENABLED = ["vsthwnjlsdsmabbnkpqclosp99ifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                         "iblcsnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
-                         "xqihwnjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
-                         "iblclejlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                         "ablhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
-                         "iblaocjlsdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                         "iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                         "ablhwnjlsdsmabbnkpqclospknifyewmveqlhiqxtdjplapyndmenfn11nauszzd",
-                         "iblspllimdsmablpx66clospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                         "yblclejlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                         "yblacqjlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                         "yblccenbljlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nprj",
-                         "yblovljlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                         "yblccujlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                         "yblstejlsdsmabbnkp88lospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                         "sbicoljlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj",
-                         "ablloansb1jlsdsmablpxp82lospknifyeqlhiqxtdjplapyndmenfn11nausprj",
-                         ]
+TEST_CAMPAIGN_ENABLED = []
 
 OTP_APP_USER_MAPPING = {
     OtpAppName.INSTANT_CAMPAIGN_APPROVAL.value: {

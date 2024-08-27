@@ -81,7 +81,7 @@ REFRESH_COUNT_LOCAL_API_PATH = "hyperioncampaigntooldashboard/segment/localdb/tr
 
 TEST_CAMPAIGN_VALIDATION_API_PATH = "campaign/local/check_test_campaign_validation_status/"
 
-LOCAL_CAMPAIGN_SCHEDULING_DATA_PACKET_HANDLER = "hyperioncampaigntooldashboard/campaignbuilder/localbd/campaignrequest"
+# LOCAL_CAMPAIGN_SCHEDULING_DATA_PACKET_HANDLER = "hyperioncampaigntooldashboard/campaignbuilder/localbd/campaignrequest"
 
 SEGMENT_RECORDS_COUNT_API_PATH = "hyperioncampaigntooldashboard/segment/recordcount"
 
@@ -744,16 +744,7 @@ class RateLimitationLevels(Enum):
     PROJECT = "PROJECT"
 
 
-ASYNC_QUERY_EXECUTION_ENABLED = ["VST_Ethera", "TEST_VST", "IBL_CRD_Ethera", "IBL_AOC_Ethera", "IBL_Ethera", "IBL_CLE",
-                                 "HDB_Ethera", "CMD_Ethera", "CMD_TATA_AIA", "CMD_HSBC", "PRL_Ethera", "RBL_Ethera",
-                                 "TEST_IBL_CC_UPGRADE", "TEST_IBL_DC_UPGRADE", "TEST_IBL_OCL", "IBL_OCL_Ethera",
-                                 "TEST_IBL_CASA", "TEST_IBL", "IBL_CASA", "IBL_CC_UPGRADE_Ethera", "YBL_CLE_Ethera",
-                                 "TEST_YBL_CC_UPG","TEST_YBL_ACQ","IBL_DC_ENBL_Ethera","TEST_ABL", "ABL_Ethera",
-                                 "IBL_Collections","YBL_ACQ","YBL_CC_UPG","IBL_OSTOEMI","IBL_LACL_LBCL","IBL_ACQ",
-                                 "YBL_STE","YBL_365_Activation", "TEST_YBL_TXN_TO_EMI", "YBL_TXN_TO_EMI",
-                                 "TEST_IBL_SPLIT_LIMIT", "IBL_DC_UPGRADE_Ethera", "TEST_IBL_CLE", "TEST_SBI_Collection", "SBI_Collection", "IBL_CLI",
-                                 "ABL_LOANS_B1", "ABL_LOANS_B2/3", "ABL_LOANS_WO", "ABL_CARDS_B1", "ABL_CARDS_B2/3", "ABL_CARDS_WO", "TEST_ABL_LOANS_B1",
-                                 "IBL_PLCC", "YBL_365_Activation_WO_DND", "YBL_Card_Auto_Renewal"]
+ASYNC_QUERY_EXECUTION_ENABLED = []
 
 
 class CampaignStatus(Enum):

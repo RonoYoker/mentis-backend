@@ -137,10 +137,7 @@ def process_segment_callback(body):
                     f"error_message: {str(ex)}")
                 return
 
-            if project_id in settings.USED_CACHED_SEGMENT_DATA_FOR_TEST_CAMPAIGN and project_id in settings.TEST_CAMPAIGN_ENABLED:
-                test_sql_query_response = {"result": TAG_SUCCESS, "skip_test_query_creation": True}
-            else:
-                test_sql_query_response = generate_test_query(sql_query, headers)
+            test_sql_query_response = {"result": TAG_SUCCESS, "skip_test_query_creation": True}
 
             if test_sql_query_response.get("result") == TAG_FAILURE and segment.get("SegmentBuilderId") is None:
                 update_dict = dict(UpdationDate=datetime.datetime.utcnow(), Status=SegmentStatusKeys.ERROR.value,
