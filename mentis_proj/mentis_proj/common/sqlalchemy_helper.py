@@ -2,7 +2,7 @@ import logging
 from sqlalchemy import inspect, column ,text
 from sqlalchemy.orm import Session, joinedload, load_only
 from mentis_proj.common.utils.sql_alchemy_engine import SqlAlchemyEngine
-from mentis_proj.models.CreditasCampaignEngine import CEDTeam, CED_Projects, CEDTeamProjectMapping, CED_User
+from mentis_proj.models.mentisCampaignEngine import CEDTeam, CED_Projects, CEDTeamProjectMapping, CED_User
 
 
 def sql_alchemy_connect(database, project_id=None):

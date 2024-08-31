@@ -1,6 +1,6 @@
 # Use Ubuntu as the base image
 FROM ubuntu:20.04
-LABEL maintainer="Creditas Team"
+LABEL maintainer="Mentis Team"
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -59,7 +59,7 @@ RUN \
  wget https://www.python.org/ftp/python/3.10.0/Python-3.10.0.tgz  && \
  tar xvf Python-3.10.0.tgz && \
  cd /opt/Python-3.10.0 && \
- ./configure --enable-shared --with-system-ffi --with-system-expat --enable-unicode=ucs4 --prefix=/usr/local/python3.8 LDFLAGS="-L/usr/local/python3.10/lib -Wl,--rpath=/usr/local/python3.10/lib"  && \
+ ./configure --enable-shared --with-system-ffi --with-system-expat --enable-unicode=ucs4 --prefix=/usr/local/python3.10 LDFLAGS="-L/usr/local/python3.10/lib -Wl,--rpath=/usr/local/python3.10/lib"  && \
  make && \
  make altinstall && \
  rm -f /etc/localtime && \
@@ -71,7 +71,7 @@ RUN \
 #  git clone https://deploy-goibibo:g01b1b098@github.com/goibibo/goibibo_saml_service_provider.git saml_service_provider && \
 #  rm -Rf /opt/saml_service_provider/tests
 
-WORKDIR /usr/local/creditas/mentis/
+WORKDIR /usr/local/mentis/mentis/
 
 # ENV PYTHONPATH /usr/local/goibibo/flock/flock_proj/flock_proj/:/usr/local/goibibo/flock:$PYTHONPATH
 
@@ -83,10 +83,10 @@ COPY mentis_proj/config/nginx/uwsgi_params /etc/nginx/uwsgi_params
 COPY mentis_proj/config/nginx/uwsgi_params /etc/nginx/conf.d/uwsgi_params
 COPY mentis_proj/config/uwsgi/mentis_uwsgi.ini /etc/mentis_uwsgi.ini
 COPY mentis_proj/config/uwsgi/mentis.conf /etc/nginx/conf.d/mentis.conf
-COPY mentis_proj/config/newrelic/* /etc/newrelic/
+# COPY mentis_proj/config/newrelic/* /etc/newrelic/
 
 COPY mentis_proj/config/pip/requirements.txt /etc/pip/requirements.txt
-RUN /usr/local/python3.8/bin/pip3.8 install -r /etc/pip/requirements.txt
+RUN /usr/local/python3.10/bin/pip3.10 install -r /etc/pip/requirements.txt
 
 # RUN /usr/local/python3.8/bin/pip3.8 install --no-binary :all: confluent-kafka[avro]
 
@@ -96,10 +96,10 @@ RUN /usr/local/python3.8/bin/pip3.8 install -r /etc/pip/requirements.txt
 #   /usr/local/python3.8/bin/pip3.8 install -r /etc/pip/requirements_github.txt
 
 
-COPY ./ /usr/local/creditas/mentis
+COPY ./ /usr/local/mentis/mentis
 
 RUN \
-#   /usr/local/python3.8/bin/python3.8  /usr/local/creditas/mentis/mentis_proj/manage.py collectstatic && \
+#   /usr/local/python3.8/bin/python3.8  /usr/local/mentis/mentis/mentis_proj/manage.py collectstatic && \
   chmod 755 /etc/rc.d/init.d/supervisord
 
 #CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.d/mentis_web_service.conf"]

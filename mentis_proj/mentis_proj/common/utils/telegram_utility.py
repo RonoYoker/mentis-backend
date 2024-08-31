@@ -7,7 +7,7 @@ import logging
 from mentis_proj.common.utils.datautils import nested_path_get
 from mentis_proj.models.CED_Projects import CEDProjects
 from mentis_proj.models.CED_Notification import CEDNotification
-from mentis_proj.models.CreditasCampaignEngine import CED_Notification
+from mentis_proj.models.mentisCampaignEngine import CED_Notification
 from mentis_proj.common.utils.newrelic_helpers import push_error_to_newrelic
 from django.conf import settings
 import hashlib
