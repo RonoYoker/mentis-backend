@@ -1,10 +1,7 @@
 import logging
 
-from mentis_proj.common.constants import TAG_FAILURE, TAG_GENERATE_OTP, TAG_SEND_CAMPAIGN_LEVEL
-from mentis_proj.exceptions.permission_validation_exception import MethodPermissionValidationException, \
-    UnauthorizedException, ValidationFailedException, BadRequestException, NotFoundException, InternalServerError, \
-    OtpRequiredException, CampaignAcknowledgeRequiredException
-from mentis_proj.models.CED_UserSession_model import CEDUserSession
+from mentis_proj.exceptions.exceptions import  \
+    UnauthorizedException, ValidationFailedException, BadRequestException, NotFoundException, InternalServerError
 from django.http import HttpResponse
 import http
 import json
@@ -34,72 +31,44 @@ class HttpRequestInterceptor:
     def prehandle(self,request):
         session_obj = Session()
         session_obj.set_user_session_object(None)
-        session_obj.set_user_project_permissions({})
         auth_token = request.headers.get("X-AuthToken", None)
         if auth_token is None:
-            return
-        user_session = CEDUserSession().get_session_obj_from_session_id(session_id=auth_token)
-        session_obj.set_user_session_object(user_session)
-
-        project_permissions = {}
-        try:
-            for proj_roles in user_session.user.user_project_mapping_list:
-                project_permissions.setdefault(proj_roles.project_id, [])
-                for role_permission in proj_roles.roles.roles_permissions_mapping_list:
-                    project_permissions[proj_roles.project_id].append(role_permission.permission.permission)
-        except Exception as e:
-            logger.error(f"unable to fetch user project permissions, Exception: {e}. project_permission::{project_permissions}")
-        session_obj.set_user_project_permissions(project_permissions)
+            raise BadRequestException(reason= "Missing Auth Token")
+        #todo fetch user session and validate
 
 
     def process_exception(self,request, exception):
         if isinstance(exception,UnauthorizedException):
-            response = dict(result=TAG_FAILURE, details_message="User not logged in")
+            response = dict(success=False, details_message="User not logged in")
             return HttpResponse(json.dumps(response),
                                 content_type="application/json",
                                 status=http.HTTPStatus.UNAUTHORIZED)
-        elif isinstance(exception,MethodPermissionValidationException):
-            response = dict(result=TAG_FAILURE, details_message="Forbidden")
-            return HttpResponse(json.dumps(response),
-                                content_type="application/json",
-                                status=http.HTTPStatus.FORBIDDEN)
         elif isinstance(exception,ValidationFailedException):
-            response = dict(result=TAG_FAILURE, details_message=exception.reason, data=exception.data)
+            response = dict(success=False, details_message=exception.reason, data=exception.data)
             return HttpResponse(json.dumps(response),
                                 content_type="application/json",
                                 status=http.HTTPStatus.BAD_REQUEST)
         elif isinstance(exception,BadRequestException):
-            response = dict(result=TAG_FAILURE, details_message=exception.reason)
+            response = dict(success=False, details_message=exception.reason)
             return HttpResponse(json.dumps(response),
                                 content_type="application/json",
                                 status=http.HTTPStatus.BAD_REQUEST)
         elif isinstance(exception,NotFoundException):
-            response = dict(result=TAG_FAILURE, details_message=exception.reason)
+            response = dict(success=False, details_message=exception.reason)
             return HttpResponse(json.dumps(response),
                                 content_type="application/json",
                                 status=http.HTTPStatus.BAD_REQUEST)
         elif isinstance(exception, InternalServerError):
-            response = dict(result=TAG_FAILURE, details_message=exception.reason)
+            response = dict(success=False, details_message=exception.reason)
             return HttpResponse(json.dumps(response),
                                 content_type="application/json",
                                 status=http.HTTPStatus.INTERNAL_SERVER_ERROR)
-        elif isinstance(exception, OtpRequiredException):
-            response = dict(result=TAG_GENERATE_OTP, data=exception.data, details_message="please generate and validate otp first")
-            return HttpResponse(json.dumps(response),
-                                content_type="application/json",
-                                status=http.HTTPStatus.OK)
-        elif isinstance(exception, CampaignAcknowledgeRequiredException):
-            response = dict(result=TAG_SEND_CAMPAIGN_LEVEL, data=exception.data, details_message="Please check campaign level to be created.")
-            return HttpResponse(json.dumps(response),
-                                content_type="application/json",
-                                status=http.HTTPStatus.OK)
 
 
 
 class Session(metaclass=Singleton):
 
     user_session = None
-    project_permissions = {}
 
     def __init__(self):
         self.user_session = None

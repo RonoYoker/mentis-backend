@@ -2,7 +2,6 @@ import logging
 from sqlalchemy import inspect, column ,text
 from sqlalchemy.orm import Session, joinedload, load_only
 from mentis_proj.common.utils.sql_alchemy_engine import SqlAlchemyEngine
-from mentis_proj.models.mentisCampaignEngine import CEDTeam, CED_Projects, CEDTeamProjectMapping, CED_User
 
 
 def sql_alchemy_connect(database, project_id=None):
@@ -413,3 +412,16 @@ def execute_update_query(engine, query):
             "logkey": "mysql_helper"
         })
         return {'success': False, 'exception': e}
+
+def insert_single_row(engine, table_name, data_dict):
+    placeholders = ', '.join(['%s'] * len(data_dict))
+    columns = ', '.join(data_dict.keys())
+    query = "INSERT into %s ( %s ) VALUES ( %s )" % (table_name, columns, placeholders)
+    try:
+        with engine.connect() as cursor:
+            cursor.execute(query, data_dict.values())
+            return {'last_row_id': cursor.lastrowid, 'row_count': cursor.rowcount}
+    except Exception as e:
+        logging.error(
+            {'error': 'mysql thrown exception while inserting', 'exception': str(e), 'logkey': 'mysql_helper'})
+        return None

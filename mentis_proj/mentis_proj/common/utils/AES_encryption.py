@@ -3,7 +3,7 @@ from Crypto.Cipher import AES
 import base64
 from django.conf import settings
 
-from mentis_proj.exceptions.permission_validation_exception import InternalServerError
+from mentis_proj.exceptions.exceptions import InternalServerError
 
 
 class AesEncryptDecrypt:

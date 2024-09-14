@@ -2,7 +2,7 @@ from django.db import connections
 from sqlalchemy import text
 import time
 import logging
-from mentis_proj.exceptions.permission_validation_exception import QueryTimeoutException
+from mentis_proj.exceptions.exceptions import QueryTimeoutException
 
 def mysql_connect(database):
     cur = connections[database].cursor()

@@ -17,7 +17,7 @@ from django.conf import settings
 
 from mentis_proj.common.constants import NEW_RELIC_API_QUERY_URL, NEW_RELIC_QUERY_KEY
 from mentis_proj.common.logging_helper import log_error
-from mentis_proj.exceptions.permission_validation_exception import InternalServerError, BadRequestException
+from mentis_proj.exceptions.exceptions import InternalServerError, BadRequestException
 
 try:
     import newrelic.agent
