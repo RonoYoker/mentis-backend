@@ -40,6 +40,8 @@ class HttpRequestInterceptor:
             return HttpResponse(json.dumps({"success":False}),
                                 content_type="application/json",
                                 status=http.HTTPStatus.UNAUTHORIZED)
+        if request.path in settings.IGNORE_AUTH_PATHS:
+            return None
 
         session_resp = User().fetch_valid_session(auth_token)
         if session_resp ["success"] is False:
