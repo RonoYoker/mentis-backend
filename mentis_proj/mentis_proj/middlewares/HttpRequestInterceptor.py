@@ -1,10 +1,12 @@
 import logging
 
+from mentis_proj.apps.user.db_helper import User
 from mentis_proj.exceptions.exceptions import  \
     UnauthorizedException, ValidationFailedException, BadRequestException, NotFoundException, InternalServerError
 from django.http import HttpResponse
 import http
 import json
+from django.conf import settings
 logger = logging.getLogger("apps")
 class Singleton(type):
     _instances = {}
@@ -22,7 +24,9 @@ class HttpRequestInterceptor:
 
     def __call__(self, request):
 
-        self.prehandle(request)
+        resp = self.prehandle(request)
+        if resp is not None:
+            return resp
 
         response = self.get_response(request)
 
@@ -31,10 +35,19 @@ class HttpRequestInterceptor:
     def prehandle(self,request):
         session_obj = Session()
         session_obj.set_user_session_object(None)
-        auth_token = request.headers.get("X-AuthToken", None)
-        if auth_token is None:
-            raise BadRequestException(reason= "Missing Auth Token")
-        #todo fetch user session and validate
+        auth_token = request.COOKIES.get("X-AuthToken", None)
+        if auth_token is None and request.path not in settings.IGNORE_AUTH_PATHS:
+            return HttpResponse(json.dumps({"success":False}),
+                                content_type="application/json",
+                                status=http.HTTPStatus.UNAUTHORIZED)
+
+        session_resp = User().fetch_valid_session(auth_token)
+        if session_resp ["success"] is False:
+            return HttpResponse(json.dumps({"success":False}),
+                                content_type="application/json",
+                                status=http.HTTPStatus.UNAUTHORIZED)
+        session_obj.set_user_session_object(session_resp["data"])
+
 
 
     def process_exception(self,request, exception):

@@ -215,3 +215,7 @@ LOGGING = {
     }
 }
 
+
+IGNORE_AUTH_PATHS = [
+    "/api/v1/user/login"
+]

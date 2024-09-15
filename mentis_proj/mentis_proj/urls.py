@@ -20,6 +20,6 @@ from mentis_proj.apps.user import urls as user_urls
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/v1/user/",user_urls)
+    path("api/v1/user/",include(user_urls))
 ]
 

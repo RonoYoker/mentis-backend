@@ -419,8 +419,8 @@ def insert_single_row(engine, table_name, data_dict):
     query = "INSERT into %s ( %s ) VALUES ( %s )" % (table_name, columns, placeholders)
     try:
         with engine.connect() as cursor:
-            cursor.execute(query, data_dict.values())
-            return {'last_row_id': cursor.lastrowid, 'row_count': cursor.rowcount}
+            cursor.execute(query, list(data_dict.values()))
+            return {"success":True}
     except Exception as e:
         logging.error(
             {'error': 'mysql thrown exception while inserting', 'exception': str(e), 'logkey': 'mysql_helper'})

@@ -6,6 +6,11 @@ from mentis_proj.common.constants import AuthType
 from mentis_proj.exceptions.exceptions import BadRequestException, InternalServerError
 
 
+def process_logout_request(auth_token):
+    resp = User().deactivate_existing_sessions_with_authtoken(auth_token)
+    return resp
+
+
 def process_login_request(login_data):
     auth_type = login_data.get("auth_type")
     if auth_type is None:
