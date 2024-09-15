@@ -3,8 +3,8 @@ from django.urls import path, include
 from mentis_proj.apps.user.views import *
 
 urlpatterns = [
-    path("login/", user_login),
-    path("self/", self),
-    path("logout/", user_logout)
+    path("login", user_login),
+    path("self", self),
+    path("logout", user_logout)
 ]
 
