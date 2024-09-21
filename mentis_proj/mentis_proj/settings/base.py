@@ -218,6 +218,7 @@ LOGGING = {
 
 IGNORE_AUTH_PATHS = [
     "/api/v1/user/login",
+    "/api/v1/user/therapist_lead",
     "/api/v1/assessment/get_assessment",
     "/api/v1/assessment/get_assessment_result"
 ]

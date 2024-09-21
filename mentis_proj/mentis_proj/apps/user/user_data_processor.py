@@ -73,3 +73,7 @@ def process_google_login_request(login_data):
             return {"success": True, "auth_token": user_session_data["auth_token"]}
         else:
             raise InternalServerError(reason="Unable to create User Session!")
+
+def add_therapist_lead(request_data):
+    resp = User().insert_specialist_lead(request_data)
+    return resp

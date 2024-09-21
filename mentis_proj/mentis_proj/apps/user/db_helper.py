@@ -45,3 +45,11 @@ class User:
         if resp is None or len(resp) < 1:
             return {"success": False}
         return {"success": True, "data": resp[0]}
+
+    def insert_specialist_lead(self,data):
+        table_name = "therapist_leads"
+
+        resp = insert_single_row(self.engine, table_name, data)
+        if resp is None:
+            return {"success": False}
+        return {"success": True}

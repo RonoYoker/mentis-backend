@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from django.http import HttpResponse
 
-from mentis_proj.apps.user.user_data_processor import process_login_request, process_logout_request
+from mentis_proj.apps.user.user_data_processor import process_login_request, process_logout_request, add_therapist_lead
 from mentis_proj.middlewares.HttpRequestInterceptor import Session
 from django.views.decorators.csrf import csrf_exempt
 
@@ -32,5 +32,9 @@ def self(request):
     return  HttpResponse(json.dumps(resp, default=str), content_type="application/json")
 
 
-
+@csrf_exempt
+def therapist_lead(request):
+    request_body = json.loads(request.body.decode("utf-8"))
+    resp = add_therapist_lead(request_body)
+    return  HttpResponse(json.dumps(resp, default=str), content_type="application/json")
 
