@@ -7,7 +7,7 @@ import sys
 def main():
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mentis_proj.settings')
-    # os.environ["CURR_ENV"] = "dev"
+    os.environ["CURR_ENV"] = "dev"
 
     try:
         from django.core.management import execute_from_command_line
