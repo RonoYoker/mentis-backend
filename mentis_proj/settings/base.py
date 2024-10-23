@@ -50,7 +50,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'mentis_proj.middlewares.HttpRequestInterceptor.HttpRequestInterceptor'
+    # 'mentis_proj.middlewares.HttpRequestInterceptor.HttpRequestInterceptor'
 
 ]
 

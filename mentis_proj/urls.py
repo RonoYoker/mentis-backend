@@ -17,11 +17,14 @@ from django.contrib import admin
 from django.urls import path, include
 from mentis_proj.apps.user import urls as user_urls
 from mentis_proj.apps.assessment import urls as assessment_urls
+from mentis_proj.apps.therapist import urls as therapist_urls
 
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/user/",include(user_urls)),
-    path("api/v1/assessment/",include(assessment_urls))
+    path("api/v1/assessment/",include(assessment_urls)),
+    path("api/v1/assessment/",include(assessment_urls)),
+    path("api/v1/therapist/",include(therapist_urls))
 ]
 

@@ -1,11 +1,9 @@
 from django.urls import path, include
 
-from mentis_proj.apps.user.views import *
+from mentis_proj.apps.therapist.views import *
 
 urlpatterns = [
-    path("login", user_login),
-    path("self", self),
-    path("logout", user_logout),
-    path("therapist_lead",therapist_lead)
+    path("fetch-therapist/", fetch_therapist),
+    path("fetch-therapist/<int:therapist_id>/", fetch_therapist_details)
 ]
 
