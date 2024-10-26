@@ -1,7 +1,7 @@
 import json
 import uuid
 from datetime import datetime, timedelta
-from apps.therapist.therapist_processor import fetch_therpaist_details
+from mentis_proj.apps.therapist.therapist_processor import fetch_therpaist_details
 from mentis_proj.apps.booking.db_helper import  Booking
 
 
