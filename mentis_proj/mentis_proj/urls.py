@@ -19,14 +19,16 @@ from mentis_proj.apps.user import urls as user_urls
 from mentis_proj.apps.assessment import urls as assessment_urls
 from mentis_proj.apps.therapist import urls as therapist_urls
 from mentis_proj.apps.booking import urls as booking_urls
+from mentis_proj.apps.dashboard import urls as dashboard_urls
 
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/user/",include(user_urls)),
     path("api/v1/assessment/",include(assessment_urls)),
-    path("api/v1/assessment/",include(assessment_urls)),
     path("api/v1/therapist/",include(therapist_urls)),
-    path("api/v1/booking/",include(booking_urls))
+    path("api/v1/booking/",include(booking_urls)),
+    path("dsh/",include(dashboard_urls))
 ]
+
 

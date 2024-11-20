@@ -222,3 +222,7 @@ IGNORE_AUTH_PATHS = [
     "/api/v1/assessment/get_assessment",
     "/api/v1/assessment/get_assessment_result"
 ]
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'mentis_proj', 'static')
+]
