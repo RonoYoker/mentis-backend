@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Add configuration</title>
+  <style type="text/css"></style>
+  <link rel="stylesheet" media="screen, print" href="/static/mentis/css/select2.bundle.css" />
+  <style type="text/css">
+    .was-validated .inPillsDiv:has(input:required) {
+      border-color: #fd3995;
+      padding-right: calc(1.47em + 1rem);
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23fd3995' viewBox='0 0 12 12'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23fd3995' stroke='none'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: center right calc(0.3675em + 0.25rem);
+      background-size: calc(0.735em + 0.5rem) calc(0.735em + 0.5rem);
+    }
+
+    .was-validated .inPillsDiv {
+      border-color: #1dc9b7;
+      padding-right: calc(1.47em + 1rem);
+      background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%231dc9b7' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: center right calc(0.3675em + 0.25rem);
+      background-size: calc(0.735em + 0.5rem) calc(0.735em + 0.5rem);
+    }
+
+    .andText::after,
+    .andText::before {
+      content: "";
+      flex: 1 1;
+      border-bottom: 1px dashed #dee2e6;
+      margin: auto;
+    }
+
+    .custom-multiselect+.select2 .select2-selection {
+      padding-right: calc(1.47em + 1rem);
+      background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3e%3cpath fill='%23343a40' d='M2 0L0 2h4zm0 5L0 3h4z'/%3e%3c/svg%3e") no-repeat right 0.875rem center/8px 10px;
+    }
+
+    .was-validated .custom-multiselect:valid+.select2 .select2-selection {
+      border-color: #1dc9b7;
+      padding-right: calc((1em + 1rem) * 3 / 4 + 1.875rem);
+      background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3e%3cpath fill='%23343a40' d='M2 0L0 2h4zm0 5L0 3h4z'/%3e%3c/svg%3e") no-repeat right 0.875rem center/8px 10px, url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%231dc9b7' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e") #fff no-repeat center right 1.875rem/calc(0.735em + 0.5rem) calc(0.735em + 0.5rem);
+    }
+
+    .was-validated .custom-multiselect:valid+.select2 .select2-selection:focus {
+      border-color: #1dc9b7;
+      -webkit-box-shadow: 0 0 0 0.2rem rgba(29, 201, 183, 0.25);
+      box-shadow: 0 0 0 0.2rem rgba(29, 201, 183, 0.25);
+    }
+
+    .was-validated .custom-multiselect:invalid+.select2 .select2-selection {
+      border-color: #fd3995;
+      padding-right: calc(2.47em + 1rem);
+      background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3e%3cpath fill='%23343a40' d='M2 0L0 2h4zm0 5L0 3h4z'/%3e%3c/svg%3e") no-repeat right 0.875rem center/8px 10px, url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23fd3995' viewBox='0 0 12 12'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23fd3995' stroke='none'/%3e%3c/svg%3e") #fff no-repeat center right 1.875rem/calc(0.735em + 0.5rem) calc(0.735em + 0.5rem);
+    }
+
+    .was-validated .custom-multiselect:invalid+.select2 .select2-selection:focus {
+      border-color: #fd3995;
+      -webkit-box-shadow: 0 0 0 0.2rem rgba(253, 57, 149, 0.25);
+      box-shadow: 0 0 0 0.2rem rgba(253, 57, 149, 0.25);
+    }
+
+
+    .was-validated .custom-select:valid+.select2 .select2-selection {
+      border-color: #1dc9b7;
+      padding-right: calc((1em + 1rem) * 3 / 4 + 1.875rem);
+      background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%231dc9b7' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e") #fff no-repeat center right 1.875rem/calc(0.735em + 0.5rem) calc(0.735em + 0.5rem);
+    }
+
+    .was-validated .custom-select:valid+.select2 .select2-selection:focus {
+      border-color: #1dc9b7;
+      -webkit-box-shadow: 0 0 0 0.2rem rgba(29, 201, 183, 0.25);
+      box-shadow: 0 0 0 0.2rem rgba(29, 201, 183, 0.25);
+    }
+
+    .was-validated .custom-select:invalid+.select2 .select2-selection {
+      border-color: #fd3995;
+      padding-right: calc(2.47em + 1rem);
+      background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23fd3995' viewBox='0 0 12 12'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23fd3995' stroke='none'/%3e%3c/svg%3e") #fff no-repeat center right 1.875rem/calc(0.735em + 0.5rem) calc(0.735em + 0.5rem);
+    }
+
+    .was-validated .custom-select:invalid+.select2 .select2-selection:focus {
+      border-color: #fd3995;
+      -webkit-box-shadow: 0 0 0 0.2rem rgba(253, 57, 149, 0.25);
+      box-shadow: 0 0 0 0.2rem rgba(253, 57, 149, 0.25);
+    }
+  </style>
+  <link rel="stylesheet" href="/static/mentis/css/dateRangePicker.css" />
+  <script src="/static/mentis/js/moment.js"></script>
+  <script src="/static/mentis/js/dateRangePicker.js"></script>
+</head>
+
+<body>
+  <div id="main-form-div">
+    <div class="row">
+      <div class="col-xl-12">
+        <div class="panel" id="projectConfigurationPanel">
+          <div class="panel-hdr">
+            <h2>
+              <span class="fw-900"><i>Project configurations</i></span>
+            </h2>
+            <div class="panel-toolbar">
+              <button class="btn btn-panel" data-action="panel-collapse" data-toggle="tooltip" data-offset="0,10"
+                data-original-title="Collapse"></button>
+              <button class="btn btn-panel" data-action="panel-fullscreen" data-toggle="tooltip" data-offset="0,10"
+                data-original-title="Fullscreen"></button>
+              <button class="btn btn-panel" data-action="panel-close" data-toggle="tooltip" data-offset="0,10"
+                data-original-title="Close"></button>
+            </div>
+          </div>
+          <div class="panel-container">
+            <div class="form-group row m-3">
+              <div class="col-3">
+                <label class="form-label" for="bankName">Bank name</label>
+                <select class="form-control select2" id="bankName" name="bankName" data-placeholder="Select Bank name"
+                  required></select>
+              </div>
+              <div class="col-3" style="display: none">
+                <label class="form-label" for="environment">Environment</label>
+                <select class="form-control select2" id="environment" name="environment"
+                  data-placeholder="Select Environment" required></select>
+              </div>
+              <div class="col-3" style="display: none">
+                <label class="form-label" for="project">Project</label>
+                <select class="form-control select2" id="project" name="project" data-placeholder="Select Project"
+                  required></select>
+              </div>
+              <div class="col-3" style="display: none">
+                <label class="form-label" for="segmentViewType">Segment view type</label>
+                <select class="form-control select2" id="segmentViewType" name="segmentViewType"
+                  data-placeholder="Select segment view type" required>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-hdr">
+            <h2>
+              <span class="fw-900"><i>Create segment</i></span>
+            </h2>
+            <div class="panel-toolbar">
+              <button class="btn btn-panel" data-action="panel-collapse" data-toggle="tooltip" data-offset="0,10"
+                data-original-title="Collapse"></button>
+              <button class="btn btn-panel" data-action="panel-fullscreen" data-toggle="tooltip" data-offset="0,10"
+                data-original-title="Fullscreen"></button>
+              <button class="btn btn-panel" data-action="panel-close" data-toggle="tooltip" data-offset="0,10"
+                data-original-title="Close"></button>
+            </div>
+          </div>
+          <div id="divLoader" style="display: none">
+            <div class="position-absolute d-flex flex-column justify-content-center align-items-center w-100" style="
+                  z-index: 2;
+                  background-color: rgba(255, 255, 255, 0.7);
+                  height: -webkit-fill-available;
+                ">
+              <div class="spinner-border mb-2" role="status"></div>
+              <div style="font-size: 16px">Loading...</div>
+            </div>
+          </div>
+          <div id="splashScreen" style="">
+            <div class="position-absolute d-flex flex-column justify-content-center align-items-center w-100" style="
+                  z-index: 2;
+                  background-color: rgba(255, 255, 255, 0.9);
+                  height: -webkit-fill-available;
+                ">
+              <div style="font-size: 26px">
+                Please Select Project Config first.
+              </div>
+            </div>
+          </div>
+
+          <div id="congratsConfigSaved" style="display: none">
+            <div class="position-absolute d-flex flex-column justify-content-center align-items-center w-100" style="
+                  z-index: 2;
+                  background-color: rgba(255, 255, 255, 1);
+                  height: -webkit-fill-available;
+                ">
+              <div class="h-100 d-flex justify-content-center align-items-center">
+                <div class="panel p-6 d-flex flex-column justify-content-center align-items-center text-center"
+                  style="font-size: 20px">
+                  <img src="/static/mentis/img/accepted.png" class="img-fluid mb-5" width="75" height="75" />
+                  <span class="mx-2 mb-5">Congratulations, Your segment has been saved successfully!</span>
+                  <div>
+                    <a href="#viewSegment" class="btn btn-lg btn-outline-info waves-effect waves-themed"><i
+                        class="fal fa-eye"></i><span class="ml-2">View Segments</span></a>
+                    <button onclick="createNewSegement()"
+                      class="btn btn-lg btn-outline-success  waves-effect waves-themed ml-2"><i
+                        class="fal fa-plus"></i><span class="ml-2">Create new Segment</span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <form class="panel-container m-5 needs-validation" id="createSegmentForm" onsubmit="formSubmit(event)"
+            novalidate>
+            <div class="form-group row">
+              <div class="col-4">
+                <label class="form-label" for="segementName">Segment Name</label>
+                <input type="text" id="segementName" class="form-control" name="key" 
+                  placeholder="Enter Segement Name" required />
+              </div>
+            </div>
+
+            <div class="form-group row d-block" style="padding-left: 12px;">
+              <label class="form-label">Userbase</label>
+              <div class="frame-wrap">
+                <div class="custom-control custom-radio custom-control-inline">
+                  <input type="radio" class="custom-control-input" id="allUsers" name="userbase" value="allUsers"
+                    required>
+                  <label class="custom-control-label" for="allUsers">All Users</label>
+                </div>
+                <div class="custom-control custom-radio custom-control-inline">
+                  <input type="radio" class="custom-control-input" id="createSegment" name="userbase"
+                    value="createSegment" required>
+                  <label class="custom-control-label" for="createSegment">Create segment</label>
+                </div>
+              </div>
+            </div>
+
+            <div id="createSegmentDiv" style="display:none;">
+              <!-- <label class="form-label">Create segment</label> -->
+              <div class="card card-header">
+                <div id="queryBuilderDiv"></div>
+                <div class="d-flex justify-content-center">
+
+                  <button type="button" class="btn btn-success btn-block fs-md waves-effect waves-themed"
+                    onclick="addQuery()">
+                    Add Condition
+                    <i class="fal fa-plus-circle ml-1"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div id="issues" class="alert alert-danger" role="alert" style="margin-top: 20px; display: none">
+              <strong>Oh snap!</strong> Change a few things up and try
+              submitting again.
+              <ul id="issue-items" style="margin-top: 10px"></ul>
+            </div>
+            <div class="mt-4 d-flex justify-content-end">
+              <button type="button" id="checkCountButton" class="btn btn-outline-primary waves-effect waves-themed"
+                onclick="checkCount(event)">
+                Check count
+              </button>
+              <button type="submit" id="saveSegment" class="ml-2 btn btn-primary waves-effect waves-themed">
+                Save Segment
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <!-- Modal -->
+    <div class="modal fade example-modal-centered-transparent show" id="segmentCountModal" tabindex="-1" role="dialog"
+      aria-labelledby="myModalLabel" aria-hidden="false">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header" style="border-bottom: 1px solid rgba(0, 0, 0, 0.07)">
+            <h4 class="modal-title" id="config-modal-title">Segment Count</h4>
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+              &times;
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="w-100 d-flex justify-content-center">
+              <div class="bg-brand-gradient" style="
+                     width: 200px;
+                     height: 200px;
+                     font-size: 40px;
+                     display: flex;
+                     justify-content: center;
+                     color: white;
+                     align-items: center;
+                     border-radius: 100%;
+                     overflow: hidden;">
+                <span id="segmentCount">
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="toast hide" style="position: absolute; top: 50%; right: 40%" id="toast" data-delay="2000">
+      <div class="toast-header">
+        <strong class="mr-auto" id="toastInfo"></strong>
+        <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    </div>
+    <!-- Something went wrong toastr -->
+    <div class="toast hide" style="
+          position: absolute;
+          top: 50%;
+          right: 45%;
+          background-color: rgb(220 53 69);
+          color: white;
+          min-width: 250px;
+          z-index: 2;
+        " id="somethingWentWrongAlert" data-delay="2000">
+      <div class="toast-header">
+        <strong class="mr-auto">Alert</strong>
+        <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="toast-body" id="failureAlertBody">Somthing went wrong, Please try again.</div>
+      <!-- <div class="toast-header">
+      <strong class="mr-auto" id="toastInfo">lmcklwkmeck</strong>
+    </div> -->
+    </div>
+  </div>
+</body>
+<script type="text/javascript">
+  var currentUser = "{{ user }}";
+  var segment_view_type = "{{ segmentViewType }}";
+  var mode = "{{mode}}" || "create";
+  var uniqueId = "{{uniqueId}}" || "";
+  var user_bank_settings = {{ user_bank_settings| safe}};
+  var apiBasePath = ""
+  var field_values = [];
+  var operators = [
+    { label: "Greater than", value: "GT" },
+    { label: "Greater than equals", value: "GTE" },
+    { label: "Less than", value: "LT" },
+    { label: "Less than equals", value: "LTE" },
+    { label: "Equals", value: "EQ" },
+    { label: "Not equals", value: "NEQ" },
+    { label: "In", value: "IN" },
+    { label: "Between", value: "BETWEEN" },
+    { label: "Is Not Null", value: "INN" },
+    { label: "Is Not Blank", value: "INB" },
+    { label: "Is Null", value: "ISN" },
+    { label: "Is Blank", value: "ISB" },
+    { label: "True", value: "TRUE" },
+    { label: "False", value: "FALSE" },
+  ];
+
+  var numberOperators = [
+    { label: "Greater than", value: "GT" },
+    { label: "Greater than equals", value: "GTE" },
+    { label: "Less than", value: "LT" },
+    { label: "Less than equals", value: "LTE" },
+    { label: "Equals", value: "EQ" },
+    { label: "Not equals", value: "NEQ" },
+    { label: "In", value: "IN" },
+    { label: "Between", value: "BETWEEN" },
+    { label: "Is Not Null", value: "INN" },
+    { label: "Is Not Blank", value: "INB" },
+    { label: "Is Null", value: "ISN" },
+    { label: "Is Blank", value: "ISB" },
+  ];
+  var stringOperators = [
+    { label: "Equals", value: "EQ" },
+    { label: "Not equals", value: "NEQ" },
+    { label: "In", value: "IN" },
+    { label: "Is Not Null", value: "INN" },
+    { label: "Is Not Blank", value: "INB" },
+    { label: "Is Null", value: "ISN" },
+    { label: "Is Blank", value: "ISB" },
+  ];
+  var dateOperators = [
+    { label: "Before", value: "LT" },
+    { label: "After", value: "GT" },
+    { label: "Equals", value: "EQ" },
+    { label: "Not equals", value: "NEQ" },
+    // { label: "Between", value: "BETWEEN" },
+    { label: "Is Not Null", value: "INN" },
+    { label: "Is Not Blank", value: "INB" },
+    { label: "Is Null", value: "ISN" },
+    { label: "Is Blank", value: "ISB" },
+  ];
+
+  $(document).ready(function () {
+    $(window).keydown(function (event) {
+      if (event.keyCode == 13) {
+        event.preventDefault();
+        return false;
+      }
+    });
+    handleMode(mode);
+    $(".select2").select2();
+    var inputs = $("input");
+    // Add an input event listener to all input elements
+    $(document).on("input", "input", function () {
+      // Check the validity of the current input based on the pattern attribute
+      if (!this.checkValidity() && !!this.value) {
+        // If it's not valid, prevent the change by resetting the input value to its previous value
+        $(this).val($(this).data("previousValue"));
+      } else {
+        // If it's valid, store the current value as the previous value
+        $(this).data("previousValue", $(this).val());
+      }
+    });
+  });
+  function checkCount(event) {
+    if ($('#createSegmentForm')[0].checkValidity() === false) {
+      event.stopPropagation();
+      $('#createSegmentForm').addClass("was-validated")
+      return;
+    }
+    else {
+      $('#createSegmentForm').removeClass("was-validated")
+      var payload = createPayload();
+      if (!Object.keys(payload)?.length) return;
+      $("#divLoader").show();
+      $.ajax({
+        url: apiBasePath + "/segments/check_offer_segment_count/",
+        type: "POST",
+        data: JSON.stringify(payload),
+        contentType: 'application/json',
+        success: function (response) {
+          $("#divLoader").hide();
+          if (response?.result?.toUpperCase() == "SUCCESS") {
+            $("#segmentCountModal").modal();
+            if (response?.data?.segment_count > -1) {
+              $("#segmentCount").html(response?.data?.segment_count)
+              console.log("response", response)
+            }
+          } else {
+            if (!!response?.details_message) {
+                    $("#failureAlertBody").html(response?.details_message)
+                }
+            $("#somethingWentWrongAlert").toast("show");
+          }
+        },
+        error: function (error) {
+          $("#somethingWentWrongAlert .toast-body").html(`${error?.responseJSON?.details_message || 'Something went wrong!'}`);
+          $("#divLoader").hide();
+          $("#somethingWentWrongAlert").toast("show");
+        },
+      });
+    }
+  }
+  function createNewSegement() {
+    $("#segementName").val("")
+    $("#requiredFields").val([]).change()
+    $("#queryBuilderDiv").html("")
+    $("#congratsConfigSaved").hide();
+    addQuery();
+  }
+  $("#bankName").on("change", function () {
+    currentBank = this.value;
+    $("#environment").parent().show();
+    var environmentOptionsHtml =
+      "<option value='' disabled selected></option>";
+    for (const environment of Object.keys(user_bank_settings[this.value])) {
+      environmentOptionsHtml += `<option value='${environment}'>${environment}</option>`;
+    }
+    $("#environment").html(environmentOptionsHtml);
+    $("#project").parent().hide();
+    $("#project").html("");
+  });
+  $("#environment").on("change", function () {
+    currentEnvironment = this.value;
+    $("#project").parent().show();
+    const bank = $("#bankName").val();
+    var projectOptionsHtml = "<option value='' disabled selected></option>";
+    for (const project of Object.keys(user_bank_settings[bank][this.value])) {
+      projectOptionsHtml += `<option value='${project}'>${project}</option>`;
+    }
+    $("#project").html(projectOptionsHtml);
+  });
+  $("#project").on("change", function () {
+    currentProject = this.value;
+    const bank = $("#bankName").val();
+    const env = $("#environment").val();
+    apiBasePath = user_bank_settings?.[bank]?.[env]?.[this.value]?.url;
+    // currentBank = this.value;
+    $("#segmentViewType").parent().show();
+    setSessionStorageItem("selected_project_config", { "bank": bank, "env": env, "project": this.value })
+    var segmentViewTypeHtml = "<option value='' disabled selected></option>";
+    for (const segmentView of user_bank_settings?.[bank]?.[env]?.[this.value]?.segment_view_types) {
+      segmentViewTypeHtml += `<option value='${segmentView?.id}'>${segmentView?.label}</option>`;
+    }
+    $("#segmentViewType").html(segmentViewTypeHtml);
+  });
+  $("#segmentViewType").on("change", function () {
+    currentProject = this.value;
+    const bank = $("#bankName").val();
+    const env = $("#environment").val();
+    const project = $("#project").val();
+    setSessionStorageItem("segmentViewType", this.value)
+    // apiBasePath = user_bank_settings?.[bank]?.[env]?.[project]?.project_id;
+    createSegmentInit(user_bank_settings?.[bank]?.[env]?.[project]?.project_id, $("#segmentViewType").val())
+    if (!!this.value) {
+      $("#splashScreen").hide();
+    }
+  });
+  $(document).on("change", "#bankName, #environment, #project ,#segmentViewType", function () {
+    $("#bankName, #environment, #project, #segmentViewType").map(function () {
+      if (!this.value) {
+        $("#splashScreen").show();
+      }
+    });
+  });
+
+  $('input[type=radio][name=userbase]').change(function () {
+    $("#queryBuilderDiv").html("")
+
+    if (this.value == 'allUsers') {
+      $("#issues").hide();
+      $("#createSegmentDiv").hide();
+    }
+    else if (this.value == 'createSegment') {
+      // ...
+      $("#createSegmentDiv").show();
+      addQuery();
+    }
+  });
+  // $("#projectId").on("change", function () {
+  // // currentBank = this.value;
+  // $("#segmentViewType").parent().show();
+  // var segmentViewTypeHtml = "<option value='' disabled selected></option>";
+  // for (const segmentView of config[this.value]) {
+  //   segmentViewTypeHtml += `<option value='${segmentView}'>${segmentView}</option>`;
+  // }
+  // $("#segmentViewType").html(segmentViewTypeHtml);
+  // });
+
+  // $("#segmentViewType").on("change", function () {
+  //   currentProject = this.value;
+  //   const bank = $("#bankName").val();
+  //   const env = $("#environment").val();
+  //   // apiBasePath = user_bank_settings?.[bank]?.[env]?.[this.value]?.url;
+  //   createSegmentInit($("#projectId").val(), $("#segmentViewType").val())
+  //   if (!!this.value) {
+  //     $("#splashScreen").hide();
+  //   }
+  // });
+  // $(document).on("change", "#projectId, #segmentViewType", function () {
+  //   $("#projectId, #segmentViewType ").map(function () {
+  //     if (!this.value) {
+  //       $("#splashScreen").show();
+  //     }
+  //   });
+  // });
+  async function createSegmentInit(projectId, segmentViewType) {
+    if (!projectId || !segmentViewType) return;
+    $("#divLoader").show();
+
+    try {
+      const response = await $.ajax({
+        url: apiBasePath + "/segments/get_view_data/",
+        type: "POST",
+        data: JSON.stringify({
+          "segment_view_type": segmentViewType,
+          "project_id": projectId,
+          "active_user": currentUser,
+        })
+      });
+
+      lock = false;
+      $("#divLoader").hide();
+
+      if (!!response?.data?.columns?.length) {
+        field_values = response?.data?.columns || []
+        // var fieldSelectOptions = "";
+        // for (let el in field_values) {
+        //   fieldSelectOptions +=
+        //     "<option  type='" +
+        //     getDataType(field_values[el]?.data_type) +
+        //     "' value='" +
+        //     field_values[el]?.col_name +
+        //     "'>" +
+        //     field_values[el]?.col_name +
+        //     "</option>";
+        // }
+        // const fieldSelect = `<select
+        //                     class="form-control select2 custom-multiselect"
+        //                     name="requiredFields"
+        //                     id="requiredFields"
+        //                     placeholder="Select Required fields"
+        //                     data-placeholder="Select Required fields"
+        //                     multiple="multiple"
+        //                     required
+        //                   >
+        //                     ${fieldSelectOptions}
+        //                   </select>
+        //                   <div class="invalid-feedback">
+        //                       Please select required field.
+        //                   </div>`;
+        // $("#requiredFieldsDiv").append(fieldSelect)
+        // $(".select2").select2();
+        // addQuery();
+        $("#splashScreen").hide();
+
+      } else {
+        if (!!response?.details_message) {
+                    $("#failureAlertBody").html(response?.details_message)
+                }
+        $("#somethingWentWrongAlert").toast("show");
+        $("#splashScreen").show();
+        throw new Error("API call failed");
+      }
+    } catch (error) {
+      lock = false;
+      $("#divLoader").hide();
+      $("#somethingWentWrongAlert .toast-body").html(`${error?.responseJSON?.details_message || 'Something went wrong!'}`);
+
+      $("#somethingWentWrongAlert").toast("show");
+      $("#splashScreen").show();
+      throw new Error("API call failed");
+    }
+  }
+  async function handleMode(mode) {
+    var bankNameOptionsHtml =
+      "<option value='' disabled selected></option>";
+    for (const bank of Object.keys(user_bank_settings)) {
+      bankNameOptionsHtml += `<option value='${bank}'>${bank}</option>`;
+    }
+    $("#bankName").html(bankNameOptionsHtml);
+    const selected_project_config = getSessionStorageItem("selected_project_config");
+    if (!!selected_project_config) {
+      const bank = $("#bankName").val(selected_project_config?.bank).change();
+      const env = $("#environment").val(selected_project_config?.env).change();
+      const project = $("#project").val(selected_project_config?.project).change();
+    }
+    if (getSessionStorageItem("segmentViewType")) {
+      $("#segmentViewType").val(getSessionStorageItem("segmentViewType")).change()
+    }
+    if (mode === "create") {
+    } else if (mode == "view" || mode == "edit" || mode == "clone") {
+
+      $("#segmentViewType").val(segment_view_type)
+      $("#divLoader").show();
+      await $.ajax({
+        url: apiBasePath + "/segments/view_offer_segment/",
+        type: "POST",
+        data: JSON.stringify({
+          "segment_view_type": segment_view_type,
+          "segment_id": uniqueId,
+          "active_user": currentUser,
+        }),
+        contentType: 'application/json',
+        success: function (response) {
+          $("#divLoader").hide();
+          if (response?.result?.toUpperCase() == "SUCCESS") {
+            fillForm(JSON.parse(response?.data?.[0]?.extra)).then(() => {
+              if (mode === "view") {
+                $("#createSegmentForm :input:not(#checkCountButton)").prop("disabled", true);
+              }
+              else if (mode === "edit") {
+                $("#segementName").prop("disabled", true);
+              }
+            })
+          } else {
+            if (!!response?.details_message) {
+                    $("#failureAlertBody").html(response?.details_message)
+                }
+            $("#somethingWentWrongAlert").toast("show");
+          }
+        },
+        error: function (error) {
+          $("#somethingWentWrongAlert .toast-body").html(`${error?.responseJSON?.details_message || 'Something went wrong!'}`);
+          $("#divLoader").hide();
+          $("#somethingWentWrongAlert").toast("show");
+        },
+      });
+    }
+    else if (mode == "edit") {
+
+    } else if (mode == "clone") {
+
+    }
+  }
+  $('#somethingWentWrongAlert').on('hidden.bs.toast', function () {
+        $("#failureAlertBody").html("Somthing went wrong, Please try again.")
+    })
+  function getDataType(type) {
+    return type === "date" ?"date" : type === "datetime" ? "datetime" : type === "int" || type === "float" ? "number" : type === "str" || type === "longtext" ? "string" : ""
+  }
+  function addQuery() {
+    var fieldSelectOptions = "";
+    for (let el in field_values) {
+      fieldSelectOptions +=
+        "<option  type='" +
+        getDataType(field_values[el]?.data_type) +
+        "' value='" +
+        field_values[el]?.col_name +
+        "'>" +
+        field_values[el]?.display_name +
+        "</option>";
+    }
+
+    const fieldSelect = `<select
+                              class="form-control select2 custom-select"
+                              name="fieldValue"
+                              data-placeholder="Select Field type"
+                              required
+                            >
+                              <option value="" disabled selected></option>
+                              ${fieldSelectOptions}
+                            </select>
+                              <div class="invalid-feedback">
+                                Please select field value.
+                              </div>`;
+
+    $("#queryBuilderDiv").append(`
+    <div class="row query">
+                      ${$("#queryBuilderDiv").children().length > 0
+        ? `<div class="w-100 andText mb-3 d-flex" name="addText">
+                              <span class="mx-2"> And </span>
+                            </div>`
+        : ""
+      }
+                        <div class="form-group row col-11">
+                          <div class="col-4" use='fieldvalue'>
+                            <label class="form-label"
+                              >Field value</label
+                            >
+                            ${fieldSelect}
+                          </div>
+                        </div>
+                        <div
+                          class="d-flex align-items-center col-1 justify-content-center"
+                        >
+                          <button type="button" class="btn" onClick="minusClick(this)">
+                            <i class="fal fa-minus-circle fa-2x color-danger-500 cursor-pointer"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>`);
+    $(".select2").select2();
+  }
+  $(document).on(
+    "change",
+    "select[name=fieldValue],select[name=operator]",
+    function () {
+      console.log(this.name);
+      if (this.name === "fieldValue") {
+        fieldValueChanged(this);
+      } else if (this.name === "operator") {
+        operatorChanged(this);
+      }
+    }
+  );
+  function operatorChanged(element) {
+    if ($(element).parent().parent().find($("[use=valueInput]"))?.length) {
+      $(element).parent().parent().find($("[use=valueInput]")).remove();
+    }
+    $(element)
+      .parent()
+      .parent()
+      .append(
+        createValueInputs(element?.value, $(element).attr("field_type"))
+      );
+    $(".dateRangePicker").daterangepicker(
+      {
+        timePicker: true,
+        opens: "left",
+        startDate: moment().startOf('hour'),
+        endDate: moment().startOf('hour').add(32, 'hour'),
+        locale: {
+          format: 'D MMM YYYY, hh:mm A',
+        },
+      },
+      function (start, end, label) {
+        console.log(
+          "A new date selection was made: " +
+          start.format("YYYY-MM-DD") +
+          " to " +
+          end.format("YYYY-MM-DD")
+        );
+      }
+    );
+    $(".datePicker").daterangepicker({
+      singleDatePicker: true,
+      timePicker: true,
+      opens: "left",
+      startDate: moment().startOf('hour'),
+      locale: {
+        format: 'D MMM YYYY, hh:mm A',
+      },
+    });
+  }
+  function createValueInputs(operator, type) {
+    var valueInput;
+    console.log("operator", operator);
+    console.log("type", type);
+    if ((type === "date" || type ==="datetime") && operator === "BETWEEN") {
+      return `
+            <div class="col-4" use='valueInput'>
+                    <label class="form-label"
+                      >Date Range</label
+                    >
+                      <div class="input-group">
+                        <input
+                          type="text"
+                          class="form-control dateRangePicker"
+                          name="dateRange"
+                          placeholder="Select date"
+                        />
+                        <div class="input-group-append">
+                          <span class="input-group-text fs-xl">
+                            <i class="fal fa-calendar"></i>
+                          </span>
+                        </div>
+                    </div>
+                  </div>
+            `;
+    } else if (
+      (type === "date" || type ==="datetime") &&
+      (operator === "EQ" ||
+        operator === "NEQ" ||
+        operator === "GT" ||
+        operator === "LT")
+    ) {
+      return `
+            <div class="col-4" use='valueInput'>
+                    <label class="form-label"
+                      >Date</label
+                    >
+                      <div class="input-group">
+                        <input
+                          type="text"
+                          class="form-control datePicker"
+                          name="${type}"
+                          placeholder="Select date"
+                        />
+                        <div class="input-group-append">
+                          <span class="input-group-text fs-xl">
+                            <i class="fal fa-calendar"></i>
+                          </span>
+                        </div>
+                    </div>
+                  </div>
+            `;
+    } else if (
+      operator === "EQ" ||
+      operator === "NEQ" ||
+      operator === "GT" ||
+      operator === "GTE" ||
+      operator === "LT" ||
+      operator === "LTE"
+    ) {
+      return `<div class="col-4" use='valueInput'>
+                      <label class="form-label"
+                        >Value</label
+                      >
+                      <input
+                        type="text"
+                        class="form-control"
+                        name="value"
+                        ${type === "number" ? "pattern='[0-9]*[.]?[0-9]*'" : ""
+        }
+                        placeholder="Enter value..."
+                        required
+                      />
+                    </div>`;
+    } else if (operator === "BETWEEN") {
+      return `<div class="col-4" use='valueInput'>
+              <div class="d-flex">
+                      <div class="col-6 p-0">
+                        <label class="form-label"
+                        >Min Value</label
+                      >
+                      <input
+                      type="text"
+                      class="form-control"
+                      name="min_value"
+                        pattern="[0-9]*[.]?[0-9]*"
+                        placeholder="Enter Min value..."
+                        required
+                        />
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label"
+                        >Max value</label
+                      >
+                      <input
+                      type="text"
+                      class="form-control"
+                      name="max_value"
+                        pattern="[0-9]*[.]?[0-9]*"
+                        placeholder="Enter Max value..."
+                        required
+                        />
+                        </div>
+                      </div>
+                    </div>`;
+    } else if (operator === "IN") {
+      return `<div class="col-4" use='valueInput'>
+        <label class="form-label"
+                        >Value</label
+                      >
+                        <div class="form-control d-flex flex-wrap h-auto inPillsDiv" onclick="focusInput(this)">
+                          <input class="border-0 bg-transparent in_input"
+                              required
+                              name="value"
+                              ${type === "number" ? "pattern='[0-9]*[.]?[0-9]*'" : ""
+        } type="text" />
+                          </div>
+                        </div>
+                     </div> `;
+    }
+  }
+  function focusInput(element) {
+    $(element).find($("input")).focus();
+  }
+  function formSubmit(event) {
+    event.preventDefault();
+
+    if ($('#createSegmentForm')[0].checkValidity() === false) {
+      event.stopPropagation();
+      $('#createSegmentForm').addClass("was-validated")
+      return;
+    }
+    else {
+      $('#createSegmentForm').removeClass("was-validated")
+    }
+    var payload = createPayload() || {};
+    if (!Object.keys(payload)?.length) return;
+    $("#divLoader").show();
+    $.ajax({
+      url: apiBasePath + "/segments/process_offer_segment/",
+      type: "POST",
+      data: JSON.stringify(payload),
+      contentType: 'application/json',
+      success: function (response) {
+        $("#divLoader").hide();
+        if (response?.result?.toUpperCase() == "SUCCESS") {
+          console.log("response", response)
+          $("#congratsConfigSaved").show();
+
+        } else {
+          if (!!response?.details_message) {
+                    $("#failureAlertBody").html(response?.details_message)
+                }
+          $("#somethingWentWrongAlert").toast("show");
+        }
+      },
+      error: function (error) {
+        $("#somethingWentWrongAlert .toast-body").html(`${error?.responseJSON?.details_message || 'Something went wrong!'}`);
+        $("#divLoader").hide();
+        $("#somethingWentWrongAlert").toast("show");
+      },
+    });
+    // alert("Form submitted!");
+  }
+  function addQueryWithData() {
+
+  }
+  function createPayload() {
+    const bank = $("#bankName").val();
+    const env = $("#environment").val();
+    const project = $("#project").val();
+
+    var payload = {
+      "project_id": user_bank_settings?.[bank]?.[env]?.[project]?.project_id,
+      "segment_view_type": $("#segmentViewType").val(),
+      "mode": mode === "edit" ? "EDIT" : "CREATE",
+      ...(mode === "edit" && {
+        "segment_id": uniqueId,
+      }),
+      "active_user": currentUser || "",
+      "segment_name": $("#segementName").val(),
+      "filter_data": {
+        "req_fields": $("#requiredFields").val(),
+        "filters": []
+      }
+    };
+    var queries = [];
+
+    $("#queryBuilderDiv")
+      .children()
+      .each(function () {
+        var currQuery = {};
+        var fieldType = "";
+        var operator = "";
+        $(this)
+          .find($(":input"))
+          .each(function () {
+            console.log("input", this);
+            if (!this.name) return;
+            if ($(this).attr("field_type")) {
+              fieldType = $(this).attr("field_type");
+            }
+            if (this.name === "operator") {
+              operator = $(this).val();
+              currQuery[this.name] = $(this).val();
+            } else if (operator === "IN") {
+              var inValues = [];
+              $(this)
+                .parent()
+                .find($(".pillValue"))
+                .each(function () {
+                  inValues.push($(this).text());
+                });
+              currQuery["in_values"] = inValues;
+            } else if ((fieldType === "date" || fieldType ==="datetime")&& operator === "BETWEEN") {
+              const startDate = new Date($(this).data('daterangepicker').startDate._d)
+              const endDate = new Date($(this).data('daterangepicker').endDate._d)
+
+              currQuery["start_date"] = moment(startDate).format(fieldType==="datetime" ? 'YYYY-MM-DD HH:mm:ss':'YYYY-MM-DD');
+              currQuery["end_date"] = moment(endDate).format(fieldType==="datetime" ? 'YYYY-MM-DD HH:mm:ss':'YYYY-MM-DD')
+            } else {
+              if (this.name === "fieldValue") {
+                currQuery["col_name"] = $(this).val();
+              } else if (this.name === "date" ||this.name === "datetime") {
+                const date = new Date($(this).data('daterangepicker').startDate._d)
+                currQuery["value"] =  moment(date).format(this.name === "datetime"?'YYYY-MM-DD HH:mm:ss':'YYYY-MM-DD');
+              }
+              else {
+                currQuery[this.name] = $(this).val();
+              }
+            }
+          });
+        if (Object.keys(currQuery)?.length) {
+          queries.push(currQuery);
+        }
+      });
+    payload.filter_data.filters = queries;
+    if (!queries?.length && getRadioValue("userbase") === "createSegment") {
+      $("#issue-items").html("<li>Please make sure to add at least one query.</li>");
+      $("#issues").show();
+      return false;
+    } else {
+      $("#issues").hide();
+      // $("#congratsConfigSaved").show();
+      console.log("payload", payload);
+      return payload;
+    }
+    return payload;
+  }
+  function fieldValueChanged(select) {
+    const selectedFieldValue = field_values?.find(
+      (el) => el?.col_name === select?.value
+    );
+    var operatorSelectOptions = "";
+    var currentOperators = [];
+    if (getDataType(selectedFieldValue?.data_type)) {
+      console.log("getDataType(selectedFieldValue?.data_type)", getDataType(selectedFieldValue?.data_type))
+      currentOperators =
+        getDataType(selectedFieldValue?.data_type) === "date"||getDataType(selectedFieldValue?.data_type)==="datetime"
+          ? dateOperators
+          : getDataType(selectedFieldValue?.data_type) === "number"
+            ? numberOperators
+            : getDataType(selectedFieldValue?.data_type) === "string"
+              ? stringOperators
+              : [];
+    }
+
+    for (let el in currentOperators) {
+      operatorSelectOptions +=
+        "<option  value='" +
+        currentOperators[el]?.value +
+        "'>" +
+        currentOperators[el]?.label +
+        "</option>";
+    }
+    const operatorSelect = `<select
+                              class="form-control select2 custom-select"
+                              name="operator"
+                              data-placeholder="Select Field type"
+                              field_type="${getDataType(selectedFieldValue?.data_type)}"
+                              required
+                            >
+                              <option value="" disabled selected></option>
+                              ${operatorSelectOptions}
+                            </select>
+                            <div class="invalid-feedback">
+                                Please select operator.
+                              </div>`;
+    if ($(select).parent().parent().find($("[use=operator]"))?.length) {
+      $(select).parent().parent().find($("[use=operator]")).remove();
+    }
+    if ($(select).parent().parent().find($("[use=valueInput]"))?.length) {
+      $(select).parent().parent().find($("[use=valueInput]")).remove();
+    }
+    $(select).parent().parent().append(`
+                          <div class="col-4" use="operator">
+                            <label class="form-label"
+                              >Operator</label
+                            >
+                            ${operatorSelect}
+                          </div>`);
+    $(".select2").select2();
+  }
+  $(document).on("keydown", ".in_input", function (event) {
+    if (event?.keyCode === 13 && this?.value) {
+      event.preventDefault();
+      $(this).removeAttr("required");
+      $(this)
+        .parent()
+        .prepend(
+          `<span class="border border-primary  px-2 m-1 rounded text-primary pills" > <span class="pillValue">${this.value}</span> <i class="fal fa-times cursor-pointer" onclick="removePill(this)"></i> </span>`
+        );
+      $(this).val("").change();
+      console.log("pill count", $(this).parent().find($(".pills"))?.length);
+      if (!$(this).parent().find($(".pills"))?.length) {
+        $(this).attr("required", true);
+      }
+    }
+  });
+  $("body").on("focus", ".datepicker_recurring_start", function () {
+    $(this).datepicker();
+  });
+  function removePill(element) {
+    if ($(element).parent().parent().find(".pills").length <= 1) {
+      $(element).parent().parent().find("input").attr("required", true);
+    }
+    $(element).parent().remove();
+  }
+  function minusClick(element) {
+    if ($(element)?.parent()?.parent()?.is(":first-child")) {
+      $(element)?.parent()?.parent().next().find("[name=addText]").remove()
+    }
+    $(element)?.parent()?.parent()?.remove()
+  }
+
+  async function fillForm(formData = {}) {
+    try {
+      if (!formData || !Object.keys(formData)?.length) {
+        throw new Error("Empty form data");
+      }
+
+      await createSegmentInit(formData?.project_id, formData?.segment_view_type);
+      $("#segementName").val(formData?.segment_name)
+      $("#requiredFields").val(formData?.filter_data?.req_fields).change()
+      if (formData?.filter_data?.filters?.length === 0) {
+        $(`input[name=userbase][value=allUsers]`).prop("checked", true)
+      } else {
+        $(`input[name=userbase][value=createSegment]`).prop("checked", true)
+        $("#createSegmentDiv").show()
+      }
+      Array.isArray(formData?.filter_data?.filters) && formData?.filter_data?.filters?.length && formData?.filter_data?.filters.forEach((element, idx) => {
+        if (idx <= formData?.filter_data?.filters?.length - 1) {
+          addQuery();
+        }
+        const fieldValue = $("#queryBuilderDiv .query").last().find("[name=fieldValue]")
+        $(fieldValue).val(element?.col_name).change();
+        $(fieldValue).parent().parent().find("[name=operator]").val(element?.operator).change()
+        if (element?.value) {
+          $("#queryBuilderDiv .query").last().find("[use=valueInput]").find("[name=value]").val(element?.value)
+        }
+        if (element?.value) {
+          console.log("element?.value", element?.value)
+          $("#queryBuilderDiv .query").last().find("[use=valueInput]").find("[name=date]").val(element?.value.split("-").reverse().join("/"))
+        }
+        if (element?.start_date && element?.end_date) {
+          $("#queryBuilderDiv .query").last().find("[use=valueInput]").find("[name=dateRange]").val(element?.start_date.split("-").reverse().join("/") + " - " + element?.end_date.split("-").reverse().join("/"))
+        }
+        if (element?.in_values?.length) {
+          $("#queryBuilderDiv .query").last().find("[use=valueInput]").find(".in_input")?.removeAttr("required");
+          element?.in_values.forEach(pill => {
+            $("#queryBuilderDiv .query").last().find("[use=valueInput]").find(".in_input").parent()
+              .prepend(
+                `<span class="border border-primary  px-2 m-1 rounded text-primary pills" > <span class="pillValue">${pill}</span> <i class="fal fa-times cursor-pointer" onclick="removePill(this)"></i> </span>`
+              );
+          });
+        }
+        if (element?.min_value) {
+          $("#queryBuilderDiv .query").last().find("[use=valueInput]").find("[name=min_value]").val(element?.min_value)
+        }
+        if (element?.max_value) {
+          $("#queryBuilderDiv .query").last().find("[use=valueInput]").find("[name=max_value]").val(element?.max_value)
+        }
+        if (element?.value) {
+          $("#queryBuilderDiv .query").last().find("[use=valueInput]").find("[name=value]").val(element?.value)
+        }
+      });
+    } catch (error) {
+      // Handle any errors that occur during the API call
+    }
+  }
+
+  // Function to set a key in session storage
+  function setSessionStorageItem(key, value) {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  }
+
+  // Function to get a key from session storage
+  function getSessionStorageItem(key) {
+    const item = sessionStorage.getItem(key);
+    return item ? JSON.parse(item) : null;
+  }
+
+  // Function to remove a key from session storage
+  function removeSessionStorageItem(key) {
+    sessionStorage.removeItem(key);
+  }
+  function getRadioValue(name) {
+    return $(`input[name=${name}]:checked`).val();
+  }
+
+  function setRadioValue(name, value) {
+    $(`input[name=${name}][value='${value}']`).prop("checked", true).change();
+  }
+</script>
+
+</html>

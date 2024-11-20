@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Add configuration</title>
+    <style type="text/css">
+      .vertical-align {
+        display: flex;
+        align-items: center;
+      }
+
+      .cursor-none {
+        pointer-events: none;
+      }
+
+      .cursor-pointer {
+        cursor: pointer;
+      }
+    </style>
+    <link
+      rel="stylesheet"
+      media="screen, print"
+      href="/static/mentis/css/select2.bundle.css"
+    />
+  </head>
+
+  <body>
+    <div id="main-form-div">
+      <div class="row">
+        <div class="col-xl-12">
+          <div id="panel-1" class="panel">
+            <div class="panel-hdr">
+              <h2>
+                Add<span class="fw-900"><i>configuration</i></span>
+              </h2>
+              <div class="panel-toolbar">
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-collapse"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Collapse"
+                ></button>
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-fullscreen"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Fullscreen"
+                ></button>
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-close"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Close"
+                ></button>
+              </div>
+            </div>
+            <div class="panel-container" style="min-height: 60vh">
+              <div id="divLoader" style="display: none">
+                <div
+                  class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+                  style="z-index: 2; background-color: rgba(255, 255, 255, 0.7)"
+                >
+                  <div class="spinner-border mb-2" role="status"></div>
+                  <div style="font-size: 16px">Loading...</div>
+                </div>
+              </div>
+              <!-- <div id="splashScreen" style="">
+                            <div class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+                                style="z-index: 2; background-color: rgba(255, 255, 255, 0.9)">
+                                <div style="font-size: 26px">
+                                    Please Select Bank Configurations first.
+                                </div>
+                            </div>
+                        </div> -->
+
+              <div id="congratsConfigSaved" style="display: none">
+                <div
+                  class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+                  style="z-index: 2; background-color: rgba(255, 255, 255, 1)"
+                >
+                  <div
+                    class="h-100 d-flex justify-content-center align-items-center"
+                  >
+                    <div
+                      class="panel p-6 d-flex flex-column justify-content-center align-items-center text-center"
+                      style="font-size: 20px"
+                    >
+                      <img
+                        src="/static/mentis/img/accepted.png"
+                        class="img-fluid mb-5"
+                        width="75"
+                        height="75"
+                      />
+                      <span class="mx-2 mb-5"
+                        >Congratulations,Your configuration has been saved
+                        successfully!</span
+                      >
+                      <!-- <a href="#manageConfigurations"
+                                            class="btn btn-lg btn-outline-info waves-effect waves-themed"><i
+                                                class="fal fa-eye"></i><span class="ml-2">View Configurations</span></a> -->
+                      <button
+                        type="button"
+                        title="Close"
+                        class="btn btn-primary btn-lg mx-3 waves-effect waves-themed"
+                        onclick="closeCongratulations()"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <form id="airShiftForm" class="p-4">
+                  <div class="d-flex justify-content-between mb-3">
+                    <div class="form-group w-50">
+                      <label class="form-label" for="">Config key</label>
+                      <input
+                        type="text"
+                        id="configKey"
+                        class="form-control"
+                        name="configKey"
+                        pattern="^[a-zA-Z0-9_]*$"
+                        placeholder="Enter Config key"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div class="frame-wrap w-100">
+                    <div
+                      class="accordion accordion-outline"
+                      id="js_accordion-1"
+                    >
+                      <div class="card">
+                        <div class="card-header">
+                          <a
+                            href="javascript:void(0);"
+                            class="card-title"
+                            data-toggle="collapse"
+                            data-target="#js_accordion-1a"
+                            aria-expanded="true"
+                          >
+                            Source Config
+                            <span class="ml-auto">
+                              <span class="collapsed-reveal">
+                                <i
+                                  class="fal fa-minus-circle text-danger fs-xl"
+                                ></i>
+                              </span>
+                              <span class="collapsed-hidden">
+                                <i
+                                  class="fal fa-plus-circle text-success fs-xl"
+                                ></i>
+                              </span>
+                            </span>
+                          </a>
+                        </div>
+                        <div
+                          id="js_accordion-1a"
+                          class="collapse show"
+                          data-parent="#js_accordion-1"
+                        >
+                          <div class="card-body">
+                            <div style="margin: 10px; padding-left: 12px">
+                              <div
+                                class="custom-control custom-radio custom-control-inline"
+                              >
+                                <input
+                                  type="radio"
+                                  class="custom-control-input"
+                                  required
+                                  value="sftp"
+                                  id="sftpSource"
+                                  name="sourceName"
+                                />
+                                <label
+                                  class="custom-control-label"
+                                  for="sftpSource"
+                                  >SFTP</label
+                                >
+                              </div>
+                              <div
+                                class="custom-control custom-radio custom-control-inline"
+                              >
+                                <input
+                                  type="radio"
+                                  class="custom-control-input"
+                                  value="s3"
+                                  id="s3Source"
+                                  name="sourceName"
+                                />
+                                <label
+                                  class="custom-control-label"
+                                  for="s3Source"
+                                  >S3</label
+                                >
+                              </div>
+                            </div>
+                            <div id="sftp_source_data">
+                              <div style="display: flex" class="col-8">
+                                <label
+                                  class="col-4 vertical-align"
+                                  for="sftpSourceConnectionKey"
+                                  >Connection Key</label
+                                >
+                                <div style="width: 100%">
+                                  <select
+                                    class="form-control select2 col-4"
+                                    disabled
+                                    id="sftpSourceConnectionKey"
+                                    name="sftpSourceConnectionKey"
+                                    data-placeholder="Select Connection Key"
+                                    required
+                                  ></select>
+                                  <div
+                                    style="padding: 5px 10px; min-height: 30px"
+                                    id="sftpSourceIpBlock"
+                                  >
+                                    <label for="sftpSourceIp"> IP: </label>
+                                    <span
+                                      id="sftpSourceIp"
+                                      name="sftpSourceIp"
+                                    ></span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div
+                                style="display: flex; padding-top: 10px"
+                                class="col-8"
+                              >
+                                <label
+                                  class="col-4 vertical-align"
+                                  for="sftpSourceFilePath"
+                                  >File Path:</label
+                                >
+                                <input
+                                  type="text"
+                                  class="form-control"
+                                  disabled
+                                  id="sftpSourceFilePath"
+                                  name="sftpSourceFilePath"
+                                  placeholder="Enter File Path"
+                                  required
+                                />
+                              </div>
+                            </div>
+                            <div id="s3_source_data">
+                              <div style="display: flex" class="col-8">
+                                <label
+                                  class="col-4 vertical-align"
+                                  for="s3SourceBucket"
+                                  >Bucket</label
+                                >
+                                <select
+                                  class="col-4 form-control select2"
+                                  disabled
+                                  id="s3SourceBucket"
+                                  name="s3SourceBucket"
+                                  data-placeholder="Select Bucket"
+                                  required
+                                ></select>
+                              </div>
+                              <div
+                                style="display: flex; padding-top: 10px"
+                                class="col-8"
+                              >
+                                <label
+                                  class="col-4 vertical-align"
+                                  for="s3SourceConnectionKey"
+                                  >Connection Key</label
+                                >
+                                <select
+                                  class="col-4 form-control select2"
+                                  disabled
+                                  id="s3SourceConnectionKey"
+                                  name="s3SourceConnectionKey"
+                                  data-placeholder="Select Connection Key"
+                                  required
+                                ></select>
+                              </div>
+                              <div
+                                style="display: flex; padding-top: 10px"
+                                class="col-8"
+                              >
+                                <label
+                                  class="col-4 vertical-align"
+                                  for="s3SourceFilePath"
+                                  >File Path:</label
+                                >
+                                <input
+                                  type="text"
+                                  class="form-control"
+                                  disabled
+                                  id="s3SourceFilePath"
+                                  name="s3SourceFilePath"
+                                  placeholder="Enter File Path"
+                                  required
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="accordion accordion-outline"
+                      id="js_accordion-2"
+                    >
+                      <div class="card">
+                        <div class="card-header">
+                          <a
+                            href="javascript:void(0);"
+                            class="card-title collapsed"
+                            data-toggle="collapse"
+                            data-target="#js_accordion-2a"
+                            aria-expanded="false"
+                          >
+                            File Details
+                            <span class="ml-auto">
+                              <span class="collapsed-reveal">
+                                <i
+                                  class="fal fa-minus-circle text-danger fs-xl"
+                                ></i>
+                              </span>
+                              <span class="collapsed-hidden">
+                                <i
+                                  class="fal fa-plus-circle text-success fs-xl"
+                                ></i>
+                              </span>
+                            </span>
+                          </a>
+                        </div>
+                        <div
+                          id="js_accordion-2a"
+                          class="collapse"
+                          data-parent="#js_accordion-2"
+                        >
+                          <div class="card-body">
+                            <div id="file_details_data">
+                              <div
+                                style="display: flex; padding-top: 10px"
+                                class="col-8"
+                              >
+                                <label
+                                  class="col-4 vertical-align"
+                                  for="fileDetailsRegex"
+                                  >Regex:
+                                </label>
+                                <input
+                                  type="text"
+                                  class="form-control"
+                                  id="fileDetailsRegex"
+                                  name="fileDetailsRegex"
+                                  placeholder="Enter Regex"
+                                  required
+                                />
+                                <button
+                                  style="margin-left: 20px"
+                                  type="button"
+                                  id="testRegexButton"
+                                  class="col-2 btn btn-secondary btn-md waves-effect waves-themed"
+                                  onclick="openTestRegexModal()"
+                                >
+                                  Test
+                                </button>
+                              </div>
+                              <div
+                                style="display: flex; padding-top: 10px"
+                                class="col-8"
+                              >
+                                <label
+                                  class="col-4 vertical-align"
+                                  for="fileDetailsProject"
+                                  >Project</label
+                                >
+                                <input
+                                  type="text"
+                                  class="form-control"
+                                  id="fileDetailsProject"
+                                  name="fileDetailsProject"
+                                  placeholder="Enter Project"
+                                  required
+                                />
+                              </div>
+                              <div
+                                style="display: flex; padding-top: 10px"
+                                class="col-8"
+                              >
+                                <label
+                                  class="col-4 vertical-align"
+                                  for="fileDetailsFilePath"
+                                  >File Path:</label
+                                >
+                                <input
+                                  type="text"
+                                  class="form-control"
+                                  id="fileDetailsFilePath"
+                                  name="fileDetailsFilePath"
+                                  placeholder="Enter File Path"
+                                  required
+                                />
+                              </div>
+                              <div
+                                style="display: flex; padding-top: 10px"
+                                class="col-8"
+                              >
+                                <div class="custom-control custom-checkbox m-2">
+                                  <input
+                                    type="checkbox"
+                                    class="custom-control-input"
+                                    id="fileAutoIngestion"
+                                    name="fileAutoIngestion"
+                                  />
+                                  <label
+                                    class="custom-control-label"
+                                    for="fileAutoIngestion"
+                                    >Auto Ingestion</label
+                                  >
+                                </div>
+                              </div>
+                              <div
+                                style="display: flex; padding-top: 10px"
+                                class="col-6"
+                              >
+                                <div style="width: 100%">
+                                  <div
+                                    class="custom-control custom-checkbox m-2"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      class="custom-control-input"
+                                      id="filePreProcessingRule"
+                                      name="filePreProcessingRule"
+                                    />
+                                    <label
+                                      class="custom-control-label"
+                                      for="filePreProcessingRule"
+                                      >Pre Processing Rules</label
+                                    >
+                                  </div>
+                                  <div id="processingRuleBlock" class="mx-2">
+                                    <button
+                                      type="button"
+                                      id="addProcessingRuleButton"
+                                      class="mt-2 btn btn-secondary btn-md waves-effect waves-themed"
+                                      style="width: 100%; font-size: 14px"
+                                      onclick="addNewProcessButtonHandler()"
+                                    >
+                                      Add New Process
+                                      <i
+                                        class="fal fa-plus-circle"
+                                        style="padding-left: 10px"
+                                      ></i>
+                                    </button>
+                                    <div id="newRuleBlock">
+                                      <div
+                                        id="newRuleForm"
+                                        class="panel my-2 p-2"
+                                      >
+                                        <div
+                                          style="display: flex; padding: 10px"
+                                        >
+                                          <label
+                                            class="col-4 vertical-align"
+                                            for="newRuleProcessName"
+                                            >Process Name</label
+                                          >
+                                          <select
+                                            class="col-4 form-control select2"
+                                            id="newRuleProcessName"
+                                            name="newRuleProcessName"
+                                            disabled="true"
+                                            data-placeholder="Select Process"
+                                            required
+                                          ></select>
+                                        </div>
+                                        <div id="newRuleProcessConfig"></div>
+                                        <div
+                                          style="
+                                            display: flex;
+                                            padding: 10px;
+                                            justify-content: space-between;
+                                            align-items: center;
+                                          "
+                                        >
+                                          <span
+                                            id="ruleValidationError"
+                                            style="color: red"
+                                          ></span>
+                                          <span>
+                                            <button
+                                              type="button"
+                                              class="btn btn-secondary waves-effect waves-themed cursor-pointer mr-2"
+                                              onclick="closeRuleForm()"
+                                            >
+                                              Close
+                                            </button>
+                                            <button
+                                              type="button"
+                                              id="saveRuleBtn"
+                                              class="btn btn-primary waves-effect waves-themed"
+                                              onclick="saveRule()"
+                                            >
+                                              Save
+                                            </button>
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div
+                                        id="sortRules"
+                                        style="display: flex; padding-top: 10px"
+                                      >
+                                        <ul
+                                          class="sortableList pl-0"
+                                          id="sortableSavedRules"
+                                          style="
+                                            gap: 14px;
+                                            list-style: none;
+                                            display: flex;
+                                            flex-wrap: wrap;
+                                          "
+                                        ></ul>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="accordion accordion-outline"
+                      id="js_accordion-3"
+                    >
+                      <div class="card">
+                        <div class="card-header">
+                          <a
+                            href="javascript:void(0);"
+                            class="card-title collapsed"
+                            data-toggle="collapse"
+                            data-target="#js_accordion-3a"
+                            aria-expanded="false"
+                          >
+                            Destination Config
+                            <span class="ml-auto">
+                              <span class="collapsed-reveal">
+                                <i
+                                  class="fal fa-minus-circle text-danger fs-xl"
+                                ></i>
+                              </span>
+                              <span class="collapsed-hidden">
+                                <i
+                                  class="fal fa-plus-circle text-success fs-xl"
+                                ></i>
+                              </span>
+                            </span>
+                          </a>
+                        </div>
+                        <div
+                          id="js_accordion-3a"
+                          class="collapse"
+                          data-parent="#js_accordion-3"
+                        >
+                          <div class="card-body">
+                            <div style="margin: 10px; padding-left: 12px">
+                              <div
+                                class="custom-control custom-radio custom-control-inline"
+                              >
+                                <input
+                                  type="radio"
+                                  class="custom-control-input"
+                                  value="sftp"
+                                  id="sftpDestination"
+                                  required
+                                  name="destinationName"
+                                />
+                                <label
+                                  class="custom-control-label"
+                                  for="sftpDestination"
+                                  >SFTP</label
+                                >
+                              </div>
+                              <div
+                                class="custom-control custom-radio custom-control-inline"
+                              >
+                                <input
+                                  type="radio"
+                                  class="custom-control-input"
+                                  value="s3"
+                                  id="s3Destination"
+                                  name="destinationName"
+                                />
+                                <label
+                                  class="custom-control-label"
+                                  for="s3Destination"
+                                  >S3</label
+                                >
+                              </div>
+                              <div
+                                class="custom-control custom-radio custom-control-inline"
+                              >
+                                <input
+                                  type="radio"
+                                  class="custom-control-input"
+                                  value="rest"
+                                  id="restDestination"
+                                  name="destinationName"
+                                />
+                                <label
+                                  class="custom-control-label"
+                                  for="restDestination"
+                                  >REST</label
+                                >
+                              </div>
+                            </div>
+                            <div id="sftp_destination_data">
+                              <div style="display: flex" class="col-8">
+                                <label
+                                  class="col-4 vertical-align"
+                                  for="sftpDestinationConnectionKey"
+                                  >Connection Key</label
+                                >
+                                <div style="width: 100%">
+                                  <select
+                                    class="form-control select2 col-4"
+                                    id="sftpDestinationConnectionKey"
+                                    name="sftpDestinationConnectionKey"
+                                    data-placeholder="Select Connection Key"
+                                    disabled
+                                    required
+                                  ></select>
+                                  <div
+                                    style="padding: 5px 10px"
+                                    id="sftpDestinationIpBlock"
+                                  >
+                                    <label for="sftpDestinationIp"> IP: </label>
+                                    <span
+                                      id="sftpDestinationIp"
+                                      name="sftpDestinationIp"
+                                    ></span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div
+                                style="display: flex; padding-top: 10px"
+                                class="col-8"
+                              >
+                                <label
+                                  class="col-4 vertical-align"
+                                  for="sftpDestinationFilePath"
+                                  >File Path:</label
+                                >
+                                <input
+                                  type="text"
+                                  class="form-control"
+                                  id="sftpDestinationFilePath"
+                                  name="sftpDestinationFilePath"
+                                  disabled
+                                  placeholder="Enter File Path"
+                                  required
+                                />
+                              </div>
+                            </div>
+                            <div id="s3_destination_data">
+                              <div style="display: flex" class="col-8">
+                                <label
+                                  class="col-4 vertical-align"
+                                  for="s3DestinationBucket"
+                                  >Bucket</label
+                                >
+                                <select
+                                  class="col-4 form-control select2"
+                                  disabled
+                                  id="s3DestinationBucket"
+                                  name="s3DestinationBucket"
+                                  data-placeholder="Select Bucket"
+                                  required
+                                ></select>
+                              </div>
+                              <div
+                                style="display: flex; padding-top: 10px"
+                                class="col-8"
+                              >
+                                <label
+                                  class="col-4 vertical-align"
+                                  for="s3DestinationConnectionKey"
+                                  >Connection Key</label
+                                >
+                                <select
+                                  class="col-4 form-control select2"
+                                  id="s3DestinationConnectionKey"
+                                  name="s3DestinationConnectionKey"
+                                  disabled
+                                  data-placeholder="Select Connection Key"
+                                  required
+                                ></select>
+                              </div>
+                              <div
+                                style="display: flex; padding-top: 10px"
+                                class="col-8"
+                              >
+                                <label
+                                  class="col-4 vertical-align"
+                                  for="s3DestinationFilePath"
+                                  >File Path:</label
+                                >
+                                <input
+                                  type="text"
+                                  class="form-control"
+                                  disabled
+                                  id="s3DestinationFilePath"
+                                  name="s3DestinationFilePath"
+                                  placeholder="Enter File Path"
+                                  required
+                                />
+                              </div>
+                            </div>
+                            <div id="rest_destination_data">
+                              <div style="display: flex" class="col-8">
+                                <label
+                                  class="col-4 vertical-align"
+                                  for="restDestinationConnectionKey"
+                                  >Connection Key</label
+                                >
+                                <select
+                                  class="col-4 form-control select2"
+                                  id="restDestinationConnectionKey"
+                                  name="restDestinationConnectionKey"
+                                  data-placeholder="Select Connection Key"
+                                  disabled
+                                  required
+                                ></select>
+                              </div>
+                              <div id="rest_destination_dynamic_fields">
+                                <div
+                                  style="display: flex; padding-top: 10px"
+                                  class="col-8"
+                                >
+                                  <label
+                                    class="col-4 vertical-align"
+                                    for="restDestinationFileType"
+                                    >File Type</label
+                                  >
+                                  <select
+                                    class="col-4 form-control select2"
+                                    id="restDestinationFileType"
+                                    name="restDestinationFileType"
+                                    data-placeholder="Select File Type"
+                                    disabled
+                                    required
+                                  ></select>
+                                </div>
+                                <div
+                                  style="display: flex; padding-top: 10px"
+                                  class="col-8"
+                                >
+                                  <label
+                                    class="col-4 vertical-align"
+                                    id="fileTypeVersionBlock"
+                                  ></label>
+                                  <div id="fileTypeVersionOptions"></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    id="issues"
+                    class="alert alert-danger"
+                    role="alert"
+                    style="margin-top: 20px"
+                  >
+                    <strong>Oh snap!</strong> Change a few things up and try
+                    submitting again.
+                    <ul id="issue-items" style="margin-top: 10px"></ul>
+                  </div>
+                  <div>
+                    <button
+                      type="submit"
+                      onclick="expandAllSection()"
+                      class="btn btn-primary btn-lg waves-effect waves-themed"
+                    >
+                      Save Configuration
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="modal"
+      id="regexTestModal"
+      tabindex="-1"
+      role="dialog"
+      style="padding-right: 15px; background-color: rgba(0, 0, 0, 0.4)"
+      aria-modal="true"
+    >
+      <div
+        class="modal-dialog modal-dialog-centered"
+        style="max-width: 450px"
+        role="document"
+      >
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Test Regex</h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true"><i class="fal fa-times"></i></span>
+            </button>
+          </div>
+          <div class="modal-body" style="padding-left: 30px">
+            <div class="d-flex justify-content-between mb-3">
+              <div class="w-100">
+                <label class="form-label" for="regexModalRegex">Regex</label>
+                <input
+                  type="text"
+                  id="regexModalRegex"
+                  class="form-control col-10"
+                  name="regexModalRegex"
+                  placeholder="Enter Regex"
+                  required
+                />
+              </div>
+            </div>
+            <div class="d-flex justify-content-between mb-3">
+              <div class="w-100">
+                <label class="form-label" for="regexModalInputString" required
+                  >Input String</label
+                >
+                <div class="d-flex">
+                  <input
+                    type="text"
+                    id="regexModalInputString"
+                    class="form-control col-10"
+                    name="regexModalInputString"
+                    placeholder="Enter String to Test"
+                    required
+                  />
+                  <div
+                    class="col-2"
+                    id="regexValidated"
+                    style="
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                      font-size: 20px;
+                    "
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="modal-footer"
+            style="padding-right: 30px; padding-top: 0px; padding-bottom: 30px"
+          >
+            <button
+              type="button"
+              class="btn btn-secondary waves-effect waves-themed cursor-pointer"
+              data-dismiss="modal"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              id="saveRegexButton"
+              class="btn btn-primary waves-effect waves-themed"
+              onclick="saveRegex()"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+  <script type="text/javascript">
+    var sftpIpConfig = {};
+    var restConfig = {};
+    var metaData = {};
+    var ruleConfig = {};
+    var savedRules = [];
+    $(document).ready(function () {
+      $("#divLoader").show();
+      $(".select2").select2();
+      $("#sftp_source_data").hide();
+      $("#s3_source_data").hide();
+      $("#issues").hide();
+      $(".sortableList").sortable({
+        revert: true,
+      });
+      getAirShiftData();
+      $("#testRegexButton").attr("disabled", true);
+      $("#testRegexButton").addClass("cursor-none");
+    });
+
+    function getAirShiftData() {
+      $.ajax({
+        // url: apiBasePath + "/api/cms/v1/get_config_from_key/",
+        url: "http://demo1843838.mockable.io/getAirShiftData",
+        type: "POST",
+        // data: JSON.stringify({ ...postParamsData, key: key, version: version }),
+        contentType: "application/json",
+        success: function (response) {
+          if (response?.success) {
+          hideLoader();
+          $("#s3_source_data").hide();
+          $("#sftpSource").prop("checked", true);
+          $("#sftpSourceConnectionKey").removeAttr("disabled");
+          $("#sftpSourceFilePath").removeAttr("disabled");
+          $("#sftpDestinationConnectionKey").removeAttr("disabled");
+          $("#sftpDestinationFilePath").removeAttr("disabled");
+          $("input[name=fileTypeVersion]").attr("disabled", true);
+          $("#sftp_source_data").show();
+          $("#rest_destination_dynamic_fields").hide();
+          $("#processingRuleBlock").hide();
+          $("#newRuleForm").find("input, select").prop("disabled", true);
+
+          $("#s3_destination_data").hide();
+          $("#rest_destination_data").hide();
+          $("#sftpDestination").prop("checked", true);
+          $("#sftp_destination_data").show();
+          $("#sftpDestinationIpBlock").hide();
+          $("#sftpSourceIpBlock").hide();
+
+          metaData = response?.meta_data;
+          var s3ConnectionKeyOptionsHtml =
+            "<option value='' disabled selected></option>";
+          for (const connectionKey of metaData?.s3_configs_data
+            ?.connection_keys_list) {
+            s3ConnectionKeyOptionsHtml += `<option value='${connectionKey?.connection_key}'>${connectionKey?.connection_key}</option>`;
+          }
+          $("#s3SourceConnectionKey").html(s3ConnectionKeyOptionsHtml);
+          $("#s3DestinationConnectionKey").html(s3ConnectionKeyOptionsHtml);
+
+          var sftpConnectionKeyOptionsHtml =
+            "<option value='' disabled selected></option>";
+          for (const connectionKey of metaData?.sftp_configs_data
+            ?.connection_keys_list) {
+            sftpConnectionKeyOptionsHtml += `<option value='${connectionKey?.connection_key}'>${connectionKey?.connection_key}</option>`;
+            sftpIpConfig[connectionKey?.connection_key] =
+              connectionKey?.ip_address;
+          }
+          $("#sftpSourceConnectionKey").html(sftpConnectionKeyOptionsHtml);
+          $("#sftpDestinationConnectionKey").html(sftpConnectionKeyOptionsHtml);
+
+          var restConnectionKeyOptionsHtml =
+            "<option value='' disabled selected></option>";
+          for (const connectionKey of metaData?.rest_data
+            ?.connection_keys_list) {
+            restConnectionKeyOptionsHtml += `<option value='${connectionKey?.connection_key}'>${connectionKey?.connection_key}</option>`;
+            restConfig[connectionKey?.connection_key] =
+              connectionKey?.connection_config;
+          }
+          $("#restDestinationConnectionKey").html(restConnectionKeyOptionsHtml);
+
+          var s3BucketOptionsHtml =
+            "<option value='' disabled selected></option>";
+          for (const bucketData of metaData?.s3_configs_data
+            ?.buckets_config_data) {
+            s3BucketOptionsHtml += `<option value='${bucketData?.bucket_name}'>${bucketData?.bucket_name}</option>`;
+          }
+          $("#s3SourceBucket").html(s3BucketOptionsHtml);
+          $("#s3DestinationBucket").html(s3BucketOptionsHtml);
+        } else {
+          hideLoader();
+          $("#somethingWentWrongAlert").toast("show");
+        }
+        },
+        error: function (error) {
+          hideLoader();
+          $("#somethingWentWrongAlert").toast("show");
+        },
+      });
+    }
+
+    function hideLoader(){
+      $("#divLoader").hide();
+    }
+
+    function setDropdownVal(id, val) {
+      if(!!id){
+      $(`#${id}`).val(val).change();
+      }
+    }
+
+    function setCheckbox(id, bool) {
+      //for both radio and checkbox
+      $(`#${id}`).prop("checked", bool).change();
+    }
+
+    $("#newRuleProcessConfig").on(
+      "change keypress input click",
+      "input",
+      ruleFormValidation
+    );
+
+    $("#newRuleProcessConfig").on("change", "select", ruleFormValidation);
+
+    function ruleFormValidation() {
+      valid = true;
+      $("#newRuleForm :input[required]").each(function () {
+        if (
+          $(this).attr("type") != "radio" &&
+          $(this).attr("type") != "checkbox"
+        ) {
+          if ($(this).val()?.trim() === "") {
+            valid = false;
+            return false; // Exit the loop if any required field is empty
+          }
+        } else {
+          if (
+            $('input[name="' + $(this).attr("name") + '"]:checked').length < 1
+          ) {
+            valid = false;
+            return false;
+          }
+        }
+      });
+
+      if (!!valid) {
+        $("#newRuleForm select[required]").each(function () {
+          if ($(this).val()?.trim() === "") {
+            valid = false;
+            return false; // Exit the loop if any required field is empty
+          }
+        });
+      }
+
+      if (!!valid) {
+        $("#saveRuleBtn").removeAttr("disabled");
+      } else {
+        $("#saveRuleBtn").attr("disabled", "true");
+      }
+    }
+
+    function isCheckboxSelected(id) {
+      return $(`#${id}`).is(":checked");
+    }
+
+    $("#filePreProcessingRule").click(function () {
+      if ($(this).is(":checked")) {
+        $("#processingRuleBlock").show();
+        $("#addProcessingRuleButton").removeAttr("disabled");
+      } else {
+        $("#processingRuleBlock").hide();
+        savedRules = [];
+        updateSavedRuleTiles();
+      }
+      $("#newRuleForm").hide();
+      $("#newRuleForm").find("input, select").prop("disabled", true);
+    });
+
+    $("#newRuleProcessName").on("change", function () {
+      currentKey = this.value;
+      let ruleProcessConfig = "";
+      for (const ruleField of ruleConfig[currentKey]) {
+        if (ruleField?.template == "radio") {
+          ruleProcessConfig += `<div style="display: flex; padding: 10px">
+                                <label class="col-4 vertical-align" for="${ruleField?.id}">${ruleField?.label}</label>`;
+          for (const radioOptions of ruleField?.template_data?.list) {
+            ruleProcessConfig += `<div class="custom-control custom-radio custom-control-inline">
+                                      <input type="radio" class="custom-control-input" required
+                                          value="${radioOptions?.label}" id='${
+              ruleField?.id + "_" + radioOptions?.label
+            }'
+                                          name="${ruleField?.id}" />
+                                      <label class="custom-control-label"
+                                          for='${
+                                            ruleField?.id +
+                                            "_" +
+                                            radioOptions?.label
+                                          }'>${radioOptions?.label}</label>
+                                  </div>`;
+          }
+          ruleProcessConfig += `</div>`;
+        } else if (ruleField?.template == "dropdown") {
+          ruleProcessConfig += `<div style="display: flex; padding: 10px">
+                                <label class="col-4 vertical-align" for="${ruleField.id}">${ruleField.label}</label>
+                                <select class="col-4 form-control select2" id="${ruleField.id}" name="${ruleField.id}"
+                                  data-placeholder="Select ${ruleField.label}" required>
+                                  <option value='' selected></option>`;
+          for (const dropdownOptions of ruleField?.template_data?.list) {
+            ruleProcessConfig += `<option value='${dropdownOptions?.label}'>${dropdownOptions?.label}</option>`;
+          }
+
+          ruleProcessConfig += `</select>
+                              </div>`;
+        } else if (ruleField?.template == "text") {
+          ruleProcessConfig += `<div
+                                  style="display: flex; padding: 10px"
+                                >
+                                  <label
+                                    class="col-4 vertical-align"
+                                    for="${ruleField?.id}"
+                                    >${ruleField?.label}</label
+                                  >
+                                  <input
+                                    type="text"
+                                    class="form-control"
+                                    id="${ruleField?.id}"
+                                    name="${ruleField?.id}"
+                                    placeholder="Enter ${ruleField?.template_data?.placeholder}"`;
+          ruleProcessConfig += ruleField?.template_data?.regex
+            ? ` pattern="${ruleField?.template_data?.regex}"`
+            : "";
+          ruleProcessConfig += `required
+                                />
+                              </div>`;
+        } else if (ruleField?.template == "checkbox") {
+          ruleProcessConfig += `<div
+                                style="display: flex; padding: 10px"
+                              >
+                              <label
+                                    class="col-4 vertical-align"
+                                    for="${ruleField?.id}"
+                                    >${ruleField?.template_data?.label}</label
+                                  >
+                                  <div class="custom-control custom-checkbox">
+                                    <input
+                                      type="checkbox"
+                                      class="custom-control-input"
+                                      id="${ruleField?.id}"
+                                      name="${ruleField?.id}"
+                                    />
+                                    <label
+                                    class="custom-control-label"
+                                    for="${ruleField?.id}"
+                                    ></label
+                                  >
+                                  </div>
+                                </div>
+                              </div>`;
+        }
+      }
+      $("#newRuleProcessConfig").show();
+      $("#newRuleProcessConfig").html(ruleProcessConfig);
+      fillRuleForm(currentKey);
+      setTimeout(function () {
+        $(".select2").select2();
+      }, 100);
+    });
+
+    function addNewProcessButtonHandler() {
+      if (isCheckboxSelected("filePreProcessingRule"))
+        if ($("#newRuleForm").css("display") == "none") {
+          $("#newRuleForm").show();
+          $("#newRuleForm").find("input, select").prop("disabled", false);
+
+          var ruleProcessOptionsHtml =
+            "<option value='' disabled selected></option>";
+          for (const processingRule of metaData?.pre_processing_rules_list) {
+            ruleProcessOptionsHtml += `<option value='${processingRule?.field_id}'>${processingRule?.field_id}</option>`;
+            ruleConfig[processingRule?.field_id] = processingRule?.config_list;
+          }
+          $("#newRuleProcessName").html(ruleProcessOptionsHtml);
+          $("#addProcessingRuleButton").attr("disabled", true);
+          $("#newRuleProcessConfig").hide();
+          $("#saveRuleBtn").attr("disabled", true);
+        }
+    }
+
+    function getRuleObj(processName) {
+      let obj = {};
+      if (!!processName) {
+        obj.processName = processName;
+        if (!!savedRules[processName]) {
+          return savedRules[processName];
+        }
+        for (const ruleField of ruleConfig[processName]) {
+          obj[ruleField?.id] = {
+            type: ruleField?.template,
+            value: "",
+          };
+        }
+      }
+      return obj;
+    }
+
+    function fillRuleForm(processName) {
+      let obj = getRuleObj(processName);
+      for (const element in obj) {
+        if (obj[element]?.type == "text" || obj[element]?.type == "dropdown") {
+          setDropdownVal(element,obj[element]?.value)
+        } else if (obj[element]?.type == "radio") {
+          setCheckbox(obj[element]?.id, true);
+        }
+      }
+    }
+
+    $(document).on("keyup", "#fileDetailsRegex", function () {
+      if (!!$("#fileDetailsRegex").val()) {
+        $("#testRegexButton").attr("disabled", false);
+        $("#testRegexButton").addClass("cursor-pointer");
+        $("#testRegexButton").removeClass("cursor-none");
+      } else {
+        $("#testRegexButton").attr("disabled", true);
+        $("#testRegexButton").addClass("cursor-none");
+      }
+    });
+
+    function openTestRegexModal() {
+      $("#regexModalRegex").val($("#fileDetailsRegex").val());
+      $("#regexModalInputString").val("");
+      $("#saveRegexButton").attr("disabled", true);
+      $("#saveRegexButton").addClass("cursor-none");
+
+      $("#regexTestModal").modal();
+    }
+
+    function expandAllSection() {
+      var accordionComponent = $(".card-title");
+      accordionComponent.each(function () {
+        if ($(this).hasClass("collapsed")) {
+          $(this).click();
+        }
+      });
+    }
+
+    $("#airShiftForm").on("submit", function (event) {
+      event.preventDefault();
+      let inputObj = {};
+      var formData = $(this).serializeArray();
+      formData?.forEach((formField) => {
+        inputObj[formField?.name] = formField?.value;
+      });
+      console.log("reqObj ", inputObj);
+
+      var savedRulesOrder = $("#sortableSavedRules").sortable("toArray");
+      console.log("savedRulesOrder ", savedRulesOrder);
+      var validForm = true;
+
+      if (
+        inputObj["filePreProcessingRule"] == "on" &&
+        savedRulesOrder?.length < 1
+      ) {
+        $("#issues").show();
+        validForm = false;
+        $("#issue-items").html(
+          `<li>Either Save atleast one Rule or Uncheck Pre Processing Rules checkbox</li>`
+        );
+      } else {
+        $("#issues").hide();
+        validForm = true;
+      }
+
+      if (!!validForm) {
+        $("#congratsConfigSaved").show();
+      }
+
+      let requestPayload = {};
+    });
+
+    function closeCongratulations() {
+      $("#congratsConfigSaved").hide();
+      sftpIpConfig = {};
+      restConfig = {};
+      metaData = {};
+      ruleConfig = {};
+      savedRules = [];
+      updateSavedRuleTiles();
+      resetConfiguration();
+    }
+
+    $(document).on(
+      "keyup",
+      "#regexModalRegex, #regexModalInputString",
+      function () {
+        var regexPattern = new RegExp("^" + $("#regexModalRegex").val() + "$");
+        var inputString = $("#regexModalInputString").val();
+
+        if (regexPattern.test(inputString)) {
+          $("#regexValidated").html(
+            `<i class="fal fa-check-circle" style="color:green"></i>`
+          );
+          $("#saveRegexButton").attr("disabled", false);
+          $("#saveRegexButton").addClass("cursor-pointer");
+          $("#saveRegexButton").removeClass("cursor-none");
+        } else {
+          $("#regexValidated").html(
+            `<i class="fal fa-times-circle" style="color:red"></i>`
+          );
+          $("#saveRegexButton").attr("disabled", true);
+          $("#saveRegexButton").addClass("cursor-none");
+        }
+      }
+    );
+
+    function saveRegex() {
+      $("#fileDetailsRegex").val($("#regexModalRegex").val());
+      $("#regexTestModal").modal("hide");
+    }
+
+    $(document).on("change", "input[type=radio][name=sourceName]", function () {
+      const fileSource = $(this).filter(":checked").val();
+
+      setDropdownVal("sftpSourceConnectionKey","")
+      $("#sftpSourceFilePath").val("");
+      $("#sftpSourceIpBlock").val("");
+      $("#sftpSourceIpBlock").hide();
+      setDropdownVal("s3SourceConnectionKey","")
+      $("#s3SourceFilePath").val("");
+      setDropdownVal("s3SourceBucket","")
+      if (fileSource == "s3") {
+        $("#s3_source_data").show();
+        $("#sftp_source_data").hide();
+        $("#s3SourceConnectionKey").removeAttr("disabled");
+        $("#s3SourceBucket").removeAttr("disabled");
+        $("#s3SourceFilePath").removeAttr("disabled");
+        $("#sftpSourceConnectionKey").attr("disabled", true);
+        $("#sftpSourceFilePath").attr("disabled", true);
+      }
+      if (fileSource == "sftp") {
+        $("#sftp_source_data").show();
+        $("#s3_source_data").hide();
+        $("#sftpSourceConnectionKey").removeAttr("disabled");
+        $("#sftpSourceFilePath").removeAttr("disabled");
+        $("#s3SourceConnectionKey").attr("disabled", true);
+        $("#s3SourceFilePath").attr("disabled", true);
+        $("#s3SourceBucket").attr("disabled", true);
+      }
+    });
+
+    function saveRule() {
+      var isValid = true;
+
+      $("#newRuleForm")
+        .find('input[type="text"]')
+        .each(function () {
+          var input = $(this);
+          var pattern = input.attr("pattern");
+          var value = input.val();
+
+          var regex = new RegExp("^" + pattern + "$");
+
+          if (!regex.test(value)) {
+            isValid = false;
+            $("#ruleValidationError").html(
+              `Invalid input: ${value}, Please enter input according to ${pattern}`
+            );
+            return false;
+          }
+        });
+
+      if (isValid) {
+        $("#ruleValidationError").html("");
+        let filledRuleData = {};
+        $("#newRuleForm :input").each(function () {
+          if (
+            ($(this).attr("type") != "button" &&
+              $(this).attr("type") != "radio") ||
+            ($(this).attr("type") == "radio" && $(this).is(":checked"))
+          ) {
+            filledRuleData[$(this).attr("name")] = {
+              id: $(this).attr("id"),
+              value: $(this).val(),
+              type: !!$(this).attr("type")
+                ? $(this).attr("type")
+                : !!$(this).is("select")
+                ? "dropdown"
+                : undefined,
+            };
+          }
+        });
+
+        objToBeSaved = {};
+        objToBeSaved[filledRuleData?.newRuleProcessName?.value] = {
+          ...filledRuleData,
+        };
+        delete objToBeSaved[filledRuleData?.newRuleProcessName?.value][
+          "newRuleProcessName"
+        ];
+        savedRules[filledRuleData?.newRuleProcessName?.value] =
+          objToBeSaved[filledRuleData?.newRuleProcessName?.value];
+        updateSavedRuleTiles();
+        closeRuleForm();
+      }
+    }
+
+    function updateSavedRuleTiles() {
+      let listObj = "";
+
+      if (!!Object.keys(savedRules).length) {
+        for (const rule in savedRules) {
+          listObj += `<li class="ui-state-default cursor-pointer px-2 py-1" id=${rule} value=${rule} style="font-size: 14px;border: 1px solid #967bbd;border-radius: 4px;background: #efebf5;">
+                        <span class="px-1">${rule}</span>
+                        <span><i class="fal fa-pencil-alt pl-2" onclick="editRule('${rule}')"></i></span>
+                        <span><i class="fal fa-times pl-2" onclick="deleteSavedRule('${rule}')"></i></span>
+                      </li>`;
+        }
+      }
+      $("#sortableSavedRules").html(listObj);
+    }
+
+    function deleteSavedRule(ruleKey) {
+      if (!!ruleKey && !!savedRules) {
+        delete savedRules[ruleKey];
+        updateSavedRuleTiles();
+      }
+    }
+    function closeRuleForm() {
+      $("#newRuleForm").hide();
+      $("#newRuleForm").find("input, select").prop("disabled", true);
+      $("#addProcessingRuleButton").removeAttr("disabled");
+      $("#ruleValidationError").html("");
+    }
+
+    function editRule(ruleId) {
+      $("#newRuleForm").show();
+      $("#addProcessingRuleButton").attr("disabled", "true");
+      $("#newRuleForm").find("input, select").prop("disabled", false);
+      setDropdownVal("newRuleProcessName",ruleId)
+      fillRuleForm(ruleId);
+    }
+
+    function resetConfiguration() {
+      $("#airShiftForm")[0].reset();
+      $("#divLoader").show();
+      $(".select2").select2();
+      $("#sftp_source_data").hide();
+      $("#s3_source_data").hide();
+      $("#issues").hide();
+      $(".sortableList").sortable({
+        revert: true,
+      });
+      getAirShiftData();
+      $("#testRegexButton").attr("disabled", true);
+      $("#testRegexButton").addClass("cursor-none");
+    }
+
+    $(document).on(
+      "change",
+      "input[type=radio][name=destinationName]",
+      function () {
+        const fileDestination = $(this).filter(":checked").val();
+        setDropdownVal("s3DestinationConnectionKey","")
+        $("#s3DestinationFilePath").val("");
+        setDropdownVal("s3DestinationBucket","")
+        setDropdownVal("sftpDestinationConnectionKey","")
+        $("#sftpDestinationFilePath").val("");
+        $("#sftpDestinationIpBlock").val("");
+        $("#sftpDestinationIpBlock").hide();
+        setDropdownVal("restDestinationConnectionKey","")
+        setDropdownVal("restDestinationFileType","")
+        $("input[name=fileTypeVersion]").val("").change();
+        $("#rest_destination_dynamic_fields").hide();
+        if (fileDestination == "s3") {
+          $("#s3_destination_data").show();
+          $("#sftp_destination_data").hide();
+          $("#rest_destination_data").hide();
+          $("#s3DestinationConnectionKey").removeAttr("disabled");
+          $("#s3DestinationBucket").removeAttr("disabled");
+          $("#s3DestinationFilePath").removeAttr("disabled");
+          $("#sftpDestinationConnectionKey").attr("disabled", true);
+          $("#sftpDestinationFilePath").attr("disabled", true);
+          $("#restDestinationConnectionKey").attr("disabled", true);
+          $("#restDestinationFileType").attr("disabled", true);
+          $("input[name=fileTypeVersion]").attr("disabled", true);
+        } else if (fileDestination == "sftp") {
+          $("#sftp_destination_data").show();
+          $("#s3_destination_data").hide();
+          $("#rest_destination_data").hide();
+          $("#sftpDestinationConnectionKey").removeAttr("disabled");
+          $("#sftpDestinationFilePath").removeAttr("disabled");
+          $("#s3DestinationConnectionKey").attr("disabled", true);
+          $("#s3DestinationBucket").attr("disabled", true);
+          $("#s3DestinationFilePath").attr("disabled", true);
+          $("#restDestinationConnectionKey").attr("disabled", true);
+          $("#restDestinationFileType").attr("disabled", true);
+          $("input[name=fileTypeVersion]").attr("disabled", true);
+        } else if (fileDestination == "rest") {
+          $("#rest_destination_data").show();
+          $("#s3_destination_data").hide();
+          $("#sftp_destination_data").hide();
+          $("#s3DestinationConnectionKey").attr("disabled", true);
+          $("#s3DestinationBucket").attr("disabled", true);
+          $("#s3DestinationFilePath").attr("disabled", true);
+          $("#sftpDestinationConnectionKey").attr("disabled", true);
+          $("#sftpDestinationFilePath").attr("disabled", true);
+          $("#restDestinationConnectionKey").removeAttr("disabled");
+          $("#restDestinationFileType").removeAttr("disabled");
+          $("input[name=fileTypeVersion]").removeAttr("disabled");
+        }
+      }
+    );
+
+    $("#sftpSourceConnectionKey").on("change", function () {
+      currentKey = this.value;
+      $("#sftpSourceIpBlock").show();
+      $("#sftpSourceIp").html(sftpIpConfig[currentKey]);
+    });
+
+    $("#sftpDestinationConnectionKey").on("change", function () {
+      currentKey = this.value;
+      $("#sftpDestinationIpBlock").show();
+      $("#sftpDestinationIp").html(sftpIpConfig[currentKey]);
+    });
+
+    $("#restDestinationConnectionKey").on("change", function () {
+      currentKey = this.value;
+      if (!!currentKey) {
+        $("#rest_destination_dynamic_fields").show();
+        var restFileTypeOptionsHtml =
+          "<option value='' disabled selected></option>";
+        for (const fileType of restConfig[currentKey]?.file_types) {
+          restFileTypeOptionsHtml += `<option value='${fileType?.type}'>${fileType?.type}</option>`;
+        }
+        $("#restDestinationFileType").html(restFileTypeOptionsHtml);
+        $("#fileTypeVersionBlock").html(currentKey + " version");
+
+        var versionOption = "";
+        for (const version of restConfig[currentKey].version) {
+          versionOption += `<div class="custom-control custom-radio custom-control-inline">
+                <input type="radio" class="custom-control-input" required
+                    value="${version}" id='${version}_fileTypeVersion'
+                    name="fileTypeVersion">
+                <label class="custom-control-label"
+                    for='${version}_fileTypeVersion'>${version}</label>
+            </div>`;
+        }
+        $("#fileTypeVersionOptions").html(versionOption);
+      }
+    });
+  </script>
+</html>

@@ -1,0 +1,1420 @@
+<link
+  rel="stylesheet"
+  media="screen, print"
+  href="/static/mentis/css/datatables.bundle.css"
+/>
+<link rel="stylesheet" href="/static/mentis/css/dateRangePicker.css" />
+<script src="/static/mentis/js/moment.js"></script>
+<script src="/static/mentis/js/dateRangePicker.js"></script>
+<script src="/static/mentis/js/datatables.bundle.js"></script>
+<script src="/static/mentis/js/datatables.export.js"></script>
+<script src="/static/mentis/js/underscore-1.6.0.min.js"></script>
+<link
+  rel="stylesheet"
+  media="screen, print"
+  href="/static/mentis/css/select2.bundle.css"
+/>
+
+<style type="text/css">
+  .form-field-custom {
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  .catselect {
+    font-size: 17px;
+    line-height: 22px;
+    width: 200px;
+    display: none;
+  }
+
+  .fl {
+    float: left;
+  }
+
+  .ui-datepicker {
+    z-index: 9999999 !important;
+  }
+
+  .linkItem {
+    float: left;
+    background-color: #ccc;
+    color: #222;
+    border-radius: 2px;
+    font-weight: bold;
+    padding: 6px;
+    margin-left: 20px;
+    cursor: pointer;
+    margin-top: 10px;
+    font-size: 15px;
+  }
+
+  .dtr-data {
+    text-transform: uppercase;
+  }
+
+  .smart-form .input input,
+  .smart-form .select select,
+  .smart-form .textarea textarea {
+    font-size: 15px !important;
+    font-weight: bold !important;
+  }
+
+  .optiontext {
+    font-weight: bold !important;
+  }
+
+  .radio,
+  .checkbox {
+    float: left;
+    margin-top: 0px !important;
+    margin-bottom: 0px !important;
+    padding-left: 35px !important;
+  }
+
+  .radio + .radio,
+  .checkbox + .checkbox {
+    margin: 0px !important;
+  }
+
+  .width20 {
+    width: 20%;
+  }
+
+  .width15 {
+    width: 15%;
+  }
+
+  .width30 {
+    width: 30%;
+  }
+
+  .width60 {
+    width: 60%;
+  }
+
+  .width100 {
+    width: 100%;
+  }
+
+  #raw-item-div .form-control {
+    color: #004d99 !important;
+  }
+
+  .bor-left {
+    border: 1px solid #ddd;
+    padding: 6px;
+    font-weight: bold;
+    background-color: #bbb;
+    color: #000;
+  }
+
+  .bor-mid {
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    padding: 3px 2px;
+  }
+
+  .left-col {
+    width: 10%;
+    float: left;
+  }
+
+  .mid-col {
+    float: left;
+  }
+</style>
+
+<div id="file-data-div" style="margin-top: 30px" class="row">
+  <div class="col-xl-12">
+    <div class="panel" id="bankConfigurationPanel">
+      <div class="panel-hdr">
+        <h2>
+          <span class="fw-900"><i>Bank configuration</i></span>
+        </h2>
+        <div class="panel-toolbar">
+          <button
+            class="btn btn-panel"
+            data-action="panel-collapse"
+            data-toggle="tooltip"
+            data-offset="0,10"
+            data-original-title="Collapse"
+          ></button>
+          <button
+            class="btn btn-panel"
+            data-action="panel-fullscreen"
+            data-toggle="tooltip"
+            data-offset="0,10"
+            data-original-title="Fullscreen"
+          ></button>
+        </div>
+      </div>
+      <div class="panel-container">
+        <div class="form-group row m-3">
+          <div class="col-3">
+            <label for="bankName">Bank name</label>
+            <select
+              class="form-control select2"
+              id="bankName"
+              name="bankName"
+              data-placeholder="Select Bank name"
+              required
+            ></select>
+          </div>
+          <div class="col-3" style="display: none">
+            <label for="environment">Environment</label>
+            <select
+              class="form-control select2"
+              id="environment"
+              name="environment"
+              data-placeholder="Select Environment"
+              required
+            ></select>
+          </div>
+          <div class="col-3" style="display: none">
+            <label for="project">Project</label>
+            <select
+              class="form-control select2"
+              id="project"
+              name="project"
+              data-placeholder="Select Project"
+              required
+            ></select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="panel-1" class="panel">
+      <div class="panel-hdr">
+        <h2>
+          <span class="fw-900"><i>AirShift Configurations</i></span>
+        </h2>
+        <div class="panel-toolbar">
+          <button
+            class="btn btn-panel"
+            data-action="panel-collapse"
+            data-toggle="tooltip"
+            data-offset="0,10"
+            data-original-title="Collapse"
+          ></button>
+          <button
+            class="btn btn-panel"
+            data-action="panel-fullscreen"
+            data-toggle="tooltip"
+            data-offset="0,10"
+            data-original-title="Fullscreen"
+          ></button>
+        </div>
+      </div>
+      <div class="panel-container show" style="min-height: 60vh">
+        <div class="splashScreen">
+          <div
+            class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+            style="z-index: 2; background-color: rgba(255, 255, 255, 0.9)"
+          >
+            <div style="font-size: 26px">
+              Please Select Bank Configurations first.
+            </div>
+          </div>
+        </div>
+        <div id="divLoader" style="display: none">
+          <div
+            class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+            style="z-index: 3; background-color: rgba(255, 255, 255, 0.7)"
+          >
+            <div class="spinner-border mb-2" role="status"></div>
+            <div style="font-size: 16px">Loading...</div>
+          </div>
+        </div>
+        <div id="congratsConfigSaved" style="display: none">
+          <div
+            class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+            style="z-index: 2; background-color: rgba(255, 255, 255, 1)"
+          >
+            <div class="h-100 d-flex justify-content-center align-items-center">
+              <div
+                class="panel p-6 d-flex flex-column justify-content-center align-items-center text-center"
+                style="font-size: 20px"
+              >
+                <img
+                  src="/static/mentis/img/accepted.png"
+                  class="img-fluid mb-5"
+                  width="75"
+                  height="75"
+                />
+                <span class="mx-2 mb-5"
+                  >Congratulations,Your configuration has been moved to
+                  production successfully!</span
+                >
+                <!--                      <a-->
+                <!--                        href="#manageConfigurations"-->
+                <!--                        class="btn btn-lg btn-outline-info waves-effect waves-themed"-->
+                <!--                        ><i class="fal fa-eye"></i-->
+                <!--                        ><span class="ml-2">View Configurations</span></a-->
+                <!--                      >-->
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel-content">
+          <!-- <div class="panel-tag">
+            <p id="po-data-title">
+              Below is a list of currently generated configs
+            </p>
+          </div> -->
+          <!-- datatable start -->
+          <div id="main-table"></div>
+          <!-- datatable end -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal"
+  id="tableModal"
+  tabindex="-1"
+  role="dialog"
+  style="padding-right: 15px; background-color: rgba(0, 0, 0, 0.4)"
+  aria-modal="true"
+>
+  <div
+    class="modal-dialog modal-dialog-centered"
+    style="max-width: 830px; min-width: 500px"
+    role="document"
+  >
+    <div class="modal-content">
+      <div class="bg-brand-gradient modal-header py-2">
+        <button
+          type="button"
+          class="close"
+          data-dismiss="modal"
+          aria-label="Close"
+        >
+          <span aria-hidden="true"><i class="fal fa-times color-white"></i></span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding-left: 30px">
+        <div class="d-flex justify-content-between mb-3">
+          <div class="w-100">
+            <div class="d-flex justify-content-between">
+              <label
+                class="form-label"
+                style="font-size: 16px; margin-bottom: 16px"
+                required
+                >File data</label
+              >
+              <label id="rowCountLabel"
+                >row count : <span id="rowCount"></span
+              ></label>
+            </div>
+            <br />
+            <div
+              class="d-flex overflow-auto"
+              id="modalTable"
+              style="max-height: 350px"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="modal-footer"
+        style="padding-right: 30px; padding-top: 0px; padding-bottom: 30px"
+      >
+        <button
+          type="button"
+          class="btn btn-secondary waves-effect waves-themed cursor-pointer"
+          data-dismiss="modal"
+        >
+          Close
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary waves-effect waves-themed"
+          onclick="configActionHandler()"
+        >
+          Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal"
+  id="logsModal"
+  tabindex="-1"
+  role="dialog"
+  style="padding-right: 15px; background-color: rgba(0, 0, 0, 0.4)"
+  aria-modal="true"
+>
+  <div
+    class="modal-dialog modal-dialog-centered"
+    style="max-width: 880px"
+    role="document"
+  >
+    <div class="modal-content" style="height: 695px">
+      <div class="bg-brand-gradient modal-header py-2">
+        <div>
+          <h2 class="modal-title font-weight-bold color-white">
+            Activity Log
+          </h2>
+        </div>
+        <div style="width: 350px">
+          <div class="input-group">
+            <input
+              type="text"
+              style="height: 32px;"
+              class="form-control py-1"
+              placeholder="Select date"
+              id="dateRangePicker"
+              required
+            />
+            <div class="input-group-append">
+              <span class="input-group-text">
+                <i class="fal fa-calendar"></i>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <button
+            type="button"
+            class="close"
+            data-dismiss="modal"
+            aria-label="Close"
+          >
+            <span aria-hidden="true"><i class="fal fa-times color-white"></i></span>
+          </button>
+        </div>
+      </div>
+      <div class="modal-body pb-0 pt-2">
+        <div class="d-flex justify-content-between my-3">
+          <div class="w-100">
+            <div id="logs-table"></div>
+
+            <!-- <table class="table">
+              <tr>
+                <th>Creation Time</th>
+                <th>Comment</th>
+              </tr>
+              <tbody id="logsBody"></tbody>
+            </table> -->
+          </div>
+        </div>
+      </div>
+      <div
+        class="modal-footer"
+        style="padding-right: 30px; padding-top: 0px; padding-bottom: 20px"
+      >
+        <button
+          type="button"
+          class="btn btn-secondary waves-effect waves-themed cursor-pointer"
+          data-dismiss="modal"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal"
+  id="confirmationModal"
+  tabindex="-1"
+  role="dialog"
+  style="padding-right: 15px; background-color: rgba(0, 0, 0, 0.4)"
+  aria-modal="true"
+>
+  <div
+    class="modal-dialog modal-dialog-centered"
+    style="max-width: 500px"
+    role="document"
+  >
+    <div class="modal-content">
+      <div class="bg-brand-gradient modal-header py-2">
+        <button
+          type="button"
+          class="close"
+          data-dismiss="modal"
+          aria-label="Close"
+        >
+          <span aria-hidden="true"><i class="fal fa-times color-white"></i></span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding-left: 30px; padding-top: 0px">
+        <div class="d-flex flex-column justify-content-between mb-2">
+          <div class="text-center pb-4 pt-3">
+            <i class="fal fa-exclamation-triangle fa-4x color-warning-500"></i>
+          </div>
+          <div class="w-100 text-center">
+            <label
+              class="form-label"
+              style="font-size: 16px"
+              id="confirmationText"
+            ></label>
+          </div>
+        </div>
+      </div>
+      <div
+        class="modal-footer"
+        style="padding-right: 30px; padding-top: 0px; padding-bottom: 30px"
+      >
+        <button
+          type="button"
+          class="btn btn-secondary waves-effect waves-themed cursor-pointer"
+          data-dismiss="modal"
+        >
+          Close
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary waves-effect waves-themed"
+          onclick="configActionHandler()"
+        >
+          Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="modal"
+  id="reasonModal"
+  tabindex="-1"
+  role="dialog"
+  style="padding-right: 15px; background-color: rgba(0, 0, 0, 0.4)"
+  aria-modal="true"
+>
+  <div
+    class="modal-dialog modal-dialog-centered"
+    style="max-width: 450px"
+    role="document"
+  >
+    <div class="modal-content">
+      <div class="bg-brand-gradient modal-header py-2">
+        <button
+          type="button"
+          class="close"
+          data-dismiss="modal"
+          aria-label="Close"
+        >
+          <span aria-hidden="true"><i class="fal fa-times color-white"></i></span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding-left: 30px">
+        <div class="d-flex justify-content-between mb-3">
+          <div class="w-100">
+            <label
+              class="form-label"
+              style="font-size: 16px; margin-bottom: 16px"
+              for="reasonInput"
+              id="popupInputLabel"
+              required
+            ></label>
+            <div class="d-flex">
+              <input
+                type="text"
+                id="reasonInput"
+                class="form-control col-10"
+                name="reasonInput"
+                placeholder=""
+                required
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="modal-footer"
+        style="padding-right: 30px; padding-top: 0px; padding-bottom: 30px"
+      >
+        <button
+          type="button"
+          class="btn btn-secondary waves-effect waves-themed cursor-pointer"
+          data-dismiss="modal"
+        >
+          Close
+        </button>
+        <button
+          type="button"
+          id="disapproveButton"
+          disabled
+          class="btn btn-primary waves-effect waves-themed"
+          onclick="disapproveConfig()"
+        >
+          Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="toast hide"
+  style="
+    position: fixed;
+    top: 50%;
+    right: 45%;
+    background-color: rgb(220 53 69);
+    color: white;
+    min-width: 250px;
+    z-index: 3000;
+  "
+  id="somethingWentWrongAlert"
+  data-delay="2000"
+>
+  <div class="toast-header">
+    <strong class="mr-auto">Alert</strong>
+    <button
+      type="button"
+      class="ml-2 mb-1 close"
+      data-dismiss="toast"
+      aria-label="Close"
+    >
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="toast-body" id="failureAlertBody">
+    Somthing went wrong, Please try again.
+  </div>
+  <!-- <div class="toast-header">
+<strong class="mr-auto" id="toastInfo">lmcklwkmeck</strong>
+</div> -->
+</div>
+<div
+  class="toast hide"
+  style="
+    position: fixed;
+    top: 50%;
+    right: 45%;
+    background-color: #090;
+    color: white;
+    min-width: 250px;
+    z-index: 3000;
+  "
+  id="toast"
+  data-delay="3000"
+>
+  <div class="toast-header">
+    <strong class="mr-auto">Alert</strong>
+    <button
+      type="button"
+      class="ml-2 mb-1 close"
+      data-dismiss="toast"
+      aria-label="Close"
+    >
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+
+  <div class="toast-body" id="toastInfo"></div>
+  <!-- <div class="toast-body">Config successfully moved to production.</div> -->
+  <!-- <div class="toast-header">
+<strong class="mr-auto" id="toastInfo">lmcklwkmeck</strong>
+</div> -->
+</div>
+
+<script type="text/template" id="table-template">
+
+  <table id="datatable-file-data-<%=table_id%>" class="table table-bordered table-hover table-striped w-100">
+    <thead class="bg-primary-600">
+    <tr>
+      <th class="new-col">Id</th>
+      <th class="new-col">Name</th>
+      <th class="new-col">Status</th>
+      <!-- <th class="new-col">Description</th> -->
+      <th class="new-col">Version</th>
+      <th class="new-col">Is Active</th>
+      <!-- <th class="new-col">Project</th>
+      <th class="new-col">File Type</th>-->
+      <th class="new-col">Created By</th>
+      <th class="new-col">Approved By</th>
+      <!-- <th class="new-col">Updation Date</th>
+      <th class="new-col">File Regex</th>
+      <th class="new-col">Created By</th> -->
+      <th class="new-col">Actions</th>
+      <!-- <th class="new-col">Delete</th> -->
+    </tr>
+    </thead>
+    <tbody>
+    <%=table_html%>
+    </tbody>
+    <tfoot>
+   <tr>
+      <th class="new-col">Id</th>
+      <th class="new-col">Name</th>
+      <th class="new-col">Status</th>
+      <!-- <th class="new-col">Description</th> -->
+      <th class="new-col">Version</th>
+      <th class="new-col">Is Active</th>
+      <!-- <th class="new-col">Project</th>
+      <th class="new-col">File Type</th> -->
+      <th class="new-col">Created By</th>
+      <th class="new-col">Approved By</th>
+      <!-- <th class="new-col">Updation Date</th>
+      <th class="new-col">File Regex</th>
+      <th class="new-col">Created By</th> -->
+      <th class="new-col" style="width:250px">Actions</th>
+
+      <!-- <th class="new-col">Delete</th> -->
+    </tr>
+    </tfoot>
+  </table>
+</script>
+
+<script type="text/template" id="logs-table-template">
+  <table id="datatable-log-data-<%=table_id%>" class="table table-bordered w-100">
+    <thead class="bg-fusion-100">
+    <tr>
+      <th class="new-col">Creation Time</th>
+      <th class="new-col">Comment</th>
+    </tr>
+    </thead>
+    <tbody>
+    <%=logs_table_html%>
+    </tbody>
+  </table>
+</script>
+
+<script type="text/javascript">
+  var lock = false;
+  var pluginsDataMap = {};
+  var currentConfig = "";
+  var fileDetailsList = {};
+  var currentProject = ""
+  var currentVersion = ""
+  var version = ""
+  var tableCounter = 1;
+  var rowAction = ""
+  var apiBasePath = "";
+  var currentEnvironment = "";
+  var projectId = ""
+  var currentBank = "";
+  var defaultStartDate = moment().subtract(30, 'days');
+  logApiLock = false
+  var defaultEndDate = moment();
+  var currentUser = "{{ user }}";
+  var user_bank_settings = {{ user_bank_settings| safe}};
+  var currentActiveConfigs = [];
+  $(document).ready(function () {
+    bankConfiguration()
+    $(".select2").select2();
+    $("#dateRangePicker").daterangepicker(
+      {
+        timePicker: true,
+        opens: "left",
+        startDate: defaultStartDate,
+        endDate: defaultEndDate,
+        locale: {
+          format: 'D MMM YYYY, hh:mm A',
+        },
+      }
+    );
+  });
+
+  function bankConfiguration() {
+    var bankNameOptionsHtml =
+      "<option value='' disabled selected></option>";
+    for (const bank of Object.keys(user_bank_settings)) {
+      bankNameOptionsHtml += `<option value='${bank}'>${bank}</option>`;
+    }
+    $("#bankName").html(bankNameOptionsHtml);
+    const selected_project_config = getSessionStorageItem("selected_airshift_project_config");
+    if (!!selected_project_config) {
+      const bank = $("#bankName").val(selected_project_config?.bank).change();
+      const env = $("#environment").val(selected_project_config?.env).change();
+      const project = $("#project").val(selected_project_config?.project).change();
+    }
+  }
+
+  $("#bankName").on("change", function () {
+    currentBank = this.value;
+    $("#environment").parent().show();
+    $(".splashScreen").show();
+    $("#main-table").html("");
+    $("#project").val("").change();
+    $("#environment").val("").change();
+    var environmentOptionsHtml =
+      "<option value='' disabled selected></option>";
+    for (const environment of Object.keys(user_bank_settings[this.value])) {
+      environmentOptionsHtml += `<option value='${environment}'>${environment}</option>`;
+    }
+    $("#environment").html(environmentOptionsHtml);
+    $("#project").parent().hide();
+    $("#project").html("");
+  });
+  $("#environment").on("change", function () {
+    currentEnvironment = this.value;
+    const bank = $("#bankName").val();
+    $(".splashScreen").show();
+    $("#main-table").html("");
+    $("#project").val("").change();
+    if (!!currentEnvironment && !!bank) {
+      apiBasePath = user_bank_settings?.[bank]?.[this.value]?.url;
+      $("#divLoader").show();
+      $.get({
+        url: apiBasePath + "/get_projects/",
+        type: "GET",
+        contentType: "application/json",
+        success: function (response) {
+          $("#divLoader").hide()
+          if (response?.result == "SUCCESS") {
+            $("#project").parent().show();
+            var projectOptionsHtml = "<option value='' disabled selected></option>";
+            for (var i = 0; i < response['response'].length; i++) {
+              if (user_bank_settings[bank][currentEnvironment]['projects'].indexOf(response['response'][i]['name']) >= 0) {
+                projectOptionsHtml += `<option value='${response['response'][i]['name']}'>${response['response'][i]['name']}</option>`;
+              }
+            }
+            $("#project").html(projectOptionsHtml);
+            const selected_project_config = getSessionStorageItem("selected_airshift_project_config");
+            if (!!selected_project_config) {
+              $("#project").val(selected_project_config?.project).change();
+            }
+
+          } else {
+            $("#somethingWentWrongAlert").toast("show");
+          }
+        },
+        error: function (error) {
+          $("#divLoader").hide()
+          if (!!error?.responseJSON?.details_message) {
+            $("#failureAlertBody").html(error?.responseJSON?.details_message)
+          }
+          $("#somethingWentWrongAlert").toast("show");
+        },
+      });
+
+    }
+  });
+
+  $("#project").on("change", function () {
+    currentProject = this.value;
+    const bank = $("#bankName").val();
+    const env = $("#environment").val();
+
+    if (!!this.value && !!bank && !!env) {
+      apiBasePath = user_bank_settings?.[bank]?.[env]?.url;
+      setSessionStorageItem("selected_airshift_project_config", { "bank": bank, "env": env, "project": this.value })
+      $(".splashScreen").hide();
+      getAllConfigurations();
+    }
+  });
+  $(document).on("change", "#bankName, #environment", "#project", function () {
+    $("#bankName, #environment, #project").map(function () {
+      if (!this.value) {
+        $(".splashScreen").show();
+      }
+    });
+  });
+
+
+  $("#reasonInput").on("keyup", function () {
+    if (!!this.value) {
+      $("#disapproveButton").prop("disabled", false)
+    } else {
+      $("#disapproveButton").prop("disabled", true)
+    }
+  })
+
+  function getLogsData() {
+    $("#divLoader").show()
+    if (!!logApiLock) {
+      return
+    }
+    logApiLock = true
+    const startDate = new Date($('#dateRangePicker')?.data('daterangepicker')?.startDate._d)
+    const endDate = new Date($('#dateRangePicker')?.data('daterangepicker')?.endDate._d)
+    payload = {
+      "data_source": "CONNECTOR_CONF",
+      "project": currentProject,
+      "start_date_time": moment(startDate).format('YYYY-MM-DD HH:mm:ss'),
+      "end_date_time": moment(endDate).format('YYYY-MM-DD HH:mm:ss')
+    }
+    $.ajax({
+      url: apiBasePath + "/get_activity_logs/",
+      type: "POST",
+      data: JSON.stringify({ ...payload }),
+      contentType: "application/json",
+      success: function (response) {
+        logApiLock = false
+        $("#divLoader").hide()
+        if (response?.result == "SUCCESS") {
+          $("#logsModal").modal()
+          let modalBody = ''
+          for (const activityObj of response?.response) {
+            modalBody += `<tr><td style='font-size:12px' class='py-2'>${activityObj?.updation_date}</td><td style='font-size:12px' class='py-2'>${activityObj?.comment}</td></tr>`
+          }
+          $("#logs-table").html(
+            _.template($("#logs-table-template").text(), {
+              logs_table_html: modalBody,
+              table_id: tableCounter,
+            })
+          );
+          initLogsDatatable();
+          // $("#logsBody").html(modalBody)
+        } else {
+          $("#logsModal").modal()
+          let modalBody = `<tr><td colspan="2" class="fa-2x color-danger-500">No Logs Available</td></tr>`
+
+          $("#logs-table").html(
+            _.template($("#logs-table-template").text(), {
+              logs_table_html: modalBody,
+              table_id: tableCounter,
+            })
+          );
+          // $("#logsBody").html(modalBody)
+          $("#somethingWentWrongAlert").toast("show");
+        }
+      },
+      error: function (error) {
+        logApiLock = false
+        $("#logsModal").modal()
+        let modalBody = `<tr><td colspan="2" class="fa-2x color-danger-500">No Logs Available</td></tr>`
+
+        $("#logs-table").html(
+          _.template($("#logs-table-template").text(), {
+            logs_table_html: modalBody,
+            table_id: tableCounter,
+          })
+        );
+        // $("#logsBody").html(modalBody)
+        $("#divLoader").hide()
+        if (!!error?.responseJSON?.details_message) {
+          $("#failureAlertBody").html(error?.responseJSON?.details_message)
+        }
+        $("#somethingWentWrongAlert").toast("show");
+      },
+    });
+  }
+
+  $("#dateRangePicker").on("change", function () {
+    if ($('#logsModal').hasClass('show') && this.value) {
+      getLogsData()
+    }
+  })
+
+  $(document).on("click", "button[title='Logs']", getLogsData);
+
+  function getAllConfigurations() {
+    if (lock == true) return;
+    $("#divLoader").show();
+    lock = true;
+    const payload = {
+      "data": {
+        "project": currentProject
+      }
+    };
+    $.ajax({
+      url: apiBasePath + "/get_file_detail_list/",
+      type: "POST",
+      data: JSON.stringify({ ...payload }),
+      success: function (response) {
+        lock = false;
+        $("#divLoader").hide();
+        if (response?.result == "SUCCESS") {
+          var tableHtml = "";
+          const configData = modifyResponse(response?.response);
+          fileDetailsList = configData
+          currentActiveConfigs = [];
+          for (var i = 0; i < configData.length; i++) {
+            tableHtml +=
+              "<tr><td>" +
+              (!!configData[i]["id"] ? configData[i]["id"] : "NA") +
+              "</td><td>" +
+              (!!configData[i]["name"] ? configData[i]["name"] : "NA") +
+              "</td><td>" +
+              (!!configData[i]["status"] ? configData[i]["status"] : "NA") +
+              "</td><td>" +
+              // (!!configData[i]["description"] ? configData[i]["description"] : "NA") +
+              // "</td><td>" +
+              (!!configData[i]["version"] ? configData[i]["version"] : "NA") +
+              "</td><td>" +
+              (!!configData[i]["is_active"] ? "Active" : "Inactive") +
+              "</td><td>" +
+              // (!!configData[i]["project"] ? configData[i]["project"] : "NA") +
+              // "</td><td>" +
+              // (!!configData[i]["file_type"] ? configData[i]["file_type"] : "NA") +
+              // "</td><td>" +
+              (!!configData[i]["created_by"] ? configData[i]["created_by"] : "NA") +
+              "</td><td>" +
+              (!!configData[i]["approved_by"] ? configData[i]["approved_by"] : "NA") +
+              "</td><td>" +
+              // (!!configData[i]["updation_date"] ? configData[i]["updation_date"] : "NA") +
+              // "</td><td>" +
+              // (!!configData[i]["file_regex"] ? configData[i]["file_regex"] : "NA") +
+              // "</td><td>" +
+              // (!!configData[i]["created_by"]
+              //   ? configData[i]["created_by"]
+              //   : "NA") +
+              // "</td><td>" +
+              `<div style="
+                  display: flex;
+                  justify-content: center;
+                  gap: 10px;">
+                  <div style="height:20px; width:20px">
+                    ${configData[i]["status"].toUpperCase() != "VALIDATION_IN_PROGRESS" ? `
+                      <img
+                        src="/static/mentis/img/custom-icons/yellow_clone.png"
+                        class="opacity-80 cursor-pointer"
+                        width="18"
+                        height="18"
+                        title="Clone"
+                        onclick="handleConfigCtaClick('clone','${configData[i]["unique_id"]}','${configData[i]["version"]}','${configData[i]["name"]}')"
+                      />`: ""}
+                      </div>
+                  <div style="height:20px; width:20px"><img
+                        src="/static/mentis/img/custom-icons/blue_eye.png"
+                        class="opacity-80 cursor-pointer"
+                        width="18"
+                        height="18"
+                        title="View"
+                        onclick="handleConfigCtaClick('view','${configData[i]["unique_id"]}','${configData[i]["version"]}','${configData[i]["name"]}')"
+                      />
+                      </div>
+                  <div style="height:20px; width:20px">
+                    ${configData[i]["status"].toUpperCase() === "DEACTIVATE" || configData[i]["status"].toUpperCase() === "SAVED" || configData[i]["status"].toUpperCase() === "ERROR" || configData[i]["status"].toUpperCase() === "DIS_APPROVED" ? `
+                  <img
+                        src="/static/mentis/img/custom-icons/yellow_pencil.png"
+                        class="opacity-80 cursor-pointer"
+                        width="18"
+                        height="18"
+                        title="Edit"
+                        onclick="handleConfigCtaClick('edit','${configData[i]["unique_id"]}','${configData[i]["version"]}','${configData[i]["name"]}')"
+                      />`: ""}
+                      </div>
+
+                  <div style="height:20px; width:20px">
+
+                  ${configData[i]["status"].toUpperCase() === "APPROVAL_PENDING" ? `
+                  <img
+                        src="/static/mentis/img/custom-icons/green_tick.png"
+                        class="opacity-80 cursor-pointer"
+                        width="18"
+                        height="18"
+                        title="Approve"
+                        onclick="handleConfigCtaClick('approve','${configData[i]["unique_id"]}','${configData[i]["version"]}','${configData[i]["name"]}','${i}')"
+                      />`: ""}
+                      </div>
+                  <div style="height:20px; width:20px">
+                    ${configData[i]["status"].toUpperCase() === "APPROVAL_PENDING" ? `
+                  <img
+                        src="/static/mentis/img/custom-icons/red_cross.png"
+                        class="opacity-80 cursor-pointer"
+                        width="18"
+                        height="18"
+                        title="Disapprove"
+                        onclick="handleConfigCtaClick('disapprove','${configData[i]["unique_id"]}','${configData[i]["version"]}','${configData[i]["name"]}')"
+                      />`: ""}</div>
+                  <div style="height:20px; width:20px">
+                    ${configData[i]["status"].toUpperCase() === "SAVED" ? `
+                  <img
+                        src="/static/mentis/img/custom-icons/grey_send.png"
+                        class="opacity-80 cursor-pointer"
+                        width="18"
+                        height="18"
+                        title="Send for Approval"
+                        onclick="handleConfigCtaClick('approvalPending','${configData[i]["unique_id"]}','${configData[i]["version"]}','${configData[i]["name"]}','${i}')"
+                      />`: ""}
+                      </div>
+                      <div style="height:20px; width:20px">${configData[i]["status"].toUpperCase() === "APPROVED" || configData[i]["status"].toUpperCase() === "SAVED" || configData[i]["status"].toUpperCase() === "ACTIVATE" ? `
+                  <img
+                        src="/static/mentis/img/custom-icons/red_power.png"
+                        class="opacity-80 cursor-pointer"
+                        width="18"
+                        height="18"
+                        title="Deactivate"
+                        onclick="handleConfigCtaClick('deactivate','${configData[i]["unique_id"]}','${configData[i]["version"]}','${configData[i]["name"]}')"
+                      />`: ""}
+                      </div>
+                  <div style="height:20px; width:20px">
+                    ${configData[i]["status"].toUpperCase() === "APPROVED" && !configData[i]["is_active"] ? `
+                  <img
+                        src="/static/mentis/img/custom-icons/green_power.png"
+                        class="opacity-80 cursor-pointer"
+                        width="18"
+                        height="18"
+                        title="Activate"
+                        onclick="handleConfigCtaClick('activate','${configData[i]["unique_id"]}','${configData[i]["version"]}','${configData[i]["name"]}')"
+                      />`: ""}
+                      </div>
+                </div>`
+
+            "</td>" +
+              "</tr>";
+
+            if (configData[i]["active"]) {
+              currentActiveConfigs.push(configData[i]);
+            }
+          }
+          $("#file-data-div").show();
+
+          $("#main-table").html(
+            _.template($("#table-template").text(), {
+              table_html: tableHtml,
+              table_id: tableCounter,
+            })
+          );
+          initFileDatatable();
+          $("#divLoader").hide();
+        } else {
+          $("#divLoader").hide();
+          $("#somethingWentWrongAlert").toast("show");
+          $("#main-table").html("");
+        }
+      },
+      error: function (error) {
+        if (!!error?.responseJSON?.details_message) {
+          $("#failureAlertBody").html(error?.responseJSON?.details_message)
+        }
+        lock = false;
+        $("#divLoader").hide();
+        $("#somethingWentWrongAlert").toast("show");
+        $("#main-table").html("");
+      },
+    });
+  }
+
+  function modifyResponse(data) {
+    let configArray = []
+    for (const config of Object.keys(data)) {
+      configArray = [...configArray, ...data?.[config]]
+    }
+    return configArray
+  }
+
+  function handleConfigCtaClick(mode, key, version, name, index) {
+    currentConfig = key
+    currentVersion = version
+    if (mode == "edit" || mode == "view" || mode == "clone") {
+      var configLink = `${window.location.origin}/mentis/editor/?#airShift?mode=${mode}&conf_key=${key}&conf_version=${version}&bank=${$('#bankName').val()}&env=${$('#environment').val()}&project=${$('#project').val()}`;
+      window.open(configLink, "_blank");
+    } else {
+      if (mode == "approve") {
+        $("#tableModal").modal()
+        rowAction = "APPROVED"
+        if (!!JSON.parse(fileDetailsList[index]?.extra)?.row_count) {
+          $("#rowCountLabel").show()
+          $("#rowCount").html(JSON.parse(fileDetailsList[index]?.extra)?.row_count)
+          populateTableInModal(JSON.parse(fileDetailsList[index]?.extra)?.file_data)
+        } else {
+          $("#rowCountLabel").hide()
+          $("#rowCount").html("")
+          $("#modalTable").html("")
+        }
+        // $("#confirmationText").html('Are you sure you want to Approve ' + name + ' - version ' + version)
+      } else if (mode == "deactivate") {
+        $("#confirmationModal").modal()
+        rowAction = "DEACTIVATE"
+        $("#confirmationText").html('Are you sure you want to Deactivate ' + name + ' - version ' + version)
+      } else if (mode == "activate") {
+        $("#confirmationModal").modal()
+        rowAction = "ACTIVATE"
+        $("#confirmationText").html('Are you sure you want to Activate ' + name + ' - version ' + version)
+      } else if (mode == "disapprove") {
+        rowAction = "DIS_APPROVED"
+        $("#popupInputLabel").html('Please enter Rejection Reason and confirm')
+        $('#reasonInput').attr('placeholder', 'Enter reject reason');
+        $("#reasonModal").modal()
+      } else if (mode == "approvalPending") {
+        rowAction = "APPROVAL_PENDING"
+        if (fileDetailsList[index]?.file_type == "OUTPUT") {
+          $("#popupInputLabel").html('Enter the test file name to initiate the testing process.')
+          $('#reasonInput').attr('placeholder', 'Enter file name');
+          $("#reasonModal").modal()
+        } else {
+          $("#confirmationText").html('Are you sure you want to send ' + name + ' - version ' + version + ' for approval');
+          $("#confirmationModal").modal()
+        }
+      } else { }
+
+    }
+    // const bank = $("#bankName").val();
+    // const env = $("#environment").val();
+    // const project = $("#project").val();
+  }
+
+  function configActionHandler() {
+    var payload = {
+      "user_auth": {
+        "user_name": currentUser
+      },
+      "data": {
+        "unique_id": currentConfig,
+        "action": rowAction,
+        "version": currentVersion,
+        "project": currentProject
+      }
+    }
+    buttonAction(payload)
+  }
+
+  function buttonAction(payload) {
+    if (lock == true) return;
+    lock = true
+    $("#divLoader").show()
+
+    $.ajax({
+      url: apiBasePath + "/file_detail_action/",
+      type: "POST",
+      data: JSON.stringify({ ...payload }),
+      contentType: "application/json",
+      success: function (response) {
+        lock = false
+        $("#confirmationModal").modal("hide")
+        $("#tableModal").modal("hide")
+        $("#reasonModal").modal("hide")
+        $("#reasonInput").val("")
+        $("#divLoader").hide()
+        if (response?.result == "SUCCESS") {
+
+          $("#toastInfo").html("Config " + payload?.data?.action)
+          $('#toast').toast("show")
+          getAllConfigurations();
+        } else {
+          fileDetails = []
+          $("#somethingWentWrongAlert").toast("show");
+        }
+      },
+      error: function (error) {
+        lock = false
+        $("#confirmationModal").modal("hide")
+        $("#tableModal").modal("hide")
+        $("#reasonModal").modal("hide")
+        $("#reasonInput").val("")
+        fileDetails = []
+        $("#divLoader").hide()
+        if (!!error?.responseJSON?.details_message) {
+          $("#failureAlertBody").html(error?.responseJSON?.details_message)
+        }
+        $("#somethingWentWrongAlert").toast("show");
+      },
+    });
+  }
+
+  function populateTableInModal(tableData) {
+    if (!!tableData && Array.isArray(tableData) && !!tableData?.length) {
+      var headerKeys = Object?.keys(tableData[0])
+      var tableBlock = ""
+      tableBlock += `<table class="table">
+                  <tr>`
+      for (let heading of headerKeys) {
+        tableBlock += `<th>${heading}</th>`
+      }
+      tableBlock += `</tr>`
+      for (let index in tableData) {
+        tableBlock += `<tr>`
+        for (let heading of headerKeys) {
+          tableBlock += `<td>${tableData[index]?.[heading]}</td>`
+        }
+        tableBlock += `</tr>`
+      }
+      tableBlock += `</table>`
+      $("#modalTable").html(tableBlock)
+    }
+  }
+
+  function disapproveConfig() {
+    payload = {
+      "user_auth": {
+        "user_name": currentUser
+      },
+      "data": {
+        "unique_id": currentConfig,
+        "action": rowAction,
+        "version": currentVersion,
+
+      }
+    }
+    if (rowAction == "DIS_APPROVED") {
+      payload.data.rejection_reason = $("#reasonInput").val()
+    } else if (rowAction == "APPROVAL_PENDING") {
+      payload.data.file_name = $("#reasonInput").val()
+    }
+    buttonAction(payload)
+  }
+
+  // Function to set a key in session storage
+  function setSessionStorageItem(key, value) {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  }
+
+  // Function to get a key from session storage
+  function getSessionStorageItem(key) {
+    const item = sessionStorage.getItem(key);
+    return item ? JSON.parse(item) : null;
+  }
+
+  // Function to remove a key from session storage
+  function removeSessionStorageItem(key) {
+    sessionStorage.removeItem(key);
+  }
+
+  function initLogsDatatable() {
+    $("#datatable-log-data-1").dataTable({
+      responsive: true,
+      lengthChange: false,
+      "order": [[0, "desc"]],
+      scrollCollapse: true,
+      scrollY: '380px',
+      dom:
+        /*	--- Layout Structure
+            --- Options
+            l	-	length changing input control
+            f	-	filtering input
+            t	-	The table!
+            i	-	Table information summary
+            p	-	pagination control
+            r	-	processing display element
+            B	-	buttons
+            R	-	ColReorder
+            S	-	Select
+
+            --- Markup
+            < and >				- div element
+            <"class" and >		- div with a class
+            <"#id" and >		- div with an ID
+            <"#id.class" and >	- div with an ID and a class
+
+            --- Further reading
+            https://datatables.net/reference/option/dom
+            --------------------------------------
+         */
+        "<'row mb-3'<'col-sm-12 col-md-6 d-flex align-items-center justify-content-start'f><'col-sm-12 col-md-6 d-flex align-items-center justify-content-end'lB>>" +
+        "<'row mb-3'<'col-sm-12'tr>>" +
+        "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+      buttons: [
+        /*{
+              extend:    'colvis',
+              text:      'Column Visibility',
+              titleAttr: 'Col visibility',
+              className: 'mr-sm-3'
+          },*/
+        {
+          extend: "pdfHtml5",
+          text: "PDF",
+          titleAttr: "Generate PDF",
+          className: "btn-outline-danger btn-sm mr-1",
+        },
+        {
+          extend: "excelHtml5",
+          text: "Excel",
+          titleAttr: "Generate Excel",
+          className: "btn-outline-success btn-sm mr-1",
+        },
+        {
+          extend: "csvHtml5",
+          text: "CSV",
+          titleAttr: "Generate CSV",
+          className: "btn-outline-primary btn-sm mr-1",
+        },
+        {
+          extend: "copyHtml5",
+          text: "Copy",
+          titleAttr: "Copy to clipboard",
+          className: "btn-outline-primary btn-sm mr-1",
+        },
+        {
+          extend: "print",
+          text: "Print",
+          titleAttr: "Print Table",
+          className: "btn-outline-primary btn-sm",
+        },
+      ],
+      "pageLength": 25,
+      fnDrawCallback: function () {
+        $("#datatable-log-data-1").DataTable().columns.adjust()
+      },
+    });
+  }
+
+  function initFileDatatable() {
+    $("#datatable-file-data-1").dataTable({
+      responsive: true,
+      lengthChange: false,
+      "columnDefs": [
+        { "width": "250px", "targets": 7 }
+      ],
+      "order": [[0, "desc"]],
+      dom:
+        /*	--- Layout Structure
+            --- Options
+            l	-	length changing input control
+            f	-	filtering input
+            t	-	The table!
+            i	-	Table information summary
+            p	-	pagination control
+            r	-	processing display element
+            B	-	buttons
+            R	-	ColReorder
+            S	-	Select
+
+            --- Markup
+            < and >				- div element
+            <"class" and >		- div with a class
+            <"#id" and >		- div with an ID
+            <"#id.class" and >	- div with an ID and a class
+
+            --- Further reading
+            https://datatables.net/reference/option/dom
+            --------------------------------------
+         */
+        "<'row mb-3'<'col-sm-12 col-md-6 d-flex align-items-center justify-content-start'f><'col-sm-12 col-md-6 d-flex align-items-center justify-content-end'lB>>" +
+        "<'row'<'col-sm-12'tr>>" +
+        "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+      buttons: [
+        /*{
+              extend:    'colvis',
+              text:      'Column Visibility',
+              titleAttr: 'Col visibility',
+              className: 'mr-sm-3'
+          },*/
+        {
+          text: "Logs",
+          titleAttr: "Logs",
+          className: "btn-outline-primary btn-sm mr-1",
+        },
+        {
+          extend: "pdfHtml5",
+          text: "PDF",
+          titleAttr: "Generate PDF",
+          className: "btn-outline-danger btn-sm mr-1",
+        },
+        {
+          extend: "excelHtml5",
+          text: "Excel",
+          titleAttr: "Generate Excel",
+          className: "btn-outline-success btn-sm mr-1",
+        },
+        {
+          extend: "csvHtml5",
+          text: "CSV",
+          titleAttr: "Generate CSV",
+          className: "btn-outline-primary btn-sm mr-1",
+        },
+        {
+          extend: "copyHtml5",
+          text: "Copy",
+          titleAttr: "Copy to clipboard",
+          className: "btn-outline-primary btn-sm mr-1",
+        },
+        {
+          extend: "print",
+          text: "Print",
+          titleAttr: "Print Table",
+          className: "btn-outline-primary btn-sm",
+        },
+      ],
+      fnDrawCallback: function () {
+        $("#datatable-file-data-1").DataTable().columns.adjust()
+      },
+    });
+  }
+
+  var lock = false;
+</script>

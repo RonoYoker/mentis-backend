@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Configure Languages</title>
+    <link rel="stylesheet" media="screen, print" href="/static/mentis/css/select2.bundle.css" />
+    <link rel="stylesheet" media="screen, print" href="/static/mentis/css/datatables.bundle.css" />
+    <link rel="stylesheet" media="screen, print" href="/static/mentis/css/dropzone.css" />
+    <script src="/static/mentis/js/moment.js"></script>
+    <style type="text/css">
+        th,
+        td {
+            cursor: pointer;
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+            max-width: 50px;
+            /* Set max-width for cells */
+            white-space: nowrap;
+            /* Prevent text from wrapping */
+            overflow: auto;
+            /* text-overflow: ellipsis; Show ellipsis for overflowed content */
+        }
+
+        .cellData {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+
+<div id="parentPage">
+    <div class="panel" style="min-height: 40vh;">
+        <div class="panel-hdr">
+            <h2>
+                <span class="fw-900"><i>Add Languages</i></span>
+            </h2>
+            <div class="panel-toolbar">
+                <button class="btn btn-panel" data-action="panel-collapse" data-toggle="tooltip" data-offset="0,10"
+                    data-original-title="Collapse"></button>
+                <button class="btn btn-panel" data-action="panel-fullscreen" data-toggle="tooltip" data-offset="0,10"
+                    data-original-title="Fullscreen"></button>
+                <button class="btn btn-panel" data-action="panel-close" data-toggle="tooltip" data-offset="0,10"
+                    data-original-title="Close"></button>
+            </div>
+        </div>
+        <div id="divLoader" style="display: none">
+            <div class="position-absolute d-flex flex-column justify-content-center align-items-center w-100" style="
+      z-index: 2;
+      background-color: rgba(255, 255, 255, 0.7);
+      height: -webkit-fill-available;
+    ">
+                <div class="spinner-border mb-2" role="status"></div>
+                <div style="font-size: 16px">Loading...</div>
+            </div>
+        </div>
+        <div id="splashScreen" style="display: none">
+            <div class="position-absolute d-flex flex-column justify-content-center align-items-center w-100" style="
+      z-index: 2;
+      background-color: rgba(255, 255, 255, 0.9);
+      height: -webkit-fill-available;
+    ">
+                <div style="font-size: 26px">
+                    <button type="button" class="btn btn-outline-primary waves-effect waves-themed" onclick="addRow()">
+                        Add row
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="congratsConfigSaved" style="display: none;">
+            <div class="position-absolute d-flex flex-column justify-content-center align-items-center w-100" style="
+      z-index: 2;
+      background-color: rgba(255, 255, 255, 1);
+      height: -webkit-fill-available;
+    ">
+                <div class="h-100 d-flex justify-content-center align-items-center">
+                    <div class="panel p-6 d-flex flex-column justify-content-center align-items-center text-center"
+                        style="font-size: 20px">
+                        <img src="/static/mentis/img/accepted.png" class="img-fluid mb-5" width="75" height="75" />
+                        <span class="mx-2 mb-5">Congratulations, Your configuration has been saved
+                            successfully!</span>
+                        <div>
+                            <a href="#viewLangConfigurations"
+                                class="btn btn-lg btn-outline-info waves-effect waves-themed"><i
+                                    class="fal fa-eye"></i><span class="ml-2">View configuration</span></a>
+                            <button onclick="createNewConfiguration()"
+                                class="btn btn-lg btn-outline-success  waves-effect waves-themed ml-2"><i
+                                    class="fal fa-plus"></i><span class="ml-2">Create new
+                                    configuration</span></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <form class="panel-container m-5" id="createMappingForm" onsubmit="formSubmit(event)">
+
+            <div class="form-group row justify-content-between">
+                <div class="col-4">
+                    <label class="form-label" for="fileName">File Name</label>
+                    <input type="text" id="fileName" class="form-control" name="key" placeholder="Enter File Name"
+                        pattern="^[a-zA-Z0-9_]+$" required />
+                </div>
+                <div id="versionDropdownDiv" style="display: none; width: 30%;">
+                    <label class="form-label" for="versionDropdown">Versions
+                    </label>
+                    <select class="form-control select2" id="versionDropdown" style="width: 25% !important;"
+                        data-placeholder="Select version">
+                    </select>
+                    <!-- <div class="my-2" style="
+                        display: flex;
+                        font-size: 14px;
+                        justify-content: space-between;
+                        align-items: center;
+                      ">
+                        <div>
+                            <label class="form-label">Active version : </label>
+                            <b id="activeVersion">NA</b>
+                        </div>
+                        <button id="makeActiveBtn" type="button" value=""
+                            class="btn btn-outline-danger waves-effect waves-themed btn-outline-danger"
+                            onclick="makeVersionActive()">
+                            Make active
+                        </button>
+                    </div> -->
+                </div>
+            </div>
+
+            <div class="form-group row d-block" id="methodDiv" style="padding-left: 12px;">
+                <label class="form-label">Method</label>
+                <div class="frame-wrap">
+                    <div class="custom-control custom-radio custom-control-inline">
+                        <input type="radio" class="custom-control-input" id="upload" name="dataCreationMethod"
+                            value="upload" required>
+                        <label class="custom-control-label cursor-pointer" for="upload">Upload file</label>
+                    </div>
+                    <div class="custom-control custom-radio custom-control-inline">
+                        <input type="radio" class="custom-control-input" id="manually" name="dataCreationMethod"
+                            value="manually" required>
+                        <label class="custom-control-label cursor-pointer" for="manually">Add manually</label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-label mb-2">Languages</div>
+            <div id="addNewButtonDiv" class="text-center">
+                <div class="dropzone needsclick dz-clickable" id="abc" action="/" style="min-height: 15rem;">
+                    <div class="dz-message needsclick d-flex justify-content-center align-items-center flex-column">
+                        <i class="fal fa-cloud-upload text-muted mb-3"></i>
+                        <span class="text-uppercase">Drop file here or click to upload</span>
+                    </div>
+                </div>
+            </div>
+            <div id="tableDiv" style="display: none;">
+                <button type="button" class="btn buttons-html5 btn-outline-danger" style="float: right;margin-top: 2px;"
+                    onclick="$('#newFileInput').click()">
+                    <i class="fal fa-cloud-upload"></i> Upload New File</button>
+                <input type="file" id="newFileInput" style="display: none;" accept=".csv"
+                    onchange="handleFileChange(event,'addNewFile')" />
+
+                <table id="langTable" class="table table-bordered table-hover table-striped w-100 dtr-inline">
+                    <tfoot id="langTableFooter"></tfoot>
+                </table>
+                <div>
+                    <button type="button" class="btn btn-primary waves-effect waves-themed" onclick="addRow()">
+                        <i class="fal fa-plus"></i> Add New row
+                    </button>
+                    <button type="button" class="btn btn-outline-primary waves-effect waves-themed"
+                        onclick="$('#csvFileInput').click()">
+                        <i class="fal fa-upload"></i> Patch more data
+                    </button>
+                    <input type="file" id="csvFileInput" style="display: none;" accept=".csv"
+                        onchange="handleFileChange(event,'mergeNewFile')" />
+                </div>
+            </div>
+            <div id="issues" class="alert alert-danger" role="alert" style="margin-top: 20px; display: none">
+                <strong>Oh snap!</strong> Change a few things up and try
+                submitting again.
+                <ul id="issue-items" style="margin-top: 10px"></ul>
+            </div>
+            <div class="mt-4 d-flex justify-content-end">
+                <button type="submit" class="ml-2 btn btn-primary waves-effect waves-themed">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="modal modal-alert fade show" id="saveChangesConfirmationModal" tabindex="-1" role="dialog"
+        style="display: none; padding-right: 15px" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        Please confirm that you want to Save these changes !!
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true"><i class="fal fa-times"></i></span>
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary waves-effect waves-themed" data-dismiss="modal">
+                        Close
+                    </button>
+                    <button type="button" class="btn btn-primary waves-effect waves-themed"
+                        onclick="confirmAndProceed()">
+                        Confirm & Proceed
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="cellInputTooltip" class="position-absolute bg-gray-100 rounded border p-3 shadow"
+        style="width: 300px; z-index: 9999; display: none;">
+        <div class="position-relative">
+            <b>Value : </b>
+            <textarea id="inputTextArea" class="form-control" placeholder="Enter Value"></textarea>
+
+            <div class="d-flex justify-content-end mt-2">
+                <button type="button" class="btn btn-secondary waves-effect waves"
+                    onclick=tableCellValueChanged(event)>Update</button>
+            </div>
+            <!-- <input class="form-control" type="text" value="" onChange=tableCellValueChanged(event)
+                onblur=tableCellValueChanged(event) placeholder="Enter Value"> </input> -->
+        </div>
+        <div style="
+                    position: absolute;
+                    height: 10px;
+                    width: 10px;
+                    bottom: -6px;
+                    left: 50%;
+                    right: 50%;
+                    background-color: #f8f9fa;
+                    border: 1px solid #dee2e6;
+                    border-top: none;
+                    border-right: none;
+                    -webkit-transform: rotate(-45deg);
+                    -moz-transform: rotate(-45deg);
+                    -ms-transform: rotate(-45deg);
+                    -o-transform: rotate(-45deg);
+                    transform: rotate(-45deg)
+                "></div>
+    </div>
+
+</div>
+<div class="toast hide" style="
+position: absolute;
+top: 50%;
+right: 45%;
+background-color: rgb(220 53 69);
+color: white;
+min-width: 250px;
+z-index: 2;
+padding: 0;
+" id="somethingWentWrongAlert" data-delay="2000">
+    <div class="toast-header">
+        <strong class="mr-auto">Alert</strong>
+        <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="toast-body" id="failureAlertBody">Somthing went wrong, Please try again.</div>
+    <!-- <div class="toast-header">
+<strong class="mr-auto" id="toastInfo">lmcklwkmeck</strong>
+</div> -->
+</div>
+
+
+
+<script src="/static/mentis/js/datatables.bundle.js"></script>
+<script src="/static/mentis/js/dropzone.js"></script>
+<script src="/static/mentis/js/jquery.csv.js"></script>
+<script type="text/javascript">
+    var currentUser = "{{ user }}";
+    var mode = "{{ mode }}";
+    var fileName = "{{ fileId }}";
+    var version = "{{ version }}";
+    var apiBasePath = "{{apiBasePath}}"
+    var languages = ["en", "hi", "bn", "pb", "ma", "mr", "ta", "kn", "te", "gu"];
+
+    $(document).ready(function () {
+        $(".select2").select2()
+        if (mode === "edit") {
+            $("#fileName").val(fileName)
+            $("#fileName").prop("disabled", true);
+            getConfig(fileName, version)
+            // initTable(["slug", ...languages], data)
+            // $("#tableDiv").show();
+            // $("#addNewButtonDiv").hide();
+        }
+        else {
+            $(`input[name=dataCreationMethod][value=upload]`).prop("checked", true).change()
+            Dropzone.autoDiscover = false;
+            $("#parentPage").dropzone({
+                // autoProcessQueue: false,
+                paramName: "file",
+                maxFiles: 1,
+                acceptedFiles: ".csv",
+                // Dropzone settings
+                init: function () {
+                    var myDropzone = this;
+                    this.on("addedfile", function (file) {
+                        handleFileChange(null, 'addNewFile', file);
+                        myDropzone.removeAllFiles();
+                    })
+                    this.on("submit", function (event) {
+                        event.preventDefault();
+                    });
+                }
+            })
+        }
+
+    })
+    var table = ''
+    function initTable(headers, data) {
+        table = $("#langTable").DataTable({
+            "ordering": false,
+            data: data,
+            "bPaginate": false,
+            columns: headers.map((el) => {
+                return {
+                    data: el, title: el, render: function (data, type, row, meta) {
+                        return `<div class="cellData position-relative">${!!data ? data : ""}</div>`;
+                    },
+                    defaultContent: ""
+                }
+            }).concat([
+                // Add the last column for the button
+                {
+                    data: null,
+                    title: "",
+                    render: function (data, type, row, meta) {
+                        return '<i class="color-danger-500 fa-minus-circle fal fs-xxl d-flex justify-content-center cursor-pointer" onclick="removeRow(this)"></i>';
+                    },
+                    defaultContent: ""
+                }
+            ]),
+            columnDefs: [
+                {
+                    targets: '_all',
+                    createdCell: function (td, cellData, rowData, rowIndex, colIndex) {
+                        var colInfo = $('#langTable').DataTable().settings()[0].aoColumns[colIndex].data;
+                        if (!cellData) {
+                            $(td).addClass("bg-danger-50")
+                        }
+                        var prevValue = rowData?.prevValue?.[colInfo]
+
+                        if (!!prevValue && prevValue != cellData) {
+                            $(td).addClass("bg-warning-50")
+                        } else {
+                            $(td).removeClass("bg-warning-50")
+                            if (!cellData) {
+                                $(td).addClass("bg-danger-50")
+                            } else {
+                                $(td).removeClass("bg-danger-50")
+                            }
+                        }
+                    },
+                }
+            ],
+            "footerCallback": function (row, data, start, end, display) {
+                // Customize this part to calculate and display footer values
+                var api = this.api();
+                var footerHtml = '';
+
+                api.columns().every(function (index) {
+                    var columnData = this.data(); // Get the data for the current column
+                    // Perform some action with the column data
+                    const filledValues = columnData.toArray()?.filter(Boolean)?.length;
+                    const totalValues = columnData.toArray()?.length;
+
+                    if (api.columns().count() === index + 1) {
+                        footerHtml += `<td></td>`
+                    } else {
+                        footerHtml += `<td class="fs-xs"> Total values: <b>${totalValues}</b> <br> Empty values: <b>${totalValues - filledValues}</b></td>`
+                    }
+
+                });
+                // $("#langTable").append(
+                //     $('<tfoot/>').html($("#langTable thead tr").clone())
+                // );
+                if ($('#langTable tfoot').length === 0) {
+                    $('#langTable').append(`<tfoot><tr>${footerHtml}</tr></tfoot>`);
+                } else {
+                    // Replace the existing tfoot with a new one
+                    $('#langTable tfoot').replaceWith(`<tfoot><tr>${footerHtml}</tr></tfoot>`);
+                }
+
+            },
+            dom:
+                /*	--- Layout Structure
+                    --- Options
+                    l	-	length changing input control
+                    f	-	filtering input
+                    t	-	The table!
+                    i	-	Table information summary
+                    p	-	pagination control
+                    r	-	processing display element
+                    B	-	buttons
+                    R	-	ColReorder
+                    S	-	Select
+        
+                    --- Markup
+                    < and >				- div element
+                    <"class" and >		- div with a class
+                    <"#id" and >		- div with an ID
+                    <"#id.class" and >	- div with an ID and a class
+        
+                    --- Further reading
+                    https://datatables.net/reference/option/dom
+                    --------------------------------------
+                 */
+                "<'row mb-3'<'col-sm-12 col-md-6 d-flex align-items-center justify-content-start p-0'f><'col-sm-12 col-md-6 d-flex align-items-center justify-content-end'lB>>" +
+                "<'row'<'col-sm-12'tr>>" +
+                "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+            buttons: [
+                {
+                    extend: "csvHtml5",
+                    text: "Export CSV",
+                    titleAttr: "Generate CSV",
+                    className: "btn-outline-info",
+                },
+            ],
+
+        });
+
+    }
+    function removeRow(currentIcon) {
+        var row = table.row($(currentIcon).closest('tr'));
+        row.remove().draw()
+    }
+    function getConfig(fileName, version) {
+        if (!fileName) return;
+        $("#divLoader").show();
+        $.ajax({
+            url: apiBasePath + "/polyglot/get_one_config/",
+            type: "POST",
+            data: JSON.stringify({
+                "type": "LANG_UPLOAD",
+                "name": fileName,
+                "version": version
+            }),
+            contentType: "application/json",
+            success: function (response) {
+                $("#divLoader").hide();
+                if (response?.success && response?.data) {
+                    $(`input[name=dataCreationMethod][value=manually]`).prop("checked", true).change()
+                    $("#addNewButtonDiv").hide();
+                    if ($.fn.DataTable.isDataTable("#langTable")) {
+                        $("#langTable").DataTable().clear().destroy();
+                        $("#langTable").empty();
+                    }
+                    var tableData = JSON.parse(response?.data?.data);
+                    tableData.forEach(el => el.prevValue = JSON.parse(JSON.stringify(el)));
+                    initTable(["slug", ...languages], tableData)
+                    $("#tableDiv").show();
+
+                    $("#versionDropdownDiv").show();
+                    var versionDropdownHtml = "<option value='' disabled ></option>";
+                    for (var el of response?.version_meta) {
+                        versionDropdownHtml += `<option value='${el?.version}' ${el?.version === response?.data?.version ? "selected='selected'" : ""
+                            } >Version ${el?.version} ${!!el?.created_by ? `, Created by ${el?.created_by} ${!!el?.creation_time ? ` on ${moment(el?.creation_time).format("D MMM YYYY, hh:mm A")}` : ""}` : ""} </option>`;
+                    }
+                    $("#versionDropdownDiv").show();
+                    $("#versionDropdown").html(versionDropdownHtml)
+
+                    if (!!response?.data?.creation_time) {
+                        $("#versionInfo").html(`Date : ${response?.data?.creation_time}`);
+                        $("#versionInfo").show();
+                    }
+
+                } else {
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            },
+            error: function (error) {
+                $("#divLoader").hide();
+                $("#somethingWentWrongAlert").toast("show");
+            },
+        });
+
+    }
+
+    $("#versionDropdown").change(function () {
+        getConfig(fileName, this.value);
+    });
+    function formSubmit(event) {
+        event.preventDefault();
+
+        if (!!table && !!table.data() && table.data().toArray()?.length > 0) {
+            const allKeysHaveValues = table.data().toArray().every(item => {
+                return Object.entries(item).length > 0 && Object.keys(item).includes("en") && Object.keys(item).includes("slug") &&
+                    Object.entries(item).every(value => {
+                        if (value?.[0] === "slug" || value?.[0] === "en") {
+                            return value?.[1] !== undefined && value?.[1] !== null && value?.[1] !== ""
+                        }
+                        else return true;
+                    });
+            }) || false;
+            if (!allKeysHaveValues) {
+                $("#issue-items").html("<li>Please make sure to fill every slug and english cell.</li>");
+                $("#issues").show();
+            } else {
+                $("#issue-items").html("");
+                $("#issues").hide();
+                $("#saveChangesConfirmationModal").modal()
+            }
+        }
+        else {
+            $("#issue-items").html("<li>Please make sure to add data.</li>");
+            $("#issues").show();
+        }
+    }
+    function confirmAndProceed() {
+        $("#saveChangesConfirmationModal").modal("hide")
+        const tableData = table.data().toArray().map(rowValue => {
+            const { prevValue, ...langValues } = rowValue;
+            return langValues;
+        });
+        const payload = { name: $("#fileName").val(), data: tableData, user: currentUser, type: "LANG_UPLOAD", };
+        submitNewConfiguration(payload);
+    }
+    function handleFileChange(event, handler, inputFile = "") {
+
+        // const input = event.target;
+        // if (!input.files || input.files.length === 0) {
+        //     console.error('No file selected.');
+        //     return;
+        // }
+
+        const file = !!inputFile ? inputFile : event.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+            $("#divLoader").hide();
+            const csvText = e.target.result;
+            // const jsonData = [];
+            console.log("csvText", csvText)
+            var jsonData = $.csv.toObjects(csvText, {
+                onParseValue: function (value, state) {
+                    if (!!value && value.startsWith('"') && value.endsWith('"')) {
+                        // Remove the quotes and trim again
+                        return value.slice(1, -1).trim();
+                    }
+                    return value;
+                }
+            });
+            console.log("jsonData", jsonData)
+            $(e.target).val("").change()
+
+            if (handler == "addNewFile") {
+                jsonData.forEach(el => el.prevValue = JSON.parse(JSON.stringify(el)));
+                if ($.fn.DataTable.isDataTable("#langTable")) {
+                    $("#langTable").DataTable().clear().destroy();
+                    $("#langTable").empty();
+                }
+                initTable(["slug", ...languages], jsonData)
+                $("#tableDiv").show();
+                $("#addNewButtonDiv").hide();
+
+            } else if (handler == "mergeNewFile") {
+                const mergedArray = table.data().toArray().map(item1 => {
+                    const matchingItem2 = jsonData.find(item2 => item2.slug === item1.slug);
+
+                    if (matchingItem2) {
+                        // Merge values, excluding "prevValue" key
+                        const { prevValue, ...restItem2 } = matchingItem2;
+                        return { ...item1, ...restItem2 };
+                    }
+
+                    return item1;
+                });
+                const unmatchedItems = jsonData.filter(item2 => !table.data().toArray().some(item1 => item1.slug === item2.slug)).map(item2 => ({ ...item2, prevValue: JSON.parse(JSON.stringify(item2)) }));
+                console.log("mergedArray")
+                mergedArray.push(...unmatchedItems);
+                // table.rows.add(jsonData).draw();
+                if ($.fn.DataTable.isDataTable("#langTable")) {
+                    $("#langTable").DataTable().clear().destroy();
+                    $("#langTable").empty();
+                }
+                initTable(["slug", ...languages], mergedArray)
+                $("#tableDiv").show();
+                $("#addNewButtonDiv").hide();
+
+            }
+
+            // table.rows.add(jsonData).draw();
+            // // Output the JSON data (you can do whatever you want with it)
+
+            return jsonData;
+        };
+
+        reader.onerror = function (error) {
+            $("#divLoader").hide();
+            console.error('Error reading the file:', error);
+        };
+        $("#divLoader").show();
+        reader.readAsText(file);
+    }
+    function tableCellValueChanged(event) {
+
+        // console.log("event", $(event.target).parent().parent()?.parent())
+
+        event.preventDefault()
+        var rowIndex = $("#cellInputTooltip").data("rowIndex");
+        var columnIndex = $("#cellInputTooltip").data("columnIndex");
+        var cell = table.cell({ row: rowIndex, column: columnIndex })
+
+        var rowData = table.row(rowIndex).data();
+        var columnData = table.column(columnIndex).header().textContent
+        var cellNode = cell.node();
+
+        const oldValue = cell.data();
+        var newValue = event.target.value || $("#inputTextArea").val() || '';
+
+        if (!!rowData?.prevValue?.[columnData] && !!newValue && rowData?.prevValue?.[columnData] != newValue) {
+            $(cellNode).removeClass("bg-danger-50")
+            $(cellNode).addClass("bg-warning-50")
+        } else {
+            $(cellNode).removeClass("bg-warning-50")
+            if (!newValue) {
+                $(cellNode).addClass("bg-danger-50")
+            } else {
+                $(cellNode).removeClass("bg-danger-50")
+            }
+        }
+        if (columnIndex === 0 && !!newValue && table.column(0).data().toArray().includes(newValue)) {
+            return;
+        }
+        else {
+            cell.data(newValue).draw();
+            $("#cellInputTooltip").hide();
+        }
+    }
+
+    // $('#langTable').on('cellDataChanged', function (event, cell, oldValue, newValue) {
+    //     // Your callback logic here
+    //     // cell.data(newValue).draw();
+    // });
+
+    $('#langTable').on('click', 'td', function (e) {
+        const closestTd = $(e.target).closest("td");
+        var cell = table.cell(closestTd);
+        var rowIndex = cell.index().row;
+        var columnIndex = cell.index().column;
+        const oldValue = cell.data();
+        var x = $(e.target).offset()?.left - $("#parentPage").offset()?.left - 80;
+        var y = $("#parentPage").outerHeight() - $(e.target).offset()?.top + $("#parentPage").offset()?.top + 30;
+
+        $("#cellInputTooltip").css({ bottom: y, left: x });
+
+        $("#cellInputTooltip").data("rowIndex", rowIndex);
+        $("#cellInputTooltip").data("columnIndex", columnIndex);
+
+        $("#cellInputTooltip").show();
+        $("#inputTextArea").val(oldValue);
+        $("#inputTextArea")[0].style.height = "auto"
+        $("#inputTextArea")[0].style.height = `${$("#inputTextArea")[0].scrollHeight + 16}px`;
+
+        var myInput = $("#inputTextArea");
+        var inputLength = myInput.val()?.length || 0;
+
+        myInput.prop('selectionStart', inputLength);
+        myInput.prop('selectionEnd', inputLength);
+
+        myInput.focus();
+
+    });
+
+    document.querySelectorAll('textarea').forEach(element => {
+        element.style.height = `${element.scrollHeight}px`;
+        element.addEventListener('input', event => {
+            event.target.style.height = 'auto';
+            event.target.style.height = `${event.target.scrollHeight + 16}px`;
+        })
+    })
+
+
+    $(document).mouseup(function (e) {
+        var container = $("#cellInputTooltip");
+        // if the target of the click isn't the container nor a descendant of the container
+        if (!container.is(e.target) && container.has(e.target).length === 0) {
+            container.hide();
+        }
+    });
+
+    function addRow() {
+        table.row
+            .add({}, {})
+            .draw(false);
+    }
+    function createNewConfiguration() {
+        window.open(`${window.location.origin}/mentis/editor/?#addLangConfigurations`, "_self");
+    }
+    function submitNewConfiguration(data) {
+        $("#divLoader").show();
+        $.ajax({
+            url: apiBasePath + "/polyglot/save_update_config/",
+            type: "POST",
+            data: JSON.stringify({ data }),
+            contentType: "application/json",
+            success: function (response) {
+                $("#divLoader").hide();
+                if (response?.success) {
+                    if ($.fn.DataTable.isDataTable("#langTable")) {
+                        $("#langTable").DataTable().clear().destroy();
+                        $("#langTable").empty();
+                    }
+                    $("#congratsConfigSaved").show();
+                } else {
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            },
+            error: function (error) {
+                $("#divLoader").hide();
+                $("#somethingWentWrongAlert").toast("show");
+            },
+        });
+    }
+    $('input[type=radio][name=dataCreationMethod]').change(function () {
+        if (this.value == 'upload') {
+            $("#addNewButtonDiv").show();
+            $("#tableDiv").hide();
+            if ($.fn.DataTable.isDataTable("#langTable")) {
+                $("#langTable").DataTable().clear().destroy();
+                $("#langTable").empty();
+            }
+        }
+        else if (this.value == 'manually') {
+            $("#addNewButtonDiv").hide();
+            if ($.fn.DataTable.isDataTable("#langTable")) {
+                $("#langTable").DataTable().clear().destroy();
+                $("#langTable").empty();
+            }
+            initTable(["slug", ...languages], {})
+            $("#tableDiv").show();
+            addRow();
+        }
+    });
+</script>

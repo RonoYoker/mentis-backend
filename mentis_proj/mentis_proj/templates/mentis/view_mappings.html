@@ -1,0 +1,1254 @@
+<link rel="stylesheet" media="screen, print" href="/static/mentis/css/datatables.bundle.css" />
+<script src="/static/mentis/js/datatables.bundle.js"></script>
+<script src="/static/mentis/js/datatables.export.js"></script>
+<script src="/static/mentis/js/underscore-1.6.0.min.js"></script>
+<script src="/static/mentis/js/moment.js"></script>
+<link rel="stylesheet" media="screen, print" href="/static/mentis/css/select2.bundle.css" />
+
+<link rel="stylesheet" href="/static/mentis/css/dateRangePicker.css" />
+<script src="/static/mentis/js/dateRangePicker.js"></script>
+
+<style type="text/css">
+    .form-field-custom {
+        font-weight: bold;
+        font-size: 14px;
+    }
+
+    .fs-24 {
+        font-size: 24px;
+    }
+
+    .catselect {
+        font-size: 17px;
+        line-height: 22px;
+        width: 200px;
+        display: none;
+    }
+
+    .fl {
+        float: left;
+    }
+
+    .ui-datepicker {
+        z-index: 9999999 !important;
+    }
+
+    .linkItem {
+        float: left;
+        background-color: #ccc;
+        color: #222;
+        border-radius: 2px;
+        font-weight: bold;
+        padding: 6px;
+        margin-left: 20px;
+        cursor: pointer;
+        margin-top: 10px;
+        font-size: 15px;
+    }
+
+    .dtr-data {
+        text-transform: uppercase;
+    }
+
+    .smart-form .input input,
+    .smart-form .select select,
+    .smart-form .textarea textarea {
+        font-size: 15px !important;
+        font-weight: bold !important;
+    }
+
+    .optiontext {
+        font-weight: bold !important;
+    }
+
+    .radio,
+    .checkbox {
+        float: left;
+        margin-top: 0px !important;
+        margin-bottom: 0px !important;
+        padding-left: 35px !important;
+    }
+
+    .radio+.radio,
+    .checkbox+.checkbox {
+        margin: 0px !important;
+    }
+
+    .width20 {
+        width: 20%;
+    }
+
+    .width15 {
+        width: 15%;
+    }
+
+    .width30 {
+        width: 30%;
+    }
+
+    .width60 {
+        width: 60%;
+    }
+
+    .width100 {
+        width: 100%;
+    }
+
+    #raw-item-div .form-control {
+        color: #004d99 !important;
+    }
+
+    .bor-left {
+        border: 1px solid #ddd;
+        padding: 6px;
+        font-weight: bold;
+        background-color: #bbb;
+        color: #000;
+    }
+
+    .bor-mid {
+        border-top: 1px solid #ddd;
+        border-bottom: 1px solid #ddd;
+        padding: 3px 2px;
+    }
+
+    .left-col {
+        width: 10%;
+        float: left;
+    }
+
+    .mid-col {
+        float: left;
+    }
+</style>
+
+<div id="invoices-data-div" style="margin-top: 30px; display: none" class="row">
+    <div class="col-xl-12">
+        <div class="panel" id="projectConfigurationPanel">
+            <div class="panel-hdr">
+                <h2>
+                    <span class="fw-900"><i>Project configurations</i></span>
+                </h2>
+                <div class="panel-toolbar">
+                    <button class="btn btn-panel" data-action="panel-collapse" data-toggle="tooltip" data-offset="0,10"
+                        data-original-title="Collapse"></button>
+                    <button class="btn btn-panel" data-action="panel-fullscreen" data-toggle="tooltip"
+                        data-offset="0,10" data-original-title="Fullscreen"></button>
+                    <button class="btn btn-panel" data-action="panel-close" data-toggle="tooltip" data-offset="0,10"
+                        data-original-title="Close"></button>
+                </div>
+            </div>
+            <div class="panel-container">
+                <div class="form-group row m-3">
+                    <div class="col-3">
+                        <label class="form-label" for="bankName">Bank name</label>
+                        <select class="form-control select2" id="bankName" name="bankName"
+                            data-placeholder="Select Bank name" required></select>
+                    </div>
+                    <div class="col-3" style="display: none">
+                        <label class="form-label" for="environment">Environment</label>
+                        <select class="form-control select2" id="environment" name="environment"
+                            data-placeholder="Select Environment" required></select>
+                    </div>
+                    <div class="col-3" style="display: none">
+                        <label class="form-label" for="project">Project</label>
+                        <select class="form-control select2" id="project" name="project"
+                            data-placeholder="Select Project" required></select>
+                    </div>
+                    <div class="col-3" style="display: none">
+                        <label class="form-label" for="segmentViewType">Segment view type</label>
+                        <select class="form-control select2" id="segmentViewType" name="segmentViewType"
+                            data-placeholder="Select segment view type" required>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="panel-1" class="panel">
+            <div class="panel-hdr">
+                <h2>
+                    View <span class="fw-900"><i>Mappings</i></span>
+                </h2>
+                <div class="panel-toolbar">
+                    <button class="btn btn-panel" data-action="panel-collapse" data-toggle="tooltip" data-offset="0,10"
+                        data-original-title="Collapse"></button>
+                    <button class="btn btn-panel" data-action="panel-fullscreen" data-toggle="tooltip"
+                        data-offset="0,10" data-original-title="Fullscreen"></button>
+                    <button class="btn btn-panel" data-action="panel-close" data-toggle="tooltip" data-offset="0,10"
+                        data-original-title="Close"></button>
+                </div>
+            </div>
+            <div class="panel-container show" style="min-height: 60vh">
+                <div id="divLoader" style="display: none">
+                    <div class="position-absolute d-flex flex-column justify-content-center align-items-center w-100"
+                        style="
+                z-index: 2;
+                background-color: rgba(255, 255, 255, 0.7);
+                height: -webkit-fill-available;
+              ">
+                        <div class="spinner-border mb-2" role="status"></div>
+                        <div style="font-size: 16px">Loading...</div>
+                    </div>
+                </div>
+                <div id="splashScreen" style="">
+                    <div class="position-absolute d-flex flex-column justify-content-center align-items-center w-100"
+                        style="
+                z-index: 2;
+                background-color: rgba(255, 255, 255, 0.9);
+                height: -webkit-fill-available;
+              ">
+                        <div style="font-size: 26px">
+                            Please Select Project Config first.
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <div class="panel-tag">
+                        <p id="po-data-title">
+                            Below is a list of Mappings.
+                        </p>
+                    </div>
+                    <!-- datatable start -->
+                    <div id="main-table"></div>
+                    <!-- datatable end -->
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-2" class="panel">
+            <div class="panel-hdr">
+                <h2>
+                    <i> Offer Processing APIs </i>
+                </h2>
+                <div class="panel-toolbar">
+                    <button class="btn btn-panel" data-action="panel-collapse" data-toggle="tooltip" data-offset="0,10"
+                        data-original-title="Collapse"></button>
+                    <button class="btn btn-panel" data-action="panel-fullscreen" data-toggle="tooltip"
+                        data-offset="0,10" data-original-title="Fullscreen"></button>
+                    <button class="btn btn-panel" data-action="panel-close" data-toggle="tooltip" data-offset="0,10"
+                        data-original-title="Close"></button>
+                </div>
+            </div>
+            <div style="margin-block: 10px">
+                  <button  class="ml-2 btn btn-primary waves-effect waves-themed" onclick="trigger_offer_generation()">
+                            Generate Offers
+                  </button>
+                  <button class="ml-2 btn btn-primary waves-effect waves-themed" onclick="fetch_offer_processing_status()">
+                            Offer Processing Status
+                  </button>
+                  <button type="button" class="ml-2 btn btn-primary waves-effect waves-themed" onclick="fetch_offer_request_list()">
+                            Offers Request List
+                  </button>
+            </div>
+            <div id="main-table2"> </div>
+        </div>
+    </div>
+
+    <div class="modal modal-alert fade show" id="deactiveMappingConfirmationModal" tabindex="-1" role="dialog"
+        style="display: none; padding-right: 15px" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        Please confirm that you want to Deactivate this mapping!!
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true"><i class="fal fa-times"></i></span>
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary waves-effect waves-themed" data-dismiss="modal">
+                        Close
+                    </button>
+                    <button type="button" class="btn btn-primary waves-effect waves-themed"
+                        onclick="deactivateMapping()">
+                        Confirm & Proceed
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="toast hide" style="
+    position: absolute;
+    top: 50%;
+    right: 45%;
+    background-color: rgb(220 53 69);
+    color: white;
+    min-width: 250px;
+    z-index: 2;
+  " id="somethingWentWrongAlert" data-delay="2000">
+    <div class="toast-header">
+        <strong class="mr-auto">Alert</strong>
+        <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="toast-body" id="failureAlertBody">Somthing went wrong, Please try again.</div>
+    <!-- <div class="toast-header">
+<strong class="mr-auto" id="toastInfo">lmcklwkmeck</strong>
+</div> -->
+</div>
+<div class="modal" id="logsModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="false"
+    style="background-color: rgba(0, 0, 0, 0.15)">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="padding-bottom: 0px">
+                <h1 class="modal-title" style="font-size: 24px; font-weight: 700;">Logs</h1>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true"><i class="fal fa-times"></i></span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="max-height: 50vh; overflow-y: overlay; font-size: 18px; ">
+                    <div id="logsList">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="screenLoader" style="display: none">
+    <div class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+        style="z-index: 2; background-color: rgba(255, 255, 255, 0.7); top: 0">
+        <div class="spinner-border mb-2" role="status"></div>
+        <div style="font-size: 16px">Loading...</div>
+    </div>
+</div>
+</div>
+<div class="toast hide" style="
+    position: absolute;
+    top: 50%;
+    right: 45%;
+    background-color: #090;
+    color: white;
+    min-width: 250px;
+    z-index: 2;
+  " id="successAlert" data-delay="2000">
+    <div class="toast-header">
+        <strong class="mr-auto">Success</strong>
+        <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="toast-body" id="successAlertBody"> Deactivated successfully !! </div>
+    <!-- <div class="toast-header">
+<strong class="mr-auto" id="toastInfo">lmcklwkmeck</strong>
+</div> -->
+</div>
+
+<div class="modal" id="statusModel" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="false"
+    style="background-color: rgba(0, 0, 0, 0.15)">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content" style="width: max-content;background: #000000b8;">
+            <div class="modal-header" style="padding-bottom: 0px">
+                <h1 class="modal-title" style="font-size: 24px; font-weight: 700; color:white;"> Offer Processing Status </h1>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white">
+                    <span aria-hidden="true" style="color:white"><i class="fal fa-times" style="color:white" ></i></span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="max-height: 50vh; overflow-y: overlay; font-size: 18px; ">
+                    <div id="stateList" style="display: flex">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal" id="reqlistModel" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="false"
+    style="background-color: rgba(0, 0, 0, 0.15)">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content" style="width: max-content;">
+            <div class="modal-header" style="padding-bottom: 0px">
+                <h1 class="modal-title" style="font-size: 24px; font-weight: 700;"> Offer Request List </h1>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" >
+                    <span aria-hidden="true" style="background : #5b5b5b26"><i class="fal fa-times"  ></i></span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="max-height: 50vh; max-width: 64vw; overflow-y: overlay; overflow-x: overlay; font-size: 18px; ">
+                    <div id="reqListTable"> </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script type="text/template" id="table-template2">
+  <table id="req-data" class="table table-bordered table-hover table-striped w-100">
+    <thead class="bg-primary-600">
+    <tr>
+     <th class="new-col">Group Id</th>
+     <th class="new-col">Status</th>
+     <th class="new-col">Start Date Time</th>
+     <th class="new-col">End Date Time</th>
+    </tr>
+    </thead>
+    <tbody>
+    <%=table_html%>
+    </tbody>
+    <tfoot>
+   <tr>
+     <th class="new-col">Group Id</th>
+     <th class="new-col">Status</th>
+     <th class="new-col">Start Date Time</th>
+     <th class="new-col">End Date Time</th>
+    </tr>
+    </tfoot>
+  </table>
+</script>
+
+<script type="text/template" id="table-template">
+    <div class="float-right d-flex position-relative" style="width:250px" >
+        <label class="form-label position-absolute" style="top:-20px" for="statusFilter">Status Filter</label>
+        <select class="form-control select2" id="statusFilter" name="statusFilter"
+            data-placeholder="Select Status" required>
+            <option value="All">All</option>
+            <option value="APPROVED">APPROVED</option>
+            <option value="APPROVAL_PENDING">APPROVAL_PENDING</option>
+            <option value="DEACTIVATED">DEACTIVATED</option>
+            <option value="DRAFTED">DRAFTED</option>
+            <option value="SAVED">SAVED</option>
+            <option value="ERROR">ERROR</option>
+        </select>
+    </div>
+    <button class="btn buttons-pdf buttons-html5 btn-outline-info btn-sm mr-2" style="float: right; margin-top: 5px;color: #99898;" onclick="getLogs()">Logs</button>
+  <table id="datatable-invoice-data-<%=table_id%>" class="table table-bordered table-hover table-striped w-100">
+    <thead class="bg-primary-600">
+    <tr>
+     <th class="new-col">Mapping Name</th>
+     <th class="new-col">Offer Name</th>
+     <th class="new-col">Segment Name</th>
+     <th class="new-col">Updated time</th>
+     <th class="new-col">Start date</th>
+     <th class="new-col">End Date</th>
+     <th class="new-col">Created By</th>
+     <th class="new-col">Status</th>
+     <th class="new-col"></th>
+      <!-- <th class="new-col">Edit</th>
+      <th class="new-col">Delete</th> -->
+    </tr>
+    </thead>
+    <tbody>
+    <%=table_html%>
+    </tbody>
+    <tfoot>
+   <tr>
+    <th class="new-col">Mapping Name</th>
+    <th class="new-col">Offer Name</th>
+    <th class="new-col">Segment Name</th>
+    <th class="new-col">Updated time</th>
+    <th class="new-col">Start date</th>
+    <th class="new-col">End Date</th>
+    <th class="new-col">Created By</th>
+    <th class="new-col">Status</th>
+    <th class="new-col"></th>
+   
+      <!-- <th class="new-col">Edit</th>
+      <th class="new-col">Delete</th> -->
+    </tr>
+    </tfoot>
+  </table>
+</script>
+
+<script type="text/javascript">
+    var lock = false;
+    var apiBasePath = "http://m-stage-ethera-commons-elb-61896516.ap-south-1.elb.amazonaws.com/eth_common/api"
+    var uploadedFilesDataMap = {};
+    var tableCounter = 1;
+    var currentUser = "{{user}}"
+    var projectId = "";
+    var user_bank_settings = {{ user_bank_settings| safe}};
+
+
+    function viewLink(id) {
+        console.log(uploadedFilesDataMap[id].id)
+        var chatuploadedFileLink = `${window.location.origin}/chat_uploadedFile/render/?uploadedFile_id=${uploadedFilesDataMap[id].id}`
+        window.open(chatuploadedFileLink, "_blank");
+    }
+
+    function editChatuploadedFile(id) {
+        alert("Functionality not ready : Coming Soon");
+    }
+
+    function deleteChatuploadedFile(id) {
+        alert("Functionality not ready : Coming Soon");
+    }
+
+    function initDatatable() {
+        $("#datatable-invoice-data-1").dataTable({
+            responsive: true,
+            lengthChange: false,
+            dom:
+                /*	--- Layout Structure
+                    --- Options
+                    l	-	length changing input control
+                    f	-	filtering input
+                    t	-	The table!
+                    i	-	Table information summary
+                    p	-	pagination control
+                    r	-	processing display element
+                    B	-	buttons
+                    R	-	ColReorder
+                    S	-	Select
+        
+                    --- Markup
+                    < and >				- div element
+                    <"class" and >		- div with a class
+                    <"#id" and >		- div with an ID
+                    <"#id.class" and >	- div with an ID and a class
+        
+                    --- Further reading
+                    https://datatables.net/reference/option/dom
+                    --------------------------------------
+                 */
+                "<'row mb-3'<'col-sm-12 col-md-6 d-flex align-items-center justify-content-start'f><'col-sm-12 col-md-6 d-flex align-items-center justify-content-end'lB>>" +
+                "<'row'<'col-sm-12'tr>>" +
+                "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+            buttons: [
+                /*{
+                      extend:    'colvis',
+                      text:      'Column Visibility',
+                      titleAttr: 'Col visibility',
+                      className: 'mr-sm-3'
+                  },*/
+                {
+                    extend: "pdfHtml5",
+                    text: "PDF",
+                    titleAttr: "Generate PDF",
+                    className: "btn-outline-danger btn-sm mr-1",
+                },
+                {
+                    extend: "excelHtml5",
+                    text: "Excel",
+                    titleAttr: "Generate Excel",
+                    className: "btn-outline-success btn-sm mr-1",
+                },
+                {
+                    extend: "csvHtml5",
+                    text: "CSV",
+                    titleAttr: "Generate CSV",
+                    className: "btn-outline-primary btn-sm mr-1",
+                },
+                {
+                    extend: "copyHtml5",
+                    text: "Copy",
+                    titleAttr: "Copy to clipboard",
+                    className: "btn-outline-primary btn-sm mr-1",
+                },
+                {
+                    extend: "print",
+                    text: "Print",
+                    titleAttr: "Print Table",
+                    className: "btn-outline-primary btn-sm",
+                },
+            ],
+            fnDrawCallback: function () {
+                $("#datatable-invoice-data-1"). DataTable() .columns.adjust ()},
+        });
+        $(".select2").select2();
+    }
+    $(document).on("change", "#statusFilter", function () {
+        var table = $('#datatable-invoice-data-1').DataTable();
+        var selectedValue = $(this).val();
+        // Clear existing search
+        table.column(statusIndex).search('').draw();
+        // Apply new search based on the selected value
+        if (selectedValue !== 'All') {
+            table.column(statusIndex).search(selectedValue).draw();
+        }
+    });
+    $("#bankName").on("change", function () {
+        currentBank = this.value;
+        $("#environment").parent().show();
+        var environmentOptionsHtml =
+            "<option value='' disabled selected></option>";
+        for (const environment of Object.keys(user_bank_settings[this.value])) {
+            environmentOptionsHtml += `<option value='${environment}'>${environment}</option>`;
+        }
+        $("#environment").html(environmentOptionsHtml);
+        $("#project").parent().hide();
+        $("#project").html("");
+    });
+    $("#environment").on("change", function () {
+        currentEnvironment = this.value;
+        $("#project").parent().show();
+        const bank = $("#bankName").val();
+        var projectOptionsHtml = "<option value='' disabled selected></option>";
+        for (const project of Object.keys(user_bank_settings[bank][this.value])) {
+            projectOptionsHtml += `<option value='${project}'>${project}</option>`;
+        }
+        $("#project").html(projectOptionsHtml);
+    });
+    $("#project").on("change", function () {
+        currentProject = this.value;
+        const bank = $("#bankName").val();
+        const env = $("#environment").val();
+        apiBasePath = user_bank_settings?.[bank]?.[env]?.[this.value]?.url;
+        // currentBank = this.value;
+        $("#segmentViewType").parent().show();
+        setSessionStorageItem("selected_project_config", { "bank": bank, "env": env, "project": this.value })
+        var segmentViewTypeHtml = "<option value='' disabled selected></option>";
+        for (const segmentView of user_bank_settings?.[bank]?.[env]?.[this.value]?.segment_view_types) {
+            segmentViewTypeHtml += `<option value='${segmentView?.id}'>${segmentView?.label}</option>`;
+        }
+        $("#segmentViewType").html(segmentViewTypeHtml);
+    });
+    $("#segmentViewType").on("change", function () {
+        currentProject = this.value;
+        const bank = $("#bankName").val();
+        const env = $("#environment").val();
+        const project = $("#project").val();
+        // apiBasePath = user_bank_settings?.[bank]?.[env]?.[project]?.project_id;
+        projectId = user_bank_settings?.[bank]?.[env]?.[project]?.project_id
+        setSessionStorageItem("segmentViewType", this.value)
+        getOffersList(projectId, $("#segmentViewType").val())
+        if (!!this.value) {
+            $("#splashScreen").hide();
+        }
+    });
+    $(document).on("change", "#bankName, #environment, #project ,#segmentViewType", function () {
+        $("#bankName, #environment, #project, #segmentViewType").map(function () {
+            if (!this.value) {
+                $("#splashScreen").show();
+            }
+        });
+    });
+
+    function getLogs() {
+        $.ajax({
+            url: apiBasePath + "/activity_logs/get_activity_logs/",
+            type: "POST",
+            contentType: 'application/json',
+            data: JSON.stringify({
+                "mode": "DATA_SOURCE",
+                "filters": {
+                    "value": "MAPPING",
+                    "operation": "EQ"
+                }
+            }),
+            success: function (response) {
+                lock = false;
+                if (response?.result?.toUpperCase() == "SUCCESS" && !!response?.data?.length) {
+                    $("#divLoader").hide();
+                    var logsHtml = "";
+                    var lastDate = ""
+                    for (el of response?.data) {
+                        const utcDateTime = new Date(el?.ct + 'Z');
+                        const istDateTimeString = utcDateTime.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+                        const istDateString = utcDateTime.toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' });
+
+                        logsHtml += (lastDate !== istDateString ? `<div class="fw-700 mb-2" style="font-size:20px"> ${moment(istDateTimeString).format("dddd")} - ${moment(istDateTimeString).format("D MMM YYYY")}  </div>` : "") + `<li class="mb-2">${moment(istDateTimeString).format("hh:mm A")} - ${el?.comment}</li>`;
+                        lastDate = istDateString
+                    }
+                    $("#logsList").html(logsHtml);
+                    $("#logsModal").modal()
+                } else {
+                    $("#divLoader").hide();
+                    console.log("Api success false");
+                    if (!!response?.details_message) {
+                        $("#failureAlertBody").html(response?.details_message)
+                    }
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            },
+            error: function (error) {
+                lock = false;
+                $("#divLoader").hide();
+                $("#somethingWentWrongAlert").toast("show");
+            },
+        });
+
+    }
+
+    var mappingDataMap = {};
+
+    function getOffersList(projectId, segmentViewType) {
+        if (!projectId || !segmentViewType) return;
+        mappingDataMap = {};
+        $("#divLoader").show();
+        $.ajax({
+            url: apiBasePath + "/offers/view_mappings_list/",
+            type: "POST",
+            contentType: 'application/json',
+            data: JSON.stringify({
+                "segment_view_type": segmentViewType,
+                "project_id": projectId,
+                "active_user": currentUser,
+            }),
+            success: function (response) {
+                lock = false;
+                if (response?.result?.toUpperCase() == "SUCCESS") {
+                    var tableHtml = "";
+                    console.log(response?.data);
+                    const configData = response?.data?.result;
+                    console.log(configData);
+                    for (var i = 0; i < configData.length; i++) {
+                        mappingDataMap[configData[i]['unique_id']] = configData[i];
+                        tableHtml +=
+                            "<tr><td>" +
+                            (!!configData[i]["mapping_name"] ? configData[i]["mapping_name"] : "NA") +
+                            "</td><td>" +
+                            (!!configData[i]["offer_name"] ? `<div class="cursor-pointer" onclick=viewOffer("${configData[i]["offer_id"]}")>${configData[i]["offer_name"]}</div>` : "NA") +
+                            "</td><td>" +
+                            (!!configData[i]["segment_name"] ? `<div class="cursor-pointer" onclick=viewSegment("${configData[i]["segment_id"]}")>${configData[i]["segment_name"]}</div>` : "NA") +
+                            "</td><td style='white-space:nowrap'>" +
+                            (!!configData[i]["updated_time"] ? moment(configData[i]["updated_time"]).format("D MMM YYYY, hh:mm A") : "NA") +
+                            "</td><td style='white-space:nowrap'>" +
+                            (!!configData[i]["start_date"] ? moment(configData[i]["start_date"]).format("D MMM YYYY, hh:mm A") : "NA") +
+                            "</td><td style='white-space:nowrap'>" +
+                            (!!configData[i]["end_date"] ? moment(configData[i]["end_date"]).format("D MMM YYYY, hh:mm A") : "NA") +
+                            "</td><td>" +
+                            (!!configData[i]["created_by"] ? configData[i]["created_by"] : "NA") +
+                            `</td><td id="status-div-${configData[i]["unique_id"]}" class='fw-700'>` +
+                            (!!configData[i]["status"] ? configData[i]["status"] : "NA") +
+                            "</td><td>" + (configData[i]["status"] != 'DEACTIVATED' ?
+                                `<div id="controls-div-${configData[i]["unique_id"]}" style="
+                                display: flex;
+                                justify-content: center;
+                                gap: 10px;">
+
+                                    ${(configData[i]["status"] == "APPROVED" || configData[i]["status"] == "PAUSED") ? `<i id="ico-${configData[i]["unique_id"]}" class="fal fa-${configData[i]["status"] == 'APPROVED' ? 'pause' : 'play'}-circle fa-2x waves-effect waves-themed color-warning-500 " title="${configData[i]["status"] == 'APPROVED' ? 'Pause' : 'Play'}" onclick="handlePauseClick('${configData[i]["unique_id"]}')"></i>` : ``}
+                                    ${(configData[i]["status"] == "SAVED" || configData[i]["status"] == "APPROVAL_PENDING") ? `<span id="approval-div-${configData[i]["unique_id"]}"><i id="approval-icon-${configData[i]["unique_id"]}" class="fal fa-${configData[i]["status"] == 'SAVED' ? 'paper-plane' : 'file-check'} fa-2x waves-effect waves-themed color-primary-500 " title="${configData[i]["status"] == 'SAVED' ? 'Send For Approval' : 'Approve'}" onclick="handleMappingApproval('${configData[i]["unique_id"]}')"></i></span>` : ``}
+
+
+
+                                    <i class="fal fa-copy fa-2x waves-effect waves-themed color-success-500 " title="Clone" onclick="handleCtaClick('clone','${configData[i]["unique_id"]}')"></i>
+                                    <i class="fal fa-power-off fa-2x waves-effect waves-themed color-danger-500 " title="Deactivate" onclick="handleDeactivateClick('${configData[i]["unique_id"]}')"></i>
+                                    <i class="fal fa-calendar-edit fa-2x waves-effect waves-themed color-primary-500 " title="Edit date" onclick="handleEditDateClick('${configData[i]["unique_id"]}','${configData[i]["start_date"]}','${configData[i]["end_date"]}',this)"></i>
+                                    <input style="width:0;height:0;border:0;padding:0;" type="text" class="dateRangePicker" name="dateRange"
+                                        placeholder="Select date Range" required />
+                                </div>` : `<div style="
+                                display: flex;
+                                justify-content: center;
+                                gap: 10px;"><i class="fal fa-copy fa-2x waves-effect waves-themed color-success-500 " title="Clone" onclick="handleCtaClick('clone','${configData[i]["unique_id"]}')"></i></div>`) +
+                            "</td>" +
+                            "</tr>";
+
+                    }
+                    $("#invoices-data-div").show();
+
+                    $("#main-table").html(
+                        _.template($("#table-template").text(), {
+                            table_html: tableHtml,
+                            table_id: tableCounter,
+                        })
+                    );
+                    initDatatable();
+                    $("#divLoader").hide();
+                } else {
+                    $("#divLoader").hide();
+                    console.log("Api success false");
+                    if (!!response?.details_message) {
+                        $("#failureAlertBody").html(response?.details_message)
+                    }
+                    $("#somethingWentWrongAlert").toast("show");
+                    $("#main-table").html("");
+                    $("#splashScreen").show();
+                }
+            },
+            error: function (error) {
+                lock = false;
+                $("#divLoader").hide();
+                $("#somethingWentWrongAlert").toast("show");
+                $("#main-table").html("");
+                $("#splashScreen").show();
+            },
+        });
+
+    }
+    function viewOffer(offerId) {
+        var link = `${window.location.origin}/mentis/editor/?#createOffer?mode=view&uniqueId=${offerId}`;
+        window.open(link, "_blank");
+    }
+    function viewSegment(segmentId) {
+        var link = `${window.location.origin}/mentis/editor/?#createSegment?mode=view&uniqueId=${segmentId}&segmentViewType=${$("#segmentViewType").val()}`;
+        window.open(link, "_blank");
+    }
+    var deactivateMappingId = ""
+    function handleDeactivateClick(uniqueId) {
+        console.log("uniqueId", uniqueId)
+        deactivateMappingId = uniqueId
+        $("#deactiveMappingConfirmationModal").modal();
+    }
+    $("#deactiveMappingConfirmationModal").on("hidden.bs.modal", function (e) {
+        deactivateMappingId = ""
+    });
+    function handleEditDateClick(uniqueId, startDate, endDate, element) {
+        const datePickerElement = $(element)?.parent()?.find("[name=dateRange")
+        console.log("$(datePickerElement).daterangepicker",$(datePickerElement).daterangepicker())
+        $(datePickerElement).daterangepicker({
+            timePicker: true,
+            // singleDatePicker: true,
+            autoUpdateInput: false,
+            opens: "left",
+            startDate: moment(startDate).format('D MMM YYYY, hh:mm A'),
+            endDate: moment(endDate).format('D MMM YYYY, hh:mm A'),
+            // minDate: moment.max(moment(new Date(startDate)),moment(new Date())).format('D MMM YYYY, hh:mm A'),
+            locale: {
+                format: 'D MMM YYYY, hh:mm A',
+                cancelLabel: 'Clear'
+            }
+        });
+        $(datePickerElement)?.click()
+        $(datePickerElement).on('apply.daterangepicker', function (ev, picker) {
+            $("#divLoader").show();
+            $.ajax({
+                url: apiBasePath + "/offers/extend_offer_date/",
+                type: "POST",
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    "mapping_id": uniqueId || "",
+                    "start_date":picker.startDate.format('YYYY-MM-DD HH:mm:ss') || "",
+                    "end_date": picker.endDate.format('YYYY-MM-DD HH:mm:ss') || "",
+                    "active_user": currentUser,
+                }),
+                success: function (response) {
+                    $("#divLoader").hide();
+                    if (response?.result?.toUpperCase() == "SUCCESS") {
+                        $("#successAlertBody").html("Mapping Date extended successfully!!")
+                        $("#successAlert").toast("show");
+                        getOffersList(projectId, $("#segmentViewType").val())
+                    }
+                    else {
+                        $("#divLoader").hide();
+                        if (!!response?.details_message) {
+                            $("#failureAlertBody").html(response?.details_message)
+                        }
+                        $("#somethingWentWrongAlert").toast("show");
+                    }
+                }, error: function (error) {
+                    $("#divLoader").hide();
+                    if (!!error?.responseJSON?.details_message) {
+                            $("#failureAlertBody").html(error?.responseJSON?.details_message)
+                        }
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            })
+        })
+    }
+
+    function fetch_offer_request_list(){
+
+        if(lock==true){
+            return;
+        }
+        $("#divLoader").show();
+        lock = true;
+        $.ajax({
+            url: "/mentis/editor/offerApi",
+            type: "POST",
+            contentType: 'application/json',
+            data: JSON.stringify({
+                "destination": {"env": $("#environment").val(), "bank": $("#bankName").val(), "project": $("#project").val()},
+                "api_name": "offers/get_offers_request_list/"
+            }),
+            success: function (response) {
+                $("#divLoader").hide();
+                lock = false;
+                if (response?.success) {
+                    var tableHtml = "";
+                    console.log(response?.data);
+                    const configData = response?.data;
+                    console.log(configData);
+                    for (var i = 0; i < configData.length; i++) {
+                        tableHtml +=
+                            "<tr><td>" +
+                            (!!configData[i]["group_id"] ? configData[i]["group_id"] : "NA") +
+                            "</td><td>" +
+                            (!!configData[i]["status"] ? configData[i]["status"] : "NA") +
+                            "</td><td>" +
+                            (!!configData[i]["start_date_time"] ? moment(configData[i]["start_date_time"]).format("D MMM YYYY, hh:mm A") : "NA") +
+                            "</td><td style='white-space:nowrap'>" +
+                            (!!configData[i]["end_date_time"] ? moment(configData[i]["end_date_time"]).format("D MMM YYYY, hh:mm A") : "NA") +
+                            "</td>"
+                            "</tr>";
+
+                    }
+
+                    $("#reqListTable").html(
+                        _.template($("#table-template2").text(), {
+                            table_html: tableHtml,
+                        })
+                    );
+
+
+                    $("#reqlistModel").modal()
+                    $("#divLoader").hide();
+                }
+                else {
+                    console.log(`error in fetching request list ${response?.error}`);
+                    $("#divLoader").hide();
+                    if (!!response?.error) {
+                        $("#failureAlertBody").html(response?.error)
+                    }
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            }, error: function (error) {
+                lock = false;
+                $("#divLoader").hide();
+                $("#somethingWentWrongAlert").toast("show");
+            }
+        })
+    }
+
+
+    function fetch_offer_processing_status(){
+
+        if(lock==true){
+            return;
+        }
+
+        $("#divLoader").show();
+        lock = true;
+         $.ajax({
+            url: "/mentis/editor/offerApi",
+            type: "POST",
+            contentType: 'application/json',
+            data: JSON.stringify({
+                "destination": {"env": $("#environment").val(), "bank": $("#bankName").val(), "project": $("#project").val()},
+                "api_name": "offers/processing_offers_status/"
+            }),
+            success: function (response) {
+                lock = false;
+                if (response?.success && !!response?.data?.length) {
+                    $("#divLoader").hide();
+                    status_data = response?.data
+                    console.log(status_data)
+                    console.log(status_data?.length)
+                    var status_html = "";
+                    for (state of response?.data) {
+                        status_html +=  ` <div class="btn btn-primary waves-effect waves-themed" style="display: flex; background:#e9edf0; margin-inline: 4px;">
+                                               <div class="fw-700 mb-2" style="font-size:20px; color:black; margin:4px">
+                                                        ${state?.label}
+                                               </div>
+                                               <div class="fw-700 mb-2" style="font-size:20px; margin:4px;width: 30px;height: 30px;background: ${state?.colour};border: 7px solid #afc7c7;border-radius: 30px;">
+                                               </div>
+                                          </div>
+                                     `;
+                    }
+
+                    $("#stateList").html(status_html);
+                    $("#statusModel").modal()
+                }
+                else {
+                    console.log(`error in fetching processing status ${response?.error}`);
+                    $("#divLoader").hide();
+                    if (!!response?.error) {
+                        $("#failureAlertBody").html(response?.error)
+                    }
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            }, error: function (error) {
+                lock = false;
+                $("#divLoader").hide();
+                $("#somethingWentWrongAlert").toast("show");
+            }
+        })
+    }
+
+    function trigger_offer_generation(){
+        console.log("generate offers triggered")
+        if(lock==true){
+            return;
+        }
+
+        var confirmLive = confirm("Do you really want to start offer generation process ?");
+        if (confirmLive == false)
+            return;
+
+
+        $("#divLoader").show();
+        lock = true;
+        $.ajax({
+            url: "/mentis/editor/offerApi",
+            type: "POST",
+            contentType: 'application/json',
+            data: JSON.stringify({
+                "destination": {"env": $("#environment").val(), "bank": $("#bankName").val(), "project": $("#project").val()},
+                "api_name": "offers/generate_offers/"
+            }),
+            success: function (response) {
+                $("#divLoader").hide();
+                lock = false;
+                if (response?.success) {
+                    console.log("offer generation started successfully")
+                    $("#successAlertBody").html("Offer Generation Started!!")
+                    $("#successAlert").toast("show");
+                }
+                else {
+                    console.log(`error in offer generation ${response?.error}`);
+                    $("#divLoader").hide();
+                    if (!!response?.error) {
+                        $("#failureAlertBody").html(response?.error)
+                    }
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            }, error: function (error) {
+                lock = false;
+                $("#divLoader").hide();
+                $("#somethingWentWrongAlert").toast("show");
+            }
+        })
+    }
+
+    function deactivateMapping() {
+        console.log("deactivateSegmentID", deactivateMappingId)
+        $("#deactiveMappingConfirmationModal").modal("hide");
+        $("#divLoader").show();
+
+        $.ajax({
+            url: apiBasePath + "/offers/deactivate_mapping/",
+            type: "POST",
+            contentType: 'application/json',
+            data: JSON.stringify({
+                "mapping_id": deactivateMappingId,
+                "active_user": currentUser,
+            }),
+            success: function (response) {
+                $("#divLoader").hide();
+                if (response?.result?.toUpperCase() == "SUCCESS") {
+                    $("#successAlertBody").html("Deactivated successfully!!")
+                    $("#successAlert").toast("show");
+                    getOffersList(projectId, $("#segmentViewType").val())
+                }
+                else {
+                    $("#divLoader").hide();
+                    if (!!response?.details_message) {
+                        $("#failureAlertBody").html(response?.details_message)
+                    }
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            }, error: function (error) {
+                $("#divLoader").hide();
+                $("#somethingWentWrongAlert").toast("show");
+            }
+        })
+    }
+    function handleCtaClick(mode, uniqueId) {
+        var ctaLink = `${window.location.origin}/mentis/editor/?#createMapping?mode=${mode}&uniqueId=${uniqueId}&segmentViewType=${$("#segmentViewType").val()}&data=${JSON.stringify(mappingDataMap[uniqueId])}`;
+        window.open(ctaLink, "_blank");
+    }
+    function handleApproveClick(uniqueId) {
+        console.log("handleApproveClick uniqueId", uniqueId)
+        $("#divLoader").show();
+        $.ajax({
+            url: apiBasePath + "/segments/approval_action/",
+            type: "POST",
+            contentType: 'application/json',
+            data: JSON.stringify({
+                "segment_view_type": $("#segmentViewType").val() || "",
+                "segment_id": uniqueId,
+                "active_user": currentUser,
+            }),
+            success: function (response) {
+                $("#divLoader").hide();
+                if (response?.result?.toUpperCase() == "SUCCESS") {
+                    $("#successAlertBody").html("Segment Approved!!")
+                    $("#successAlert").toast("show");
+                    getOffersList(projectId, $("#segmentViewType").val())
+                }
+                else {
+                    $("#divLoader").hide();
+                    if (!!response?.details_message) {
+                        $("#failureAlertBody").html(response?.details_message)
+                    }
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            }, error: function (error) {
+                $("#divLoader").hide();
+                $("#somethingWentWrongAlert").toast("show");
+            }
+        })
+    }
+    function handleSentForApprovalClick(uniqueId) {
+        console.log("handleSentForApprovalClick uniqueId", uniqueId)
+        $("#divLoader").show();
+        $.ajax({
+            url: apiBasePath + "/segments/send_for_approval/",
+            type: "POST",
+            contentType: 'application/json',
+            data: JSON.stringify({
+                "segment_view_type": $("#segmentViewType").val() || "",
+                "segment_id": uniqueId,
+                "active_user": currentUser,
+            }),
+            success: function (response) {
+                $("#divLoader").hide();
+                if (response?.result?.toUpperCase() == "SUCCESS") {
+                    $("#successAlertBody").html("Segment Sent for approval!!")
+                    $("#successAlert").toast("show");
+                    getOffersList(projectId, $("#segmentViewType").val())
+                }
+                else {
+                    $("#divLoader").hide();
+                    if (!!response?.details_message) {
+                        $("#failureAlertBody").html(response?.details_message)
+                    }
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            }, error: function (error) {
+                $("#divLoader").hide();
+                $("#somethingWentWrongAlert").toast("show");
+            }
+        })
+
+    }
+    var statusIndex=7
+    $(document).ready(function () {
+        var bankNameOptionsHtml =
+            "<option value='' disabled selected></option>";
+        for (const bank of Object.keys(user_bank_settings)) {
+            bankNameOptionsHtml += `<option value='${bank}'>${bank}</option>`;
+        }
+        $("#bankName").html(bankNameOptionsHtml);
+        const selected_project_config = getSessionStorageItem("selected_project_config");
+        if (!!selected_project_config) {
+            const bank = $("#bankName").val(selected_project_config?.bank).change();
+            const env = $("#environment").val(selected_project_config?.env).change();
+            const project = $("#project").val(selected_project_config?.project).change();
+        }
+        if (getSessionStorageItem("segmentViewType")) {
+            $("#segmentViewType").val(getSessionStorageItem("segmentViewType")).change()
+        }
+        $(".select2").select2();
+
+        $("#invoices-data-div").show();
+    });
+    // Function to set a key in session storage
+    function setSessionStorageItem(key, value) {
+        sessionStorage.setItem(key, JSON.stringify(value));
+    }
+
+    // Function to get a key from session storage
+    function getSessionStorageItem(key) {
+        const item = sessionStorage.getItem(key);
+        return item ? JSON.parse(item) : null;
+    }
+
+    // Function to remove a key from session storage
+    function removeSessionStorageItem(key) {
+        sessionStorage.removeItem(key);
+    }
+
+
+
+
+    function handlePauseClick(uniqueId) {
+
+        console.log('handlePauseClick', uniqueId);
+
+        var confirmLive = confirm("Do you really want to update the status!");
+        if (confirmLive == false)
+            return;
+
+        $("#divLoader").show();
+
+
+        var currentStatus = mappingDataMap[uniqueId]['status'];
+        $.ajax({
+            url: apiBasePath + "/offers/toggle_mapping_status/",
+            type: "POST",
+            contentType: 'application/json',
+            data: JSON.stringify({
+                "mapping_id": uniqueId,
+                "active_user": currentUser,
+            }),
+            success: function (response) {
+                $("#divLoader").hide();
+                if (response?.result?.toUpperCase() == "SUCCESS") {
+                    $("#successAlertBody").html("Status updated!!")
+                    $("#successAlert").toast("show");
+
+                    if (currentStatus == "PAUSED") {
+                        $(`#controls-div-${uniqueId} .fa-play-circle`).removeClass('fa-play-circle').addClass('fa-pause-circle').prop("title", "Pause");
+                        mappingDataMap[uniqueId]['status'] = 'APPROVED';
+                    } else {
+                        $(`#controls-div-${uniqueId} .fa-pause-circle`).removeClass('fa-pause-circle').addClass('fa-play-circle').prop("title", "Play");
+                        mappingDataMap[uniqueId]['status'] = 'PAUSED';
+                    }
+
+
+                }
+                else {
+                    $("#divLoader").hide();
+                    if (!!response?.details_message) {
+                        $("#failureAlertBody").html(response?.details_message)
+                    }
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            }, error: function (error) {
+                $("#divLoader").hide();
+                $("#somethingWentWrongAlert .toast-body").html(`${error?.responseJSON?.details_message || 'Something went wrong!'}`);
+                $("#somethingWentWrongAlert").toast("show");
+            }
+        })
+    }
+
+    $('#somethingWentWrongAlert').on('hidden.bs.toast', function () {
+        $("#failureAlertBody").html("Somthing went wrong, Please try again.")
+    })
+    function handleMappingApproval(uniqueId) {
+
+        console.log('handleMappingApproval', uniqueId);
+
+        var confirmText = mappingDataMap[uniqueId]['status'] == "SAVED" ? "Do you really want to send this for approval !" : "Do you really want to approve this mapping !";
+
+        var confirmLive = confirm(confirmText);
+        if (confirmLive == false)
+            return;
+
+        var apiPath = mappingDataMap[uniqueId]['status'] == "SAVED" ? apiBasePath + "/offers/mapping_approval_request/" : apiBasePath + "/offers/mapping_approval_action/";
+
+        var currentStatus = mappingDataMap[uniqueId]['status'];
+        $.ajax({
+            url: apiPath,
+            type: "POST",
+            contentType: 'application/json',
+            data: JSON.stringify({ "mapping_id": uniqueId, "active_user": currentUser, }),
+            success: function (response) {
+                $("#divLoader").hide();
+                if (response?.result?.toUpperCase() == "SUCCESS") {
+
+
+
+                    if (currentStatus == "SAVED") {
+                        $(".fa-paper-plane").removeClass('fa-paper-plane').addClass("fa-file-check")
+                        // mappingDataMap[uniqueId]['status'] = 'APPROVAL_PENDING';
+                        $("#successAlertBody").html("Sent for approval!!")
+                        // $("#status-div-"+uniqueId).html("APPROVAL_PENDING");
+                        getOffersList(projectId, $("#segmentViewType").val())
+
+                    } else {
+                        $(".fa-file-check").hide();
+                        // mappingDataMap[uniqueId]['status'] = 'APPROVED';
+                        // $("#status-div-"+uniqueId).html("APPROVED");
+                        getOffersList(projectId, $("#segmentViewType").val())
+
+                        $("#successAlertBody").html("Approved!!")
+                    }
+
+                    $("#successAlert").toast("show");
+
+
+                }
+                else {
+                    console.log('here11', response);
+                    $("#divLoader").hide();
+                    $("#somethingWentWrongAlert .toast-body").html(`${response?.details_message || 'Something went wrong!'}`);
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            }, error: function (error) {
+                console.log('here', error.responseJSON.details_message);
+                $("#divLoader").hide();
+                $("#somethingWentWrongAlert .toast-body").html(`${error?.responseJSON?.details_message || 'Something went wrong!'}`);
+                $("#somethingWentWrongAlert").toast("show");
+            }
+        })
+    }
+</script>

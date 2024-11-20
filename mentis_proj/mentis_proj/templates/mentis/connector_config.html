@@ -1,0 +1,1967 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Add configuration</title>
+    <style type="text/css"></style>
+    <link
+      rel="stylesheet"
+      media="screen, print"
+      href="/static/mentis/css/datatables.bundle.css"
+    />
+    <link rel="stylesheet" href="/static/mentis/css/dateRangePicker.css" />
+    <script src="/static/mentis/js/moment.js"></script>
+    <script src="/static/mentis/js/dateRangePicker.js"></script>
+    <script src="/static/mentis/js/underscore-1.6.0.min.js"></script>
+    <script src="/static/mentis/js/datatables.bundle.js"></script>
+    <script src="/static/mentis/js/datatables.export.js"></script>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="/static/mentis/css/jsoneditor.css"
+    />
+    <script src="/static/mentis/js/jsoneditor.js"></script>
+    <link
+      rel="stylesheet"
+      media="screen, print"
+      href="/static/mentis/css/select2.bundle.css"
+    />
+    <style>
+      #bucket-data-table th,
+      #bucket-data-table td {
+        text-align: left;
+        padding: 10px;
+      }
+
+      #bucket-data-table th {
+        background-color: #c5c5c5;
+      }
+
+      #bucket-data-table tbody tr:hover {
+        background-color: #f0f0f0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="main-form-div">
+      <div class="row">
+        <div class="col-xl-12">
+          <div class="panel" id="bankConfigurationPanel">
+            <div class="panel-hdr">
+              <h2>
+                <span class="fw-900"><i>Bank configuration</i></span>
+              </h2>
+              <div class="panel-toolbar">
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-collapse"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Collapse"
+                ></button>
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-fullscreen"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Fullscreen"
+                ></button>
+              </div>
+            </div>
+            <div id="bankConfig" class="panel-container">
+              <div class="form-group row m-3">
+                <div class="col-3">
+                  <label for="bankName">Bank name</label>
+                  <select
+                    class="form-control select2"
+                    id="bankName"
+                    name="bankName"
+                    data-placeholder="Select Bank name"
+                    required
+                  ></select>
+                </div>
+                <div class="col-3" style="display: none">
+                  <label for="environment">Environment</label>
+                  <select
+                    class="form-control select2"
+                    id="environment"
+                    name="environment"
+                    data-placeholder="Select Environment"
+                    required
+                  ></select>
+                </div>
+                <div class="col-3" style="display: none">
+                  <label for="project">Project</label>
+                  <select
+                    class="form-control select2"
+                    id="project"
+                    name="project"
+                    data-placeholder="Select Project"
+                    required
+                  ></select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="panel" id="connectorConfigurationPanel">
+            <div class="panel-hdr">
+              <h2>
+                <span class="fw-900"
+                  ><i id="formTitle">Add Connector Configuration</i></span
+                >
+              </h2>
+              <div class="panel-toolbar">
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-collapse"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Collapse"
+                ></button>
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-fullscreen"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Fullscreen"
+                ></button>
+              </div>
+            </div>
+            <div class="panel-container">
+              <div class="splashScreen">
+                <div
+                  class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+                  style="z-index: 2; background-color: rgba(255, 255, 255, 0.9)"
+                >
+                  <div style="font-size: 26px">
+                    Please Select Bank Configurations first.
+                  </div>
+                </div>
+              </div>
+              <form onsubmit="saveConnectorConfig(event)">
+                <div class="form-group row m-3 items-center">
+                  <div class="col-3">
+                    <label for="bucketType">Type</label>
+                    <select
+                      class="form-control select2"
+                      id="bucketType"
+                      name="bucketType"
+                      data-placeholder="Select Type"
+                      required
+                    ></select>
+                  </div>
+                  <div class="col-3" style="display: none">
+                    <label for="selectedConfig">Configuration</label>
+                    <select
+                      class="form-control select2"
+                      id="selectedConfig"
+                      name="selectedConfig"
+                      data-placeholder="Select Configuration"
+                      required
+                    ></select>
+                  </div>
+                  <div class="col-3" style="display: none">
+                    <label for="path">Path</label>
+                    <div class="d-flex">
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="path"
+                        name="path"
+                        placeholder="Enter Path"
+                        required
+                      />
+                      <button
+                        id="pathSelectionBtn"
+                        title="Select path"
+                        class="btn p-0 rounded"
+                        type="button"
+                        onclick="openPathSelectionModal()"
+                      >
+                        <i
+                          class="fal fa-search-plus p-2 border"
+                          style="font-size: 18px"
+                        ></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    class="col-3 self-end text-center align-self-end"
+                    style="display: none"
+                  >
+                    <button
+                      type="submit"
+                      id="saveConnectorConfigButton"
+                      title="Save"
+                      class="btn btn-primary width-sm waves-effect waves-themed py-1 fs-xl"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+          <div id="panel-1" class="panel">
+            <div class="panel-hdr">
+              <h2>
+                <span class="fw-900"><i>Connector Configurations</i></span>
+              </h2>
+              <div class="panel-toolbar">
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-collapse"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Collapse"
+                ></button>
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-fullscreen"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Fullscreen"
+                ></button>
+              </div>
+            </div>
+            <div class="panel-container" style="min-height: 40vh">
+              <div id="divLoader" style="display: none">
+                <div
+                  class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+                  style="z-index: 3; background-color: rgba(255, 255, 255, 0.7)"
+                >
+                  <div class="spinner-border mb-2" role="status"></div>
+                  <div style="font-size: 16px">Loading...</div>
+                </div>
+              </div>
+              <div class="splashScreen">
+                <div
+                  class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+                  style="z-index: 2; background-color: rgba(255, 255, 255, 0.9)"
+                >
+                  <div style="font-size: 26px">
+                    Please Select Bank Configurations first.
+                  </div>
+                </div>
+              </div>
+              <div id="congratsConfigSaved" style="display: none">
+                <div
+                  class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+                  style="z-index: 2; background-color: rgba(255, 255, 255, 1)"
+                >
+                  <div
+                    class="h-100 d-flex justify-content-center align-items-center"
+                  >
+                    <div
+                      class="panel p-6 d-flex flex-column justify-content-center align-items-center text-center"
+                      style="font-size: 20px"
+                    >
+                      <img
+                        src="/static/mentis/img/accepted.png"
+                        class="img-fluid mb-5"
+                        width="75"
+                        height="75"
+                      />
+                      <span class="mx-2 mb-5"
+                        >Congratulations,Your configuration has been saved
+                        successfully!</span
+                      >
+                      <a
+                        onclick="refreshPage()"
+                        class="btn btn-lg btn-outline-info waves-effect waves-themed"
+                        ><i class="fal fa-eye"></i
+                        ><span class="ml-2">View Configurations</span></a
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="panel-content">
+                <!-- datatable start -->
+                <div id="main-table"></div>
+                <!-- datatable end -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Modal -->
+
+    <div
+      class="modal"
+      id="rejectReasonModal"
+      tabindex="-1"
+      role="dialog"
+      style="padding-right: 15px; background-color: rgba(0, 0, 0, 0.4)"
+      aria-modal="true"
+    >
+      <div
+        class="modal-dialog modal-dialog-centered"
+        style="max-width: 450px"
+        role="document"
+      >
+        <div class="modal-content">
+          <div class="bg-brand-gradient modal-header py-2">
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true"><i class="fal fa-times color-white"></i></span>
+            </button>
+          </div>
+          <div class="modal-body" style="padding-left: 30px">
+            <div class="d-flex justify-content-between mb-3">
+              <div class="w-100">
+                <label
+                  class="form-label"
+                  style="font-size: 16px; margin-bottom: 16px"
+                  for="rejectReasonInput"
+                  required
+                  >Please enter rejection reason and confirm</label
+                >
+                <div class="d-flex">
+                  <input
+                    type="text"
+                    id="rejectReasonInput"
+                    class="form-control col-10"
+                    name="rejectReasonInput"
+                    placeholder="Enter Reject Reason"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="modal-footer"
+            style="padding-right: 30px; padding-top: 0px; padding-bottom: 30px"
+          >
+            <button
+              type="button"
+              class="btn btn-secondary waves-effect waves-themed cursor-pointer"
+              data-dismiss="modal"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              id="disapproveButton"
+              disabled
+              class="btn btn-primary waves-effect waves-themed"
+              onclick="disapproveConfig()"
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal"
+      id="confirmationModal"
+      tabindex="-1"
+      role="dialog"
+      style="padding-right: 15px; background-color: rgba(0, 0, 0, 0.4)"
+      aria-modal="true"
+    >
+      <div
+        class="modal-dialog modal-dialog-centered"
+        style="max-width: 500px"
+        role="document"
+      >
+        <div class="modal-content">
+          <div class="bg-brand-gradient modal-header py-2">
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true"><i class="fal fa-times color-white"></i></span>
+            </button>
+          </div>
+          <div class="modal-body" style="padding-left: 30px; padding-top: 0px">
+            <div class="d-flex flex-column justify-content-between mb-2">
+              <div class="text-center pb-4 pt-3">
+                <i
+                  class="fal fa-exclamation-triangle fa-4x color-warning-500"
+                ></i>
+              </div>
+              <div class="w-100 text-center">
+                <label
+                  class="form-label"
+                  style="font-size: 16px"
+                  id="confirmationText"
+                ></label>
+              </div>
+            </div>
+          </div>
+          <div
+            class="modal-footer"
+            style="padding-right: 30px; padding-top: 0px; padding-bottom: 30px"
+          >
+            <button
+              type="button"
+              class="btn btn-secondary waves-effect waves-themed cursor-pointer"
+              data-dismiss="modal"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary waves-effect waves-themed"
+              onclick="configActionHandler()"
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal fade example-modal-centered-transparent show"
+      id="tryAgainModal"
+      tabindex="-1"
+      role="dialog"
+      style="display: none; padding-right: 15px"
+      aria-modal="true"
+    >
+      <div
+        class="modal-dialog modal-dialog-centered modal-transparent"
+        role="document"
+      >
+        <div class="modal-content">
+          <div class="modal-header">
+            <button
+              type="button"
+              class="close text-white"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true"><i class="fal fa-times"></i></span>
+            </button>
+          </div>
+          <h2 class="modal-body text-center text-white">
+            Something Went Wrong, Please try again
+          </h2>
+          <div class="modal-footer justify-content-center">
+            <button
+              type="button"
+              class="btn btn-primary waves-effect waves-themed"
+              onclick="location.reload();"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="toast hide"
+      style="
+        position: fixed;
+        top: 50%;
+        right: 45%;
+        background-color: #090;
+        color: white;
+        min-width: 250px;
+        z-index: 3000;
+      "
+      id="toast"
+      data-delay="3000"
+    >
+      <div class="toast-header">
+        <strong class="mr-auto">Alert</strong>
+        <button
+          type="button"
+          class="ml-2 mb-1 close"
+          data-dismiss="toast"
+          aria-label="Close"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="toast-body" id="toastInfo"></div>
+    </div>
+
+    <div
+      class="modal"
+      id="deactivateModal"
+      tabindex="-1"
+      role="dialog"
+      style="padding-right: 15px; background-color: rgba(0, 0, 0, 0.4)"
+      aria-modal="true"
+    >
+      <div
+        class="modal-dialog modal-dialog-centered"
+        style="max-width: 700px; min-width: 500px"
+        role="document"
+      >
+        <div class="modal-content">
+          <div class="bg-brand-gradient modal-header py-2">
+            <!-- <h5 class="modal-title font-weight-bold color-white">Please deactivate following file config first</h5> -->
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true"><i class="fal fa-times color-white"></i></span>
+            </button>
+          </div>
+          <div class="modal-body pb-0" style="padding-left: 30px">
+            <div class="d-flex justify-content-between mb-3">
+              <div class="w-100">
+                <label
+                  class="form-label"
+                  style="font-size: 16px; margin-bottom: 16px"
+                  for="rejectReasonInput"
+                  required
+                  >Please deactivate following file config first:</label
+                ><br />
+                <div class="d-flex" id="fileDetailsTable"></div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="modal-footer"
+            style="padding-right: 30px; padding-top: 0px; padding-bottom: 20px"
+          >
+            <button
+              type="button"
+              class="btn btn-secondary waves-effect waves-themed cursor-pointer"
+              data-dismiss="modal"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal"
+      id="pathModal"
+      tabindex="-1"
+      role="dialog"
+      style="padding-right: 15px; background-color: rgba(0, 0, 0, 0.4)"
+      aria-modal="true"
+    >
+      <div
+        class="modal-dialog modal-dialog-centered"
+        style="max-width: 1000px; min-width: 500px"
+      >
+        <div class="modal-content">
+          <div class="bg-brand-gradient modal-header py-2">
+            <div>
+              <h2 class="modal-title font-weight-bold color-white">
+                Select Path
+              </h2>
+            </div>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true"><i class="fal fa-times color-white"></i></span>
+            </button>
+          </div>
+          <div class="modal-body p-0">
+            <div id="directoryLoader" style="display: none">
+              <div
+                class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+                style="z-index: 2; background-color: rgba(255, 255, 255, 0.7)"
+              >
+                <div class="spinner-border mb-2" role="status"></div>
+                <div style="font-size: 16px">Loading...</div>
+              </div>
+            </div>
+            <div
+              class="d-flex flex-column justify-content-between p-5"
+              id="directoryData"
+            >
+              <div
+                style="border-bottom: 1px solid #c5c5c5"
+                class="justify-content-around row w-100"
+              >
+                <div class="col-4" style="display: none">
+                  <label for="bucketName">Bucket Name</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="bucketName"
+                    name="bucketName"
+                    placeholder="Enter Bucket Name"
+                    required
+                  />
+                </div>
+                <div class="form-group row col-4">
+                  <label for="pathDateRangePicker">Select Date Range</label>
+
+                  <div class="input-group">
+                    <input
+                      type="text"
+                      class="form-control"
+                      placeholder="Select date"
+                      id="pathDateRangePicker"
+                      required
+                    />
+                    <div class="input-group-append">
+                      <span class="input-group-text fs-xl">
+                        <i class="fal fa-calendar"></i>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-4 self-end text-center align-self-center">
+                  <button
+                    type="button"
+                    id="showFiles"
+                    title="Get folders list"
+                    onclick="fetchPath('')"
+                    disabled="true"
+                    class="btn btn-primary width-sm waves-effect waves-themed py-1 fs-xl"
+                  >
+                    Get
+                  </button>
+                </div>
+              </div>
+              <div class="d-flex flex-column pt-3">
+                <ol
+                  class="breadcrumb flex-nowrap py-1"
+                  id="breadcrumb"
+                  style="background: #eef7fd"
+                ></ol>
+                <div class="d-flex" id="bucketDetailsTable"></div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="modal-footer"
+            style="padding-right: 30px; padding-top: 0px; padding-bottom: 20px"
+          >
+            <button
+              type="button"
+              class="btn btn-secondary waves-effect waves-themed cursor-pointer"
+              data-dismiss="modal"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="modal"
+      id="logsModal"
+      tabindex="-1"
+      role="dialog"
+      style="padding-right: 15px; background-color: rgba(0, 0, 0, 0.4)"
+      aria-modal="true"
+    >
+      <div
+        class="modal-dialog modal-dialog-centered"
+        style="max-width: 880px"
+        role="document"
+      >
+        <div class="modal-content" style="height: 695px">
+          <div class="bg-brand-gradient modal-header py-2">
+            <div>
+              <h2 class="modal-title font-weight-bold color-white">
+                Activity Log
+              </h2>
+            </div>
+            <div style="width: 350px">
+              <div class="input-group">
+                <input
+                  type="text"
+                  style="height: 32px;"
+                  class="form-control py-1"
+                  placeholder="Select date"
+                  id="dateRangePicker"
+                  required
+                />
+                <div class="input-group-append">
+                  <span class="input-group-text">
+                    <i class="fal fa-calendar"></i>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <button
+                type="button"
+                class="close"
+                data-dismiss="modal"
+                aria-label="Close"
+              >
+                <span aria-hidden="true"><i class="fal fa-times color-white"></i></span>
+              </button>
+            </div>
+          </div>
+          <div class="modal-body pb-0 pt-2">
+            <div class="d-flex justify-content-between my-3">
+              <div class="w-100">
+                <div id="logs-table"></div>
+                <!-- <table class="table">
+                  <tr>
+                    <th>Creation Time</th>
+                    <th>Comment</th>
+                  </tr>
+                  <tbody id="logsBody"></tbody>
+                </table> -->
+              </div>
+            </div>
+          </div>
+          <div
+            class="modal-footer"
+            style="padding-right: 30px; padding-top: 0px; padding-bottom: 20px"
+          >
+            <button
+              type="button"
+              class="btn btn-secondary waves-effect waves-themed cursor-pointer"
+              data-dismiss="modal"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="toast hide"
+      style="
+        position: fixed;
+        top: 50%;
+        right: 45%;
+        background-color: rgb(220 53 69);
+        color: white;
+        min-width: 250px;
+        z-index: 3000;
+      "
+      id="somethingWentWrongAlert"
+      data-delay="2000"
+    >
+      <div class="toast-header">
+        <strong class="mr-auto">Alert</strong>
+        <button
+          type="button"
+          class="ml-2 mb-1 close"
+          data-dismiss="toast"
+          aria-label="Close"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="toast-body" id="failureAlertBody">
+        Somthing went wrong, Please try again.
+      </div>
+      <!-- <div class="toast-header">
+      <strong class="mr-auto" id="toastInfo">lmcklwkmeck</strong>
+    </div> -->
+    </div>
+  </body>
+
+  <script type="text/template" id="bucket-table-template">
+
+    <table id="bucket-data-table" class="table table-hover w-100">
+      <thead class="bg-primary-600">
+        <tr>
+          <th class="new-col">Name</th>
+          <th class="new-col">Last Modified</th>
+          <th class="new-col">Count / Size</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <%=table_html%>
+      </tbody>
+      <tfoot></tfoot>
+    </table>
+  </script>
+
+  <script type="text/template" id="logs-table-template">
+    <table id="datatable-log-data-<%=table_id%>" class="table table-bordered w-100">
+      <thead class="bg-fusion-100">
+      <tr>
+        <th class="new-col">Creation Time</th>
+        <th class="new-col">Comment</th>
+      </tr>
+      </thead>
+      <tbody>
+      <%=logs_table_html%>
+      </tbody>
+    </table>
+  </script>
+
+  <script type="text/template" id="table-template">
+
+    <table id="datatable-invoice-data-1" class="table table-bordered table-hover table-striped w-100">
+      <thead class="bg-primary-600">
+        <tr>
+          <th class="new-col">ID</th>
+          <th class="new-col">Config Key</th>
+          <th class="new-col">Type</th>
+          <th class="new-col">Status</th>
+          <th class="new-col">Path</th>
+          <th class="new-col">Is Active</th>
+          <th class="new-col">Created By</th>
+          <th class="new-col">Approved By</th>
+          <th class="new-col">Updation Date</th>
+          <!-- <th class="new-col">View</th> -->
+          <th class="new-col">Actions</th>
+          <!-- <th class="new-col">Delete</th> -->
+        </tr>
+      </thead>
+      <tbody>
+        <%=table_html%>
+      </tbody>
+      <tfoot>
+        <tr>
+          <th class="new-col">ID</th>
+          <th class="new-col">Config Key</th>
+          <th class="new-col">Type</th>
+          <th class="new-col">Status</th>
+          <th class="new-col">Path</th>
+          <th class="new-col">Is Active</th>
+          <th class="new-col">Created By</th>
+          <th class="new-col">Approved By</th>
+          <th class="new-col">Updation Date</th>
+          <!-- <th class="new-col">View</th> -->
+          <th class="new-col">Actions</th>
+        </tr>
+      </tfoot>
+    </table>
+  </script>
+  <script type="text/javascript">
+    var currentUser = "{{ user }}";
+    var conf_key = "{{ conf_key }}";
+    var associatedFile = []
+    var currentConfig = ""
+    var currentPath = ""
+    var currentProject = ""
+    var projectId = ""
+    var lock = false
+    var logApiLock = false
+    var rowAction = ""
+    var defaultStartDate = moment().subtract(30, 'days');
+    var defaultEndDate = moment();
+    var tableCounter = 1;
+    var inEditMode = {
+      value: false,
+      unique_id: ''
+    };
+    var conf_version = "{{ conf_version }}";
+    var mode = "{{mode}}";
+    var user_bank_settings = {{ user_bank_settings| safe}};
+    var apiBasePath = "";
+
+    $(document).ready(function () {
+      $("#main-table").html("");
+      selectedConnector = {}
+      bankConfiguration()
+      $(".select2").select2();
+      $("#pathDateRangePicker").daterangepicker(
+        {
+          timePicker: true,
+          opens: "left",
+          startDate: defaultStartDate,
+          endDate: defaultEndDate,
+          locale: {
+            format: 'D MMM YYYY, hh:mm A',
+          },
+        }
+      );
+      $("#dateRangePicker").daterangepicker(
+        {
+          timePicker: true,
+          opens: "left",
+          startDate: defaultStartDate,
+          endDate: defaultEndDate,
+          locale: {
+            format: 'D MMM YYYY, hh:mm A',
+          },
+        }
+      );
+    });
+
+    function selectPath(folderName) {
+      // if (!!currentPath?.length) {
+      if (currentPath[currentPath?.length - 1] != '/') {
+        currentPath += '/'
+      }
+      // }
+      if (currentPath[0] != '/') {
+        $("#path").val("/" + currentPath + folderName)
+      } else {
+        $("#path").val(currentPath + folderName)
+      }
+      $("#pathModal").modal("hide")
+    }
+
+    function tableRowCLick(updatedPath) {
+      if (!!currentPath?.length) {
+        if (currentPath[currentPath?.length - 1] != '/') {
+          currentPath += '/'
+        }
+      }
+      currentPath = currentPath + updatedPath + "/"
+      fetchPath(currentPath, "rowClick")
+    }
+
+    function populateTable(data) {
+      if(!!data?.folder?.length){
+      tableHtml = ""
+      for (var i = 0; i < data?.folder?.length; i++) {
+        tableHtml +=
+          `<tr><td onclick='tableRowCLick("` + data.folder[i]["name"] + `")' class="cursor-pointer">` +
+          "<i class='fal fa-folder pr-2'></i>" +
+          (!!data.folder[i]["name"] ? data.folder[i]["name"] : "-") +
+          "</td><td>" +
+          (!!data.folder[i]["last_modified"] ? data.folder[i]["last_modified"] : "-") +
+          "</td><td>" +
+          (!!data.folder[i]["file_count"] ? data.folder[i]["file_count"] + " items" : "-") +
+          `</td><td><button onclick='selectPath("` + data.folder[i]["name"] + `")' class='bg-fusion-100 btn py-1'>Select</button`
+          +
+          "</td></tr>";
+      }
+
+      $("#bucketDetailsTable").html(
+        _.template($("#bucket-table-template").text(), {
+          table_html: tableHtml,
+          table_id: tableCounter,
+        })
+      );
+      initSelectPathDatatable();
+      } else {
+        $("#bucketDetailsTable").html("<div class='color-danger-300 fa-2x pl-2'>Path is Empty</div>")
+      }
+    }
+
+    function bankConfiguration() {
+      var bankNameOptionsHtml =
+        "<option value='' disabled selected></option>";
+      for (const bank of Object.keys(user_bank_settings)) {
+        bankNameOptionsHtml += `<option value='${bank}'>${bank}</option>`;
+      }
+      $("#bankName").html(bankNameOptionsHtml);
+      const selected_project_config = getSessionStorageItem("selected_connector_config");
+      if (!!selected_project_config) {
+        const bank = $("#bankName").val(selected_project_config?.bank).change();
+        const env = $("#environment").val(selected_project_config?.env).change();
+        const project = $("#project").val(selected_project_config?.project).change();
+      }
+    }
+
+    $("#rejectReasonInput").on("keyup", function () {
+      if (!!this.value) {
+        $("#disapproveButton").prop("disabled", false)
+      } else {
+        $("#disapproveButton").prop("disabled", true)
+      }
+    })
+
+    $("#bankName").on("change", function () {
+      currentBank = this.value;
+      $("#environment").parent().show();
+      $(".splashScreen").show();
+      $("#main-table").html("");
+      $("#project").val("").change();
+      $("#environment").val("").change();
+      var environmentOptionsHtml =
+        "<option value='' disabled selected></option>";
+      for (const environment of Object.keys(user_bank_settings[this.value])) {
+        environmentOptionsHtml += `<option value='${environment}'>${environment}</option>`;
+      }
+      $("#environment").html(environmentOptionsHtml);
+      $("#project").parent().hide();
+      $("#project").html("");
+    });
+
+    $("#environment").on("change", function () {
+      currentEnvironment = this.value;
+      const bank = $("#bankName").val();
+
+      $(".splashScreen").show();
+      $("#main-table").html("");
+      $("#project").val("").change();
+      if (!!currentEnvironment && !!bank) {
+        apiBasePath = user_bank_settings?.[bank]?.[this.value]?.url;
+        $("#divLoader").show();
+        $.get({
+          url: apiBasePath + "/get_projects/",
+          type: "GET",
+          contentType: "application/json",
+          success: function (response) {
+            $("#divLoader").hide()
+            if (response?.result == "SUCCESS") {
+              $("#project").parent().show();
+              var projectOptionsHtml = "<option value='' disabled selected></option>";
+              for (var i = 0; i < response['response'].length; i++) {
+                if (user_bank_settings[bank][currentEnvironment]['projects'].indexOf(response['response'][i]['name']) >= 0) {
+                  projectOptionsHtml += `<option value='${response['response'][i]['name']}'>${response['response'][i]['name']}</option>`;
+                }
+              }
+              $("#project").html(projectOptionsHtml);
+              const selected_project_config = getSessionStorageItem("selected_connector_config");
+              if (!!selected_project_config) {
+                $("#project").val(selected_project_config?.project).change();
+              }
+
+            } else {
+              $("#somethingWentWrongAlert").toast("show");
+            }
+          },
+          error: function (error) {
+            $("#divLoader").hide()
+            if (!!error?.responseJSON?.details_message) {
+              $("#failureAlertBody").html(error?.responseJSON?.details_message)
+            }
+            $("#somethingWentWrongAlert").toast("show");
+          },
+        });
+      }
+    });
+
+    $("#project").on("change", function () {
+      currentProject = this.value;
+      const bank = $("#bankName").val();
+      const env = $("#environment").val();
+      $("#selectedConfig").parent().hide();
+      $("#path").parent().parent().hide();
+      $("#path").val("");
+      $("#saveConnectorConfigButton").parent().hide()
+      $("#bucketType").prop("disabled", false);
+      $("#selectedConfig").prop("disabled", false);
+
+      if (!!this.value && !!bank && !!env) {
+        apiBasePath = user_bank_settings?.[bank]?.[env]?.url;
+        setSessionStorageItem("selected_connector_config", { "bank": bank, "env": env, "project": this.value })
+        $(".splashScreen").hide();
+        getNewConnectorConfigData();
+        getAllConnectorConfigurations();
+      }
+    });
+    $(document).on("change", "#bankName, #environment", "#project", function () {
+      $("#bankName, #environment, #project").map(function () {
+        if (!this.value) {
+          $(".splashScreen").show();
+        }
+      });
+    });
+
+    function refreshPage() {
+      location.reload()
+    }
+
+    function openPathSelectionModal() {
+      $("#breadcrumb").html("")
+      $("#breadcrumb").hide()
+      $("#bucketName").val("")
+      $("#bucketDetailsTable").html("")
+      $("#pathModal").modal()
+      let bucketType = $("#bucketType").val()
+
+      if (bucketType == "s3") {
+        $("#bucketName").parent().show();
+        if (!!$("#bucketName").val())
+          $("#showFiles").attr("disabled", false);
+        else
+          $("#showFiles").attr("disabled", true);
+      } else if (bucketType == "sftp") {
+        $("#bucketName").parent().hide();
+        $("#showFiles").attr("disabled", false);
+      }
+    }
+
+    $("#bucketName").on("keyup", function () {
+      checkButtonStatus()
+    })
+
+    $("#pathDateRangePicker").on("change", function () {
+      checkButtonStatus()
+    })
+
+    function checkButtonStatus() {
+      if ($("#bucketType").val() == "s3") {
+
+        if (!!$("#bucketName").val() && !!$("#pathDateRangePicker").val()) {
+
+          $("#showFiles").attr("disabled", false);
+        } else {
+          $("#showFiles").attr("disabled", true);
+        }
+      } else if ($("#bucketType").val() == "sftp") {
+        if (!!$("#selectedConfig").val() && !!$("#pathDateRangePicker").val()) {
+          $("#showFiles").attr("disabled", false);
+
+        } else {
+          $("#showFiles").attr("disabled", true);
+        }
+      }
+    }
+
+    function initSelectPathDatatable() {
+      $("#bucket-data-table").dataTable({
+        lengthChange: false,
+        autoWidth: false,
+        "columns": [
+          { "width": "500px" },
+          { "width": "200px" },
+          { "width": "100px" },
+          { "width": "100px" }
+        ],
+        order: [],
+        "language": {
+          "emptyTable": "No Data Available"
+        },
+        "pageLength": 5,
+        fnDrawCallback: function () {
+          $("#datatable-invoice-data-1").DataTable().columns.adjust()
+        },
+        dom:
+          /*	--- Layout Structure
+              --- Options
+              l	-	length changing input control
+              f	-	filtering input
+              t	-	The table!
+              i	-	Table information summary
+              p	-	pagination control
+              r	-	processing display element
+              B	-	buttons
+              R	-	ColReorder
+              S	-	Select
+
+              --- Markup
+              < and >				- div element
+              <"class" and >		- div with a class
+              <"#id" and >		- div with an ID
+              <"#id.class" and >	- div with an ID and a class
+
+              --- Further reading
+              https://datatables.net/reference/option/dom
+              --------------------------------------
+           */
+          "<'row mb-3'<'col-sm-12 col-md-6 d-flex align-items-center justify-content-start'f><'d-none'lB>>" +
+          "<'row'<'col-sm-12'tr>>" +
+          "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+      });
+    }
+
+    function fetchPath(path = "", action) {
+      if (!!lock) {
+        return
+      }
+      var url = ""
+      lock = true
+      let bucketType = $("#bucketType").val()
+      let selectedConfig = $("#selectedConfig").val()
+
+      const startDate = new Date($('#pathDateRangePicker')?.data('daterangepicker')?.startDate._d)
+      const endDate = new Date($('#pathDateRangePicker')?.data('daterangepicker')?.endDate._d)
+      let payload = {
+        "start_date_time": moment(startDate).format('YYYY-MM-DD HH:mm:ss'),
+        "end_date_time": moment(endDate).format('YYYY-MM-DD HH:mm:ss')
+      }
+      if (bucketType == "s3" && $("#bucketName").val()) {
+        $("#bucketName").parent().show()
+        url = apiBasePath + "/get_s3_list/"
+        payload.path = path
+        payload.bucket = $("#bucketName").val()
+      } else if (bucketType == "sftp") {
+        url = apiBasePath + "/get_sftp_list/"
+        payload.path = "/" + path
+        payload.conf = selectedConfig
+      }
+      $("#directoryLoader").show();
+      if (!!url) {
+        $.ajax({
+          url: url,
+          type: "POST",
+          data: JSON.stringify({ ...payload }),
+          contentType: "application/json",
+          success: function (response) {
+            lock = false
+            $("#directoryLoader").hide();
+            if (response?.result == "SUCCESS") {
+              populateTable(response?.response)
+
+              currentPath = path
+              var pathArray = path.split('/');
+              let breadcrumbHtml = `<li class="breadcrumb-item ${pathArray?.length != 1 ? 'color-primary-500 cursor-pointer' : 'active'}">
+                                      <span ${pathArray?.length != 1 ? `onclick="fetchPath('')"` : ""}> <span title="root directory" style="font-size:14px">Home</span></span>
+                                    </li>`
+              let breadcrumbPath = ""
+              for (var i = 0; i < pathArray?.length - 1; i++) {
+                breadcrumbPath += pathArray[i].trim() + "/"
+                breadcrumbHtml += `<li class="breadcrumb-item ${i == pathArray?.length - 2 ? 'active' : ''}" style="font-size:14px">
+                                      <span ${i == pathArray?.length - 2 ? '' : `class="color-primary-500 cursor-pointer" onclick="fetchPath('` + breadcrumbPath + `')"`}> ${pathArray[i]}</span>
+                                    </li>`
+              }
+              $("#breadcrumb").show()
+              $("#breadcrumb").html(breadcrumbHtml)
+            } else {
+              $("#somethingWentWrongAlert").toast("show");
+            }
+          },
+          error: function (error) {
+            lock = false
+            if (action != "rowClick") {
+              $("#breadcrumb").hide()
+              $("#breadcrumb").html("")
+              $("#bucketDetails").html("")
+            }
+            $("#directoryLoader").hide();
+            if (!!error?.responseJSON?.details_message) {
+              $("#failureAlertBody").html(error?.responseJSON?.details_message)
+            }
+            $("#somethingWentWrongAlert").toast("show");
+          },
+        });
+      }
+    }
+
+    function initLogsDatatable() {
+      $("#datatable-log-data-1").dataTable({
+        responsive: true,
+        lengthChange: false,
+        "order": [[0, "desc"]],
+        scrollCollapse: true,
+        scrollY: '380px',
+        dom:
+          /*	--- Layout Structure
+              --- Options
+              l	-	length changing input control
+              f	-	filtering input
+              t	-	The table!
+              i	-	Table information summary
+              p	-	pagination control
+              r	-	processing display element
+              B	-	buttons
+              R	-	ColReorder
+              S	-	Select
+
+              --- Markup
+              < and >				- div element
+              <"class" and >		- div with a class
+              <"#id" and >		- div with an ID
+              <"#id.class" and >	- div with an ID and a class
+
+              --- Further reading
+              https://datatables.net/reference/option/dom
+              --------------------------------------
+           */
+          "<'row mb-3'<'col-sm-12 col-md-6 d-flex align-items-center justify-content-start'f><'col-sm-12 col-md-6 d-flex align-items-center justify-content-end'lB>>" +
+          "<'row mb-3'<'col-sm-12'tr>>" +
+          "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+        buttons: [
+          /*{
+                extend:    'colvis',
+                text:      'Column Visibility',
+                titleAttr: 'Col visibility',
+                className: 'mr-sm-3'
+            },*/
+          {
+            extend: "pdfHtml5",
+            text: "PDF",
+            titleAttr: "Generate PDF",
+            className: "btn-outline-danger btn-sm mr-1",
+          },
+          {
+            extend: "excelHtml5",
+            text: "Excel",
+            titleAttr: "Generate Excel",
+            className: "btn-outline-success btn-sm mr-1",
+          },
+          {
+            extend: "csvHtml5",
+            text: "CSV",
+            titleAttr: "Generate CSV",
+            className: "btn-outline-primary btn-sm mr-1",
+          },
+          {
+            extend: "copyHtml5",
+            text: "Copy",
+            titleAttr: "Copy to clipboard",
+            className: "btn-outline-primary btn-sm mr-1",
+          },
+          {
+            extend: "print",
+            text: "Print",
+            titleAttr: "Print Table",
+            className: "btn-outline-primary btn-sm",
+          },
+        ],
+        "pageLength": 25,
+        fnDrawCallback: function () {
+          $("#datatable-log-data-1").DataTable().columns.adjust()
+        },
+      });
+    }
+
+    function initDatatable() {
+      $("#datatable-invoice-data-1").dataTable({
+        responsive: true,
+        lengthChange: false,
+        "order": [[0, "desc"]],
+        dom:
+          /*	--- Layout Structure
+              --- Options
+              l	-	length changing input control
+              f	-	filtering input
+              t	-	The table!
+              i	-	Table information summary
+              p	-	pagination control
+              r	-	processing display element
+              B	-	buttons
+              R	-	ColReorder
+              S	-	Select
+
+              --- Markup
+              < and >				- div element
+              <"class" and >		- div with a class
+              <"#id" and >		- div with an ID
+              <"#id.class" and >	- div with an ID and a class
+
+              --- Further reading
+              https://datatables.net/reference/option/dom
+              --------------------------------------
+           */
+          "<'row mb-3'<'col-sm-12 col-md-6 d-flex align-items-center justify-content-start'f><'col-sm-12 col-md-6 d-flex align-items-center justify-content-end'lB>>" +
+          "<'row'<'col-sm-12'tr>>" +
+          "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+        buttons: [
+          /*{
+                extend:    'colvis',
+                text:      'Column Visibility',
+                titleAttr: 'Col visibility',
+                className: 'mr-sm-3'
+            },*/
+          {
+            text: "Logs",
+            titleAttr: "Logs",
+            className: "btn-outline-primary btn-sm mr-1",
+          },
+          {
+            extend: "pdfHtml5",
+            text: "PDF",
+            titleAttr: "Generate PDF",
+            className: "btn-outline-danger btn-sm mr-1",
+          },
+          {
+            extend: "excelHtml5",
+            text: "Excel",
+            titleAttr: "Generate Excel",
+            className: "btn-outline-success btn-sm mr-1",
+          },
+          {
+            extend: "csvHtml5",
+            text: "CSV",
+            titleAttr: "Generate CSV",
+            className: "btn-outline-primary btn-sm mr-1",
+          },
+          {
+            extend: "copyHtml5",
+            text: "Copy",
+            titleAttr: "Copy to clipboard",
+            className: "btn-outline-primary btn-sm mr-1",
+          },
+          {
+            extend: "print",
+            text: "Print",
+            titleAttr: "Print Table",
+            className: "btn-outline-primary btn-sm",
+          },
+        ],
+        fnDrawCallback: function () {
+          $("#datatable-invoice-data-1").DataTable().columns.adjust()
+        },
+      });
+    }
+
+    function getLogsData() {
+      if (!!logApiLock) {
+        return
+      }
+      $("#divLoader").show()
+      logApiLock = true
+      const startDate = new Date($('#dateRangePicker')?.data('daterangepicker')?.startDate._d)
+      const endDate = new Date($('#dateRangePicker')?.data('daterangepicker')?.endDate._d)
+      payload = {
+        "data_source": "CONNECTOR_CONF",
+        "project": currentProject,
+        "start_date_time": moment(startDate).format('YYYY-MM-DD HH:mm:ss'),
+        "end_date_time": moment(endDate).format('YYYY-MM-DD HH:mm:ss')
+      }
+      $.ajax({
+        url: apiBasePath + "/get_activity_logs/",
+        type: "POST",
+        data: JSON.stringify({ ...payload }),
+        contentType: "application/json",
+        success: function (response) {
+          $("#divLoader").hide()
+          logApiLock = false
+          if (response?.result == "SUCCESS") {
+            $("#logsModal").modal()
+            let modalBody = ''
+            for (const activityObj of response?.response) {
+              modalBody += `<tr><td style='font-size:12px' class='py-2'>${activityObj?.updation_date}</td><td style='font-size:12px' class='py-2'>${activityObj?.comment}</td></tr>`
+            }
+            $("#logs-table").html(
+              _.template($("#logs-table-template").text(), {
+                logs_table_html: modalBody,
+                table_id: tableCounter,
+              })
+            );
+            initLogsDatatable();
+            // $("#logsBody").html(modalBody)
+          } else {
+            $("#logsModal").modal()
+            let modalBody = `<tr><td colspan="2" class="fa-2x color-danger-500">No Logs Available</td></tr>`
+
+            $("#logs-table").html(
+              _.template($("#logs-table-template").text(), {
+                logs_table_html: modalBody,
+                table_id: tableCounter,
+              })
+            );
+            // $("#logsBody").html(modalBody)
+            $("#somethingWentWrongAlert").toast("show");
+          }
+        },
+        error: function (error) {
+          logApiLock = false
+          $("#logsModal").modal()
+          let modalBody = `<tr><td colspan="2" class="fa-2x color-danger-500">No Logs Available</td></tr>`
+
+          $("#logs-table").html(
+            _.template($("#logs-table-template").text(), {
+              logs_table_html: modalBody,
+              table_id: tableCounter,
+            })
+          );
+          // $("#logsBody").html(modalBody)
+          $("#divLoader").hide()
+          if (!!error?.responseJSON?.details_message) {
+            $("#failureAlertBody").html(error?.responseJSON?.details_message)
+          }
+          $("#somethingWentWrongAlert").toast("show");
+        },
+      });
+    }
+
+    $("#dateRangePicker").on("change", function () {
+      if ($('#logsModal').hasClass('show') && this.value) {
+        getLogsData()
+      }
+    })
+
+    $(document).on("click", "button[title='Logs']", getLogsData);
+
+    function getAllConnectorConfigurations() {
+      if (lock == true) return;
+      showLoader();
+      lock = true;
+      const postParamsData = {
+        "mode": "VIEW_CONNECTOR_CONF",
+        "project": currentProject
+      };
+      $.ajax({
+        url: apiBasePath + "/get_connector_conf_list/",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ ...postParamsData }),
+        success: function (response) {
+          lock = false;
+          if (response?.result == "SUCCESS") {
+            var tableHtml = "";
+            let configData = [];
+            for (const bucketType of Object.keys(response?.response)) {
+              configData = [...configData, ...response?.response?.[bucketType]]
+            }
+            currentActiveConfigs = [];
+            for (var i = 0; i < configData.length; i++) {
+              tableHtml +=
+                "<tr><td>" +
+                (!!configData[i]["id"] ? configData[i]["id"] : "NA") +
+                "</td><td>" +
+                (!!configData[i]["key"] ? configData[i]["key"] : "NA") +
+                "</td><td>" +
+                (!!configData[i]["type"] ? configData[i]["type"] : "NA") +
+                "</td><td>" +
+                (!!configData[i]["status"] ? configData[i]["status"] : "NA") +
+                "</td><td>" +
+                (!!configData[i]["path"] ? configData[i]["path"] : "NA") +
+                "</td><td>" +
+                (!!configData[i]["is_active"] ? "Active" : "Inactive") +
+                "</td><td>" +
+                (!!configData[i]["created_by"] ? configData[i]["created_by"] : "") +
+                "</td><td>" +
+                (!!configData[i]["approved_by"] ? configData[i]["approved_by"] : "") +
+                "</td><td>" +
+                (!!configData[i]["updation_date"] ? configData[i]["updation_date"] : "") +
+                "</td><td>" +
+                // `<button type="button" onclick="handleConfigCtaClick('view','${configData[i]["type"]}','${configData[i]["path"]}','${configData[i]["key"]}')" class="btn btn-block btn-success waves-effect waves-themed">View</button>` +
+                // "</td><td>" +
+                `<div style="
+                      display: flex;
+                      justify-content: center;
+                      gap: 10px;">
+                      <div style="height:20px; width:20px">
+                        ${configData[i]["status"].toUpperCase() === "DEACTIVATE" || configData[i]["status"].toUpperCase() === "SAVED" || configData[i]["status"].toUpperCase() === "ERROR" || configData[i]["status"].toUpperCase() === "DIS_APPROVED" ? `
+                          <img
+                            src="/static/mentis/img/custom-icons/yellow_pencil.png"
+                            class="opacity-80 cursor-pointer"
+                            width="18"
+                            height="18"
+                            title="Edit"
+                            onclick="handleEditConfigCtaClick('edit','${configData[i]["type"]}','${configData[i]["path"]}','${configData[i]["key"]}','${configData[i]["unique_id"]}')"
+                          />`: ""}
+                          </div>
+                      <div style="height:20px; width:20px">${configData[i]["status"].toUpperCase() === "APPROVED" || configData[i]["status"].toUpperCase() === "SAVED" || configData[i]["status"].toUpperCase() === "ACTIVATE" ? `
+                      <img
+                            src="/static/mentis/img/custom-icons/red_power.png"
+                            class="opacity-80 cursor-pointer"
+                            width="18"
+                            height="18"
+                            title="Deactivate"
+                            onclick="handleConfigCtaClick('deactivate','${configData[i]["unique_id"]}', '${configData[i]["key"]}','${configData[i]["type"]}')"
+                          />`: ""}
+                          </div>
+                      <div style="height:20px; width:20px">
+                        ${configData[i]["status"].toUpperCase() === "APPROVAL_PENDING" ? `
+                      <img
+                            src="/static/mentis/img/custom-icons/green_tick.png"
+                            class="opacity-80 cursor-pointer"
+                            width="18"
+                            height="18"
+                            title="Approve"
+                            onclick="handleConfigCtaClick('approve','${configData[i]["unique_id"]}','${configData[i]["key"]}','${configData[i]["type"]}')"
+                          />`: ""}
+                          </div>
+                      <div style="height:20px; width:20px">
+
+                        ${configData[i]["status"].toUpperCase() === "APPROVAL_PENDING" ? `
+                        <img
+                              src="/static/mentis/img/custom-icons/red_cross.png"
+                              class="opacity-80 cursor-pointer"
+                              width="18"
+                              height="18"
+                              title="Disapprove"
+                              onclick="handleConfigCtaClick('disapprove','${configData[i]["unique_id"]}','${configData[i]["key"]}','${configData[i]["type"]}')"
+                            />`: ""}</div>
+                        <div style="height:20px; width:20px">
+                          ${configData[i]["status"].toUpperCase() === "SAVED" ? `
+                        <img
+                              src="/static/mentis/img/custom-icons/grey_send.png"
+                              class="opacity-80 cursor-pointer"
+                              width="18"
+                              height="18"
+                              title="Send for Approval"
+                              onclick="handleConfigCtaClick('approvalPending','${configData[i]["unique_id"]}','${configData[i]["key"]}','${configData[i]["type"]}')"
+                            />`: ""}
+                            </div>
+                      </div>`+
+                "</td>" +
+                "</tr>";
+
+              if (configData[i]["active"]) {
+                currentActiveConfigs.push(configData[i]);
+              }
+            }
+
+            $("#main-table").html(
+              _.template($("#table-template").text(), {
+                table_html: tableHtml,
+                table_id: tableCounter,
+              })
+            );
+            initDatatable();
+            hideLoader();
+          } else {
+            hideLoader();
+            $("#somethingWentWrongAlert").toast("show");
+            $("#main-table").html("");
+            $(".splashScreen").show();
+          }
+        },
+        error: function (error) {
+          lock = false;
+          hideLoader();
+          if (!!error?.responseJSON?.details_message) {
+            $("#failureAlertBody").html(error?.responseJSON?.details_message)
+          }
+          $("#somethingWentWrongAlert").toast("show");
+          $("#main-table").html("");
+        },
+      });
+    }
+    $("#rejectReasonInput").on("change", function () {
+      if (!!$(this).val().trim()) {
+        $("#disapproveButton").prop("disabled", false)
+      } else {
+        $("#disapproveButton").prop("disabled", true)
+      }
+    })
+
+    function configActionHandler() {
+      payload = {
+        "user_auth": {
+          "user_name": currentUser
+        },
+        "data": {
+          "unique_id": currentConfig,
+          "project": currentProject,
+          "action": rowAction
+        }
+      }
+      buttonAction(payload)
+    }
+
+    function handleConfigCtaClick(mode, id, key, type) {
+      currentConfig = id
+      if (mode == "approve") {
+        $("#confirmationModal").modal()
+        rowAction = "APPROVED"
+        $("#confirmationText").html('Are you sure you want to Approve ' + type + ' - ' + key)
+      } else if (mode == "deactivate") {
+        $("#confirmationModal").modal()
+        rowAction = "DEACTIVATE"
+        $("#confirmationText").html('Are you sure you want to Deactivate ' + type + ' - ' + key)
+      } else if (mode == "activate") {
+        $("#confirmationModal").modal()
+        rowAction = "ACTIVATE"
+        $("#confirmationText").html('Are you sure you want to Activate ' + type + ' - ' + key)
+      } else if (mode == "disapprove") {
+        $("#rejectReasonModal").modal()
+      } else if (mode == "approvalPending") {
+        $("#confirmationModal").modal()
+        rowAction = "APPROVAL_PENDING"
+        $("#confirmationText").html('Are you sure you want to send ' + type + ' - ' + key + ' for Approval')
+      } else { }
+    }
+
+    function disapproveConfig() {
+      payload = {
+        "user_auth": {
+          "user_name": currentUser
+        },
+        "data": {
+          "unique_id": currentConfig,
+          "action": "DIS_APPROVED",
+          "rejection_reason": $("#rejectReasonInput").val(),
+          "project": currentProject
+        }
+      }
+      $("#rejectReasonModal").modal("hide")
+      buttonAction(payload)
+    }
+
+    function buttonAction(payload) {
+      if (lock == true) return;
+      lock = true
+      showLoader()
+
+      $.ajax({
+        url: apiBasePath + "/connector_conf_action/",
+        type: "POST",
+        data: JSON.stringify({ ...payload }),
+        contentType: "application/json",
+        success: function (response) {
+          lock = false
+          $("#confirmationModal").modal("hide")
+          hideLoader();
+          if (response?.result == "SUCCESS") {
+
+            $("#toastInfo").html("Config " + payload?.data?.action)
+            $('#toast').toast("show")
+            getAllConnectorConfigurations();
+          } else {
+            associatedFile = response?.response
+            fileDetails = []
+            $("#deactivateModal").modal()
+            populateFileToDeactivateTable(response?.response)
+          }
+        },
+        error: function (error) {
+          $("#confirmationModal").modal("hide")
+          lock = false
+          fileDetails = []
+          hideLoader();
+          if (!!error?.responseJSON?.details_message) {
+            $("#failureAlertBody").html(error?.responseJSON?.details_message)
+          }
+          $("#somethingWentWrongAlert").toast("show");
+        },
+      });
+    }
+
+    function populateFileToDeactivateTable(fileList) {
+      var tableBlock = ""
+      tableBlock += `<table class="table">
+                        <tr><th>File Name</th><th>Version</th><th>Action</th></tr>`
+      for (let index in fileList) {
+        tableBlock += `<tr><td>${fileList[index]?.name}</td><td>${fileList[index]?.version}</td><td><button onclick="deactivateFile('${fileList[index]?.unique_id}','${fileList[index]?.version}', '${index}')" class="btn btn-primary width-sm waves-effect waves-themed py-1">Deactivate</button></td></tr>`
+      }
+      tableBlock += `</table>`
+
+      $("#fileDetailsTable").html(tableBlock)
+    }
+
+    function deactivateFile(configName, configVersion, index) {
+      if (lock == true) return;
+      lock = true
+      payload = {
+        "user_auth": {
+          "user_name": currentUser
+        },
+        "data": {
+          "unique_id": configName,
+          "action": "DEACTIVATE",
+          "version": configVersion
+        }
+      }
+
+      $.ajax({
+        url: apiBasePath + "/file_detail_action/",
+        type: "POST",
+        data: JSON.stringify({ ...payload }),
+        contentType: "application/json",
+        success: function (response) {
+          lock = false
+          $("#divLoader").hide()
+          if (response?.result == "SUCCESS") {
+
+            associatedFile.splice(index, 1)
+            if (!!associatedFile?.length) {
+              populateFileToDeactivateTable(associatedFile)
+            } else {
+              $("#deactivateModal").modal('hide')
+            }
+
+            $("#toastInfo").html("File Configuration " + payload?.data?.action)
+            $('#toast').toast("show")
+          } else {
+            fileDetails = []
+            $("#somethingWentWrongAlert").toast("show");
+          }
+        },
+        error: function (error) {
+          fileDetails = []
+          lock = false
+          if (!!error?.responseJSON?.details_message) {
+            $("#failureAlertBody").html(error?.responseJSON?.details_message)
+          }
+          $("#somethingWentWrongAlert").toast("show");
+        },
+      });
+    }
+
+    function handleEditConfigCtaClick(mode, type, path, config, unique_id) {
+      if (mode == "edit") {
+        inEditMode = {
+          value: true,
+          unique_id: unique_id
+        }
+        $("#formTitle").html("Edit Connector Configuration")
+        $('form :input').prop('disabled', false);
+        $("html, body").animate({ scrollTop: 0 }, "slow");
+        setDropdownVal("bucketType", type)
+        $("#bucketType").prop("disabled", true);
+        $("#path").parent().parent().show();
+        $("#saveConnectorConfigButton").parent().show()
+        $("#path").val(path);
+        setDropdownVal("selectedConfig", config)
+        $("#selectedConfig").prop("disabled", true);
+      }
+    }
+
+    function getNewConnectorConfigData() {
+      // console.log(" params ", currentUser, conf_key, conf_version, mode)
+      // const postParamsData = {
+      //   data: {
+      //     "project": currentProject
+      //   }
+      // }
+      showLoader()
+      $.ajax({
+        url: apiBasePath + "/get_connector_conf/",
+        type: "GET",
+        // data: JSON.stringify({ ...postParamsData }),
+        contentType: "application/json",
+        success: function (response) {
+          if (response?.result == "SUCCESS") {
+            selectedConnector = response?.response
+            populateForm(selectedConnector)
+            hideLoader();
+          } else {
+            hideLoader();
+            fileDetails = []
+            $("#somethingWentWrongAlert").toast("show");
+          }
+        },
+        error: function (error) {
+          fileDetails = []
+          hideLoader();
+          if (!!error?.responseJSON?.details_message) {
+            $("#failureAlertBody").html(error?.responseJSON?.details_message)
+          }
+          $("#somethingWentWrongAlert").toast("show");
+        },
+      });
+    }
+
+    function populateForm(data) {
+      var bucketTypeOptionsHtml =
+        "<option value='' disabled selected></option>";
+      for (const bucketType of Object.keys(data)) {
+        bucketTypeOptionsHtml += `<option value='${bucketType}'>${bucketType}</option>`;
+      }
+      $("#bucketType").html(bucketTypeOptionsHtml);
+      $(".dynamic_content").html('');
+    }
+
+    $("#selectedConfig").on("change", function () {
+      if (!!this.value) {
+        $("#pathSelectionBtn").prop("disabled", false);
+        $("#pathSelectionBtn").addClass("cursor-pointer");
+        $("#pathSelectionBtn").removeClass("cursor-none");
+      }
+    })
+
+    $("#bucketType").on("change", function () {
+      currentBucketType = this.value;
+      $("#selectedConfig").parent().show();
+      $("#pathSelectionBtn").prop("disabled", true);
+      $("#pathSelectionBtn").removeClass("cursor-pointer");
+      $("#pathSelectionBtn").addClass("cursor-none");
+      var selectedConfigOptionsHtml =
+        "<option value='' disabled selected></option>";
+      for (const selectedConfig of selectedConnector[currentBucketType]) {
+        selectedConfigOptionsHtml += `<option value='${selectedConfig?.key}'>${selectedConfig?.key} ${selectedConfig?.ip ? '<strong> | </strong>' + selectedConfig?.ip : ''} ${selectedConfig?.user ? '<strong> | </strong>' + selectedConfig?.user : ''}</option>`;
+      }
+      $("#selectedConfig").html(selectedConfigOptionsHtml);
+      $("#path").parent().parent().show();
+      $("#path").val("");
+      $("#saveConnectorConfigButton").parent().show()
+    });
+
+    function saveConnectorConfig() {
+      event.preventDefault();
+      if (lock == true) return;
+      lock = true
+
+      $("#bucketType").prop("disabled", false);
+      $("#selectedConfig").prop("disabled", false);
+      const myFormData = new FormData(event.target);
+      const formDataObj = {};
+
+      myFormData.forEach((value, key) => {
+        formDataObj[key] = value;
+      });
+
+      var payload = {
+        "user_auth": {
+          "user_name": currentUser
+        },
+        "data": {
+          "type": formDataObj?.bucketType,
+          "key": formDataObj?.selectedConfig,
+          "path": formDataObj?.path,
+          "project": currentProject
+        }
+      }
+
+      // $("#bucketType").prop("disabled", true);
+      // $("#selectedConfig").prop("disabled", true);
+
+      if (!!inEditMode?.value) {
+        payload.data.unique_id = inEditMode?.unique_id
+      }
+      showLoader()
+      $.ajax({
+        url: apiBasePath + "/save_or_update_connector_conf/",
+        type: "POST",
+        data: JSON.stringify({ ...payload }),
+        contentType: "application/json",
+        success: function (response) {
+          lock = false
+          hideLoader();
+          if (response?.result == "SUCCESS") {
+            $("#connectorConfigurationPanel").hide()
+            $("#bankConfigurationPanel").hide()
+            $("#congratsConfigSaved").show();
+          } else {
+            $("#somethingWentWrongAlert").toast("show");
+          }
+        },
+        error: function (error) {
+          lock = false
+          fileDetails = []
+          hideLoader();
+          if (!!error?.responseJSON?.details_message) {
+            $("#failureAlertBody").html(error?.responseJSON?.details_message)
+          }
+          $("#somethingWentWrongAlert").toast("show");
+        },
+      });
+    }
+
+    function hideLoader() {
+      $("#divLoader").hide();
+    }
+
+    function showLoader() {
+      $("#divLoader").show();
+    }
+
+    function setDropdownVal(id, val) {
+      if (!!id) {
+        $(`#${id}`).val(val).change();
+      }
+    }
+
+    function setCheckbox(id, bool) {
+      //for both radio and checkbox
+      $(`#${id}`).prop("checked", bool).change();
+    }
+    // Function to set a key in session storage
+    function setSessionStorageItem(key, value) {
+      sessionStorage.setItem(key, JSON.stringify(value));
+    }
+
+    // Function to get a key from session storage
+    function getSessionStorageItem(key) {
+      const item = sessionStorage.getItem(key);
+      return item ? JSON.parse(item) : null;
+    }
+
+    // Function to remove a key from session storage
+    function removeSessionStorageItem(key) {
+      sessionStorage.removeItem(key);
+    }
+
+    function isCheckboxSelected(id) {
+      return $(`#${id}`).is(":checked");
+    }
+
+    function expandAllSection() {
+      let accordionComponent = $(".card-title");
+      accordionComponent.each(function () {
+        if ($(this).hasClass("collapsed")) {
+          $(this).click();
+        }
+      });
+    }
+  </script>
+</html>

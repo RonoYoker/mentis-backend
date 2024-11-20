@@ -1,0 +1,797 @@
+<link rel="stylesheet" media="screen, print" href="/static/mentis/css/datatables.bundle.css" />
+<script src="/static/mentis/js/datatables.bundle.js"></script>
+<script src="/static/mentis/js/datatables.export.js"></script>
+<script src="/static/mentis/js/underscore-1.6.0.min.js"></script>
+<script src="/static/mentis/js/moment.js"></script>
+<link rel="stylesheet" media="screen, print" href="/static/mentis/css/select2.bundle.css" />
+
+
+<style type="text/css">
+  .form-field-custom {
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  .fs-24 {
+    font-size: 24px;
+  }
+
+  .catselect {
+    font-size: 17px;
+    line-height: 22px;
+    width: 200px;
+    display: none;
+  }
+
+  .fl {
+    float: left;
+  }
+
+  .ui-datepicker {
+    z-index: 9999999 !important;
+  }
+
+  .linkItem {
+    float: left;
+    background-color: #ccc;
+    color: #222;
+    border-radius: 2px;
+    font-weight: bold;
+    padding: 6px;
+    margin-left: 20px;
+    cursor: pointer;
+    margin-top: 10px;
+    font-size: 15px;
+  }
+
+  .dtr-data {
+    text-transform: uppercase;
+  }
+
+  .smart-form .input input,
+  .smart-form .select select,
+  .smart-form .textarea textarea {
+    font-size: 15px !important;
+    font-weight: bold !important;
+  }
+
+  .optiontext {
+    font-weight: bold !important;
+  }
+
+  .radio,
+  .checkbox {
+    float: left;
+    margin-top: 0px !important;
+    margin-bottom: 0px !important;
+    padding-left: 35px !important;
+  }
+
+  .radio+.radio,
+  .checkbox+.checkbox {
+    margin: 0px !important;
+  }
+
+  .width20 {
+    width: 20%;
+  }
+
+  .width15 {
+    width: 15%;
+  }
+
+  .width30 {
+    width: 30%;
+  }
+
+  .width60 {
+    width: 60%;
+  }
+
+  .width100 {
+    width: 100%;
+  }
+
+  #raw-item-div .form-control {
+    color: #004d99 !important;
+  }
+
+  .bor-left {
+    border: 1px solid #ddd;
+    padding: 6px;
+    font-weight: bold;
+    background-color: #bbb;
+    color: #000;
+  }
+
+  .bor-mid {
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    padding: 3px 2px;
+  }
+
+  .left-col {
+    width: 10%;
+    float: left;
+  }
+
+  .mid-col {
+    float: left;
+  }
+</style>
+
+<div id="invoices-data-div" style="margin-top: 30px; display: none" class="row">
+  <div class="col-xl-12">
+    <div class="panel" id="projectConfigurationPanel">
+      <div class="panel-hdr">
+        <h2>
+          <span class="fw-900"><i>Project configurations</i></span>
+        </h2>
+        <div class="panel-toolbar">
+          <button class="btn btn-panel" data-action="panel-collapse" data-toggle="tooltip" data-offset="0,10"
+            data-original-title="Collapse"></button>
+          <button class="btn btn-panel" data-action="panel-fullscreen" data-toggle="tooltip" data-offset="0,10"
+            data-original-title="Fullscreen"></button>
+          <button class="btn btn-panel" data-action="panel-close" data-toggle="tooltip" data-offset="0,10"
+            data-original-title="Close"></button>
+        </div>
+      </div>
+      <div class="panel-container">
+        <div class="form-group row m-3">
+          <div class="col-3">
+            <label class="form-label" for="bankName">Bank name</label>
+            <select class="form-control select2" id="bankName" name="bankName" data-placeholder="Select Bank name"
+              required></select>
+          </div>
+          <div class="col-3" style="display: none">
+            <label class="form-label" for="environment">Environment</label>
+            <select class="form-control select2" id="environment" name="environment"
+              data-placeholder="Select Environment" required></select>
+          </div>
+          <div class="col-3" style="display: none">
+            <label class="form-label" for="project">Project</label>
+            <select class="form-control select2" id="project" name="project" data-placeholder="Select Project"
+              required></select>
+          </div>
+          <div class="col-3" style="display: none">
+            <label class="form-label" for="segmentViewType">Segment view type</label>
+            <select class="form-control select2" id="segmentViewType" name="segmentViewType"
+              data-placeholder="Select segment view type" required>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="panel-1" class="panel">
+      <div class="panel-hdr">
+        <h2>
+          View <span class="fw-900"><i>Segments</i></span>
+        </h2>
+        <div class="panel-toolbar">
+          <button class="btn btn-panel" data-action="panel-collapse" data-toggle="tooltip" data-offset="0,10"
+            data-original-title="Collapse"></button>
+          <button class="btn btn-panel" data-action="panel-fullscreen" data-toggle="tooltip" data-offset="0,10"
+            data-original-title="Fullscreen"></button>
+          <button class="btn btn-panel" data-action="panel-close" data-toggle="tooltip" data-offset="0,10"
+            data-original-title="Close"></button>
+        </div>
+      </div>
+      <div class="panel-container show" style="min-height: 60vh">
+        <div id="divLoader" style="display: none">
+          <div class="position-absolute d-flex flex-column justify-content-center align-items-center w-100" style="
+                z-index: 2;
+                background-color: rgba(255, 255, 255, 0.7);
+                height: -webkit-fill-available;
+              ">
+            <div class="spinner-border mb-2" role="status"></div>
+            <div style="font-size: 16px">Loading...</div>
+          </div>
+        </div>
+        <div id="splashScreen" style="">
+          <div class="position-absolute d-flex flex-column justify-content-center align-items-center w-100" style="
+                z-index: 2;
+                background-color: rgba(255, 255, 255, 0.9);
+                height: -webkit-fill-available;
+              ">
+            <div style="font-size: 26px">
+              Please Select Project Config first.
+            </div>
+          </div>
+        </div>
+        <div class="panel-content">
+          <div class="panel-tag">
+            <p id="po-data-title">
+              Below is a list of Segments.
+            </p>
+          </div>
+          <!-- datatable start -->
+          <div id="main-table"></div>
+          <!-- datatable end -->
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal modal-alert fade show" id="deactiveSegmentConfirmationModal" tabindex="-1" role="dialog"
+    style="display: none; padding-right: 15px" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            Please confirm that you want to Deactivate this segment!!
+          </h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true"><i class="fal fa-times"></i></span>
+          </button>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary waves-effect waves-themed" data-dismiss="modal">
+            Close
+          </button>
+          <button type="button" class="btn btn-primary waves-effect waves-themed" onclick="deactivateSegement()">
+            Confirm & Proceed
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast hide" style="
+    position: absolute;
+    top: 50%;
+    right: 45%;
+    background-color: rgb(220 53 69);
+    color: white;
+    min-width: 250px;
+    z-index: 2;
+  " id="somethingWentWrongAlert" data-delay="2000">
+  <div class="toast-header">
+    <strong class="mr-auto">Alert</strong>
+    <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="toast-body" id="failureAlertBody">Somthing went wrong, Please try again.</div>
+  <!-- <div class="toast-header">
+<strong class="mr-auto" id="toastInfo">lmcklwkmeck</strong>
+</div> -->
+</div>
+<div class="toast hide" style="
+    position: absolute;
+    top: 50%;
+    right: 45%;
+    background-color: #090;
+    color: white;
+    min-width: 250px;
+    z-index: 2;
+  " id="successAlert" data-delay="2000">
+  <div class="toast-header">
+    <strong class="mr-auto">Success</strong>
+    <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="toast-body" id="successAlertBody">Deactivated successfully!!</div>
+  <!-- <div class="toast-header">
+<strong class="mr-auto" id="toastInfo">lmcklwkmeck</strong>
+</div> -->
+</div>
+<div class="modal" id="logsModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="false"
+    style="background-color: rgba(0, 0, 0, 0.15)">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="padding-bottom: 0px">
+                <h1 class="modal-title" style="font-size: 24px; font-weight: 700;">Logs</h1>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true"><i class="fal fa-times"></i></span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="max-height: 50vh; overflow-y: overlay; font-size: 18px; ">
+                    <div id="logsList">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/template" id="table-template">
+  <table id="datatable-invoice-data-<%=table_id%>" class="table table-bordered table-hover table-striped w-100">
+    <div class="float-right d-flex position-relative" style="width:250px" >
+      <label class="form-label position-absolute" style="top:-20px" for="statusFilter">Status Filter</label>
+      <select class="form-control select2" id="statusFilter" name="statusFilter"
+          data-placeholder="Select Status" required>
+          <option value="All">All</option>
+          <option value="APPROVED">APPROVED</option>
+          <option value="APPROVAL_PENDING">APPROVAL_PENDING</option>
+          <option value="DEACTIVATED">DEACTIVATED</option>
+          <option value="DRAFTED">DRAFTED</option>
+          <option value="SAVED">SAVED</option>
+          <option value="ERROR">ERROR</option>
+      </select>
+    </div>
+    <button class="btn buttons-pdf buttons-html5 btn-outline-info btn-sm mr-2" style="float: right; margin-top: 5px;color: #99898;" onclick="getLogs()">Logs</button>
+    <thead class="bg-primary-600">
+    <tr>
+      <th class="new-col">ID</th>
+      <th class="new-col">Segment Name</th>
+      <th class="new-col">Records</th>
+      <th class="new-col">Created By</th>
+      <th class="new-col">Created On</th>
+      <th class="new-col">Updated On</th>
+      <th class="new-col">Status</th>
+      <th class="new-col"></th>
+      <!-- <th class="new-col">Edit</th>
+      <th class="new-col">Delete</th> -->
+    </tr>
+    </thead>
+    <tbody>
+    <%=table_html%>
+    </tbody>
+    <tfoot>
+   <tr>
+    <th class="new-col">ID</th>
+    <th class="new-col">Segment Name</th>
+     <th class="new-col">Records</th>
+    <th class="new-col">Created By</th>
+    <th class="new-col">Created On</th>
+    <th class="new-col">Updated On</th>
+    <th class="new-col">Status</th>
+    <th class="new-col"></th>
+
+      <!-- <th class="new-col">Edit</th>
+      <th class="new-col">Delete</th> -->
+    </tr>
+    </tfoot>
+  </table>
+</script>
+
+<script type="text/javascript">
+  var lock = false;
+  var apiBasePath = ""
+  var uploadedFilesDataMap = {};
+  var tableCounter = 1;
+  var projectId = "";
+  var currentUser = "{{user}}"
+
+  // var config = {
+  //   iblacqjlsdsmablpxpqclospknifyewmveqlhiqxtdjplapyndmenfn11nausprj: ["acq_portfolio_active"],
+  // };
+
+  var user_bank_settings = {{ user_bank_settings| safe}};
+
+  function viewLink(id) {
+    console.log(uploadedFilesDataMap[id].id)
+    var chatuploadedFileLink = `${window.location.origin}/chat_uploadedFile/render/?uploadedFile_id=${uploadedFilesDataMap[id].id}`
+    window.open(chatuploadedFileLink, "_blank");
+  }
+
+  function editChatuploadedFile(id) {
+    alert("Functionality not ready : Coming Soon");
+  }
+
+  function deleteChatuploadedFile(id) {
+    alert("Functionality not ready : Coming Soon");
+  }
+
+  function initDatatable() {
+    $("#datatable-invoice-data-1").dataTable({
+      responsive: true,
+      lengthChange: false,
+      dom:
+        /*	--- Layout Structure
+            --- Options
+            l	-	length changing input control
+            f	-	filtering input
+            t	-	The table!
+            i	-	Table information summary
+            p	-	pagination control
+            r	-	processing display element
+            B	-	buttons
+            R	-	ColReorder
+            S	-	Select
+
+            --- Markup
+            < and >				- div element
+            <"class" and >		- div with a class
+            <"#id" and >		- div with an ID
+            <"#id.class" and >	- div with an ID and a class
+
+            --- Further reading
+            https://datatables.net/reference/option/dom
+            --------------------------------------
+         */
+        "<'row mb-3'<'col-sm-12 col-md-6 d-flex align-items-center justify-content-start'f><'col-sm-12 col-md-6 d-flex align-items-center justify-content-end'lB>>" +
+        "<'row'<'col-sm-12'tr>>" +
+        "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+      buttons: [
+        /*{
+              extend:    'colvis',
+              text:      'Column Visibility',
+              titleAttr: 'Col visibility',
+              className: 'mr-sm-3'
+          },*/
+        {
+          extend: "pdfHtml5",
+          text: "PDF",
+          titleAttr: "Generate PDF",
+          className: "btn-outline-danger btn-sm mr-1",
+        },
+        {
+          extend: "excelHtml5",
+          text: "Excel",
+          titleAttr: "Generate Excel",
+          className: "btn-outline-success btn-sm mr-1",
+        },
+        {
+          extend: "csvHtml5",
+          text: "CSV",
+          titleAttr: "Generate CSV",
+          className: "btn-outline-primary btn-sm mr-1",
+        },
+        {
+          extend: "copyHtml5",
+          text: "Copy",
+          titleAttr: "Copy to clipboard",
+          className: "btn-outline-primary btn-sm mr-1",
+        },
+        {
+          extend: "print",
+          text: "Print",
+          titleAttr: "Print Table",
+          className: "btn-outline-primary btn-sm",
+        },
+      ],
+      fnDrawCallback: function () {
+          $("#datatable-invoice-data-1"). DataTable() .columns.adjust ()},
+    });
+    $(".select2").select2();
+  }
+  $(document).on("change", "#statusFilter", function () {
+        var table = $('#datatable-invoice-data-1').DataTable();
+        var selectedValue = $(this).val();
+        // Clear existing search
+        table.column(statusIndex).search('').draw();
+        // Apply new search based on the selected value
+        if (selectedValue !== 'All') {
+            table.column(statusIndex).search(selectedValue).draw();
+        }
+    });
+  function getLogs() {
+        $.ajax({
+            url: apiBasePath + "/activity_logs/get_activity_logs/",
+            type: "POST",
+            contentType: 'application/json',
+            data: JSON.stringify({
+                "mode": "DATA_SOURCE",
+                "filters": {
+                    "value": "OFFER_SEGMENT",
+                    "operation": "EQ"
+                }
+            }),
+            success: function (response) {
+                lock = false;
+                if (response?.result?.toUpperCase() == "SUCCESS" && !!response?.data?.length) {
+                    $("#divLoader").hide();
+                    var logsHtml = "";
+                    var lastDate = ""
+                    for (el of response?.data) {
+                        const utcDateTime = new Date(el?.ct + 'Z');
+                        const istDateTimeString = utcDateTime.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+                        const istDateString = utcDateTime.toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' });
+                        logsHtml += (lastDate !== istDateString ? `<div class="fw-700 mb-2" style="font-size:20px"> ${moment(istDateTimeString).format("dddd")} - ${moment(istDateTimeString).format("D MMM YYYY")}  </div>` : "") + `<li class="mb-2">${moment(istDateTimeString).format("hh:mm A")} - ${el?.comment}</li>`;
+                        lastDate = istDateString
+                    }
+                    $("#logsList").html(logsHtml);
+                    $("#logsModal").modal()
+                } else {
+                    $("#divLoader").hide();
+                    console.log("Api success false");
+                    if (!!response?.details_message) {
+                        $("#failureAlertBody").html(response?.details_message)
+                    }
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            },
+            error: function (error) {
+                lock = false;
+                $("#divLoader").hide();
+                $("#somethingWentWrongAlert").toast("show");
+            },
+        });
+
+    }
+
+  $("#bankName").on("change", function () {
+    currentBank = this.value;
+    $("#environment").parent().show();
+    var environmentOptionsHtml =
+      "<option value='' disabled selected></option>";
+    for (const environment of Object.keys(user_bank_settings[this.value])) {
+      environmentOptionsHtml += `<option value='${environment}'>${environment}</option>`;
+    }
+    $("#environment").html(environmentOptionsHtml);
+    $("#project").parent().hide();
+    $("#project").html("");
+  });
+  $("#environment").on("change", function () {
+    currentEnvironment = this.value;
+    $("#project").parent().show();
+    const bank = $("#bankName").val();
+    var projectOptionsHtml = "<option value='' disabled selected></option>";
+    for (const project of Object.keys(user_bank_settings[bank][this.value])) {
+      projectOptionsHtml += `<option value='${project}'>${project}</option>`;
+    }
+    $("#project").html(projectOptionsHtml);
+  });
+  $("#project").on("change", function () {
+    currentProject = this.value;
+    const bank = $("#bankName").val();
+    const env = $("#environment").val();
+    apiBasePath = user_bank_settings?.[bank]?.[env]?.[this.value]?.url;
+    // currentBank = this.value;
+    $("#segmentViewType").parent().show();
+    setSessionStorageItem("selected_project_config", { "bank": bank, "env": env, "project": this.value })
+    var segmentViewTypeHtml = "<option value='' disabled selected></option>";
+    for (const segmentView of user_bank_settings?.[bank]?.[env]?.[this.value]?.segment_view_types) {
+      segmentViewTypeHtml += `<option value='${segmentView?.id}'>${segmentView?.label}</option>`;
+    }
+    $("#segmentViewType").html(segmentViewTypeHtml);
+  });
+  $("#segmentViewType").on("change", function () {
+    currentProject = this.value;
+    const bank = $("#bankName").val();
+    const env = $("#environment").val();
+    const project = $("#project").val();
+    // apiBasePath = user_bank_settings?.[bank]?.[env]?.[project]?.project_id;
+    projectId = user_bank_settings?.[bank]?.[env]?.[project]?.project_id
+    getSegmentList(projectId, $("#segmentViewType").val())
+    if (!!this.value) {
+      $("#splashScreen").hide();
+    }
+  });
+  $(document).on("change", "#bankName, #environment, #project ,#segmentViewType", function () {
+    $("#bankName, #environment, #project, #segmentViewType").map(function () {
+      if (!this.value) {
+        $("#splashScreen").show();
+      }
+    });
+  });
+
+  function getSegmentList(projectId, segmentViewType) {
+    if (!projectId || !segmentViewType) return;
+    $("#divLoader").show();
+    $.ajax({
+      url: apiBasePath + "/segments/view_offer_segment_list/",
+      type: "POST",
+      contentType: 'application/json',
+      data: JSON.stringify({
+        "segment_view_type": segmentViewType,
+        "project_id": projectId,
+        "active_user": currentUser,
+      }),
+      success: function (response) {
+        lock = false;
+        if (response?.result?.toUpperCase() == "SUCCESS") {
+          var tableHtml = "";
+          console.log(response?.data);
+          const configData = response?.data;
+          for (var i = 0; i < configData.length; i++) {
+            tableHtml +=
+              "<tr><td>" +
+              (!!configData[i]["id"] ? configData[i]["id"] : "NA") +
+              "</td><td>" +
+              (!!configData[i]["name"] ? configData[i]["name"] : "NA") +
+              "</td><td>" +
+              (!!configData[i]["records"] ? configData[i]["records"] : "NA") +
+              "</td><td>" +
+              (!!configData[i]["created_by"] ? configData[i]["created_by"] : "NA") +
+              "</td><td style='white-space:nowrap'>" +
+              (!!configData[i]["ct"] ? moment(configData[i]["ct"]).format("D MMM YYYY, hh:mm A") : "NA") +
+              "</td><td style='white-space:nowrap'>" +
+              (!!configData[i]["ut"] ? moment(configData[i]["ut"]).format("D MMM YYYY, hh:mm A") : "NA") +
+              "</td><td class='fw-700'>" +
+              (!!configData[i]["status"] ? configData[i]["status"] : "NA") +
+              "</td><td>" +
+              `<div style="
+                      display: flex;
+                      justify-content: center;
+                      gap: 10px;">
+                      ${configData[i]["status"].toUpperCase() != "DEACTIVATED" ? `<i class="fal fa-power fa-2x waves-effect waves-themed color-danger-500 " title="Deactivate"  onclick="handleDeactivateClick('${configData[i]["unique_id"]}')"></i>` : ""}
+                      ${configData[i]["status"].toUpperCase() != "DEACTIVATED" ? `<i class="fal fa-eye fa-2x waves-effect waves-themed color-info-500 " title="View"  onclick="handleCtaClick('view','${configData[i]["unique_id"]}')"></i>` : ""}
+                      ${configData[i]["status"].toUpperCase() != "DEACTIVATED" ? `<i class="fal fa-edit fa-2x waves-effect waves-themed color-primary-500 " title="Edit"  onclick="handleCtaClick('edit','${configData[i]["unique_id"]}')"></i>` : ""}
+                      <i class="fal fa-copy fa-2x waves-effect waves-themed color-success-500 " title="Clone" onclick="handleCtaClick('clone','${configData[i]["unique_id"]}')"></i>
+                      ${configData[i]["status"].toUpperCase() === "SAVED" ? `<i class="fal fa-paper-plane fa-2x waves-effect waves-themed color-success-500" title="Send For Approval" onclick="handleSentForApprovalClick('${configData[i]["unique_id"]}')"></i>` : ""}
+                      ${currentUser && configData[i]["created_by"] && currentUser !== configData[i]["created_by"] && configData[i]["status"].toUpperCase() === "APPROVAL_PENDING" ? `<i class="fal fa-check-circle fa-2x waves-effect waves-themed color-success-500" title="Approve" onclick="handleApproveClick('${configData[i]["unique_id"]}')"></i>` : ""}
+              </div>` +
+              "</td>" +
+              "</tr>";
+
+          }
+          $("#invoices-data-div").show();
+
+          $("#main-table").html(
+            _.template($("#table-template").text(), {
+              table_html: tableHtml,
+              table_id: tableCounter,
+            })
+          );
+          initDatatable();
+          $("#divLoader").hide();
+        } else {
+          $("#divLoader").hide();
+          console.log("Api success false");
+          if (!!response?.details_message) {
+            $("#failureAlertBody").html(response?.details_message)
+          }
+          $("#somethingWentWrongAlert").toast("show");
+          $("#main-table").html("");
+          $("#splashScreen").show();
+        }
+      },
+      error: function (error) {
+        $("#somethingWentWrongAlert .toast-body").html(`${error?.responseJSON?.details_message || 'Something went wrong!'}`);
+        lock = false;
+        $("#divLoader").hide();
+        $("#somethingWentWrongAlert").toast("show");
+        $("#main-table").html("");
+        $("#splashScreen").show();
+      },
+    });
+
+  }
+  var deactivateSegmentID = ""
+  function handleDeactivateClick(uniqueId) {
+    console.log("uniqueId", uniqueId)
+    deactivateSegmentID = uniqueId
+    $("#deactiveSegmentConfirmationModal").modal();
+  }
+  $("#deactiveSegmentConfirmationModal").on("hidden.bs.modal", function (e) {
+    deactivateSegmentID = ""
+  });
+  function deactivateSegement() {
+    console.log("deactivateSegmentID", deactivateSegmentID)
+    $("#deactiveSegmentConfirmationModal").modal("hide");
+    $("#divLoader").show();
+
+    $.ajax({
+      url: apiBasePath + "/segments/deactivate_offer_segment/",
+      type: "POST",
+      contentType: 'application/json',
+      data: JSON.stringify({
+        "segment_view_type": $("#segmentViewType").val() || "",
+        "segment_id": deactivateSegmentID,
+        "active_user": currentUser,
+      }),
+      success: function (response) {
+        $("#divLoader").hide();
+        if (response?.result?.toUpperCase() == "SUCCESS") {
+          $("#successAlertBody").html("Deactivated successfully!!")
+          $("#successAlert").toast("show");
+          getSegmentList(projectId, $("#segmentViewType").val())
+        }
+        else {
+          $("#divLoader").hide();
+          if (!!response?.details_message) {
+            $("#failureAlertBody").html(response?.details_message)
+          }
+          $("#somethingWentWrongAlert").toast("show");
+        }
+      }, error: function (error) {
+        $("#somethingWentWrongAlert .toast-body").html(`${error?.responseJSON?.details_message || 'Something went wrong!'}`);
+        $("#divLoader").hide();
+        $("#somethingWentWrongAlert").toast("show");
+      }
+    })
+  }
+  $('#somethingWentWrongAlert').on('hidden.bs.toast', function () {
+    $("#failureAlertBody").html("Somthing went wrong, Please try again.")
+  })
+  function handleCtaClick(mode, uniqueId) {
+    var segementLink = `${window.location.origin}/mentis/editor/?#createSegment?mode=${mode}&uniqueId=${uniqueId}&segmentViewType=${$("#segmentViewType").val()}`;
+    window.open(segementLink, "_blank");
+  }
+  function handleApproveClick(uniqueId) {
+    console.log("handleApproveClick uniqueId", uniqueId)
+    $("#divLoader").show();
+    $.ajax({
+      url: apiBasePath + "/segments/approval_action/",
+      type: "POST",
+      contentType: 'application/json',
+      data: JSON.stringify({
+        "segment_view_type": $("#segmentViewType").val() || "",
+        "segment_id": uniqueId,
+        "active_user": currentUser
+      }),
+      success: function (response) {
+        $("#divLoader").hide();
+        if (response?.result?.toUpperCase() == "SUCCESS") {
+          $("#successAlertBody").html("Segment Approved!!")
+          $("#successAlert").toast("show");
+          getSegmentList(projectId, $("#segmentViewType").val())
+        }
+        else {
+          $("#divLoader").hide();
+          if (!!response?.details_message) {
+            $("#failureAlertBody").html(response?.details_message)
+          }
+          $("#somethingWentWrongAlert").toast("show");
+        }
+      }, error: function (error) {
+        $("#somethingWentWrongAlert .toast-body").html(`${error?.responseJSON?.details_message || 'Something went wrong!'}`);
+        $("#divLoader").hide();
+        $("#somethingWentWrongAlert").toast("show");
+      }
+    })
+  }
+  function handleSentForApprovalClick(uniqueId) {
+    console.log("handleSentForApprovalClick uniqueId", uniqueId)
+    $("#divLoader").show();
+    $.ajax({
+      url: apiBasePath + "/segments/send_for_approval/",
+      type: "POST",
+      contentType: 'application/json',
+      data: JSON.stringify({
+        "segment_view_type": $("#segmentViewType").val() || "",
+        "segment_id": uniqueId,
+        "active_user": currentUser
+      }),
+      success: function (response) {
+        $("#divLoader").hide();
+        if (response?.result?.toUpperCase() == "SUCCESS") {
+          $("#successAlertBody").html("Segment Sent for approval!!")
+          $("#successAlert").toast("show");
+          getSegmentList(projectId, $("#segmentViewType").val())
+        }
+        else {
+          $("#divLoader").hide();
+          if (!!response?.details_message) {
+            $("#failureAlertBody").html(response?.details_message)
+          }
+          $("#somethingWentWrongAlert").toast("show");
+        }
+      }, error: function (error) {
+        $("#somethingWentWrongAlert .toast-body").html(`${error?.responseJSON?.details_message || 'Something went wrong!'}`);
+        $("#divLoader").hide();
+        $("#somethingWentWrongAlert").toast("show");
+      }
+    })
+
+  }
+  var statusIndex="6"
+  $(document).ready(function () {
+    var bankNameOptionsHtml =
+      "<option value='' disabled selected></option>";
+    for (const bank of Object.keys(user_bank_settings)) {
+      bankNameOptionsHtml += `<option value='${bank}'>${bank}</option>`;
+    }
+    $("#bankName").html(bankNameOptionsHtml);
+    const selected_project_config = getSessionStorageItem("selected_project_config");
+    if (!!selected_project_config) {
+      const bank = $("#bankName").val(selected_project_config?.bank).change();
+      const env = $("#environment").val(selected_project_config?.env).change();
+      const project = $("#project").val(selected_project_config?.project).change();
+    }
+    if (getSessionStorageItem("segmentViewType")) {
+      $("#segmentViewType").val(getSessionStorageItem("segmentViewType")).change()
+    }
+    $(".select2").select2();
+
+    $("#invoices-data-div").show();
+  });
+  // Function to set a key in session storage
+  function setSessionStorageItem(key, value) {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  }
+
+  // Function to get a key from session storage
+  function getSessionStorageItem(key) {
+    const item = sessionStorage.getItem(key);
+    return item ? JSON.parse(item) : null;
+  }
+
+  // Function to remove a key from session storage
+  function removeSessionStorageItem(key) {
+    sessionStorage.removeItem(key);
+  }
+</script>

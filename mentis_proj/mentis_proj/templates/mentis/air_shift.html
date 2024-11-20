@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Add configuration</title>
+    <style type="text/css">
+      .vertical-align {
+        display: flex;
+        align-items: center;
+      }
+
+      .cursor-none {
+        pointer-events: none;
+      }
+
+      .cursor-pointer {
+        cursor: pointer;
+      }
+    </style>
+    <link
+      rel="stylesheet"
+      media="screen, print"
+      href="/static/mentis/css/select2.bundle.css"
+    />
+
+    <style type="text/css">
+      .fileListItem {
+        margin: 10px 5px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-left: 5px;
+        background: #efebf5;
+        border: 1px solid #967bbd;
+        color: #563d7c;
+        border-radius: 4px;
+        cursor: grab;
+      }
+
+      .fileListItemCross {
+        margin: 0;
+        padding-left: 7px;
+        padding-right: 7px;
+        font-size: 16px;
+        border-left: 1px solid rgba(0, 0, 0, 0.1);
+        margin-left: 5px;
+        cursor: pointer;
+        color: #a38cc6;
+      }
+
+      .fal.fa-ellipsis-v {
+        margin-inline: 2px;
+        font-size: 20px;
+      }
+
+      .select2-dropdown {
+        z-index: 9999999999;
+      }
+
+      .select2-hidden-accessible {
+        position: fixed !important;
+        width: 100%;
+      }
+
+      .custom-control-label {
+        text-transform: capitalize;
+        cursor: pointer;
+      }
+
+      .was-validated .custom-select:valid + .select2 .select2-selection {
+        border-color: #1dc9b7;
+        /* padding-right: calc((1em + 1rem) * 3 / 4 + 1.875rem); */
+        background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%231dc9b7' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e")
+          #fff no-repeat center right 1.875rem / calc(0.735em + 0.5rem)
+          calc(0.735em + 0.5rem);
+      }
+
+      .was-validated .custom-select:valid + .select2 .select2-selection:focus {
+        border-color: #1dc9b7;
+        -webkit-box-shadow: 0 0 0 0.2rem rgba(29, 201, 183, 0.25);
+        box-shadow: 0 0 0 0.2rem rgba(29, 201, 183, 0.25);
+      }
+
+      .was-validated .custom-select:invalid + .select2 .select2-selection {
+        border-color: #fd3995;
+        /* padding-right: calc(2.47em + 1rem); */
+        background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23fd3995' viewBox='0 0 12 12'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23fd3995' stroke='none'/%3e%3c/svg%3e")
+          #fff no-repeat center right 1.875rem / calc(0.735em + 0.5rem)
+          calc(0.735em + 0.5rem);
+      }
+
+      .was-validated
+        .custom-select:invalid
+        + .select2
+        .select2-selection:focus {
+        border-color: #fd3995;
+        -webkit-box-shadow: 0 0 0 0.2rem rgba(253, 57, 149, 0.25);
+        box-shadow: 0 0 0 0.2rem rgba(253, 57, 149, 0.25);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="main-form-div">
+      <div class="row">
+        <div class="col-xl-12">
+          <div class="panel" id="bankConfigurationPanel">
+            <div class="panel-hdr">
+              <h2>
+                <span class="fw-900"><i>Bank configuration</i></span>
+              </h2>
+              <div class="panel-toolbar">
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-collapse"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Collapse"
+                ></button>
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-fullscreen"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Fullscreen"
+                ></button>
+              </div>
+            </div>
+            <div class="panel-container">
+              <div class="form-group row m-3">
+                <div class="col-4">
+                  <label for="bankName">Bank name</label>
+                  <select
+                    class="form-control select2"
+                    id="bankName"
+                    name="bankName"
+                    data-placeholder="Select Bank name"
+                    required
+                  ></select>
+                </div>
+                <div class="col-4" style="display: none">
+                  <label for="environment">Environment</label>
+                  <select
+                    class="form-control select2"
+                    id="environment"
+                    name="environment"
+                    data-placeholder="Select Environment"
+                    required
+                  ></select>
+                </div>
+                <div class="col-4" style="display: none">
+                  <label for="project">Project</label>
+                  <select
+                    class="form-control select2"
+                    id="project"
+                    name="project"
+                    data-placeholder="Select Project"
+                    required
+                  ></select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="panel-1" class="panel">
+            <div class="panel-hdr">
+              <h2>Airshift Settings</h2>
+              <div class="panel-toolbar">
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-fullscreen"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Fullscreen"
+                ></button>
+              </div>
+            </div>
+            <div class="panel-container" style="min-height: 40vh">
+              <div id="splashScreen">
+                <div
+                  class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+                  style="z-index: 2; background-color: rgba(255, 255, 255, 0.9)"
+                >
+                  <div style="font-size: 26px">
+                    Please Select Bank Configurations first.
+                  </div>
+                </div>
+              </div>
+              <div id="divLoader" style="display: none">
+                <div
+                  class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+                  style="z-index: 3; background-color: rgba(255, 255, 255, 0.7)"
+                >
+                  <div class="spinner-border mb-2" role="status"></div>
+                  <div style="font-size: 16px">Loading...</div>
+                </div>
+              </div>
+
+              <div id="congratsConfigSaved" style="display: none">
+                <div
+                  class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+                  style="z-index: 2; background-color: rgba(255, 255, 255, 1)"
+                >
+                  <div
+                    class="h-100 d-flex justify-content-center align-items-center"
+                  >
+                    <div
+                      class="panel p-6 d-flex flex-column justify-content-center align-items-center text-center"
+                      style="font-size: 20px"
+                    >
+                      <img
+                        src="/static/mentis/img/accepted.png"
+                        class="img-fluid mb-5"
+                        width="75"
+                        height="75"
+                      />
+                      <span class="mx-2 mb-5"
+                        >Congratulations,Your configuration has been saved
+                        successfully!</span
+                      >
+                      <button
+                        type="button"
+                        title="Close"
+                        class="btn btn-primary btn-lg mx-3 waves-effect waves-themed"
+                        onclick="closeCongratulations()"
+                      >
+                        View Saved Configs
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <form id="airShiftForm" class="p-4" novalidate>
+                  <div class="frame-wrap w-100">
+                    <div
+                      class="accordion accordion-outline"
+                      id="js_accordion-1"
+                    >
+                      <div class="card">
+                        <div class="card-header">
+                          <div class="card-title" style="cursor: default">
+                            <span id="configHeading">Add Configuartion</span>
+                          </div>
+                        </div>
+                        <div
+                          id="js_accordion-1a"
+                          class="collapse show"
+                          data-parent="#js_accordion-1"
+                        >
+                          <div id="config_content" class="card-body"></div>
+                          <div
+                            id="header_mapping"
+                            class="card-body"
+                            style="padding-left: 28px; padding-right: 28px"
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    id="issues"
+                    class="alert alert-danger"
+                    role="alert"
+                    style="margin-top: 20px"
+                  >
+                    <!-- <strong>Oh snap!</strong> Change a few things up and try
+                  submitting again. -->
+                    <ul id="issue-items" style="margin-top: 8px"></ul>
+                  </div>
+                  <div>
+                    <button
+                      id="saveAirshiftConfig"
+                      type="submit"
+                      onclick="expandAllSection()"
+                      class="btn btn-primary btn-lg waves-effect waves-themed"
+                    >
+                      Save Configuration
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal"
+      id="regexTestModal"
+      tabindex="-1"
+      role="dialog"
+      style="padding-right: 15px; background-color: rgba(0, 0, 0, 0.4)"
+      aria-modal="true"
+    >
+      <div
+        class="modal-dialog modal-dialog-centered"
+        style="max-width: 450px"
+        role="document"
+      >
+        <div class="modal-content">
+          <div class="bg-brand-gradient modal-header py-2">
+            <h5 class="modal-title font-weight-bold color-white">
+              Validate Regex
+            </h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true"><i class="fal fa-times color-white"></i></span>
+            </button>
+          </div>
+          <div class="modal-body" style="padding-left: 30px">
+            <div class="d-flex justify-content-between mb-3">
+              <div class="w-100">
+                <label class="form-label" for="regexModalRegex">Regex</label>
+                <input
+                  type="text"
+                  id="regexModalRegex"
+                  class="form-control col-10"
+                  name="regexModalRegex"
+                  placeholder="Enter Regex"
+                  required
+                />
+              </div>
+            </div>
+            <div class="d-flex justify-content-between mb-3">
+              <div class="w-100">
+                <label class="form-label" for="regexModalInputString" required
+                  >Input String</label
+                >
+                <div class="d-flex">
+                  <input
+                    type="text"
+                    id="regexModalInputString"
+                    class="form-control col-10"
+                    name="regexModalInputString"
+                    placeholder="Enter String to Test"
+                    required
+                  />
+                  <div
+                    class="col-2"
+                    id="regexValidated"
+                    style="
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                      font-size: 20px;
+                    "
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="modal-footer"
+            style="padding-right: 30px; padding-top: 0px; padding-bottom: 30px"
+          >
+            <button
+              type="button"
+              class="btn btn-secondary waves-effect waves-themed font-weight-bold cursor-pointer"
+              data-dismiss="modal"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              class="btn btn-warning waves-effect font-weight-bold waves-themed cursor-pointer"
+              onclick="TestRegex()"
+            >
+              Test Regex
+            </button>
+            <button
+              type="button"
+              id="saveRegexButton"
+              class="btn btn-primary font-weight-bold waves-effect waves-themed"
+              onclick="saveRegex()"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="toast hide"
+      style="position: fixed; z-index: 3000; top: 50%; right: 40%"
+      id="toast"
+      data-delay="2000"
+    >
+      <div class="toast-header">
+        <strong class="mr-auto" id="toastInfo"></strong>
+        <button
+          type="button"
+          class="ml-2 mb-1 close"
+          data-dismiss="toast"
+          aria-label="Close"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    </div>
+    <!-- Something went wrong toastr -->
+    <div
+      class="toast hide"
+      style="
+        position: fixed;
+        top: 50%;
+        right: 45%;
+        background-color: rgb(220 53 69);
+        color: white;
+        min-width: 250px;
+        z-index: 3000;
+      "
+      id="somethingWentWrongAlert"
+      data-delay="2000"
+    >
+      <div class="toast-header">
+        <strong class="mr-auto">Alert</strong>
+        <button
+          type="button"
+          class="ml-2 mb-1 close"
+          data-dismiss="toast"
+          aria-label="Close"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="toast-body" id="failureAlertBody">
+        Somthing went wrong, Please try again.
+      </div>
+    </div>
+  </body>
+  <script type="text/javascript">
+    var multiSelectFieldOptions = {}
+    var headerTableConfig = []
+    var headerMappingData = []
+    var fieldsCurrentIndex = {}
+    var currentProject = ""
+    var lock = false
+    var projectId = ""
+    var fileMappingOptionsObj = []
+    var currentUser = "{{ user }}";
+    var conf_key = "{{ conf_key }}";
+    var bankFromURL = "{{ bank }}";
+    var envFromURL = "{{ env }}";
+    var currentProjectFromUrl = "{{ project }}";
+    var regexValidated = false;
+    var conf_version = "{{ conf_version }}";
+    var user_bank_settings = {{ user_bank_settings| safe}};
+    var mode = "{{mode}}";
+    var apiBasePath = "";
+
+    $(document).ready(function () {
+      // showLoader();
+      if (bankFromURL && envFromURL) {
+        apiBasePath =
+          user_bank_settings?.[bankFromURL]?.[envFromURL]?.url || "";
+      }
+      $("#issues").hide();
+      if (!mode) {
+        mode = "create";
+      }
+      handleMode(mode)
+      var fileDetails = []
+      $("#testRegexButton").attr("disabled", true);
+      $("#testRegexButton").addClass("cursor-none");
+      bankConfiguration()
+      $(".select2").select2();
+      $(".sortableList").sortable();
+      $("select").on("select2:select", function (evt) {
+        var element = evt.params.data.element;
+        var $element = $(element);
+
+        $element.detach();
+        $(this).append($element);
+        $(this).trigger("change");
+      });
+    });
+
+    function handleMode(mode) {
+      if (mode === "create") {
+        var bankNameOptionsHtml =
+          "<option value='' disabled selected></option>";
+        for (const bank of Object.keys(user_bank_settings)) {
+          bankNameOptionsHtml += `<option value='${bank}'>${bank}</option>`;
+        }
+        $('#airShiftForm').hide();
+        $("#bankName").html(bankNameOptionsHtml);
+      } else if (mode == "view" || mode == "edit") {
+        $("#bankConfigurationPanel").hide();
+        getAirShiftData();
+        regexValidated = true
+        $("#splashScreen").hide();
+        // $("#configKey").attr("readonly", true);
+      }
+    }
+
+    function enableEditting() {
+      var configLink = `${window.location.origin}/mentis/editor/?#airShift?mode=edit&conf_key=${conf_key}&conf_version=${conf_version}&bank=${bankFromURL}&env=${envFromURL}&project=${currentProjectFromUrl}`;
+      window.open(configLink, "_self");
+    }
+
+    $(document).on("keyup", "#file_regex", function () {
+      regexValidated = false
+      if (!!$("#file_regex").val()) {
+        $("#testRegexButton").attr("disabled", false);
+        $("#testRegexButton").addClass("cursor-pointer");
+        $("#testRegexButton").removeClass("cursor-none");
+      } else {
+        $("#testRegexButton").attr("disabled", true);
+        $("#testRegexButton").addClass("cursor-none");
+      }
+    });
+
+    function bankConfiguration() {
+      var bankNameOptionsHtml =
+        "<option value='' disabled selected></option>";
+      for (const bank of Object.keys(user_bank_settings)) {
+        bankNameOptionsHtml += `<option value='${bank}'>${bank}</option>`;
+      }
+      $("#bankName").html(bankNameOptionsHtml);
+      const selected_project_config = getSessionStorageItem("selected_airshift_project_config");
+      if (!!selected_project_config) {
+        const bank = $("#bankName").val(selected_project_config?.bank).change();
+        const env = $("#environment").val(selected_project_config?.env).change();
+        const project = $("#project").val(selected_project_config?.project).change();
+      }
+    }
+
+    $("#bankName").on("change", function () {
+      currentBank = this.value;
+      $("#environment").parent().show();
+      $(".splashScreen").show();
+      $("#project").val("").change();
+      $("#environment").val("").change();
+      $('#airShiftForm').hide();
+      var environmentOptionsHtml =
+        "<option value='' disabled selected></option>";
+      for (const environment of Object.keys(user_bank_settings[this.value])) {
+        environmentOptionsHtml += `<option value='${environment}'>${environment}</option>`;
+      }
+      $("#environment").html(environmentOptionsHtml);
+      $("#project").parent().hide();
+      $("#project").html("");
+      $("#divLoader").hide();
+    });
+    $("#environment").on("change", function () {
+      currentEnvironment = this.value;
+      const bank = $("#bankName").val();
+      apiBasePath = user_bank_settings?.[bank]?.[this.value]?.url;
+      $("#divLoader").show();
+      $(".splashScreen").show();
+      $('#airShiftForm').hide();
+      $("#project").val("").change();
+      if (!!currentEnvironment && !!bank) {
+        $.get({
+          url: apiBasePath + "/get_projects/",
+          type: "GET",
+          contentType: "application/json",
+          success: function (response) {
+            $("#divLoader").hide()
+            if (response?.result == "SUCCESS") {
+              $("#project").parent().show();
+              var projectOptionsHtml = "<option value='' disabled selected></option>";
+              for (var i = 0; i < response['response'].length; i++) {
+                if (user_bank_settings[bank][currentEnvironment]['projects'].indexOf(response['response'][i]['name']) >= 0) {
+                  projectOptionsHtml += `<option value='${response['response'][i]['name']}'>${response['response'][i]['name']}</option>`;
+                }
+              }
+              $("#project").html(projectOptionsHtml);
+              const selected_project_config = getSessionStorageItem("selected_airshift_project_config");
+              if (!!selected_project_config) {
+                $("#project").val(selected_project_config?.project).change();
+              }
+
+            } else {
+              $("#somethingWentWrongAlert").toast("show");
+            }
+          },
+          error: function (error) {
+            $("#divLoader").hide()
+            if (!!error?.responseJSON?.details_message) {
+              $("#failureAlertBody").html(error?.responseJSON?.details_message)
+            }
+            $("#somethingWentWrongAlert").toast("show");
+          },
+        });
+      }
+    });
+    $("#project").on("change", function () {
+      currentProject = this.value;
+      const bank = $("#bankName").val();
+      const env = $("#environment").val();
+
+      if (!!this.value && !!bank && !!env) {
+
+        apiBasePath = user_bank_settings?.[bank]?.[env]?.url;
+
+        $("#project").parent().show();
+        setSessionStorageItem("selected_airshift_project_config", { "bank": bank, "env": env, "project": this.value })
+        $("#splashScreen").hide();
+        getAirShiftData();
+      }
+    });
+    $(document).on("change", "#bankName, #environment", "#project", function () {
+      $("#bankName, #environment, #project").map(function () {
+        if (!this.value && (mode != 'view' || mode != "edit")) {
+          $("#splashScreen").show();
+        }
+      });
+    });
+
+    function getAirShiftData() {
+      if (lock == true) return;
+      const payload = {
+        data: {
+          "project": currentProject || currentProjectFromUrl
+        }
+      }
+      $('#airShiftForm').hide();
+      if (!!currentProject || !!currentProjectFromUrl) {
+        lock = true
+        showLoader()
+        $.ajax({
+          url: apiBasePath + "/get_file_associated_conf/",
+          type: "POST",
+          contentType: "application/json",
+          data: JSON.stringify({ ...payload }),
+          success: function (response) {
+            lock = false
+            hideLoader()
+            if (response?.result == "SUCCESS") {
+              $('#airShiftForm').show();
+              let connectorConfig = []
+              for (const config of Object.keys(response?.response?.connector_conf_list)) {
+                connectorConfig = [...connectorConfig, ...response?.response?.connector_conf_list?.[config]]
+              }
+              let tempConfig = [
+                {
+                  "col_name": "version",
+                  "label": "Version",
+                  "col_input_data_type": "version",
+                  "options": []
+                },
+                {
+                  "col_name": "name",
+                  "label": "Name",
+                  "col_input_data_type": "string"
+                },
+                {
+                  "col_name": "source_connector_id",
+                  "label": "Source Connector",
+                  "col_input_data_type": "list",
+                  "show_type": true,
+                  "multi_select": false,
+                  "options": connectorConfig
+                },
+                {
+                  "col_name": "destination_connector_id",
+                  "label": "Destination Connector",
+                  "col_input_data_type": "list",
+                  "show_type": true,
+                  "multi_select": false,
+                  "options": connectorConfig
+                },
+                {
+                  "col_name": "file_regex",
+                  "label": "File Regex",
+                  "readonly": true,
+                  "col_input_data_type": "string",
+                  "cta": {
+                    "label": "Edit and Validate Regex",
+                    "handler": "testRegex"
+                  }
+                },
+                {
+                  "col_name": "file_type",
+                  "label": "Data Processor Type",
+                  "col_input_data_type": "list",
+                  "col_output_data": "string",
+                  "multi_select": false,
+                  "options": [
+                    {
+                      "unique_id": "INPUT",
+                      "type": "INPUT",
+                      "label": "Input"
+                    },
+                    {
+                      "unique_id": "OUTPUT",
+                      "type": "OUTPUT",
+                      "label": "Output"
+                    }
+                  ]
+                },
+                {
+                  "col_name": "fp_file_type",
+                  "col_input_data_type": "list",
+                  "label": "File Type",
+                  "col_output_data": "string",
+                  "multi_select": false,
+                  "options": response?.response?.fp_file_type_list
+                },
+                {
+                  "col_name": "auto_ingestion",
+                  "col_input_data_type": "boolean",
+                  "col_output_data": "boolean",
+                  "label": "Auto Ingestion"
+                },
+                {
+                  "col_name": "dependency",
+                  "col_input_data_type": "boolean",
+                  "col_output_data": "boolean",
+                  "label": "Dependency"
+                },
+                {
+                  "col_name": "mailer_enabled",
+                  "col_input_data_type": "boolean",
+                  "col_output_data": "boolean",
+                  "label": "Mailer Enabled"
+                },
+                {
+                  "col_name": "description",
+                  "label": "Description",
+                  "optional_field": true,
+                  "col_input_data_type": "string"
+                },
+                {
+                  "col_name": "file_processor_mapping",
+                  "label": "Pre Processor Mapping",
+                  "optional_field": true,
+                  "col_input_data_type": "list",
+                  "col_output_data": "list",
+                  "add_multiple_list": true,
+                  "dynamic_option_enabled": true,
+                  "drag_sort": true,
+                  "multi_select": true,
+                  "options": response?.response?.processor_list
+                },
+                {
+                  "col_name": "file_header_mapping",
+                  "label": "File header mapping",
+                  "col_input_data_type": "file_header_upload",
+                  "col_output_data": "list",
+                  "options": [
+                    {
+                      "col_name": "header_name",
+                      "col_input_data_type": "string",
+                      "label": "Header Name"
+                    },
+                    {
+                      "col_name": "alias",
+                      "col_input_data_type": "string",
+                      "label": "Alias"
+                    },
+                    {
+                      "col_name": "encrypted",
+                      "col_input_data_type": "boolean",
+                      "col_output_data": "boolean",
+                      "label": "Is Encrypted"
+                    },
+                    {
+                      "col_name": "enquote",
+                      "col_input_data_type": "boolean",
+                      "col_output_data": "boolean",
+                      "label": "Enquote"
+                    }
+                  ]
+                }
+              ]
+              fileMappingOptionsObj = response?.response?.processor_list
+              fileDetails = tempConfig
+              addComponent(tempConfig, "config_content")
+              setCheckbox("mailer_enabled_true", true)
+              $("#headerSection").hide()
+              if (!!conf_key && !!conf_version) {
+                getSavedFileConfig(conf_key, conf_version)
+              } else {
+                hideLoader();
+              }
+              $(".dynamic_content").html('');
+            } else {
+              hideLoader();
+              fileDetails = []
+              $("#somethingWentWrongAlert").toast("show");
+            }
+          },
+          error: function (error) {
+            lock = false
+            fileDetails = []
+            hideLoader();
+            if (!!error?.responseJSON?.details_message) {
+              $("#failureAlertBody").html(error?.responseJSON?.details_message)
+            }
+            $("#somethingWentWrongAlert").toast("show");
+          },
+        });
+        // } else {
+        //   var configLink = `${window.location.origin}/mentis/editor/?#manageAirShiftConfig`
+        //   window.open(configLink, "_blank");
+      }
+    }
+
+    function getSavedFileConfig(conf_key, conf_version) {
+      if (lock == true) return;
+      lock = true
+      payload = {
+        // "user_auth": {
+        //   "user_name": currentUser
+        // },
+        // "data": {
+        "unique_id": conf_key,
+        "version": conf_version
+        // }
+      }
+
+      showLoader();
+      $.ajax({
+        url: apiBasePath + "/get_file_details/",
+        type: "POST",
+        data: JSON.stringify(payload),
+        contentType: "application/json",
+        success: function (response) {
+          lock = false
+          hideLoader()
+          if (response?.result == "SUCCESS") {
+            handleVersionConfigData(response?.response);
+            fillFormFields(response?.response)
+            if (mode == "view") {
+              $("#testRegexButton").hide()
+              $("#saveAirshiftConfig").hide()
+              $("#file_header_mapping").hide()
+              $("#addRow").hide()
+              $('#airShiftForm :input:not(#versionDropdown, #makeActiveBtn)').prop('disabled', true);
+              if (response?.response?.status?.toUpperCase() === "DEACTIVATE" || response?.response?.status?.toUpperCase() === "SAVED" || response?.response?.status?.toUpperCase() === "ERROR") {
+                $("#configHeading").html(`Configuration Details <a onclick='enableEditting()' class='cursor-pointer'>(Edit)</a>`)
+              } else {
+                $("#configHeading").html(`Configuration Details`)
+              }
+            } else if (mode == "edit") {
+              $("#testRegexButton").show()
+              $("#saveAirshiftConfig").show()
+              $("#addRow").show()
+              $("#configHeading").html("Edit Configuration")
+              $('#airShiftForm :input:not(#versionDropdown, #makeActiveBtn)').prop('disabled', false);
+            } else if (mode == "clone") {
+              $("#name").val($("#name").val() + "-copy")
+              $("#testRegexButton").show()
+              $("#saveAirshiftConfig").show()
+              $("#addRow").show()
+              regexValidated = true
+              $("#configHeading").html("Configuration Details")
+              $('#airShiftForm').prop('disabled', false);
+            }
+          }
+        },
+        error: function (error) {
+          lock = false
+          fileDetails = []
+          hideLoader();
+          if (!!error?.responseJSON?.details_message) {
+            $("#failureAlertBody").html(error?.responseJSON?.details_message)
+          }
+          $("#somethingWentWrongAlert").toast("show");
+          var configLink = `${window.location.origin}/mentis/editor/?#manageAirShiftConfig`;
+          window.open(configLink, "_self");
+        },
+      });
+    }
+
+    function valueExistCheck(id, optionValue) {
+      if (!($(`#${id}`).find("option[value='" + optionValue + "']").length)) {
+        var newOption = new Option(optionValue, optionValue, true, true);
+        // Append it to the select
+        $(`#${id}`).append(newOption).trigger('change');
+      }
+    }
+
+    function fillFileMapping(selectedConfig) {
+      if (!!selectedConfig) {
+        selectedVal = []
+        dynamicKeyVal = {}
+        let newOptionsList = []
+        $("#file_processor_mapping_order_files").html("")
+        let selectedList = {}
+        let optionList = ''
+        for (const config of selectedConfig?.processor_mapping) {
+          valueExistCheck("file_processor_mapping", config?.processor_id)
+          selectedVal.push(config?.processor_id)
+        }
+        var mappingHtml = '';
+        for (let defaultOption of fileMappingOptionsObj) {
+          if ($.inArray(defaultOption?.unique_id, selectedVal) !== -1) {
+            selectedList[defaultOption?.unique_id] = defaultOption
+          } else {
+            newOptionsList.push(defaultOption)
+          }
+        }
+        for (const selected of selectedVal) {
+          $("#file_processor_mapping_order_files").append(`<li class="fileListItem px-2" style="float:left" id="${selectedList[selected]?.unique_id}" value="${selectedList[selected]?.unique_id}"><div class="d-flex"> <i class="fal fa-ellipsis-v"></i> <i class="fal fa-ellipsis-v mr-2"></i>  ${selectedList[selected]?.name} ${(selectedList[selected]?.input_file_format ? ' | ' + selectedList[selected]?.input_file_format : '')}+ ${selectedList[selected]?.output_file_format ? ' to ' + selectedList[selected]?.output_file_format : ''} </div></li>`);
+          $("#file_processor_mapping_order_div").show();
+          newOptionsList.push(selectedList[selected])
+        }
+        $('#file_processor_mapping_order_files').sortable({
+          update: function (event, ui) {
+            var newOrder = $('#file_processor_mapping_order_files').sortable('toArray');
+            new_processor_sequence = []
+            for (processorMappingId of newOrder) {
+              for (mapping of selectedConfig?.processor_mapping) {
+                if (mapping?.processor_id == processorMappingId) {
+                  new_processor_sequence.push(mapping)
+                }
+              }
+            }
+            selectedConfig.processor_mapping = new_processor_sequence
+            fillFileMapping(selectedConfig)
+          }
+        });
+
+        for (let option of newOptionsList) {
+          optionList += '<option value="' + option?.unique_id + '"> ' + option?.name + (option?.input_file_format ? ' | ' + option?.input_file_format : '') + (option?.output_file_format ? ' to ' + option?.output_file_format : '') + '&nbsp; </option>'
+        }
+
+        $("#file_processor_mapping").html(optionList)
+
+        $("#file_processor_mapping").val(selectedVal).change()
+        for (const config of selectedConfig?.processor_mapping) {
+          if (!!config?.request_param_json) {
+            for (const field of Object.keys(config?.request_param_json)) {
+              newField = {
+                id: config?.processor_id + "_" + field,
+                value: config?.request_param_json?.[field]
+              }
+              valueExistCheck(newField?.id, newField?.value)
+              dynamicKeyVal[config?.processor_id + "_" + field] = config?.request_param_json?.[field]
+            }
+          }
+        }
+        for (const dynamicField of Object.keys(dynamicKeyVal)) {
+          $(`#${dynamicField}`).val(dynamicKeyVal[dynamicField]).change()
+        }
+      }
+    }
+
+    function fillFormFields(response) {
+      $("#name").val(response?.name)
+      setDropdownVal("source_connector_id", response?.source_connector_id)
+      setDropdownVal("destination_connector_id", response?.destination_connector_id)
+      $("#file_regex").val(response?.file_regex)
+      $("#file_type").val(response?.file_type).change()
+      $("#fp_file_type").val(response?.fp_file_type).change()
+      setCheckbox("auto_ingestion_" + response?.auto_ingestion, true);
+      setCheckbox("mailer_enabled_" + response?.mailer_enabled, true);
+      $("#description").val(response?.description)
+      fillFileMapping(response?.processor_conf[0])
+
+      headerObj = trimObjects(response?.header_mapping, ['header_name', 'alias', 'encrypted', 'enquote'])
+      addFileHeaderFields(headerObj, "file_header_mapping_dynamic_content")
+
+    }
+
+    function trimObjects(array, expectedKeys) {
+      return array.map(function (obj) {
+        var trimmedObject = {};
+        expectedKeys.forEach(function (key) {
+          if (obj.hasOwnProperty(key)) {
+            trimmedObject[key] = obj[key];
+          }
+        });
+        return trimmedObject;
+      });
+    }
+
+    function buttonHandler(action) {
+      if (!!action) {
+        if (action === "testRegex") {
+          $("#regexModalRegex").val($("#file_regex").val());
+          $("#regexModalInputString").val("");
+          $("#saveRegexButton").attr("disabled", true);
+          $("#saveRegexButton").addClass("cursor-none");
+          $("#regexValidated").html("");
+          $("#regexTestModal").modal();
+        }
+      }
+    }
+
+    function TestRegex() {
+      if (lock == true) return;
+      var regexVal = $("#regexModalRegex").val()
+      // var regexPattern = new RegExp("^" + regexVal + "$");
+      var inputString = $("#regexModalInputString").val();
+      if (!!regexVal && !!inputString) {
+        const payload = {
+          "regex": regexVal,
+          "file_name": inputString
+        }
+        lock = true;
+        $("#regexValidated").html('<div class="spinner-border mb-2" role="status"></div>');
+
+        $.ajax({
+          url: apiBasePath + "/validate_regex/",
+          type: "POST",
+          data: JSON.stringify({ ...payload }),
+          contentType: "application/json",
+          success: function (response) {
+            lock = false
+            if (response?.result == "SUCCESS") {
+              $("#regexValidated").html(
+                `<i class="fal fa-check-circle" style="color:green"></i>`
+              );
+              $("#saveRegexButton").attr("disabled", false);
+              $("#saveRegexButton").addClass("cursor-pointer");
+              $("#saveRegexButton").removeClass("cursor-none");
+            } else if (response?.result == "FAILURE") {
+              $("#regexValidated").html(
+                `<i class="fal fa-times-circle" style="color:red"></i>`
+              );
+              $("#saveRegexButton").attr("disabled", true);
+              $("#saveRegexButton").addClass("cursor-none");
+            } else {
+              $("#regexValidated").html(
+                `<i class="fal fa-times-circle" style="color:red"></i>`
+              );
+              $("#somethingWentWrongAlert").toast("show");
+            }
+          },
+          error: function (error) {
+            lock = false
+            if (!!error?.responseJSON?.details_message) {
+              $("#failureAlertBody").html(error?.responseJSON?.details_message)
+            }
+            $("#regexValidated").html(
+              `<i class="fal fa-times-circle" style="color:red"></i>`
+            );
+            $("#somethingWentWrongAlert").toast("show");
+          },
+        });
+      }
+    }
+
+    function saveRegex() {
+      $("#file_regex").val($("#regexModalRegex").val());
+      $("#regexTestModal").modal("hide");
+      regexValidated = true
+      $("#issues").hide();
+    }
+
+    function addComponent(configList, divId) {
+      configBlock = ""
+      if (!!Object.keys(configList)?.length) {
+        for (const config of configList) {
+          if (config?.col_input_data_type == "boolean") {
+            configBlock += getBooleanField(config)
+          } else if (config?.col_input_data_type == "version") {
+            if (!!conf_key && !!conf_version && mode != "create" && mode != "clone") {
+              configBlock += getVersionField(config)
+            }
+          } else if (config?.col_input_data_type == "list") {
+            configBlock += getListField(config)
+          } else if (config?.col_input_data_type == "string") {
+            configBlock += getTextField(config)
+          } else if (config?.col_input_data_type == "file_header_upload") {
+            headerTableConfig = config?.options
+            configBlock += getFileHeaderField(config)
+          }
+        }
+      }
+      $("#" + divId).html(configBlock);
+      setTimeout(function () {
+        $(".select2").select2();
+        $(".dynamic-option").select2({
+          tags: true
+        });
+
+        $(".dynamic-option").on("select2:select", function (evt) {
+          var element = evt.params.data.element;
+          var $element = $(element);
+
+          $element.detach();
+          $(this).append($element);
+          $(this).trigger("change");
+        });
+      }, 100);
+
+    }
+
+    $(document).on(
+      "change",
+      "select[name=file_type]",
+      function () {
+        if ($(this).val() == "INPUT") {
+          setCheckbox("auto_ingestion_false", true)
+          setCheckbox("dependency_false", true)
+          $('#fp_file_type').prop("required", true);
+          $('#fp_file_type_required_label').html('&nbsp;<span class="text-danger">*</span>')
+
+        } else if ($(this).val() == "OUTPUT") {
+          setCheckbox("auto_ingestion_true", true)
+          setCheckbox("dependency_false", true)
+          $('#fp_file_type').removeAttr('required');
+          $('#fp_file_type_required_label').html('')
+        }
+      })
+
+    // function removeSelectedFile() {
+    //   $("#file_header_mapping").val("")
+    //   $("#removeFile").hide()
+    // };
+
+    function updateOrderingPins(selectdeValues) {
+
+      $("#file_processor_mapping_order_files").html("")
+      for (const selected of selectdeValues) {
+        $("#file_processor_mapping_order_files").append(`<li class="fileListItem px-2" style="float:left" id="${selected?.unique_id}" value="${selected?.unique_id}"><div class="d-flex"> <i class="fal fa-ellipsis-v"></i> <i class="fal fa-ellipsis-v mr-2"></i>  ${selected?.name} ${(selected?.input_file_format ? ' | ' + selected?.input_file_format : '')} ${selected?.output_file_format ? ' to ' + selected?.output_file_format : ''} </div></li>`);
+        $("#file_processor_mapping_order_div").show();
+      }
+      $('#file_processor_mapping_order_files').sortable({
+        update: function (event, ui) {
+          var newOrder = $('#file_processor_mapping_order_files').sortable('toArray');
+          new_processor_sequence = []
+          let newOptionsList = []
+          let optionList = ''
+          for (processorMappingId of newOrder) {
+            for (mapping of selectdeValues) {
+              if (mapping?.unique_id == processorMappingId) {
+                new_processor_sequence.push(mapping)
+              }
+            }
+          }
+
+          for (let defaultOption of fileMappingOptionsObj) {
+            if ($.inArray(defaultOption?.unique_id, newOrder) == -1) {
+              newOptionsList.push(defaultOption)
+            }
+          }
+          newOptionsList.push(...new_processor_sequence)
+          for (let option of newOptionsList) {
+            optionList += '<option value="' + option?.unique_id + '"> ' + option?.name + (option?.input_file_format ? ' | ' + option?.input_file_format : '') + (option?.output_file_format ? ' to ' + option?.output_file_format : '') + '&nbsp; </option>'
+          }
+          $("#file_processor_mapping").html(optionList)
+          $("#file_processor_mapping").val(newOrder).change()
+
+        }
+      })
+    }
+
+    $(document).on(
+      "change",
+      "select[name=file_processor_mapping]",
+      function () {
+        let contentBlock = ''
+        let showHeaders = false
+        let nameList = []
+        let prefilledValue = {}
+        let selectedObj = []
+        for (componentValue of $("select[name=file_processor_mapping]").val()) {
+          if (!multiSelectFieldOptions?.file_processor_mapping?.option?.[componentValue]) {
+            selectedObj.push({ "unique_id": componentValue, "name": componentValue })
+          } else {
+            selectedObj.push(multiSelectFieldOptions?.file_processor_mapping?.option?.[componentValue])
+          }
+          if (!!multiSelectFieldOptions?.file_processor_mapping?.option?.[componentValue]?.is_headers_required) {
+            showHeaders = true
+            nameList.push(multiSelectFieldOptions?.file_processor_mapping?.option?.[componentValue]?.name)
+          }
+          if (!!multiSelectFieldOptions?.file_processor_mapping?.option?.[componentValue]?.request_param_json
+            && Array.isArray(multiSelectFieldOptions?.file_processor_mapping?.option?.[componentValue]?.request_param_json)
+            && !!multiSelectFieldOptions?.file_processor_mapping?.option?.[componentValue]?.request_param_json?.length) {
+            contentBlock += `<div style="margin:8px 10px 8px 20px;padding:8px;border: 1px solid #e1d8e6;background-color: #faf8fb;border-radius: 5px;">
+                            <span style="font-weight: 600;margin-left: 8px;">${multiSelectFieldOptions?.file_processor_mapping?.option?.[componentValue]?.label || multiSelectFieldOptions?.file_processor_mapping?.option?.[componentValue]?.name} ${!!multiSelectFieldOptions?.file_processor_mapping?.option?.[componentValue]?.input_file_format && !!multiSelectFieldOptions?.file_processor_mapping?.option?.[componentValue]?.output_file_format ? ' <strong>|</strong> ' + multiSelectFieldOptions?.file_processor_mapping?.option?.[componentValue]?.input_file_format + ' to ' + multiSelectFieldOptions?.file_processor_mapping?.option?.[componentValue]?.output_file_format + ' ' : ''}</span>`
+            for (component of multiSelectFieldOptions?.file_processor_mapping?.option?.[componentValue]?.request_param_json) {
+              prefilledValue[componentValue + "_" + component?.col_name] =
+              {
+                "value": $(`#${componentValue + "_" + component?.col_name}`).val(),
+                "dynamic_tags": component?.dynamic_option_enabled
+              }
+              contentBlock += getListField(component, componentValue)
+            }
+            contentBlock += `</div>`
+          }
+        }
+        if (!!showHeaders) {
+          $("#headerSection").show()
+          let nameString = ""
+          for (let name of nameList) {
+            nameString = nameString + " " + name
+          }
+          $("#fileProcessingName").html("&nbsp;(for" + nameString + ")")
+        } else {
+          $("#headerSection").hide()
+          $("#fileProcessingName").html("")
+        }
+        if (!$("select[name=file_processor_mapping]")?.val()?.length) {
+          $("#file_processor_mapping_dynamic_content").html('');
+        } else {
+          $("#file_processor_mapping_dynamic_content").html(contentBlock);
+          for (dynamicFieldValue of Object.keys(prefilledValue)) {
+            if (!!dynamicFieldValue) {
+              if (prefilledValue[dynamicFieldValue]?.dynamic_tags) {
+                valueExistCheck(dynamicFieldValue, prefilledValue[dynamicFieldValue]?.value)
+                $(`#${dynamicFieldValue}`).val(prefilledValue[dynamicFieldValue]?.value)
+              } else {
+                $(`#${dynamicFieldValue}`).val(prefilledValue[dynamicFieldValue]?.value)
+              }
+            }
+          }
+        }
+        setTimeout(function () {
+          $(".select2").select2();
+          $(".dynamic-option").select2({
+            tags: true
+          });
+          $(".dynamic-option").on("select2:select", function (evt) {
+            var element = evt.params.data.element;
+            var $element = $(element);
+
+            $element.detach();
+            $(this).append($element);
+            $(this).trigger("change");
+          });
+
+          updateOrderingPins(selectedObj)
+        }, 100);
+      }
+    );
+
+
+    function handleVersionConfigData(data) {
+      var versionDropdownHtml = "<option value='' disabled ></option>";
+      for (var el of data?.conf_meta) {
+        versionDropdownHtml += `<option value='${el?.version}' ${el?.version === data?.version ? "selected='selected'" : ""
+          } >Version ${el?.version} </option>`;
+        if (!!el?.is_active) {
+          $("#activeVersion").html(el?.version);
+        }
+      }
+      if (!!data?.is_active) {
+        $("#makeActiveBtn").prop("disabled", true);
+      } else {
+        $("#makeActiveBtn").prop("disabled", false);
+      }
+      $("#versionDropdown").html(versionDropdownHtml);
+    }
+
+    function makeVersionActive() {
+      if (lock == true) return;
+      var data = {
+        "user_auth": {
+          "user_name": currentUser
+        },
+        "data": {
+          "unique_id": conf_key,
+          "action": "ACTIVATE",
+          "version": $("#versionDropdown").val(),
+          "project": currentProject || currentProjectFromUrl
+        }
+      }
+      $("#divLoader").show();
+      const postParamsData = {};
+      if (!!apiBasePath) {
+        lock = true
+        $.ajax({
+          url: apiBasePath + "/file_detail_action/",
+          type: "POST",
+          data: JSON.stringify({ ...data }),
+          contentType: "application/json",
+          success: function (response) {
+            lock = false
+            $("#divLoader").hide();
+            if (response?.result == "SUCCESS") {
+              // $("#congratsConfigSaved").show();
+              getSavedFileConfig(conf_key, $("#versionDropdown").val());
+            } else {
+              $("#somethingWentWrongAlert").toast("show");
+            }
+          },
+          error: function (error) {
+            lock = false
+            $("#divLoader").hide();
+            if (!!error?.responseJSON?.details_message) {
+              $("#failureAlertBody").html(error?.responseJSON?.details_message)
+            }
+            $("#somethingWentWrongAlert").toast("show");
+          },
+        });
+      }
+    }
+
+    $(document).on("change", "#versionDropdown", function () {
+      getSavedFileConfig(conf_key, this.value);
+    });
+
+    function getVersionField(config) {
+      configBlock = "";
+      if (!!config) {
+        configBlock += `<div class="pl-2 d-flex" style="">
+                          <div
+                            class="my-2 px-0 col-8 d-flex">
+                          <label class="form-label col-6" for="versionDropdown"
+                            >Versions
+                          </label>
+                          <select
+                            class="form-control select2 versionDropdown"
+                            id="versionDropdown"
+                            style="width: 25% !important"
+                            data-placeholder="Select version"
+                          ></select>
+                          </div>
+                          <div
+                            class="my-2 col-4"
+                            style="
+                              display: flex;
+                              font-size: 14px;
+                              justify-content: space-around;
+                              align-items: center;
+                            "
+                          >
+                            <div>
+                              <label class="form-label">Active version : </label>
+                              <b id="activeVersion">NA</b>
+                            </div>
+                            <button
+                              id="makeActiveBtn"
+                              type="button"
+                              class="btn btn-outline-danger waves-effect waves-themed btn-outline-danger"
+                              onclick="makeVersionActive()"
+                            >
+                              Make active
+                            </button>
+                          </div>
+                        </div>`
+      }
+      return configBlock
+    }
+
+    function getFileHeaderField(config) {
+      block = ""
+      if (!!config) {
+        block = `<div style="display: flex flox-col; padding: 8px" id="headerSection">
+                  <div style="display: flex; padding: 8px">
+                    <label class="col-4 flex flex-col items-start" style="font-weight:500" for="${config?.col_name}">${config?.label}
+                    <span id="fileProcessingName"></span></label>`;
+        block += `<input type="file" accept=".csv" id="${config?.col_name}" name="${config?.col_name}" />`
+        // <button id="removeFile" class="btn btn-secondary waves-effect waves-themed"
+        //   style="margin-left: 30px;padding: 0px;border: 1px solid darkgrey; display:none" type="button"
+        //   onclick="removeSelectedFile()"
+        // >
+        //   <i class="fal fa-file-times" style="width:20px"></i>
+        // </button>
+
+        block += `</div>`
+        block += `<div style="display: flex; padding: 8px; flex-direction:column"><div style="margin-left:10px">
+                    <table id="header_table" class="table table-bordered table-striped w-80">`
+        block += `<thead><tr style="font-weight:500">`
+        for (const tableHeader of config?.options) {
+          block += `<th>
+                      ${tableHeader?.label}
+                    </th>`
+        }
+        block += ` <th></th></tr></thead>`
+        block += `<tbody id="${config?.col_name}_dynamic_content" class="dynamic_content"></tbody>
+                </table></div><div>
+                <button id="addRow" class="btn btn-secondary waves-effect waves-themed"
+                  style="margin-left: 16px;padding:12px" type="button"
+                  onclick="addTableRow()"
+                >
+                <i class="fal fa-plus-circle"></i>
+                  <span style="margin-left:8px;">Add Row</span>
+                </button></div>
+                </div></div>`
+      }
+      return block;
+    }
+    function addTableRow() {
+      let newRow = {}
+      for (const headerConfig of headerTableConfig) {
+        newRow[headerConfig?.col_name] = ""
+      }
+      headerMappingData = fetchHeaderTableVal()
+      headerMappingData.push(newRow)
+
+      addFileHeaderFields(headerMappingData, "file_header_mapping_dynamic_content")
+
+    }
+
+    function addFileHeaderFields(config, divId) {
+      let contentBlock = ''
+      for (let index = 0; index < config?.length; index++) {
+        contentBlock += `<tr>`
+        for (const headerConfig of headerTableConfig) {
+          contentBlock += `<td>`
+          if (headerConfig?.col_input_data_type == 'string') {
+            contentBlock += `<input type="text" id="${headerConfig?.col_name}_${index}" labelName="${headerConfig?.col_name}" class="form-control rounded-0 border-top-0 border-left-0 border-right-0 px-0 bg-transparent table-input" name="mappingTable_${headerConfig?.col_name}_${index}" value="${!!config[index][headerConfig?.col_name] ? config[index][headerConfig?.col_name] : ''}"/>`
+          } else if (headerConfig?.col_input_data_type == 'boolean') {
+            contentBlock += `
+                          <div class="custom-control custom-switch">
+                              <input type="checkbox" labelName="${headerConfig?.col_name}" class="custom-control-input input-lg table-input" id="${headerConfig?.col_name}_${index}" ${config[index][headerConfig?.col_name] ? "checked" : ""}>
+                              <label class="custom-control-label" for="${headerConfig?.col_name}_${index}"></label>
+                          </div>
+                          `
+          }
+          contentBlock += `</td>`
+        }
+        contentBlock += `<td>
+                            <button type="button" onclick="removeRow('removeRow_${index}', '${config[index][headerTableConfig[0]["col_name"]]}', '${headerTableConfig[0]["col_name"]}')" id="removeRow_${index}" class="btn btn-sm btn-icon">
+                                <i class="fal fa-minus-circle btn-danger rounded-circle" title="Delete Row" style="font-size:24px"></i>
+                            </button>
+                          </td></tr>`
+      }
+      $("#" + divId).html(contentBlock);
+    }
+
+    function fetchHeaderTableVal() {
+      let tableData = [];
+
+      // Loop through each input field with the class 'input-field'
+      $('#header_table tbody tr').each(function () {
+        let rowData = {};
+
+        // Iterate through each input field in the current row
+        $(this).find('input').each(function () {
+          let key = $(this).attr('labelName');
+          let value = $(this).val();
+          if ($(this).attr('type') == "checkbox") {
+            value = $(this).prop('checked');
+          }
+          rowData[key] = value;
+        });
+
+        // Add the row data to the array
+        tableData.push(rowData);
+      });
+      return tableData
+    }
+
+    function removeRow(id, value, col_name) {
+      $(`#${id}`)?.parent()?.parent()?.remove()
+      headerMappingData = headerMappingData.filter((mappingObject => mappingObject[col_name] != value))
+    }
+
+    function getBooleanField(config) {
+      block = ""
+      if (!!config) {
+        block = `<div style="display: flex; padding: 8px">
+                    <label class="col-4 vertical-align" style="font-weight:500">${config?.label}<span id="${config?.col_name}_required_label">${!!config?.optional_field?'':'&nbsp;<span class="text-danger">*</span>'}</span></label>`;
+        block += `<div class="custom-control custom-radio custom-control-inline">
+                      <input type="radio" class="custom-control-input" `
+        block += !!config?.optional_field ? '' : ` required `
+        block += `value=true id='${config?.col_name + "_true"}'
+                          name="${config?.col_name}" />
+                      <label class="custom-control-label"
+                          for='${config?.col_name + "_true"}'>True</label>
+                  </div>`;
+        block += `<div class="custom-control custom-radio custom-control-inline">
+                      <input type="radio" class="custom-control-input" `
+        block += !!config?.optional_field ? '' : ` required `
+        block += `value=false id='${config?.col_name + "_false"}'
+                          name="${config?.col_name}" />
+                      <label class="custom-control-label"
+                          for='${config?.col_name + "_false"}'>False</label>
+                  </div>`;
+        block += `</div>`;
+      }
+      return block;
+    }
+
+    $(document).on(
+      "change",
+      "input[name=file_header_mapping]", function (e) {
+        let file = e.target.files[0];
+
+        if (file) {
+          var reader = new FileReader();
+          reader.readAsText(file);
+
+          reader.onload = function (e) {
+            var csvData = e.target.result;
+            var lines = csvData.split('\n');
+
+            // Assuming the first line contains headers
+            if (lines.length > 0) {
+              var headersList = lines[0].split(',');
+
+              // Now 'headers' contains an array of column names
+              headerResponse = []
+              for (const header of headersList) {
+                headerData = {
+                  "header_name": header,
+                  "alias": "",
+                  "encrypted": false,
+                  "enquote": false
+                }
+                headerResponse = [...headerResponse, headerData]
+              }
+              headerMappingData = headerResponse
+              addFileHeaderFields(headerResponse, "file_header_mapping_dynamic_content")
+            }
+          }
+        }
+      });
+
+    function getListField(config, prefixId = '') {
+      configBlock = "";
+      if (!!config) {
+        configBlock += `<div style="display: flex; padding: 8px">
+                          <label class="col-4 vertical-align" style="font-weight:500" for="${!!prefixId ? prefixId + '_' : ''}${config?.col_name}">${config?.label ? config?.label : ""}<span id="${config?.col_name}_required_label">${!!config?.optional_field?'':'&nbsp;<span class="text-danger">*</span>'}</span></label>
+                          <div style="width:100%">
+                          <select
+                            class="col-8 form-control select2 custom-select ${config?.dynamic_option_enabled ? 'dynamic-option' : ''}"
+                            id="${!!prefixId ? prefixId + '_' : ''}${config?.col_name}"
+                            name="${!!prefixId ? prefixId + '_' : ''}${config?.col_name}" ${config?.multi_select ? 'multiple="multiple"' : ''}
+                            data-placeholder="Select ${config?.label}"`
+        configBlock += !!config?.optional_field ? '' : ` required>`
+        configBlock += ` <option value=''></option>`;
+        for (const dropdownOptions of config?.options) {
+          configBlock += `<option value='${config?.col_name == "fp_file_type" ? dropdownOptions?.type : dropdownOptions?.unique_id || dropdownOptions?.name}'>${dropdownOptions?.type && !!config?.show_type ? dropdownOptions?.type + ' <strong>|</strong> ' : ''} ${dropdownOptions?.label || dropdownOptions?.key || dropdownOptions?.name || dropdownOptions?.name} ${dropdownOptions?.path ? ' <strong>|</strong> ' + dropdownOptions?.path : ''} ${!!dropdownOptions?.input_file_format && !!dropdownOptions?.output_file_format ? ' <strong>|</strong> ' + dropdownOptions?.input_file_format + ' to ' + dropdownOptions?.output_file_format + ' ' : ''}</option>`;
+        }
+
+        configBlock += `</select>`
+        if (config?.drag_sort && mode !== 'view') {
+          configBlock += `<div class="w-100" id="${config?.col_name}_order_div" style="display: none;">
+                    <label class="form-label mt-3">Order : </label>
+                    <div class="d-flex">
+                        <ul class="sortableList pl-0 mb-0" id="${config?.col_name}_order_files" style="
+                        list-style: none;
+                      ">
+                        </ul>
+                    </div>
+                </div>`
+        }
+        configBlock += `</div>
+                        </div>
+                        <div id="${config?.col_name}_dynamic_content" class="dynamic_content"></div>`;
+      }
+      if (!!config?.multi_select) {
+        let optionObj = {}
+        for (const dropdownOptions of config?.options) {
+          optionObj[dropdownOptions?.unique_id] = dropdownOptions
+        }
+        multiSelectFieldOptions[config?.col_name] = {}
+        multiSelectFieldOptions[config?.col_name]["option"] = optionObj
+      }
+      return configBlock
+    }
+
+    function getTextField(config) {
+      configBlock = ""
+      if (!!config) {
+        configBlock += `<div
+                          style="display: flex; padding: 8px"
+                        >
+                          <label
+                            class="col-4 vertical-align"
+                            style="font-weight:500"
+                            for="${config?.col_name}"
+                            >${config?.label}${!!config?.optional_field?'':'&nbsp;<span class="text-danger">*</span>'}</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="${config?.col_name}"
+                            name="${config?.col_name}"
+                            placeholder="${config?.readonly ? "" : "Enter " + config?.label}" `;
+        configBlock += config?.regex
+          ? ` pattern="${config?.regex} "`
+          : "";
+        configBlock += config?.readonly
+          ? ` readonly `
+          : "";
+
+        configBlock += !!config?.optional_field ? '' : ` required `
+        configBlock += `/>`
+        if (!!config?.cta?.label)
+          configBlock += `<button
+                            style="margin-left: 20px; width:380px"
+                            type="button"
+                            id="testRegexButton"
+                            class="btn btn-secondary btn-md waves-effect waves-themed"
+                            onclick="buttonHandler('${config?.cta?.handler}')"
+                          >
+                            ${config?.cta?.label}
+                          </button>`
+        configBlock += `</div>`;
+      }
+      return configBlock
+    }
+
+    function hideLoader() {
+      $("#divLoader").hide();
+    }
+
+    function showLoader() {
+      $("#divLoader").show();
+    }
+
+    function setDropdownVal(id, val) {
+      if (!!id) {
+        $(`#${id}`).val(val).change();
+      }
+    }
+
+    function setCheckbox(id, bool) {
+      //for both radio and checkbox
+      $(`#${id}`).prop("checked", bool).change();
+    }
+
+    function isCheckboxSelected(id) {
+      return $(`#${id}`).is(":checked");
+    }
+
+    function expandAllSection() {
+      let accordionComponent = $(".card-title");
+      accordionComponent.each(function () {
+        if ($(this).hasClass("collapsed")) {
+          $(this).click();
+        }
+      });
+    }
+
+    $("#airShiftForm").on("submit", function (event) {
+      event.preventDefault();
+
+      if ($('#airShiftForm')[0].checkValidity() === false) {
+        $('#airShiftForm').addClass("was-validated")
+        return;
+      }
+      else {
+        $('#airShiftForm').removeClass("was-validated")
+      }
+
+      if (!regexValidated) {
+        $("#issue-items").html("<li>Please Validate Regex First.</li>");
+        $("#issues").show();
+      } else {
+        let inputObj = {};
+        let payloadObj = {
+          "user_auth": {
+            "user_name": currentUser
+          },
+          "data": {
+            "project": currentProject || currentProjectFromUrl
+          }
+        }
+        let formData = $(this).serializeArray();
+
+        const reducedArray2 = formData.reduce((acc, obj) => {
+          const existingObject = acc.find(item => item.name === obj.name);
+          if (existingObject) {
+            existingObject.value = Array.isArray(existingObject.value)
+              ? [...existingObject.value, obj.value]
+              : [existingObject.value, obj.value];
+          } else {
+            acc.push(obj);
+          }
+          return acc;
+        }, []);
+
+        let mergedArray = fileDetails.map(obj1 => {
+          const matchingObject = reducedArray2.find(obj2 => obj1.col_name === obj2.name);
+          if (matchingObject) {
+            return { ...obj1, value: matchingObject.value };
+          }
+          return obj1;
+        });
+
+        let unmatchedObjects = reducedArray2.filter(obj2 => !fileDetails.some(obj1 => obj1.col_name === obj2.name));
+
+        mergedArray = arrayObjectModification(mergedArray, unmatchedObjects);
+        for (obj of mergedArray) {
+          if (!!obj?.col_name)
+            payloadObj.data[obj?.col_name] = obj?.value
+        }
+        if (mode == 'edit') {
+          payloadObj.data.unique_id = conf_key
+          payloadObj.data.version = conf_version
+        }
+        submitFileDetailsConfig(payloadObj)
+      }
+
+    });
+
+    function submitFileDetailsConfig(payloadObj) {
+      if (lock == true) return;
+
+      $("#divLoader").show();
+      if (!!apiBasePath) {
+        lock = true
+        $.ajax({
+          url: apiBasePath + "/save_or_update_file_detail/",
+          type: "POST",
+          data: JSON.stringify({ ...payloadObj }),
+          contentType: "application/json",
+          success: function (response) {
+            lock = false
+            $("#divLoader").hide();
+            if (response?.result == "SUCCESS") {
+              $("html, body").animate({ scrollTop: 0 }, "slow");
+              addComponent({}, "config_content")
+              $("#congratsConfigSaved").show();
+            } else {
+              $("html, body").animate({ scrollTop: 0 }, "slow");
+              $("#somethingWentWrongAlert").toast("show");
+            }
+          },
+          error: function (error) {
+            lock = false
+            $("#divLoader").hide();
+            if (!!error?.responseJSON?.details_message) {
+              $("#failureAlertBody").html(error?.responseJSON?.details_message)
+            }
+            $("html, body").animate({ scrollTop: 0 }, "slow");
+            $("#somethingWentWrongAlert").toast("show");
+          },
+        });
+      }
+    }
+
+    function arrayObjectModification(arr, unmatchedObj) {
+      return arr.map((arrayObj) => {
+        if (arrayObj?.col_name == "file_header_mapping") {
+          arrayObj.value = fetchHeaderTableVal()
+        }
+        if (arrayObj?.col_output_data == "boolean") {
+          arrayObj.value = arrayObj?.value === "true"
+        } else if (arrayObj.col_output_data == "list" && !Array.isArray(arrayObj?.value)) {
+          arrayObj.value = [].concat(arrayObj.value);
+        }
+        if (arrayObj?.col_name == "file_processor_mapping") {
+          arrayObj = fetchFileProcessorValue(arrayObj, unmatchedObj)
+        }
+        return arrayObj
+      })
+    }
+
+    function fetchFileProcessorValue(reqObj, unmatchedObj) {
+      if (Array.isArray(reqObj?.value)) {
+        let modifiedVal = reqObj?.value?.map((obj) => {
+          if (!!obj) {
+            let valueObj = {
+              unique_id: obj,
+              request_param_json: {}
+            }
+            if (Array.isArray(unmatchedObj)) {
+              unmatchedObj.forEach((obj2) => {
+                if (obj2?.name?.indexOf(obj) > -1) {
+                  let splittedName = obj2?.name?.split(obj + "_")
+                  if (!!splittedName[1]) {
+                    // if (!Array.isArray(obj2?.value)) {
+                    valueObj.request_param_json[splittedName[1]] = obj2?.value
+                    // } else {
+                    //   valueObj?.request_param_json?.push({ [splittedName[1]]: obj2?.value })
+                    // }
+                  }
+                }
+              })
+            }
+            return valueObj
+          } else {
+            return
+          }
+        })
+        reqObj.value = !!modifiedVal[0] ? modifiedVal : []
+      }
+      return reqObj
+    }
+
+    // Function to set a key in session storage
+    function setSessionStorageItem(key, value) {
+      sessionStorage.setItem(key, JSON.stringify(value));
+    }
+
+    // Function to get a key from session storage
+    function getSessionStorageItem(key) {
+      const item = sessionStorage.getItem(key);
+      return item ? JSON.parse(item) : null;
+    }
+
+    // Function to remove a key from session storage
+    function removeSessionStorageItem(key) {
+      sessionStorage.removeItem(key);
+    }
+
+    function closeCongratulations() {
+      $("#congratsConfigSaved").hide();
+      multiSelectFieldOptions = {}
+
+      var configLink = `${window.location.origin}/mentis/editor/?#manageAirShiftConfig`;
+      window.open(configLink, "_self");
+    }
+  </script>
+</html>

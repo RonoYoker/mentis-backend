@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Add configuration</title>
+    <style type="text/css">
+        .custom-control-label {
+            text-transform: capitalize;
+            cursor: pointer;
+        }
+
+        .was-validated .custom-select:valid+.select2 .select2-selection {
+            border-color: #1dc9b7;
+            padding-right: calc((1em + 1rem) * 3 / 4 + 1.875rem);
+            background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%231dc9b7' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e") #fff no-repeat center right 1.875rem/calc(0.735em + 0.5rem) calc(0.735em + 0.5rem);
+        }
+
+        .was-validated .custom-select:valid+.select2 .select2-selection:focus {
+            border-color: #1dc9b7;
+            -webkit-box-shadow: 0 0 0 0.2rem rgba(29, 201, 183, 0.25);
+            box-shadow: 0 0 0 0.2rem rgba(29, 201, 183, 0.25);
+        }
+
+        .was-validated .custom-select:invalid+.select2 .select2-selection {
+            border-color: #fd3995;
+            padding-right: calc(2.47em + 1rem);
+            background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23fd3995' viewBox='0 0 12 12'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23fd3995' stroke='none'/%3e%3c/svg%3e") #fff no-repeat center right 1.875rem/calc(0.735em + 0.5rem) calc(0.735em + 0.5rem);
+        }
+
+        .was-validated .custom-select:invalid+.select2 .select2-selection:focus {
+            border-color: #fd3995;
+            -webkit-box-shadow: 0 0 0 0.2rem rgba(253, 57, 149, 0.25);
+            box-shadow: 0 0 0 0.2rem rgba(253, 57, 149, 0.25);
+        }
+    </style>
+    <link rel="stylesheet" media="screen, print" href="/static/mentis/css/select2.bundle.css" />
+    <link rel="stylesheet" href="/static/mentis/css/dateRangePicker.css" />
+    <script src="/static/mentis/js/moment.js"></script>
+    <script src="/static/mentis/js/dateRangePicker.js"></script>
+</head>
+
+<body>
+    <div id="main-form-div">
+        <div class="row">
+            <div class="col-xl-12">
+                <div class="panel" id="projectConfigurationPanel">
+                    <div class="panel-hdr">
+                        <h2>
+                            <span class="fw-900"><i>Project configurations</i></span>
+                        </h2>
+                        <div class="panel-toolbar">
+                            <button class="btn btn-panel" data-action="panel-collapse" data-toggle="tooltip"
+                                data-offset="0,10" data-original-title="Collapse"></button>
+                            <button class="btn btn-panel" data-action="panel-fullscreen" data-toggle="tooltip"
+                                data-offset="0,10" data-original-title="Fullscreen"></button>
+                            <button class="btn btn-panel" data-action="panel-close" data-toggle="tooltip"
+                                data-offset="0,10" data-original-title="Close"></button>
+                        </div>
+                    </div>
+                    <div class="panel-container">
+                        <div class="form-group row m-3">
+                            <div class="col-3">
+                                <label class="form-label" for="bankName">Bank name</label>
+                                <select class="form-control select2" id="bankName" name="bankName"
+                                    data-placeholder="Select Bank name" required></select>
+                            </div>
+                            <div class="col-3" style="display: none">
+                                <label class="form-label" for="environment">Environment</label>
+                                <select class="form-control select2" id="environment" name="environment"
+                                    data-placeholder="Select Environment" required></select>
+                            </div>
+                            <div class="col-3" style="display: none">
+                                <label class="form-label" for="project">Project</label>
+                                <select class="form-control select2" id="project" name="project"
+                                    data-placeholder="Select Project" required></select>
+                            </div>
+                            <div class="col-3" style="display: none">
+                                <label class="form-label" for="segmentViewType">Segment view type</label>
+                                <select class="form-control select2" id="segmentViewType" name="segmentViewType"
+                                    data-placeholder="Select segment view type" required>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel" style="min-height: 40vh;">
+                    <div class="panel-hdr">
+                        <h2>
+                            <span class="fw-900"><i>Create Mapping</i></span>
+                        </h2>
+                        <div class="panel-toolbar">
+                            <button class="btn btn-panel" data-action="panel-collapse" data-toggle="tooltip"
+                                data-offset="0,10" data-original-title="Collapse"></button>
+                            <button class="btn btn-panel" data-action="panel-fullscreen" data-toggle="tooltip"
+                                data-offset="0,10" data-original-title="Fullscreen"></button>
+                            <button class="btn btn-panel" data-action="panel-close" data-toggle="tooltip"
+                                data-offset="0,10" data-original-title="Close"></button>
+                        </div>
+                    </div>
+                    <div id="divLoader" style="display: none">
+                        <div class="position-absolute d-flex flex-column justify-content-center align-items-center w-100"
+                            style="
+                  z-index: 2;
+                  background-color: rgba(255, 255, 255, 0.7);
+                  height: -webkit-fill-available;
+                ">
+                            <div class="spinner-border mb-2" role="status"></div>
+                            <div style="font-size: 16px">Loading...</div>
+                        </div>
+                    </div>
+                    <div id="splashScreen" style="">
+                        <div class="position-absolute d-flex flex-column justify-content-center align-items-center w-100"
+                            style="
+                  z-index: 2;
+                  background-color: rgba(255, 255, 255, 0.9);
+                  height: -webkit-fill-available;
+                ">
+                            <div style="font-size: 26px">
+                                Please Select Project Config first.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="congratsConfigSaved" style="display: none">
+                        <div class="position-absolute d-flex flex-column justify-content-center align-items-center w-100"
+                            style="
+                  z-index: 2;
+                  background-color: rgba(255, 255, 255, 1);
+                  height: -webkit-fill-available;
+                ">
+                            <div class="h-100 d-flex justify-content-center align-items-center">
+                                <div class="panel p-6 d-flex flex-column justify-content-center align-items-center text-center"
+                                    style="font-size: 20px">
+                                    <img src="/static/mentis/img/accepted.png" class="img-fluid mb-5" width="75"
+                                        height="75" />
+                                    <span class="mx-2 mb-5">Congratulations, Your Mapping has been saved
+                                        successfully!</span>
+                                    <div>
+                                        <a href="#viewMappings"
+                                            class="btn btn-lg btn-outline-info waves-effect waves-themed"><i
+                                                class="fal fa-eye"></i><span class="ml-2">View Mappings</span></a>
+                                        <button onclick="createNewMapping()"
+                                            class="btn btn-lg btn-outline-success  waves-effect waves-themed ml-2"><i
+                                                class="fal fa-plus"></i><span class="ml-2">Create new
+                                                Mapping</span></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <form class="panel-container m-5" id="createMappingForm" onsubmit="formSubmit(event)" novalidate>
+                        <div class="form-group row">
+                            <div class="col-4">
+                                <label class="form-label" for="mappingName">Mapping Name</label>
+                                <input type="text" id="mappingName" class="form-control" name="key"
+                                     placeholder="Enter Mapping Name" required />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-4">
+                                <label class="form-label" for="segment">Segment</label>
+                                <select class="form-control select2 custom-select" id="segment" name="segment"
+                                    data-placeholder="Select segment" required></select>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label" for="offer">Offer</label>
+                                <select class="form-control select2 custom-select" id="offer" name="offer"
+                                    data-placeholder="Select offer" required></select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-4" use='valueInput'>
+                                <label class="form-label">Date Range</label>
+                                <div class="input-group">
+                                    <input type="text" id="dateRangePicker" class="form-control" name="dateRange"
+                                        placeholder="Select date Range" required />
+                                    <div class="input-group-append">
+                                        <span class="input-group-text fs-xl">
+                                            <i class="fal fa-calendar"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="issues" class="alert alert-danger" role="alert"
+                            style="margin-top: 20px; display: none">
+                            <strong>Oh snap!</strong> Change a few things up and try
+                            submitting again.
+                            <ul id="issue-items" style="margin-top: 10px"></ul>
+                        </div>
+                        <div class="mt-4 d-flex justify-content-end">
+                            <button type="submit" class="ml-2 btn btn-primary waves-effect waves-themed">
+                                Save Mapping
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- Modal -->
+        <div class="toast hide" style="position: absolute; top: 50%; right: 40%" id="toast" data-delay="2000">
+            <div class="toast-header">
+                <strong class="mr-auto" id="toastInfo"></strong>
+                <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        </div>
+        <!-- Something went wrong toastr -->
+        <div class="toast hide" style="
+          position: absolute;
+          top: 50%;
+          right: 45%;
+          background-color: rgb(220 53 69);
+          color: white;
+          min-width: 250px;
+        " id="somethingWentWrongAlert" data-delay="2000">
+            <div class="toast-header">
+                <strong class="mr-auto">Alert</strong>
+                <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="toast-body" id="failureAlertBody">Somthing went wrong, Please try again.</div>
+            <!-- <div class="toast-header">
+      <strong class="mr-auto" id="toastInfo">lmcklwkmeck</strong>
+    </div> -->
+        </div>
+    </div>
+</body>
+<script type="text/javascript">
+    var currentUser = "{{ user }}";
+    var mode = "{{mode}}" || "create";
+    var uniqueId = "{{uniqueId}}" || "";
+    var user_bank_settings = {{ user_bank_settings| safe}};
+    var apiBasePath = "";
+    var segments = [];
+    var offers = [];
+    var projectId = '';
+
+    var existingData = JSON.parse('{{ existing_data|safe }}');
+
+    $("#bankName").on("change", function () {
+        currentBank = this.value;
+        $("#environment").parent().show();
+        var environmentOptionsHtml =
+            "<option value='' disabled selected></option>";
+        for (const environment of Object.keys(user_bank_settings[this.value])) {
+            environmentOptionsHtml += `<option value='${environment}'>${environment}</option>`;
+        }
+        $("#environment").html(environmentOptionsHtml);
+        $("#project").parent().hide();
+        $("#project").html("");
+    });
+    $("#environment").on("change", function () {
+        currentEnvironment = this.value;
+        $("#project").parent().show();
+        const bank = $("#bankName").val();
+        var projectOptionsHtml = "<option value='' disabled selected></option>";
+        for (const project of Object.keys(user_bank_settings[bank][this.value])) {
+            projectOptionsHtml += `<option value='${project}'>${project}</option>`;
+        }
+        $("#project").html(projectOptionsHtml);
+    });
+    $("#project").on("change", function () {
+        currentProject = this.value;
+        const bank = $("#bankName").val();
+        const env = $("#environment").val();
+        apiBasePath = user_bank_settings?.[bank]?.[env]?.[this.value]?.url;
+        // currentBank = this.value;
+        projectId = user_bank_settings?.[bank]?.[env]?.[this.value]?.project_id
+        $("#segmentViewType").parent().show();
+        setSessionStorageItem("selected_project_config", { "bank": bank, "env": env, "project": this.value })
+        var segmentViewTypeHtml = "<option value='' disabled selected></option>";
+        for (const segmentView of user_bank_settings?.[bank]?.[env]?.[this.value]?.segment_view_types) {
+            segmentViewTypeHtml += `<option value='${segmentView?.id}'>${segmentView?.label}</option>`;
+        }
+        $("#segmentViewType").html(segmentViewTypeHtml);
+    });
+    $("#segmentViewType").on("change", function () {
+        const bank = $("#bankName").val();
+        const env = $("#environment").val();
+        const project = $("#project").val();
+        setSessionStorageItem("segmentViewType", this.value)
+        // apiBasePath = user_bank_settings?.[bank]?.[env]?.[project]?.project_id;
+        createMappingInit(projectId, this.value)
+        if (!!this.value) {
+            $("#splashScreen").hide();
+        }
+    });
+    $(document).on("change", "#bankName, #environment, #project ,#segmentViewType", function () {
+        $("#bankName, #environment, #project, #segmentViewType").map(function () {
+            if (!this.value) {
+                $("#splashScreen").show();
+            }
+        });
+    });
+    $(document).ready(function () {
+        $(window).keydown(function (event) {
+            if (event.keyCode == 13) {
+                event.preventDefault();
+                return false;
+            }
+        });
+
+        $(".select2").select2();
+
+        $("#dateRangePicker").daterangepicker(
+            {
+                timePicker: true,
+                opens: "left",
+                // autoUpdateInput: false,
+                startDate: moment().startOf('hour'),
+                endDate: moment().startOf('hour').add(32, 'hour'),
+                locale: {
+                    format: 'D MMM YYYY, hh:mm A',
+                },
+            },
+            function (start, end, label) {
+                console.log("start", start)
+                console.log("end", end)
+
+            }
+        );
+        $("#dateRangePicker").val("")
+        var inputs = $("inpuit");
+        // Add an input event listener to all input elements
+        $(document).on("input", "input", function () {
+            // Check the validity of the current input based on the pattern attribute
+            if (!this.checkValidity() && !!this.value) {
+                // If it's not valid, prevent the change by resetting the input value to its previous value
+                $(this).val($(this).data("previousValue"));
+            } else {
+                // If it's valid, store the current value as the previous value
+                $(this).data("previousValue", $(this).val());
+            }
+        });
+
+        handleMode(mode);
+    });
+    function createNewMapping() {
+        $("#congratsConfigSaved").hide();
+        $("#segment").val("").change();
+        $("#offer").val("").change();
+        $("#mappingName").val("")
+        $("#dateRangePicker").val("")
+    }
+
+    async function createMappingInit(projectId, segmentViewType) {
+        if (!projectId || !segmentViewType) return;
+        $("#divLoader").show();
+
+        try {
+            const response = await $.ajax({
+                url: apiBasePath + "/offers/get_approved_offers_and_segment/",
+                type: "POST",
+                data: JSON.stringify({
+                    "segment_view_type": segmentViewType,
+                    "project_id": projectId,
+                    "active_user": currentUser,
+                })
+            });
+
+            lock = false;
+            $("#divLoader").hide();
+
+            segments = response?.data?.approved_segment_names || []
+            offers = response?.data?.approved_campaign_names || []
+
+            console.log("segments", segments)
+            console.log("offers", offers)
+            if (segments?.length && offers?.length) {
+                var segmentsHtml = "<option value='' disabled selected></option>";
+                for (const el of segments) {
+                    segmentsHtml += `<option value='${el?.unique_id}'>${el?.name}${el?.created_by ? `, Created by ${el?.created_by}` : ""}</option>`;
+                }
+                $("#segment").html(segmentsHtml);
+                var offersHtml = "<option value='' disabled selected></option>";
+                for (const el of offers) {
+                    offersHtml += `<option value='${el?.unique_id}'>${el?.offer_action_name}${el?.created_by ? `, Created by ${el?.created_by}` : ""}</option>`;
+                }
+                $("#offer").html(offersHtml);
+                $("#splashScreen").hide();
+                preFillData();
+
+            } else {
+                if (!!response?.details_message) {
+                    $("#failureAlertBody").html(response?.details_message)
+                }
+                $("#somethingWentWrongAlert").toast("show");
+                $("#splashScreen").show();
+                // throw new Error("API call failed");
+            }
+        } catch (error) {
+            lock = false;
+            $("#divLoader").hide();
+            $("#somethingWentWrongAlert .toast-body").html(`${error?.responseJSON?.details_message || 'Something went wrong!'}`);
+            $("#somethingWentWrongAlert").toast("show");
+            $("#splashScreen").show();
+            throw new Error("API call failed");
+        }
+    }
+    function handleMode(mode) {
+        var bankNameOptionsHtml =
+            "<option value='' disabled selected></option>";
+        for (const bank of Object.keys(user_bank_settings)) {
+            bankNameOptionsHtml += `<option value='${bank}'>${bank}</option>`;
+        }
+        $("#bankName").html(bankNameOptionsHtml);
+        const selected_project_config = getSessionStorageItem("selected_project_config");
+        if (!!selected_project_config) {
+            const bank = $("#bankName").val(selected_project_config?.bank).change();
+            const env = $("#environment").val(selected_project_config?.env).change();
+            const project = $("#project").val(selected_project_config?.project).change();
+        }
+        if (getSessionStorageItem("segmentViewType")) {
+            $("#segmentViewType").val(getSessionStorageItem("segmentViewType")).change()
+        }
+
+    }
+
+    function preFillData() {
+        if (mode === "create") {
+            // uniqueId
+        } else if (mode == "view") {
+
+        }
+        else if (mode == "edit") {
+
+        } else if (mode == "clone") {
+            $("#mappingName").val(existingData['mapping_name']);
+            $("#segment").val(existingData['segment_id']).select2();
+            $("#offer").val(existingData['offer_id']).select2();
+            $('#dateRangePicker').data('daterangepicker').setStartDate(moment(existingData?.["start_date"], 'YYYY-MM-DD HH:mm:ss'));
+            $('#dateRangePicker').data('daterangepicker').setEndDate(moment(existingData?.["end_date"], 'YYYY-MM-DD HH:mm:ss'));
+        }
+    }
+
+
+    function getRadioValue(name) {
+        return $(`input[name=${name}]:checked`).val();
+    }
+    function setRadioValue(name, value) {
+        $(`input[name=${name}][value='${value}']`).prop("checked", true).change();
+    }
+
+    function initForm(data) {
+
+    }
+
+    function formSubmit(event) {
+        event.preventDefault();
+
+        if ($('#createMappingForm')[0].checkValidity() === false) {
+            $('#createMappingForm').addClass("was-validated")
+            return;
+        }
+        else {
+            $('#createMappingForm').removeClass("was-validated")
+        }
+        const startDate = new Date($('#dateRangePicker').data('daterangepicker').startDate._d)
+        const endDate = new Date($('#dateRangePicker').data('daterangepicker').endDate._d)
+
+        const payload = {
+            "project_id": projectId,
+            "segment_id": $("#segment").val(),
+            "offer_id": $("#offer").val(),
+            "start_date": moment(startDate).format('YYYY-MM-DD HH:mm:ss'),
+            "end_date": moment(endDate).format('YYYY-MM-DD HH:mm:ss'),
+            "active_user": currentUser,
+            "name": $("#mappingName").val(),
+            "mode": "CREATE"
+        }
+        if (!Object.keys(payload)?.length) return;
+        $("#divLoader").show();
+        $.ajax({
+            url: apiBasePath + "/offers/process_segment_offer_mapping/",
+            type: "POST",
+            data: JSON.stringify(payload),
+            contentType: 'application/json',
+            success: function (response) {
+                $("#divLoader").hide();
+                if (response?.result?.toUpperCase() == "SUCCESS") {
+                    $("#congratsConfigSaved").show();
+                    console.log("response", response)
+                } else {
+                    if (!!response?.details_message) {
+                        $("#failureAlertBody").html(response?.details_message)
+                    }
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            },
+            error: function (error) {
+                $("#somethingWentWrongAlert .toast-body").html(`${error?.responseJSON?.details_message || 'Something went wrong!'}`);
+                $("#divLoader").hide();
+                $("#somethingWentWrongAlert").toast("show");
+            },
+        });
+        // alert("Form submitted!");
+    }
+    $('#somethingWentWrongAlert').on('hidden.bs.toast', function () {
+        $("#failureAlertBody").html("Somthing went wrong, Please try again.")
+    })
+    $("body").on("focus", ".datepicker_recurring_start", function () {
+        $(this).datepicker();
+    });
+    function setSessionStorageItem(key, value) {
+        sessionStorage.setItem(key, JSON.stringify(value));
+    }
+
+    // Function to get a key from session storage
+    function getSessionStorageItem(key) {
+        const item = sessionStorage.getItem(key);
+        return item ? JSON.parse(item) : null;
+    }
+
+    // Function to remove a key from session storage
+    function removeSessionStorageItem(key) {
+        sessionStorage.removeItem(key);
+    }
+</script>
+
+</html>

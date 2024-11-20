@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Configure Pay Options order</title>
+    <link
+      rel="stylesheet"
+      media="screen, print"
+      href="/static/mentis/css/select2.bundle.css"
+    />
+    <link
+      rel="stylesheet"
+      media="screen, print"
+      href="/static/mentis/css/datatables.bundle.css"
+    />
+    <style type="text/css">
+      /* #sortable1 {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        width: 300px;
+      }
+      #sortable1 li {
+        margin: 3px 3px 3px 0;
+        padding: 1px;
+        float: left;
+        width: 50px;
+        height: 50px;
+        text-align: center;
+      } */
+      .select2-dropdown {
+        z-index: 9999999999;
+      }
+      .select2 {
+        font-size: 14px;
+        font-weight: 400;
+      }
+      .select2-hidden-accessible {
+        position: fixed !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="main-form-div">
+      <div class="row">
+        <div class="col-xl-12">
+          <div id="panel-1" class="panel">
+            <div class="panel-hdr">
+              <h2>
+                Configure
+                <span class="fw-900"><i>Payment Options order</i></span>
+              </h2>
+              <div class="panel-toolbar">
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-collapse"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Collapse"
+                ></button>
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-fullscreen"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Fullscreen"
+                ></button>
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-close"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Close"
+                ></button>
+              </div>
+            </div>
+            <div class="panel-container">
+              <div class="d-flex justify-content-between mx-4">
+                <div class="w-25"></div>
+                <div class="versionDrop mt-2" style="width: 20%">
+                  <label for="versionDropdown">Version </label>
+                  <select
+                    class="form-control ml-1 select2"
+                    id="versionDropdown"
+                    name="active_version"
+                    style="width: 20% !important"
+                  ></select>
+                  <div class="my-2" style="font-size: 14px">
+                    Active version : <b id="activeVersion"></b>
+                  </div>
+                </div>
+              </div>
+
+              <div id="divLoader" style="display: none">
+                <div
+                  class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+                  style="z-index: 2; background-color: rgba(255, 255, 255, 0.7)"
+                >
+                  <div class="spinner-border mb-2" role="status"></div>
+                  <div style="font-size: 16px">Loading...</div>
+                </div>
+              </div>
+              <div class="d-flex p-2">
+                <div class="col-sm-3">
+                  <div class="panel h-100">
+                    <div
+                      class="panel-hdr bg-primary-600"
+                      style="font-size: 16px"
+                    >
+                      <span>Select Field</span>
+                    </div>
+                    <div
+                      class="panel-container show"
+                      style="height: 57vh; overflow: auto"
+                    >
+                      <div
+                        class="custom-control custom-checkbox m-4"
+                        style="font-size: 16px"
+                      >
+                        <input
+                          type="checkbox"
+                          class="custom-control-input"
+                          id="businessProductCheckbox"
+                          name="business_product"
+                        />
+                        <label
+                          class="custom-control-label"
+                          for="businessProductCheckbox"
+                          >Business Product (<span
+                            id="businessProductLength"
+                          ></span
+                          >)</label
+                        >
+                      </div>
+                      <div
+                        class="custom-control custom-checkbox m-4"
+                        style="font-size: 16px"
+                      >
+                        <input
+                          type="checkbox"
+                          class="custom-control-input"
+                          id="bucketCheckbox"
+                          name="bucket"
+                        />
+                        <label class="custom-control-label" for="bucketCheckbox"
+                          >Bucket (<span id="bucketLength"></span>)</label
+                        >
+                      </div>
+                      <div
+                        class="custom-control custom-checkbox m-4"
+                        style="font-size: 16px"
+                      >
+                        <input
+                          type="checkbox"
+                          class="custom-control-input"
+                          id="accountTypeCheckbox"
+                          name="account_type"
+                        />
+                        <label
+                          class="custom-control-label"
+                          for="accountTypeCheckbox"
+                          >Account type (<span id="accountTypeLength"></span
+                          >)</label
+                        >
+                      </div>
+                      <div
+                        class="custom-control custom-checkbox m-4"
+                        style="font-size: 16px"
+                      >
+                        <input
+                          type="checkbox"
+                          class="custom-control-input"
+                          id="accountStatusCheckbox"
+                          name="account_status"
+                        />
+                        <label
+                          class="custom-control-label"
+                          for="accountStatusCheckbox"
+                          >Account status (<span id="accountStatusLength"></span
+                          >)</label
+                        >
+                      </div>
+                    </div>
+                    <div class="px-3" id="smartFillDiv" style="display: none">
+                      <button
+                        type="button"
+                        class="btn btn-block btn-lg btn-primary waves-effect waves-themed m-auto"
+                        onclick="autoFillClick()"
+                      >
+                        Smart Fill
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-sm-9" style="height: 70vh">
+                  <div class="panel h-100">
+                    <form
+                      class="needs-validation p-4"
+                      id="payOptionOrderForm"
+                      style="
+                        font-size: 16px;
+                        /* font-weight: 500; */
+                        display: none;
+
+                        padding-bottom: 10px;
+                      "
+                      onsubmit="sendResponse(event)"
+                    >
+                      <div
+                        class="tableWrapper mb-4 payOptionOder"
+                        style="height: 57vh"
+                      >
+                        <table
+                          id="example"
+                          class="table table-bordered table-hover table-striped w-100 dtr-inline"
+                        ></table>
+                      </div>
+                      <button
+                        type="submit"
+                        id="saveConfigBtn"
+                        style="display: none"
+                        class="btn btn-primary btn-lg btn-block waves-effect waves-themed"
+                      >
+                        Save configuration
+                      </button>
+                      <!-- <button>submit</button> -->
+                    </form>
+                    <div id="splashScreen" class="h-100">
+                      <div
+                        class="h-100 d-flex justify-content-center align-items-center bg-gray-100"
+                      >
+                        <div
+                          class="panel h-25 w-50 d-flex flex-column justify-content-center align-items-center text-center"
+                          style="font-size: 18px"
+                        >
+                          Please select two or more fields to create
+                          Configurations.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="loader-div" style="display: none">
+                  <img class="myloader" src="/static/img/loader2.gif" />
+                </div>
+
+                <div
+                  id="issues"
+                  class="alert alert-danger"
+                  role="alert"
+                  style="margin-top: 20px; display: none"
+                >
+                  <strong>Oh snap!</strong> Change a few things up and try
+                  submitting again.
+                  <ul id="issue-items" style="margin-top: 10px">
+                    <li>Issue 1</li>
+                    <li>Issue 2</li>
+                    <li>Issue 3</li>
+                    <li>Issue 4</li>
+                  </ul>
+                </div>
+
+                <div
+                  id="progress-bar-div"
+                  style="
+                    margin-top: 20px;
+                    margin-bottom: 20px;
+                    width: 100%;
+                    display: none;
+                  "
+                  class="progress progress-striped active"
+                >
+                  <div
+                    id="progress-bar"
+                    class="progress-bar bg-success-500 bg-danger-gradient"
+                    role="progressbar"
+                    aria-valuenow="80"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    style="width: 50%"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="modal"
+        id="paymentConfigOrderModal"
+        tabindex="-1"
+        role="dialog"
+        aria-labelledby="myModalLabel"
+        aria-hidden="false"
+      >
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div
+              class="modal-header"
+              style="border-bottom: 1px solid rgba(0, 0, 0, 0.07)"
+            >
+              <h4 class="modal-title" id="config-modal-title">
+                Configure pay options order
+              </h4>
+              <button
+                type="button"
+                class="close"
+                data-dismiss="modal"
+                aria-hidden="true"
+              >
+                &times;
+              </button>
+            </div>
+            <form
+              class="modal-body needs-validation"
+              onsubmit="submitForm(event)"
+              style="font-size: 16px; font-weight: 500"
+            >
+              <div class="mb-5">
+                <label for="payOptions"> Pay Options </label>
+                <select
+                  class="form-control ml-1 select2"
+                  id="payOptions"
+                  name="payOptions"
+                  data-placeholder="Select pay options"
+                  required
+                ></select>
+              </div>
+              <div id="payOptionOrderList" style="display: none">
+                Pay Option order
+                <ul
+                  class="sortableList pl-0"
+                  id="sortablePayOptionOrder"
+                  style="
+                    gap: 14px;
+                    list-style: none;
+                    display: flex;
+                    flex-wrap: wrap;
+                  "
+                ></ul>
+              </div>
+              <div id="orderNameDiv" class="mb-5">
+                <label class="form-label" for="orderName"> Order name </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="orderName"
+                  name="orderName"
+                  placeholder="Enter Order Name"
+                  required
+                />
+                <div
+                  id="orderNameInvalid"
+                  style="display: none"
+                  class="color-danger-400"
+                ></div>
+              </div>
+              <div class="d-flex w-100 justify-content-center">
+                <button
+                  type="submit"
+                  id="submitButton"
+                  class="btn btn-lg btn-primary waves-effect waves-themed"
+                >
+                  Save Pay option order
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div
+        class="modal"
+        id="autoFillModal"
+        tabindex="-1"
+        role="dialog"
+        aria-labelledby="myModalLabel"
+        aria-hidden="false"
+      >
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div
+              class="modal-header"
+              style="border-bottom: 1px solid rgba(0, 0, 0, 0.07)"
+            >
+              <h4 class="modal-title" id="config-modal-title">Smart Fill</h4>
+              <button
+                type="button"
+                class="close"
+                data-dismiss="modal"
+                aria-hidden="true"
+              >
+                &times;
+              </button>
+            </div>
+            <form
+              class="modal-body needs-validation autofill"
+              onsubmit="autoFillSubmit(event)"
+              style="font-size: 16px; font-weight: 500"
+            >
+              <label> Selectors </label>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: 50% 50%;
+                  grid-gap: 10px;
+                  padding-inline: 1rem;
+                  padding-top: 1rem;
+                "
+              >
+                <div class="mb-4" id="businessProductDiv" style="display: none">
+                  <label for="businessProduct"> Business Product </label>
+                  <select
+                    class="form-control ml-1 select2"
+                    id="businessProduct"
+                    name="business_product"
+                    data-placeholder="Select Business Product"
+                  ></select>
+                </div>
+                <div class="mb-4" id="accountTypeDiv" style="display: none">
+                  <label for="accountType"> Account type </label>
+                  <select
+                    class="form-control ml-1 select2"
+                    id="accountType"
+                    name="account_type"
+                    data-placeholder="Select Account Type"
+                  ></select>
+                </div>
+                <div class="mb-4" id="accountStatusDiv" style="display: none">
+                  <label for="accountStatus"> Account status </label>
+                  <select
+                    class="form-control ml-1 select2"
+                    id="accountStatus"
+                    name="account_status"
+                    data-placeholder="Select Account Status"
+                  ></select>
+                </div>
+                <div class="mb-4" id="bucketDiv" style="display: none">
+                  <label for="bucket"> Bucket </label>
+                  <select
+                    class="form-control ml-1 select2"
+                    id="bucket"
+                    name="bucket"
+                    data-placeholder="Select Bucket"
+                  ></select>
+                </div>
+              </div>
+
+              <hr style="border: 1px solid #e5e5e5" />
+              <label> Values </label>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: 50% 50%;
+                  grid-gap: 10px;
+                  padding: 1rem;
+                "
+              >
+                <div class="mb-4">
+                  <label>Pay Option Order</label>
+                  <select
+                    class="form-control ml-1 select2"
+                    data-placeholder="Select Pay Option order"
+                    name="pay_option_order"
+                  >
+                    <option></option>
+                    <option value="createNewOrder">Create New Order</option>
+                  </select>
+                </div>
+
+                <div class="mb-4">
+                  <label>PG config</label>
+                  <select
+                    class="form-control ml-1 select2"
+                    data-placeholder="Select PG config"
+                    name="pgconf"
+                  >
+                    <option></option>
+                  </select>
+                </div>
+
+                <div class="mb-4">
+                  <label>Balance fetch</label>
+                  <select
+                    class="form-control ml-1 select2"
+                    data-placeholder="Select Balance fetch"
+                    name="balance_fetch"
+                  >
+                    <option></option>
+                  </select>
+                </div>
+                <div class="mb-4">
+                  <label>Settlement</label>
+                  <select
+                    class="form-control ml-1 select2"
+                    data-placeholder="Select Settlement"
+                    name="settlement"
+                  >
+                    <option></option>
+                  </select>
+                </div>
+                <div class="mb-4">
+                  <label>Payment posting</label>
+                  <select
+                    class="form-control ml-1 select2"
+                    data-placeholder="Select Payment posting"
+                    name="payment_posting"
+                  >
+                    <option></option>
+                  </select>
+                </div>
+                <div class="mb-4">
+                  <label>Acc Details UI ID</label>
+                  <select
+                    class="form-control ml-1 select2"
+                    data-placeholder="Select Acc Details UI ID"
+                    name="acc_details_ui_id"
+                  >
+                    <option></option>
+                  </select>
+                </div>
+                <div class="mb-4">
+                  <label>Pay Otp to check</label>
+                  <select
+                    class="form-control ml-1 select2"
+                    data-placeholder="Select Pay Otp to check"
+                    name="pay_opt_to_check"
+                    multiple="multiple"
+                  >
+                    <option></option>
+                  </select>
+                </div>
+                <div class="mb-4">
+                  <label>Pay option for max amount</label>
+                  <select
+                    class="form-control ml-1 select2"
+                    data-placeholder="Select Pay option for max amount"
+                    name="pay_opt_for_max_amount"
+                  >
+                    <option></option>
+                  </select>
+                </div>
+              </div>
+              <div
+                id="setValuesError"
+                style="display: none"
+                class="color-danger-400 p-3 mt-n6"
+              >
+                Please select atleast one value to set.
+              </div>
+
+              <button
+                type="submit"
+                class="btn btn-primary btn-lg btn-block waves-effect waves-themed"
+              >
+                Smart Fill
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="modal fade example-modal-centered-transparent show"
+      id="tryAgainModal"
+      tabindex="-1"
+      role="dialog"
+      style="display: none; padding-right: 15px"
+      aria-modal="true"
+    >
+      <div
+        class="modal-dialog modal-dialog-centered modal-transparent"
+        role="document"
+      >
+        <div class="modal-content">
+          <div class="modal-header">
+            <button
+              type="button"
+              class="close text-white"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true"><i class="fal fa-times"></i></span>
+            </button>
+          </div>
+          <h2 class="modal-body text-center text-white">
+            Something Went Wrong, Please try again
+          </h2>
+          <div class="modal-footer justify-content-center">
+            <button
+              type="button"
+              class="btn btn-primary waves-effect waves-themed"
+              onclick="location.reload();"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="toast"
+      style="position: absolute; top: 50%; right: 30%"
+      id="toast"
+      data-delay="2000"
+    >
+      <div class="toast-header h-25">
+        <strong class="mr-auto" id="toastInfo">Alert</strong>
+        <button
+          type="button"
+          class="ml-2 mb-1 close"
+          data-dismiss="toast"
+          aria-label="Close"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="toast-body">Please Fill all required fields.</div>
+    </div>
+  </body>
+  <script src="/static/mentis/js/datatables.bundle.js"></script>
+  <script type="text/javascript">
+    var configMeta = {};
+    var comboMeta = {};
+    var combinations = [];
+    var table;
+    var payOptionOrders = {};
+    var tableData = [];
+    var columns = [];
+    var saveOnly = false;
+    $(document).ready(function () {
+      $("#divLoader").show();
+      $.ajax({
+        url: "/mentis/editor/get_configuration",
+        type: "POST",
+        data: JSON.stringify({
+          config_type: "payment",
+          config_key: "PAY_OPTIONS_ORDER_CONF",
+          config_version: getHashValue("version"), //version from URL
+        }),
+        success: function (response) {
+          $("#divLoader").hide();
+          configMeta = response.config_meta;
+          setVersionDropdown(response?.revisions);
+          console.log(response?.config_meta?.pay_options);
+          setDropdown("payOptions", response?.config_meta?.pay_options);
+          setDropdown(
+            "business_product",
+            response?.config_meta?.business_product
+          );
+          setDropdown("account_type", response?.config_meta?.account_type);
+          setDropdown("account_status", response?.config_meta?.account_status);
+          setDropdown("bucket", response?.config_meta?.bucket);
+
+          setDropdown("pgconf", response?.config_meta?.pgconf);
+          setDropdown("balance_fetch", response?.config_meta?.balance_fetch);
+          setDropdown("settlement", response?.config_meta?.settlement);
+          setDropdown(
+            "payment_posting",
+            response?.config_meta?.payment_posting
+          );
+          setDropdown(
+            "acc_details_ui_id",
+            response?.config_meta?.acc_details_ui_id
+          );
+          setDropdown(
+            "pay_opt_to_check",
+            response?.config_meta?.pay_opt_to_check
+          );
+          setDropdown(
+            "pay_opt_for_max_amount",
+            response?.config_meta?.pay_opt_for_max_amount
+          );
+
+          $("#activeVersion").html(response?.active_version);
+          $("#businessProductLength").html(
+            response?.config_meta?.business_product.length
+          );
+          $("#bucketLength").html(response?.config_meta?.bucket.length);
+          $("#accountStatusLength").html(
+            response?.config_meta?.account_status.length
+          );
+          $("#accountTypeLength").html(
+            response?.config_meta?.account_type.length
+          );
+        },
+        error: function (response) {
+          $("#tryAgainModal").modal();
+        },
+      });
+      $(".sortableList").sortable({
+        revert: true,
+      });
+      $(".select2").select2();
+    });
+    function getDesc(opt, metaArray) {
+      return metaArray?.find((el) => el?.opt === opt)?.desc;
+    }
+    function getOpt(desc, metaArray) {
+      return metaArray?.find((el) => el?.desc === desc)?.opt;
+    }
+    function sendResponse(e) {
+      e.preventDefault();
+      if (validateResponse()) {
+        console.log("true");
+        const sendResponse = table.rows().data().toArray();
+        $.ajax({
+          url: "/mentis/editor/save_configuration",
+          type: "POST",
+          data: JSON.stringify({
+            config_type: "payment",
+            config_key: "PAY_OPTIONS_ORDER_CONF",
+            config_json: sendResponse,
+          }),
+          success: function (response) {
+            console.log("Submitted successfully");
+          },
+          error: function (response) {
+            $("#tryAgainModal").modal();
+          },
+        });
+      } else {
+        $("#toast").toast("show");
+      }
+    }
+    function isObj1InObj2(obj1, obj2) {
+      //check  obj1 all entries are in obj2
+      var isMatched = true;
+      for (let el of Object.entries(obj1)) {
+        const key = el[0];
+        const value = el[1];
+        if (obj2[key] !== value) {
+          isMatched = false;
+          break;
+        }
+      }
+      return isMatched;
+    }
+    $(`select[name=payOptions]`).change(function () {
+      $("#payOptionOrderList").show();
+      var val = $(`select[name=payOptions]`).val();
+      var listHtml = `<li class="ui-state-default cursor-pointer" id=${val} value=${val} style="    font-size: 18px;">
+                                <span class="badge badge-primary badge-pill p-2">
+                                  ${$(
+                                    `select[name=payOptions] option[value=${val}]`
+                                  ).text()}
+                                  <i class="fal fa-times pl-2" onclick="deletePayOption('${val}')"></i>
+                                </span>
+                              </li>`;
+      $(`select[name=payOptions] option[value=${val}]`).prop("disabled", true);
+      $("#sortablePayOptionOrder").append(listHtml);
+    });
+    function deletePayOption(payOption) {
+      console.log(payOption);
+      $(`select[name=payOptions] option[value=${payOption}]`).prop(
+        "disabled",
+        false
+      );
+      $(`li[id=${payOption}]`).remove();
+    }
+    $("input[name=business_product]").change(function () {
+      if (this.checked) {
+        comboMeta["business_product"] = configMeta.business_product;
+      } else {
+        delete comboMeta["business_product"];
+      }
+      fillTable(comboMeta);
+    });
+    $("input[name=bucket]").change(function () {
+      if (this.checked) {
+        comboMeta["bucket"] = configMeta.bucket;
+      } else {
+        delete comboMeta["bucket"];
+      }
+      fillTable(comboMeta);
+    });
+    $("input[name=account_type]").change(function () {
+      if (this.checked) {
+        comboMeta["account_type"] = configMeta.account_type;
+      } else {
+        delete comboMeta["account_type"];
+      }
+      fillTable(comboMeta);
+    });
+    $("input[name=account_status]").change(function () {
+      if (this.checked) {
+        comboMeta["account_status"] = configMeta.account_status;
+      } else {
+        delete comboMeta["account_status"];
+      }
+      fillTable(comboMeta);
+    });
+    function fillTable(comboMeta) {
+      if (Object.keys(comboMeta).length < 2) {
+        $("#smartFillDiv").hide();
+        $("#saveConfigBtn").hide();
+        $("#payOptionOrderForm").hide();
+        $("#splashScreen").show();
+
+        if ($.fn.DataTable.isDataTable("#example")) {
+          $("#example").DataTable().clear().destroy();
+          $("#example").empty();
+        }
+        return;
+      }
+
+      $("#divLoader").show();
+      setTimeout(function () {
+        $("#divLoader").fadeOut("fast");
+      }, 1000);
+      $("#payOptionOrderForm").show();
+      $("#smartFillDiv").show();
+      $("#saveConfigBtn").show();
+      $("#splashScreen").hide();
+
+      if ($.fn.DataTable.isDataTable("#example")) {
+        // const cols = Object.keys(table.rows(0).data().toArray()[0]);
+        // const comboMetaKeys = Object.keys(comboMeta);
+        // const filteredArray = comboMetaKeys.filter(value => !cols.includes(value));
+
+        // const filledTableData=table.rows(0).data().toArray();
+
+        // var newTableData=[];
+        // filledTableData.forEach(element => {
+        //   var arr=[]
+        //   configMeta[filteredArray[0]].forEach(el=> {
+        //     var obj=element;
+        //     obj[filteredArray[0]]=el.opt;
+        //     arr.push(obj);
+        //   });
+        //   console.log(arr);
+        // });
+        // console.log(arr)
+
+        // if()
+        $("#example").DataTable().clear().destroy();
+        $("#example").empty();
+      }
+      tableData = getCombinations(comboMeta);
+      tableData.forEach((el) => {
+        el.pay_option_order = "createNewOrder";
+        el.pgconf = "select";
+        el.balance_fetch = "select";
+        el.settlement = "select";
+        el.payment_posting = "select";
+        el.acc_details_ui_id = "select";
+        el.pay_opt_to_check = "select";
+        el.pay_opt_for_max_amount = "select";
+      });
+      columns = [];
+      const data = tableData.map((el) => {
+        var obj = {};
+        for (var i = 0; i < Object.entries(el).length; i++) {
+          obj[Object.entries(el)[i][0]] = Object.entries(el)[i][1];
+          // let html = `<select
+          //                       class="form-control ml-1 select2 w-50!  "
+          //                       data-placeholder="Select Pay Option order"
+          //                       name="pay_option_order"
+          //                       required
+          //                     >
+          //                     <option></option>
+          //                       <option value="createNewOrder">Create New Order</option>
+          //                 </select>`;
+          // obj.pay_option_order = html;
+        }
+        return obj;
+      });
+
+      Object.keys(comboMeta).map((el) => {
+        var title = "";
+        switch (el) {
+          case "bucket":
+            title = "Bucket";
+            break;
+          case "business_product":
+            title = "Business Product";
+            break;
+          case "account_type":
+            title = "Account type";
+            break;
+          case "account_status":
+            title = "Account status";
+            break;
+        }
+        columns.push({ data: el, title: title, name: el });
+      });
+      columns.push({ data: "pay_option_order", title: "Pay option order" });
+      columns.push({ data: "pgconf", title: "PG Config" });
+      columns.push({ data: "balance_fetch", title: "Balance fetch" });
+      columns.push({ data: "settlement", title: "Settlement" });
+      columns.push({ data: "payment_posting", title: "Payment Posting" });
+      columns.push({ data: "acc_details_ui_id", title: "Acc details UI ID" });
+      columns.push({ data: "pay_opt_to_check", title: "Pay Opt to check" });
+      columns.push({
+        data: "pay_opt_for_max_amount",
+        title: "Pay Opt for max amount",
+      });
+      console.log("columns", columns);
+      console.log("data", data);
+      combinations = data;
+      drawTable(columns, data);
+      // $(".select2").select2();
+      initializeSelect2();
+      initializeAllSelect();
+    }
+
+    function drawTable(columns, data) {
+      console.log("drawTable");
+      var tableColumns = columns.map((el) => {
+        if (
+          el.data === "bucket" ||
+          el.data === "business_product" ||
+          el.data === "account_type" ||
+          el.data === "account_status"
+        ) {
+          return {
+            data: el.data,
+            title: el.title,
+            render: function (data, type, row, meta) {
+              return `<div style="min-width:100px;">
+                ${getDesc(data, configMeta[el?.data])}
+                </div>`;
+            },
+          };
+        } else if (el.data === "pay_option_order") {
+          return {
+            data: "pay_option_order",
+            title: "Pay Option order",
+
+            render: function (data, type, row, meta) {
+              if (data === "createNewOrder") {
+                return `
+                <div style="min-width:250px;">
+                  <select
+                                class="single form-control ml-1 select2 "
+                                data-placeholder="Select Pay Option order"
+                                name="pay_option_order"
+                                style="width:200px !important; "
+                                required
+                              >
+                              <option></option>
+                                <option value="createNewOrder">Create New Order</option>
+                          </select>
+                          </div>`;
+              } else {
+                var cellHtml = "";
+                console.log(data);
+                data.forEach((payOption) => {
+                  cellHtml += `<li value=${payOption}>
+                            <span>${getDesc(
+                              payOption,
+                              configMeta?.pay_options
+                            )}</span>
+                        </li>`;
+                });
+                console.log("row", row);
+                console.log(meta);
+                const params = JSON.stringify(row?.pay_option_order);
+                return `<div class="d-flex justify-content-between" style="min-width:250px">
+                    <div>
+                      ${cellHtml}
+                      </div>
+                      <div>
+                        <i class="fal fa-edit cursor-pointer" onclick="editOrder(${meta.row},${meta.col})"></i>
+                        <i class="fal fa-times ml-1 cursor-pointer" onclick="deleteOrder(${meta.row},${meta.col})"></i>
+                        </div>
+                  </div>`;
+                // return cellHtml;
+              }
+            },
+          };
+        } else if (el.data === "pay_opt_to_check") {
+          return {
+            data: el.data,
+            title: el.title,
+            render: function (data, type, row, meta) {
+              // return data;
+              if (data === "select") {
+                var options = "";
+                configMeta[el.data].forEach((el) => {
+                  options += `<option value="${el.opt}">${el.desc}</option>`;
+                });
+                return `
+                  <div style="min-width:250px;">
+                    <select
+                                class="multiple form-control ml-1 select2"
+                                data-placeholder="Select ${el.title}"
+                                name="${el.data}"
+                                style="width:200px !important;"
+                                multiple="multiple"
+                                required
+                              >
+                              <option>
+                                </option>
+                                ${options}
+                          </select>
+                          </div>`;
+              } else {
+                var options = "";
+                configMeta[el.data].forEach((element) => {
+                  options += `<option value="${element.opt}" ${
+                    data.includes(element.opt) ? "selected" : ""
+                  }>${element.desc}</option>`;
+                });
+                return `
+                  <div style="min-width:250px;">
+                    <select
+                                class="multiple form-control ml-1 select2"
+                                data-placeholder="Select ${el.title}"
+                                name="${el.data}"
+                                style="width:200px !important;"
+                                multiple="multiple"
+                                required
+                              >
+                              <option>
+                                </option>
+                                ${options}
+                          </select>
+                          </div>`;
+              }
+            },
+          };
+        } else {
+          return {
+            data: el.data,
+            title: el.title,
+            render: function (data, type, row, meta) {
+              // return data;
+              if (data === "select") {
+                var options = "";
+                configMeta[el.data].forEach((el) => {
+                  options += `<option value="${el.opt}">${el.desc}</option>`;
+                  // console.log(el)
+                });
+                return `
+                  <div style="min-width:250px;">
+                    <select
+                                class="single form-control ml-1 select2"
+                                data-placeholder="Select ${el.title}"
+                                name="${el.data}"
+                                style="width:200px !important; "
+                                required
+                              >
+                              <option>
+                                </option>
+                                ${options}
+                          </select>
+                          </div>`;
+              } else {
+                var options = "";
+                configMeta[el.data].forEach((element) => {
+                  options += `<option value="${element.opt}" ${
+                    element.opt === data ? "selected" : ""
+                  }>${element.desc}</option>`;
+                });
+
+                return `<div style="min-width:250px;">
+                <select
+                                class="single form-control ml-1 select2"
+                                data-placeholder="Select ${el.title}"
+                                name="${el.data}"
+                                style="width:200px !important; "
+                                required
+                              >
+                              <option>
+                                </option>
+                                ${options}
+                          </select>
+                          </div>`;
+              }
+            },
+          };
+        }
+      });
+      table = $("#example").DataTable({
+        data: data,
+        columns: tableColumns,
+        // autoWidth: false,
+        scrollX: "true",
+        scrollY: "400",
+
+        // "autoWidth": false,
+        columnDefs: [{ width: "100%", targets: 0 }],
+        drawCallback: function (settings) {
+          console.log("drawCallback***********************************");
+          initializeAllSelect();
+          initializeSelect2();
+          // $(".select2").select2();
+          $("select[name=pay_option_order]").on("change", function () {
+            payOptionOrderSelect(this);
+          });
+          setPayOptionOrderDropdown();
+        },
+      });
+    }
+    function initializeAllSelect() {
+      $(
+        "select[name=pgconf] ,select[name=balance_fetch], select[name=settlement], select[name=payment_posting], select[name=acc_details_ui_id], select[name=pay_opt_for_max_amount]"
+      ).on("change", function () {
+        console.log("Single select changed");
+        var value = $(this).val();
+        console.log(value);
+        changeDataInCell(this);
+      });
+      $("select[name=pay_opt_to_check]").change(function () {
+        console.log("pay_opt_to_check changed");
+        var value = $(this).val();
+        console.log(value);
+        changeDataInCell(this);
+      });
+    }
+    function validateResponse() {
+      var flag = true;
+      table
+        .rows()
+        .data()
+        .toArray()
+        .forEach((el) => {
+          for (let en of Object.values(el)) {
+            console.log(en);
+            if (
+              en === "createNewOrder" ||
+              en === "select" ||
+              en === "" ||
+              en === []
+            ) {
+              flag = false;
+              return false;
+            }
+          }
+        });
+      return flag;
+    }
+    function changeDataInCell(selectOption) {
+      if ($("#autoFillModal").data("bs.modal")?._isShown) return;
+      var value = $(selectOption).val();
+      // console.log($(selectOption).val());
+      console.log(selectOption);
+      console.log(value);
+      var cell = selectOption.closest("td");
+      console.log(cell);
+      if (!cell) return;
+      // setDropdown("payOptions", configMeta.pay_options);
+      payOptionOrderRow = table.cell(cell).index().row;
+      payOptionOrderColumn = table.cell(cell).index().column;
+      table
+        .cell({ row: payOptionOrderRow, column: payOptionOrderColumn })
+        .data(value);
+      // .draw(false);
+      // $('.select2').select2('destroy');
+      // $("select.select2-hidden-accessible").select2('destroy');
+
+      initializeSelect2();
+      initializeAllSelect();
+      // $(".select2").select2();
+    }
+
+    function initializeSelect2() {
+      $(".dataTables_scrollBody .select2")
+        .select2()
+        .on("select2:unselecting", function () {
+          $(this).data("unselecting", true);
+        })
+        .on("select2:opening", function (e) {
+          if ($(this).data("unselecting")) {
+            $(this).removeData("unselecting");
+            e.preventDefault();
+          }
+        });
+      // $(".select2-search__field").keydown((ev) => {
+      //   if (ev.which === 8) {
+      //     // ev.preventDefault();
+      //     backSpacePressed = true;
+      //   }
+      // });
+      $(".dataTables_scrollBody .select2-hidden-accessible").on(
+        "select2:selecting",
+        function (e) {
+          // e.preventDefault();
+          // var value = e.params.args.data.id;
+          // $(".dataTables_scrollBody .select2-hidden-accessible").select2(
+          //   "close"
+          // );
+          // $(e.target).val(value).trigger("change");
+          $(e.target).select2("close");
+          // e.preventDefault();
+        }
+      );
+      $(".dataTables_scrollBody .select2-hidden-accessible").on(
+        "select2:unselecting",
+        function (e) {
+          // e.preventDefault();
+          // var value = e.params.args.data.id;
+          // $(".dataTables_scrollBody .select2-hidden-accessible").select2(
+          //   "close"
+          // );
+          // $(e.target).val(value).trigger("change");
+          $(e.target).select2("close");
+          // e.preventDefault();
+        }
+      );
+    }
+    function autoFillClick() {
+      Object.keys(comboMeta).forEach((el) => {
+        console.log(el);
+        if (el === "business_product") {
+          $("#businessProductDiv").show();
+          $("select[name=business_product").attr("required", true);
+        } else if (el === "account_type") {
+          $("#accountTypeDiv").show();
+          $("select[name=account_type").attr("required", true);
+        } else if (el === "account_status") {
+          $("#accountStatusDiv").show();
+          $("select[name=account_status").attr("required", true);
+        } else if (el === "bucket") {
+          $("#bucketDiv").show();
+          $("select[name=bucket").attr("required", true);
+        }
+      });
+      $("#autoFillModal").modal();
+    }
+
+    function editOrder(row, column) {
+      const payOptionOrder = table.cell({ row: row, column: column }).data();
+      console.log(payOptionOrder);
+      for (let el of Object.entries(payOptionOrders)) {
+        var isEqual =
+          el[1].length == payOptionOrder.length &&
+          el[1].every(function (element, index) {
+            return element === payOptionOrder[index];
+          });
+        if (isEqual) {
+          $("#orderName").val(el[0]);
+          break;
+        }
+      }
+      payOptionOrderRow = row;
+      payOptionOrderColumn = column;
+      prefillSortable(payOptionOrder);
+
+      $("#payOptionOrderList").show();
+      $("#paymentConfigOrderModal").modal();
+    }
+    function deleteOrder(row, column) {
+      table
+        .cell({ row: row, column: column })
+        .data("createNewOrder")
+        .draw(false);
+      console.log(row, column);
+    }
+    function autoFillSubmit(event) {
+      event.preventDefault();
+      const myFormData = new FormData(event.target);
+      var selectorValues = {};
+      var setValues = {};
+      var pay_opt_to_check = [];
+      myFormData.forEach((value, key) => {
+        if (!!value && value != "all") {
+          if (
+            key === "pay_option_order" ||
+            key === "pgconf" ||
+            key === "balance_fetch" ||
+            key === "settlement" ||
+            key === "payment_posting" ||
+            key === "acc_details_ui_id" ||
+            key === "pay_opt_for_max_amount"
+          ) {
+            setValues[key] = value;
+          } else if (key === "pay_opt_to_check") {
+            pay_opt_to_check.push(value);
+          } else {
+            selectorValues[key] = value;
+          }
+        }
+      });
+      console.log(selectorValues);
+      console.log(setValues);
+      console.log(pay_opt_to_check);
+
+      if (
+        Object.entries(setValues).length === 0 &&
+        pay_opt_to_check.length === 0
+      ) {
+        $("#setValuesError").show();
+        setValuesError;
+        console.log("Please select atleast one value to set.");
+        return;
+      }
+      setValues.pay_opt_to_check = pay_opt_to_check;
+
+      combinations.forEach((row) => {
+        if (isObj1InObj2(selectorValues, row)) {
+          Object.entries(setValues).forEach((el) => {
+            if (el[0] === "pay_option_order") {
+              row[el[0]] = payOptionOrders[el[1]];
+            } else {
+              row[el[0]] = el[1];
+            }
+          });
+        }
+      });
+      $("#example").DataTable().clear().destroy();
+      $("#example").empty();
+      drawTable(columns, combinations);
+      $("#autoFillModal").modal("hide");
+    }
+    $("#autoFillModal").on("hide.bs.modal", function (e) {
+      $("#setValuesError").hide();
+      console.log("Modal closed");
+      $("#businessProductDiv").hide();
+      $("select[name=business_product").removeAttr("required");
+
+      $("#accountTypeDiv").hide();
+      $("select[name=account_type").removeAttr("required");
+
+      $("#accountStatusDiv").hide();
+      $("select[name=account_status").removeAttr("required");
+
+      $("#bucketDiv").hide();
+      $("select[name=bucket").removeAttr("required");
+      $("#autoFillModal select").val("").change();
+    });
+    function resetDropdown(name) {
+      $(`select[name=${name}]`).val("").change();
+    }
+    function prefillSortable(arr) {
+      var listHtml = "";
+      arr.forEach((el) => {
+        $(`select[name=payOptions] option[value=${el}]`).prop("disabled", true);
+        listHtml += `<li class="ui-state-default cursor-pointer" id=${el} value=${el} style="font-size: 18px;">
+                                <span class="badge badge-primary badge-pill p-2">
+                                  ${getDesc(el, configMeta?.pay_options)}
+                                  <i class="fal fa-times pl-2" onclick="deletePayOption('${el}')"></i>
+                                </span>
+                              </li>`;
+      });
+      $("#sortablePayOptionOrder").html(listHtml);
+    }
+    // const obj = {
+    //   bucket: "0",
+    //   business_product: "Home Loan",
+    // };
+    // combinations.forEach((el) => {
+    //   if(isKeyValueInObject(el,obj)){
+    //     console.log(el);
+    //   }
+    // });
+    // $("#autoFillModal").on("show.bs.modal", function () {
+    //   saveOnly = true;
+    // });
+    function payOptionOrderSelect(payOptionOrderDropdown) {
+      console.log("saveOnly 1", saveOnly);
+      if ($("#autoFillModal").data("bs.modal")?._isShown) {
+        if (payOptionOrderDropdown.value === "createNewOrder") {
+          saveOnly = true;
+          $("#autoFillModal").modal("hide");
+          $("#paymentConfigOrderModal").modal();
+        }
+      }
+      console.log("saveOnly 2", saveOnly);
+
+      if (!payOptionOrderDropdown.closest("td")) return;
+      console.log(payOptionOrderDropdown.closest("td"));
+      if (payOptionOrderDropdown.value === "createNewOrder") {
+        console.log(payOptionOrderDropdown.value);
+        var cell = payOptionOrderDropdown.closest("td");
+        console.log(payOptionOrderDropdown.closest("td"));
+        setDropdown("payOptions", configMeta.pay_options);
+        payOptionOrderRow = table.cell(cell).index().row;
+        payOptionOrderColumn = table.cell(cell).index().column;
+        console.log(
+          "row : ",
+          payOptionOrderRow,
+          " column : ",
+          payOptionOrderColumn
+        );
+        $("#paymentConfigOrderModal").modal();
+      } else if (
+        Object.keys(payOptionOrders).includes(payOptionOrderDropdown.value)
+      ) {
+        var cell = payOptionOrderDropdown.closest("td");
+        if (!cell) return;
+        setDropdown("payOptions", configMeta.pay_options);
+        payOptionOrderRow = table.cell(cell).index().row;
+        payOptionOrderColumn = table.cell(cell).index().column;
+
+        var payOptionOrder = payOptionOrders[payOptionOrderDropdown.value];
+        table
+          .cell({ row: payOptionOrderRow, column: payOptionOrderColumn })
+          .data(payOptionOrder)
+          .draw(false);
+        // saveOnly = false;
+      }
+    }
+    function setPayOptionOrderDropdown() {
+      console.log("dropdown set");
+      var html = `<option></option>
+                  <option value="createNewOrder">Create New Order</option>`;
+      Object.keys(payOptionOrders).forEach((el) => {
+        html += `<option value='${el}'>${el}</option>`;
+      });
+      $("select[name=pay_option_order]").html(html);
+      $("select[name=payOptions] option:not(:first)").prop("disabled", false);
+    }
+    var payOptionOrderRow;
+    var payOptionOrderColumn;
+
+    function submitForm(event) {
+      event.preventDefault();
+      // if ($("#payOptions").val().length === 0) return;
+      // console.log(event.target)
+      // const myFormData = new FormData(event.target);
+      // const formDataObj = {};
+      // myFormData.forEach((value, key) => {
+      //   if (value !== "all") {
+      //     formDataObj[key] = value;
+      //   }
+      // });
+      // console.log(myFormData);
+
+      var regex = new RegExp("^[a-zA-Z ]+$");
+      const orderName = $("input[name=orderName]").val();
+      if (!regex.test(orderName)) {
+        $("#orderNameInvalid").html("Please enter a valid order name");
+        $("#orderNameInvalid").show();
+        return;
+      } else {
+        $("#orderNameInvalid").hide();
+      }
+      var payOptionOrder = $("#sortablePayOptionOrder").sortable("toArray");
+      if (!saveOnly) {
+        table
+          .cell({ row: payOptionOrderRow, column: payOptionOrderColumn })
+          .data(payOptionOrder)
+          .draw(false);
+      }
+      $("#payOptions").val("").change();
+      $("#sortablePayOptionOrder").ready(function () {
+        $("#sortablePayOptionOrder").empty();
+      });
+      $("#payOptionOrderList").ready(function () {
+        $("#payOptionOrderList").hide();
+      });
+      $("#paymentConfigOrderModal").modal("hide");
+      payOptionOrders[orderName] = payOptionOrder;
+      $("select[name=pay_option_order]").append(
+        `<option value='${orderName}'>${orderName}</option>`
+      );
+    }
+
+    $("#sortablePayOptionOrder").sortable({
+      update: function (event, ui) {
+        let newOrder = $("#sortablePayOptionOrder").sortable("toArray");
+        $("#payOptions").val(newOrder);
+      },
+    });
+    $("#paymentConfigOrderModal").on("hidden.bs.modal", function (e) {
+      saveOnly = false;
+      $("#payOptions").val("").change();
+      $("select[name=pay_option_order]").val("").change();
+      $("#sortablePayOptionOrder").empty();
+      $("#payOptionOrderList").hide();
+      $("#orderName").val("");
+      setPayOptionOrderDropdown();
+    });
+
+    function getCombinations(dict) {
+      if (!Object.entries(dict).length) {
+        console.log("Check some checkbox");
+        return [];
+      }
+      if (Object.entries(dict).length == 1) {
+        var result = [];
+        for (var i = 0; i < Object.entries(dict)[0][1].length; i++) {
+          var obj = {
+            [Object.entries(dict)[0][0]]: Object.entries(dict)[0][1][i].opt,
+          };
+          result.push(obj);
+        }
+        return result;
+      }
+      var obj = JSON.parse(JSON.stringify(dict));
+      delete obj[Object.keys(obj)[0]]; ////////////////////////////////////////
+      var result = getCombinations(obj);
+      for (var i = 0; i < Object.entries(dict)[0][1].length; i++) {
+        for (var j = 0; j < result.length; j++) {
+          if (!!Object.keys(result[j]).includes(Object.entries(dict)[0][0])) {
+            if (
+              result[j][Object.entries(dict)[0][0]] !=
+              Object.entries(dict)[0][1][i].opt
+            ) {
+              var obj = JSON.parse(JSON.stringify(result[j]));
+              obj[Object.entries(dict)[0][0]] =
+                Object.entries(dict)[0][1][i].opt;
+              if (
+                !result.some((el) => JSON.stringify(el) === JSON.stringify(obj))
+              ) {
+                result.push(obj);
+              }
+            }
+          } else {
+            result[j][Object.entries(dict)[0][0]] =
+              Object.entries(dict)[0][1][i].opt;
+          }
+        }
+      }
+      return result;
+    }
+    function getHashValue(key) {
+      var matches = location.hash.match(new RegExp(key + "=([^&]*)"));
+      return matches ? matches[1] : null;
+    }
+    function setDropdown(name, metaArray) {
+      var selectHtml = "";
+
+      selectHtml = "<option value='' disabled selected>--Select--</option>";
+      if (name === "pay_opt_to_check") selectHtml = "";
+      if (
+        name === "bucket" ||
+        name === "account_type" ||
+        name === "account_status" ||
+        name === "business_product"
+      ) {
+        selectHtml += "<option value='all'>All</option>";
+      }
+      metaArray?.forEach(function (el) {
+        selectHtml += `<option value="${el.opt}" > ${el.desc}</option>`;
+      });
+      $(`select[name='${name}']`).html(selectHtml);
+    }
+    function setVersionDropdown(revisions) {
+      var selectHtml = "";
+      revisions.forEach((el) => {
+        selectHtml +=
+          "<option value=" +
+          el.version +
+          ">" +
+          el.version +
+          " - created by " +
+          (el.created_by.charAt(0).toUpperCase() + el.created_by.slice(1)) +
+          "</option>";
+      });
+      $("#versionDropdown").html(selectHtml);
+    }
+  </script>
+</html>

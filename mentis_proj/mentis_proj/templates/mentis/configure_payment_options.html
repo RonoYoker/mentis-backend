@@ -1,0 +1,1853 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Configure Payment Options</title>
+    <link
+      rel="stylesheet"
+      media="screen, print"
+      href="/static/mentis/css/select2.bundle.css"
+    />
+    <style type="text/css">
+      .select2-dropdown {
+        z-index: 9999999999;
+      }
+      .select2 {
+        font-size: 14px;
+        font-weight: 400;
+      }
+      /* .panel-payoption {
+        padding: 15px 20px;
+        border-left: 3px solid #1dc9b7;
+        background: #eef7fd;
+        font-weight: 400;
+        font-size: 16px;
+      } */
+      .panel-payoption:focus {
+        background: black;
+      }
+      .fal {
+        font-size: 20px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+      .btn-pay-option {
+        border-bottom: 2px solid #beaed7;
+        /* background-image: linear-gradient(
+          250deg,
+          rgba(16, 112, 102, 0.7),
+          transparent
+        ); */
+      }
+      .active.btn-pay-option {
+        background: rgba(189, 173, 215, 0.2);
+      }
+      .btn.btn-pay-option {
+        border-left: 0px !important;
+        border-right: 0px !important;
+        padding: 20px;
+        font-size: 16px;
+        /* margin-inline: 10px !important; */
+        border-radius: 0;
+      }
+      @keyframes shake {
+        10%,
+        90% {
+          transform: translate3d(-1px, 0, 0);
+        }
+
+        20%,
+        80% {
+          transform: translate3d(2px, 0, 0);
+        }
+
+        30%,
+        50%,
+        70% {
+          transform: translate3d(-4px, 0, 0);
+        }
+
+        40%,
+        60% {
+          transform: translate3d(4px, 0, 0);
+        }
+      }
+      .shakeAnimation {
+        animation: shake 0.82s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        transform: translate3d(0, 0, 0);
+        backface-visibility: hidden;
+        perspective: 1000px;
+      }
+      .wave {
+        height: 50px;
+        position: relative;
+        /* background: linear-gradient(90deg, #27b6b9 0%, #0f4061 100%); */
+        background: #beaed7;
+      }
+
+      .wave-top {
+        position: relative;
+        margin-top: 20px;
+      }
+
+      .wave-top::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 10px;
+        background-size: 20px 40px;
+        background-image: radial-gradient(
+          circle at 10px -15px,
+          transparent 20px,
+          rgba(237, 30, 30, 1) 21px
+        );
+      }
+
+      .wave-top::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 15px;
+        background-size: 40px 40px;
+        background-image: radial-gradient(
+          circle at 10px 26px,
+          rgba(237, 30, 30, 1) 20px,
+          transparent 21px
+        );
+      }
+      .wave-bottom {
+        position: relative;
+      }
+
+      .wave-bottom::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 10px;
+        background-size: 20px 40px;
+        background-image: radial-gradient(
+          circle at 10px -15px,
+          transparent 20px,
+          #fff 21px
+        );
+      }
+
+      .wave-bottom::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 15px;
+        background-size: 40px 40px;
+        background-image: radial-gradient(
+          circle at 10px 26px,
+          #fff 20px,
+          transparent 21px
+        );
+      }
+    </style>
+  </head>
+  <body>
+    <div id="main-form-div">
+      <div class="row">
+        <div class="col-xl-12">
+          <div id="panel-1" class="panel">
+            <div class="panel-hdr">
+              <h2>
+                Configure <span class="fw-900"><i>Payment Options</i></span>
+              </h2>
+              <div class="panel-toolbar">
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-collapse"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Collapse"
+                ></button>
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-fullscreen"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Fullscreen"
+                ></button>
+                <button
+                  class="btn btn-panel"
+                  data-action="panel-close"
+                  data-toggle="tooltip"
+                  data-offset="0,10"
+                  data-original-title="Close"
+                ></button>
+              </div>
+            </div>
+            <div class="panel-container" style="display: none">
+              <div id="divLoader" style="display: none">
+                <div
+                  class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+                  style="z-index: 2; background-color: rgba(255, 255, 255, 0.7)"
+                >
+                  <div class="spinner-border mb-2" role="status"></div>
+                  <div style="font-size: 16px">Loading...</div>
+                </div>
+              </div>
+              <div class="d-flex justify-content-end mr-4">
+                <div class="versionDrop mt-2" style="width: 20%">
+                  <label for="versionDropdown">Version </label>
+                  <select
+                    class="form-control ml-1 select2"
+                    id="versionDropdown"
+                    name="active_version"
+                    style="width: 20% !important"
+                  ></select>
+                  <div class="my-2" style="font-size: 14px">
+                    Active version : <b id="activeVersion"></b>
+                  </div>
+                </div>
+              </div>
+              <div class="d-flex p-2">
+                <div class="col-sm-3">
+                  <div id="panel-6" class="panel h-100 mb-0">
+                    <div
+                      class="panel-hdr bg-primary-600"
+                      style="font-size: 16px"
+                    >
+                      <span>Pay options</span>
+                    </div>
+                    <div
+                      class="panel-container show"
+                      style="height: 50vh; overflow: auto"
+                    >
+                      <div
+                        class="btn-group btn-group-toggle mx-3"
+                        data-toggle="buttons"
+                        style="display: flex; flex-direction: column"
+                      >
+                        <label
+                          class="btn btn-pay-option waves-effect waves-themed my-2"
+                          id="addMoreButton"
+                          for="addMore"
+                        >
+                          <input
+                            type="radio"
+                            name="selectedPayOption"
+                            id="addMore"
+                            value="addMore"
+                          />
+                          <div class="d-flex justify-content-between">
+                            <div>Add more</div>
+                            <div>
+                              <i
+                                class="fal fa-plus-square"
+                                title="Add another Payment Option"
+                              ></i>
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                    <div class="m-2">
+                      <button
+                        type="button"
+                        class="btn bg-success-700 btn-lg btn-block waves-effect waves-themed"
+                        style="box-shadow: 0 2px 6px 0 rgb(23 156 142 / 40%)"
+                        onclick="sendResponse()"
+                      >
+                        Save Configurations
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-sm-9">
+                  <div class="panel h-100 px-5 pt-5 mb-0">
+                    <div class="h-100" id="splashScreen" style="display: none">
+                      <div
+                        class="h-100 d-flex justify-content-center align-items-center"
+                      >
+                        <div
+                          class="panel h-50 w-50 d-flex flex-column justify-content-center align-items-center text-center"
+                          style="font-size: 20px"
+                        >
+                          <span
+                            >Configure new version by editting current payment
+                            options <br />Or</span
+                          >
+
+                          <button
+                            type="button"
+                            class="btn btn-sm bg-success-700 waves-effect waves-themed my-1"
+                            style="
+                              font-size: 16px;
+                              box-shadow: 0 2px 6px 0 rgb(23 156 142 / 40%);
+                            "
+                            onclick="addMoreClick()"
+                          >
+                            Adding new Payment Option
+                            <span
+                              class="fal fa-plus-square mx-1"
+                              style="font-size: 18px"
+                            ></span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="h-100"
+                      id="payOptionAddedSuccess"
+                      style="display: none"
+                    >
+                      <div
+                        class="h-100 d-flex justify-content-center align-items-center"
+                      >
+                        <div
+                          class="panel h-50 w-50 d-flex flex-column justify-content-center align-items-center text-center"
+                          style="font-size: 20px"
+                        >
+                          <span>Your Pay Option is added.</span>
+                          <div class="d-flex flex-column text-center mt-3">
+                            <button
+                              type="button"
+                              class="btn btn-sm bg-success-700 waves-effect waves-themed"
+                              style="
+                                font-size: 16px;
+                                box-shadow: 0 2px 6px 0 rgb(23 156 142 / 40%);
+                              "
+                              id="editThisPayOption"
+                            >
+                              Edit this pay option
+                              <span class="fal fa-edit mr-1"></span>
+                            </button>
+                            Or
+                            <button
+                              type="button"
+                              class="btn btn-sm bg-success-700 waves-effect waves-themed"
+                              style="
+                                font-size: 16px;
+                                box-shadow: 0 2px 6px 0 rgb(23 156 142 / 40%);
+                              "
+                              onclick="addMoreClick()"
+                            >
+                              Add more
+                              <span
+                                class="fal fa-plus-square mx-1"
+                                style="font-size: 18px"
+                              ></span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="h-100"
+                      id="congratsConfigSaved"
+                      style="display: none"
+                    >
+                      <div
+                        class="h-100 d-flex justify-content-center align-items-center"
+                      >
+                        <div
+                          class="panel p-6 d-flex flex-column justify-content-center align-items-center text-center"
+                          style="font-size: 20px"
+                        >
+                          <img
+                            src="/static/mentis/img/accepted.png"
+                            class="img-fluid mb-5"
+                            width="75"
+                            height="75"
+                          />
+                          <span class="mx-2"
+                            >Congratulations,Your configuration has been saved
+                            successfully!</span
+                          >
+                        </div>
+                      </div>
+                    </div>
+                    <form
+                      class="needs-validation"
+                      id="myform"
+                      style="
+                        font-size: 16px;
+                        font-weight: 500;
+                        display: none;
+                        height: 57vh;
+                        overflow: auto;
+                        padding-bottom: 10px;
+                      "
+                      onsubmit="savePaymentOption(event)"
+                    >
+                      <div class="form-group" style="width: 60%">
+                        <!-- Pay Option Ids select drop -->
+                        <div class="mb-5">
+                          <label for="payOptionDropdown"> Pay Option Id </label>
+                          <select
+                            class="form-control ml-1 select2"
+                            id="payOptionDropdown"
+                            name="pay_option_id"
+                            required
+                          ></select>
+                          <div class="invalid-feedback">
+                            Please select a valid state.
+                          </div>
+                        </div>
+                        <!-- Configure original amount div -->
+                        <div
+                          class="mb-5"
+                          id="originalAmountDiv"
+                          style="display: none"
+                        >
+                          <div class="mb-2">
+                            <label> Original Amount </label>
+                            <button
+                              type="button"
+                              class="btn btn-outline-primary waves-effect waves-themed ml-1"
+                              onclick="configureModal('original_amount')"
+                            >
+                              Configure
+                              <i
+                                class="fal fa-edit"
+                                style="margin-left: 5px; font-size: 16px"
+                              ></i>
+                            </button>
+                          </div>
+                          <div
+                            class="panel-tag mb-0 ml-1"
+                            id="original_amount_config"
+                          >
+                            Not Configured yet.
+                          </div>
+                          <!-- <div class="panel-tag mb-0 ml-1">
+                            <b>mode :</b> abc
+                            <br />
+                            <b>Source column :</b> abc
+                            <br />
+                            <b>Deduction:</b> abc
+                            <br />
+                            <b>Type cast to:</b> abc
+                            <br />
+                          </div> -->
+                        </div>
+                        <!-- Configure Pay meta -->
+                        <div class="mb-5" id="payMetaDiv" style="display: none">
+                          Pay Meta
+                          <br />
+                          <div class="ml-1">↳ Validations</div>
+                          <div class="ml-5">
+                            <div class="mb-1">
+                              <label> ↳ Min</label>
+                              <button
+                                type="button"
+                                class="btn btn-outline-primary waves-effect waves-themed ml-1 mb-1"
+                                onclick="configureModal('pay_meta_min_validation')"
+                              >
+                                Configure
+                                <i
+                                  class="fal fa-edit"
+                                  style="margin-left: 5px; font-size: 16px"
+                                ></i>
+                              </button>
+                            </div>
+                            <div
+                              class="panel-tag mb-0 ml-1 mb-1"
+                              id="pay_meta_min_validation_config"
+                            >
+                              Not Configured yet.
+                            </div>
+                            <div>
+                              <label> ↳ Max</label>
+                              <button
+                                type="button"
+                                class="btn btn-outline-primary waves-effect waves-themed mb-1"
+                                onclick="configureModal('pay_meta_max_validation')"
+                              >
+                                Configure
+                                <i
+                                  class="fal fa-edit"
+                                  style="margin-left: 5px; font-size: 16px"
+                                ></i>
+                              </button>
+                            </div>
+                            <div
+                              class="panel-tag mb-0 ml-1"
+                              id="pay_meta_max_validation_config"
+                            >
+                              Not Configured yet.
+                            </div>
+                          </div>
+                        </div>
+                        <!-- Show due date checkbox -->
+                        <div
+                          class="custom-control custom-checkbox mb-2"
+                          id="showDueDateDiv"
+                          style="display: none"
+                        >
+                          <input
+                            type="checkbox"
+                            class="custom-control-input"
+                            id="showDueDateCheckbox"
+                            name="show_due_date"
+                          />
+                          <label
+                            class="custom-control-label"
+                            for="showDueDateCheckbox"
+                            >Show due date</label
+                          >
+                        </div>
+                        <div
+                          class="panel-tag mb-0"
+                          style="
+                            padding-top: 0px !important;
+                            padding-bottom: 0px !important;
+                          "
+                        >
+                          <!-- Mode Direct/Method -->
+                          <div class="py-2" id="modeDiv" style="display: none">
+                            <b> Mode </b>
+                            <br />
+                            <div
+                              class="mt-1"
+                              style="font-size: 14px; font-weight: 400"
+                            >
+                              <div
+                                class="custom-control custom-radio custom-control-inline"
+                              >
+                                <input
+                                  type="radio"
+                                  class="custom-control-input"
+                                  id="directMode"
+                                  value="direct"
+                                  name="mode"
+                                />
+                                <label
+                                  class="custom-control-label"
+                                  for="directMode"
+                                  >Direct</label
+                                >
+                              </div>
+                              <div
+                                class="custom-control custom-radio custom-control-inline"
+                              >
+                                <input
+                                  type="radio"
+                                  class="custom-control-input"
+                                  id="methodMode"
+                                  value="method"
+                                  name="mode"
+                                />
+                                <label
+                                  class="custom-control-label"
+                                  for="methodMode"
+                                  >Method</label
+                                >
+                              </div>
+                            </div>
+                          </div>
+                          <!-- Source column dropdown -->
+                          <div
+                            class="py-3"
+                            id="sourceColumnDropdownDiv"
+                            style="display: none"
+                          >
+                            <label for="sourceColumn"
+                              ><b> Source Column </b></label
+                            >
+                            <select
+                              class="form-control ml-1 select2"
+                              id="sourceColumn"
+                              name="source_column"
+                            ></select>
+                          </div>
+                          <!-- Method name dropdown -->
+                          <div
+                            class="py-3"
+                            id="methodNameDropdownDiv"
+                            style="display: none"
+                          >
+                            <label for="methodName"><b> Method Name</b></label>
+                            <select
+                              class="form-control ml-1 select2"
+                              id="methodName"
+                              onchange=""
+                              name="method_name"
+                            ></select>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="d-flex w-100 justify-content-center">
+                        <button
+                          type="submit"
+                          id="submitButton"
+                          class="btn btn-lg btn-primary waves-effect waves-themed"
+                        >
+                          Save Pay option
+                        </button>
+                      </div>
+                    </form>
+                    <!-- <div style="display: flex; justify-content: center">
+                      <button
+                        class="btn btn-primary waves-effect waves-themed btn-lg bg-primary-700 bg-success-gradient btn-block"
+                        type="submit"
+                        onclick="saveTransporter()"
+                      >
+                        Save configuration
+                      </button>
+                    </div> -->
+                  </div>
+                </div>
+
+                <div id="loader-div" style="display: none">
+                  <img class="myloader" src="/static/img/loader2.gif" />
+                </div>
+
+                <div
+                  id="issues"
+                  class="alert alert-danger"
+                  role="alert"
+                  style="margin-top: 20px; display: none"
+                >
+                  <strong>Oh snap!</strong> Change a few things up and try
+                  submitting again.
+                  <ul id="issue-items" style="margin-top: 10px">
+                    <li>Issue 1</li>
+                    <li>Issue 2</li>
+                    <li>Issue 3</li>
+                    <li>Issue 4</li>
+                  </ul>
+                </div>
+
+                <div
+                  id="progress-bar-div"
+                  style="
+                    margin-top: 20px;
+                    margin-bottom: 20px;
+                    width: 100%;
+                    display: none;
+                  "
+                  class="progress progress-striped active"
+                >
+                  <div
+                    id="progress-bar"
+                    class="progress-bar bg-success-500 bg-danger-gradient"
+                    role="progressbar"
+                    aria-valuenow="80"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    style="width: 50%"
+                  ></div>
+                </div>
+              </div>
+            </div>
+            <div class="panel-container">
+              <div class="" style="height: 70vh">
+                <div class="h-100" id="splashScreen" style="">
+                  <div
+                    class="h-100 d-flex justify-content-center align-items-center"
+                  >
+                    <div
+                      class="panel h-50 w-50 d-flex flex-column justify-content-center align-items-center text-center"
+                      style="font-size: 18px"
+                    >
+                      <button
+                        type="button"
+                        class="btn btn-sm bg-success-700 waves-effect waves-themed my-1"
+                        style="
+                          font-size: 16px;
+                          box-shadow: 0 2px 6px 0 rgb(23 156 142 / 40%);
+                        "
+                        onclick="createNewVersion();"
+                      >
+                        Create new version
+                        <span
+                          class="fal fa-plus-square mx-1"
+                          style="font-size: 18px"
+                        ></span>
+                      </button>
+                      <span class="my-4">OR</span>
+                      <div
+                        class="w-100 d-flex justify-content-center align-items-center"
+                        style="margin-top: -25px"
+                      >
+                        <button
+                          type="button"
+                          class="btn btn-sm bg-success-700 waves-effect waves-themed my-1 mx-3"
+                          id="editPreviousVersionBtn"
+                          style="
+                            font-size: 16px;
+                            box-shadow: 0 2px 6px 0 rgb(23 156 142 / 40%);
+                          "
+                          onclick="createNewVersion();"
+                        >
+                          Edit previous version
+                        </button>
+                        <div class="versionDrop mt-2" style="width: 30%;">
+                          <label for="editVersionDropdown">Version </label>
+                          <select
+                            class="form-control ml-1 select2"
+                            id="editVersionDropdown"
+                            style="width: 30%;"
+                          ><option>
+                            40 , created by Admin
+                          </option></select>
+                          <div class="my-2" style="font-size: 14px">
+                            Active version : <b id="activeVersion">4</b>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Modal -->
+    <div
+      class="modal"
+      id="paymentConfigModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="myModalLabel"
+      aria-hidden="false"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div
+            class="modal-header"
+            style="border-bottom: 1px solid rgba(0, 0, 0, 0.07)"
+          >
+            <h4 class="modal-title" id="config-modal-title"></h4>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-hidden="true"
+            >
+              &times;
+            </button>
+          </div>
+          <form
+            class="modal-body needs-validation"
+            onsubmit="submitForm(event)"
+            style="font-size: 16px; font-weight: 500"
+          >
+            <!-- Mode Direct/Method -->
+            <div class="mb-4" id="modalModeDiv">
+              Mode
+              <br />
+              <div class="mt-1 ml-1" style="font-size: 14px; font-weight: 400">
+                <div class="custom-control custom-radio custom-control-inline">
+                  <input
+                    type="radio"
+                    class="custom-control-input"
+                    id="directModeModal"
+                    name="mode"
+                    value="direct"
+                    required
+                  />
+                  <label class="custom-control-label" for="directModeModal"
+                    >Direct</label
+                  >
+                </div>
+                <div class="custom-control custom-radio custom-control-inline">
+                  <input
+                    type="radio"
+                    class="custom-control-input"
+                    id="methodModeModal"
+                    name="mode"
+                    value="method"
+                  />
+                  <label class="custom-control-label" for="methodModeModal"
+                    >Method</label
+                  >
+                </div>
+              </div>
+            </div>
+            <!-- Source column Dropdown -->
+            <div
+              class="w-75 mb-4"
+              id="modalSourceColumnDiv"
+              style="display: none"
+            >
+              <label for="modalSourceColumnDropdown"> Source Column </label>
+              <select
+                class="form-control ml-1 select2"
+                id="modalSourceColumnDropdown"
+                name="source_column"
+                onchange=""
+                required
+                disabled
+              ></select>
+            </div>
+            <!-- Method name dropdown -->
+            <div
+              class="w-75 mb-4"
+              id="modalMethodNameDiv"
+              style="display: none"
+            >
+              <label for="modalMethodNameDropdown"> Method Name</label>
+              <select
+                class="form-control ml-1 select2"
+                id="modalMethodNameDropdown"
+                name="method_name"
+                required
+                disabled
+                onchange=""
+              ></select>
+            </div>
+            <!-- Allow Deduction -->
+            <div class="custom-control custom-checkbox mb-4 ml-1">
+              <input
+                type="checkbox"
+                class="custom-control-input"
+                id="allowDeductionCheckbox"
+                name="allow_deduction"
+                value="true"
+              />
+              <label class="custom-control-label" for="allowDeductionCheckbox"
+                >Allow Deduction</label
+              >
+            </div>
+            <!-- Type cast to -->
+            <div class="mb-4" id="typeCastToDiv">
+              Type cast to
+              <br />
+              <div class="mt-1 ml-1" style="font-size: 14px; font-weight: 400">
+                <div class="custom-control custom-radio custom-control-inline">
+                  <input
+                    type="radio"
+                    class="custom-control-input"
+                    id="typeCastFloat"
+                    value="float"
+                    name="type_cast_to"
+                    required
+                  />
+                  <label class="custom-control-label" for="typeCastFloat"
+                    >Float</label
+                  >
+                </div>
+                <div class="custom-control custom-radio custom-control-inline">
+                  <input
+                    type="radio"
+                    class="custom-control-input"
+                    id="typeCastInteger"
+                    value="integer"
+                    name="type_cast_to"
+                  />
+                  <label class="custom-control-label" for="typeCastInteger"
+                    >Integer</label
+                  >
+                </div>
+                <div class="custom-control custom-radio custom-control-inline">
+                  <input
+                    type="radio"
+                    class="custom-control-input"
+                    id="typeCastString"
+                    value="string"
+                    name="type_cast_to"
+                  />
+                  <label class="custom-control-label" for="typeCastString"
+                    >String</label
+                  >
+                </div>
+              </div>
+            </div>
+            <!-- Default value text box -->
+            <div
+              class="mb-4 w-75"
+              id="modalDefaultValueDiv"
+              style="display: none"
+            >
+              <label class="form-label">Default value </label>
+              <!-- <br /> -->
+              <input
+                class="form-control ml-1"
+                id="defaultValueInputBox"
+                type="number"
+                name="default"
+                required
+                disabled
+              />
+              <div class="invalid-feedback">Please provide Default value.</div>
+            </div>
+            <!--Validation Method dropdown -->
+            <div class="w-75 mb-4" id="modalValidationMethodDiv">
+              <label for="">Validation Method Name</label>
+              <select
+                class="form-control ml-1 select2"
+                id="validationMethodDropdown"
+                name="validation_method"
+                required
+                disabled
+                onchange=""
+              ></select>
+            </div>
+            <div class="d-flex w-100 justify-content-end">
+              <button
+                type="submit"
+                class="btn btn-primary btn-lg waves-effect waves-themed m-3"
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div
+      class="modal fade example-modal-centered-transparent show"
+      id="tryAgainModal"
+      tabindex="-1"
+      role="dialog"
+      style="display: none; padding-right: 15px"
+      aria-modal="true"
+    >
+      <div
+        class="modal-dialog modal-dialog-centered modal-transparent"
+        role="document"
+      >
+        <div class="modal-content">
+          <div class="modal-header">
+            <button
+              type="button"
+              class="close text-white"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true"><i class="fal fa-times"></i></span>
+            </button>
+          </div>
+          <h2 class="modal-body text-center text-white">
+            Something Went Wrong, Please try again
+          </h2>
+          <div class="modal-footer justify-content-center">
+            <button
+              type="button"
+              class="btn btn-primary waves-effect waves-themed"
+              onclick="location.reload();"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="modal modal-alert fade show"
+      id="deleteModalAlert"
+      tabindex="-1"
+      role="dialog"
+      style="display: none; padding-right: 15px"
+      aria-modal="true"
+    >
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              Are you sure you want to delete &nbsp;<span
+                id="payOptionToDelete"
+              >
+              </span>
+              &nbsp; pay option?
+            </h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true"><i class="fal fa-times"></i></span>
+            </button>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary waves-effect waves-themed"
+              data-dismiss="modal"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary waves-effect waves-themed"
+              onclick="deletePayOption($($('#payOptionToDelete').children()[0]).attr('id'))"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="toast"
+      style="position: absolute; top: 50%; right: 40%"
+      id="toast"
+      data-delay="2000"
+    >
+      <div class="toast-header">
+        <strong class="mr-auto" id="toastInfo"></strong>
+        <button
+          type="button"
+          class="ml-2 mb-1 close"
+          data-dismiss="toast"
+          aria-label="Close"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    </div>
+  </body>
+  <script type="text/javascript">
+    var payOptions = [];
+    var configJson = {};
+    var modalFormData = {};
+    $(document).ready(function () {
+      $("#divLoader").show();
+      $.ajax({
+        url: "/mentis/editor/get_configuration",
+        type: "POST",
+        data: JSON.stringify({
+          config_type: "payment",
+          config_key: "PAY_OPTIONS_CONF",
+          config_version: getHashValue("version"), //get version from URL hash
+        }),
+        success: function (response) {
+          $("#divLoader").hide();
+          $("#splashScreen").show();
+          payOptions = response?.config_meta?.pay_options;
+          setPayOptionDropdown(payOptions);
+          setSourceColumnDropdown(response?.config_meta?.source_columns);
+          setMethodNameDropdown(response?.config_meta?.method_names);
+          setVersionDropdown(response?.revisions);
+          if (!!getHashValue("version")) {
+            $("#versionDropdown").val(getHashValue("version"));
+          } else {
+            $("#versionDropdown").val(response?.active_version);
+          }
+          $("#activeVersion").html(response?.active_version);
+          configJson = response.config_json;
+          for (var el in configJson) {
+            addPayOptionInList(
+              payOptions.find((i) => el === i.opt).desc,
+              configJson[el].pay_option_id
+            );
+          }
+        },
+        error: function (error) {
+          $("#divLoader").hide();
+          unselectedPayOption();
+          $("#tryAgainModal").modal();
+        },
+      });
+      $(".panel-payoption").click(function () {
+        $(".panel-payoption").addClass("active");
+      });
+
+      $(".select2").select2();
+    });
+    function getHashValue(key) {
+      var matches = location.hash.match(new RegExp(key + "=([^&]*)"));
+      return matches ? matches[1] : null;
+    }
+    function setVersionDropdown(revisions) {
+      var selectHtml = "";
+      revisions.forEach((el) => {
+        selectHtml +=
+          "<option value=" +
+          el.version +
+          ">" +
+          el.version +
+          " - created by " +
+          (el.created_by.charAt(0).toUpperCase() + el.created_by.slice(1)) +
+          "</option>";
+      });
+      $("#versionDropdown").html(selectHtml);
+    }
+    $("#versionDropdown").change(function () {
+      $("#divLoader").show();
+      $.ajax({
+        url: "/mentis/editor/get_configuration",
+        type: "POST",
+        data: JSON.stringify({
+          config_type: "payment",
+          config_key: "PAY_OPTIONS_CONF",
+          config_version: Number($("#versionDropdown").val()),
+        }),
+        success: function (response) {
+          unselectedPayOption();
+          $("#divLoader").hide();
+          $("#payOptionAddedSuccess").hide();
+          $("#congratsConfigSaved").hide();
+          $("#splashScreen").show();
+          payOptions = response?.config_meta?.pay_options;
+          setPayOptionDropdown(payOptions);
+          setSourceColumnDropdown(response?.config_meta?.source_columns);
+          setMethodNameDropdown(response?.config_meta?.method_names);
+          // setVersionDropdown(response?.revisions);
+          // $("#versionDropdown").val(response?.active_version);
+          $("#activeVersion").html(response?.active_version);
+          $(
+            ".btn.btn-pay-option.waves-effect.waves-themed.my-2:not(#addMoreButton)"
+          ).remove();
+          configJson = response.config_json;
+          for (var el in configJson) {
+            addPayOptionInList(
+              payOptions.find((i) => el === i.opt).desc,
+              configJson[el].pay_option_id
+            );
+          }
+        },
+        error: function (error) {
+          $("#divLoader").hide();
+          unselectedPayOption();
+          $("#splashScreen").show();
+          $("#tryAgainModal").modal();
+        },
+      });
+    });
+
+    function sendResponse() {
+      $("#divLoader").show();
+      $.ajax({
+        url: "/mentis/editor/save_configuration",
+        type: "POST",
+        data: JSON.stringify({
+          config_type: "payment",
+          config_key: "PAY_OPTIONS_CONF",
+          config_json: configJson,
+        }),
+        success: function (response) {
+          console.log("Submitted successfully");
+          unselectedPayOption();
+          $("#divLoader").hide();
+          $("#payOptionAddedSuccess").hide();
+          $("select[name=active_version]").prepend(
+            `<option value=${response?.latest_version?.version}>${
+              response?.latest_version?.version
+            } - created by ${
+              response?.latest_version?.created_by.charAt(0).toUpperCase() +
+              response?.latest_version?.created_by.slice(1)
+            }</option>`
+          );
+          $("select[name=active_version]").val(
+            response?.latest_version?.version
+          );
+          $("#congratsConfigSaved").show();
+        },
+        error: function (error) {
+          $("#divLoader").hide();
+          unselectedPayOption();
+          $("#splashScreen").show();
+          $("#tryAgainModal").modal();
+        },
+      });
+    }
+
+    function setPayOptionDropdown(payOptions) {
+      var selectHtml = "<option value='' disabled selected>--Select--</option>";
+      for (let el in payOptions) {
+        selectHtml +=
+          "<option value='" +
+          payOptions[el]?.pay_option_id +
+          "'>" +
+          payOptions[el]?.desc +
+          "</option>";
+      }
+      $("#payOptionDropdown").html(selectHtml);
+    }
+
+    $(document).on(
+      "change",
+      "input[type=radio][name=selectedPayOption]",
+      function () {
+        $("#myform").show();
+        $("#payOptionAddedSuccess").hide();
+        $("#splashScreen").hide();
+        $("#congratsConfigSaved").hide();
+        const selectedPaymentOption = $(this).filter(":checked").val();
+        if (!!selectedPaymentOption) setForm(selectedPaymentOption);
+      }
+    );
+
+    function setForm(selectedPaymentOption) {
+      console.log(configJson);
+      const payOptionConfig = Object.values(configJson).find(
+        (el) => el.pay_option_id === selectedPaymentOption
+      );
+
+      if (selectedPaymentOption !== "addMore") {
+        // $(`#myform :input:not(#payOptionDropdown)`).prop("disabled", true);//Disable on click of pay option from list
+        $(`#payOptionDropdown option[value= ${selectedPaymentOption}]`).prop(
+          "disabled",
+          false
+        );
+        setDropdownValue("payOptionDropdown", selectedPaymentOption);
+        $("#payOptionDropdown option:not(:selected)").prop("disabled", true);
+        if (payOptionConfig.pay_option_handler === "direct") {
+          var html = "";
+          for (var el in payOptionConfig.original_amount) {
+            html +=
+              "<b>" +
+              el +
+              ": </b> <span>" +
+              payOptionConfig.original_amount[el] +
+              "</span>  </br>";
+          }
+          modalFormData = {
+            ...modalFormData,
+            original_amount: { ...payOptionConfig.original_amount },
+          };
+          $("#original_amount_config").html(html);
+        } else if (payOptionConfig.pay_option_handler === "input_amount") {
+          var html = "";
+          for (var el in payOptionConfig.pay_meta.validations.min) {
+            html +=
+              "<b>" +
+              el +
+              ": </b> <span>" +
+              payOptionConfig.pay_meta.validations.min[el] +
+              "</span>  </br>";
+          }
+          modalFormData = {
+            ...modalFormData,
+            min: { ...payOptionConfig.pay_meta.validations.min },
+          };
+          $("#pay_meta_min_validation_config").html(html);
+          html = "";
+          for (var el in payOptionConfig.pay_meta.validations.max) {
+            html +=
+              "<b>" +
+              el +
+              ": </b> <span>" +
+              payOptionConfig.pay_meta.validations.max[el] +
+              "</span>  </br>";
+          }
+          modalFormData = {
+            ...modalFormData,
+            max: { ...payOptionConfig.pay_meta.validations.max },
+          };
+          $("#pay_meta_max_validation_config").html(html);
+        }
+        if (!!payOptionConfig?.show_due_date) {
+          setCheckbox("showDueDateCheckbox", true);
+          if (payOptionConfig?.show_due_date?.mode === "direct") {
+            setCheckbox("directMode", true);
+            setDropdownValue(
+              "sourceColumn",
+              payOptionConfig?.show_due_date?.source_column
+            );
+          } else if (payOptionConfig?.show_due_date?.mode === "method") {
+            setCheckbox("methodMode", true);
+            setDropdownValue(
+              "methodName",
+              payOptionConfig?.show_due_date?.method_name
+            );
+          }
+        } else {
+          setCheckbox("showDueDateCheckbox", false);
+        }
+      } else {
+        $("#payOptionDropdown option").prop("disabled", false);
+        const entries = Object?.entries(configJson);
+        for (let i in entries) {
+          $(
+            `#payOptionDropdown option[value= ${entries[i][1].pay_option_id}]`
+          ).prop("disabled", true);
+        }
+        $('#payOptionDropdown option[value=""]').prop("disabled", true);
+        changeFormState("myform", false);
+        resetForm();
+        $("#payOptionDropdown").val("").change();
+      }
+    }
+    //set Modal form
+    function setModalForm(config, handler) {
+      setCheckbox("allowDeductionCheckbox", config.allow_deduction);
+      switch (config.type_cast_to) {
+        case "float":
+          setCheckbox("typeCastFloat", true);
+          break;
+        case "integer":
+          setCheckbox("typeCastInteger", true);
+          break;
+        case "string":
+          setCheckbox("typeCastString", true);
+          break;
+      }
+      if (config.mode === "method") {
+        setCheckbox("methodModeModal", true);
+        setDropdownValue("modalMethodNameDropdown", config.method_name);
+      } else if (config.mode === "direct") {
+        setCheckbox("directModeModal", true);
+        setDropdownValue("modalSourceColumnDropdown", config.source_column);
+      }
+      if (handler === "input_amount") {
+        $("#defaultValueInputBox").val(config?.default);
+        setDropdownValue("validationMethodDropdown", config?.validation_method);
+      }
+    }
+    function changeFormState(id, bool) {
+      $(`#${id} :input`).prop("disabled", bool);
+    }
+    function resetForm() {
+      setDropdownValue("payOptionDropdown");
+      setDropdownValue("sourceColumn");
+      setDropdownValue("methodName");
+      setDropdownValue("modalSourceColumnDropdown");
+      setDropdownValue("modalMethodNameDropdown");
+      setDropdownValue("validationMethodDropdown");
+      $("#defaultValueInputBox").val("");
+      unCheckRadio("type_cast_to");
+      unCheckRadio("allow_deduction");
+      unCheckRadio("mode");
+      $("#pay_meta_min_validation_config").html("Not configured yet.");
+      $("#pay_meta_max_validation_config").html("Not configured yet.");
+      $("#original_amount_config").html("Not configured yet.");
+    }
+    function payOptionChanged() {
+      let selectedPaymentOption = $("#payOptionDropdown").val();
+      modalFormData = {};
+      if (!selectedPaymentOption) {
+        $("#payMetaDiv").hide();
+        $("#originalAmountDiv").hide();
+        $("#showDueDateDiv").hide();
+        $("#modeDiv").hide();
+        $("#sourceColumnDropdownDiv").hide();
+        setCheckbox("showDueDateCheckbox", false);
+        $("#modeDiv input[name=mode]").prop("checked", false).change();
+        return;
+      }
+      $("#showDueDateDiv").show(300);
+      const payOptionHandler = payOptions.find(
+        (el) => el["pay_option_id"] === selectedPaymentOption
+      )["pay_option_handler"];
+
+      if (payOptionHandler === "direct") {
+        $("#originalAmountDiv").show(300);
+        $("#payMetaDiv").hide();
+      } else if (payOptionHandler === "input_amount") {
+        $("#payMetaDiv").show(300);
+        $("#originalAmountDiv").hide();
+      }
+    }
+    function showDueDateCheckboxChanged() {
+      if (isCheckboxSelected("showDueDateCheckbox")) {
+        $("#modeDiv").show(300);
+        $("#directMode").attr("required", true);
+      } else {
+        $("#modeDiv").hide();
+        $("#directMode").removeAttr("required");
+        $("#methodNameDropdownDiv").hide();
+        $("#sourceColumnDropdownDiv").hide();
+        $("#modeDiv input[name=mode]").prop("checked", false).change();
+      }
+    }
+
+    function modeSelected() {
+      setDropdownValue("sourceColumn");
+      setDropdownValue("methodName");
+      if (
+        $("#modeDiv :input[type=radio][name=mode]:checked").val() === "direct"
+      ) {
+        $("#sourceColumnDropdownDiv").show(300);
+        $("#sourceColumn").attr("required", true);
+        $("#methodName").removeAttr("required");
+        $("#methodNameDropdownDiv").hide();
+      } else if (
+        $("#modeDiv :input[type=radio][name=mode]:checked").val() === "method"
+      ) {
+        $("#methodName").attr("required", true);
+        $("#methodNameDropdownDiv").show(300);
+        $("#sourceColumn").removeAttr("required");
+        $("#sourceColumnDropdownDiv").hide();
+      } else {
+        $("#methodName").removeAttr("required");
+        $("#sourceColumn").removeAttr("required");
+        $("#sourceColumnDropdownDiv").hide();
+        $("#methodNameDropdownDiv").hide();
+      }
+    }
+
+    function modalModeSelected() {
+      setDropdownValue("modalSourceColumnDropdown");
+      setDropdownValue("modalMethodNameDropdown");
+      //
+      if ($('#modalModeDiv :input[name="mode"]:checked').val() === "direct") {
+        $("#modalSourceColumnDropdown").removeAttr("disabled");
+        $("#modalMethodNameDropdown").attr("disabled", true);
+        $("#modalSourceColumnDiv").show(300);
+        $("#modalMethodNameDiv").hide();
+      } else if (
+        $('#modalModeDiv :input[name="mode"]:checked').val() === "method"
+      ) {
+        $("#modalMethodNameDropdown").removeAttr("disabled");
+        $("#modalSourceColumnDropdown").attr("disabled", true);
+        $("#modalSourceColumnDiv").hide();
+        $("#modalMethodNameDiv").show(300);
+      } else {
+        $("#modalSourceColumnDiv").hide();
+        $("#modalMethodNameDiv").hide();
+      }
+    }
+
+    $("#payOptionDropdown").change(payOptionChanged);
+    $("#showDueDateCheckbox").change(showDueDateCheckboxChanged);
+    $("#modeDiv :input[type=radio][name=mode]").change(modeSelected);
+    $("#modalModeDiv :input[type=radio][name=mode]").change(modalModeSelected);
+
+    function disableInput(id, bool) {
+      $(`#${id}`).prop("disabled", bool);
+    }
+    function submitForm(event) {
+      event.preventDefault();
+      const myFormData = new FormData(event.target);
+      const formDataObj = {};
+      myFormData.forEach((value, key) => (formDataObj[key] = value));
+      var configurationId = $("#config-modal-title > span").attr("id");
+      let selectedPaymentOptionId = $("#payOptionDropdown").val();
+      if (configurationId === "original_amount") {
+        modalFormData = {
+          ...modalFormData,
+          ...{ original_amount: { ...formDataObj } },
+        };
+      } else if (configurationId === "pay_meta_min_validation") {
+        modalFormData = {
+          ...modalFormData,
+          ...{ min: { ...formDataObj } },
+        };
+        console.log(formDataObj);
+        console.log(modalFormData);
+      } else if (configurationId === "pay_meta_max_validation") {
+        modalFormData = {
+          ...modalFormData,
+          ...{ max: { ...formDataObj } },
+        };
+        console.log(formDataObj);
+        console.log(modalFormData);
+      }
+      var html = "";
+      for (var el in formDataObj) {
+        html +=
+          "<b>" + el + ": </b> <span>" + formDataObj[el] + "</span>  </br>";
+      }
+      $(`#${configurationId}_config`).html(html);
+      $("#paymentConfigModal").modal("hide");
+      return false;
+    }
+    function savePaymentOption(event) {
+      event.preventDefault();
+      const myFormData = new FormData(event.target);
+      const formDataObj = {};
+      myFormData.forEach((value, key) => (formDataObj[key] = value));
+
+      var payOptionDataFromMeta = payOptions.find(
+        (el) => el.pay_option_id === formDataObj.pay_option_id
+      );
+
+      if (!!formDataObj?.show_due_date) {
+        if (formDataObj?.mode === "direct") {
+          payOptionDataFromMeta = {
+            ...payOptionDataFromMeta,
+            show_due_date: {
+              mode: formDataObj?.mode,
+              source_column: formDataObj?.source_column,
+            },
+          };
+        } else if (formDataObj?.mode === "method") {
+          payOptionDataFromMeta = {
+            ...payOptionDataFromMeta,
+            show_due_date: {
+              mode: formDataObj?.mode,
+              method_name: formDataObj?.method_name,
+            },
+          };
+        }
+      }
+      if (payOptionDataFromMeta.pay_option_handler === "direct") {
+        if (
+          !!modalFormData?.original_amount &&
+          !!Object?.entries(modalFormData?.original_amount)?.length
+        ) {
+          payOptionDataFromMeta = {
+            ...payOptionDataFromMeta,
+            original_amount: modalFormData?.original_amount,
+          };
+        } else {
+          $("#toastInfo").html("Configure original amount");
+          $("#toast").toast("show");
+          console.log("Configure original amount");
+          return;
+        }
+      } else if (payOptionDataFromMeta.pay_option_handler === "input_amount") {
+        if (
+          !!modalFormData?.min &&
+          !!Object?.entries(modalFormData?.min)?.length
+        ) {
+          payOptionDataFromMeta = {
+            ...payOptionDataFromMeta,
+            pay_meta: {
+              validations: {
+                ...payOptionDataFromMeta?.pay_meta?.validations,
+                min: modalFormData?.min,
+              },
+            },
+          };
+        } else {
+          $("#toastInfo").html("Configure pay meta min validation");
+          $("#toast").toast("show");
+          console.log("Congifure pay meta Min validation");
+          return;
+        }
+        if (
+          !!modalFormData?.max &&
+          !!Object?.entries(modalFormData?.max)?.length
+        ) {
+          payOptionDataFromMeta = {
+            ...payOptionDataFromMeta,
+            pay_meta: {
+              validations: {
+                ...payOptionDataFromMeta?.pay_meta?.validations,
+                max: modalFormData?.max,
+              },
+            },
+          };
+        } else {
+          $("#toastInfo").html("Configure pay meta max validation");
+          $("#toast").toast("show");
+          console.log("Congifure pay meta max validation ");
+          return;
+        }
+      }
+      console.log(modalFormData);
+      console.log(payOptionDataFromMeta);
+      if (!(payOptionDataFromMeta.opt in configJson)) {
+        addPayOptionInList(
+          payOptionDataFromMeta.desc,
+          payOptionDataFromMeta.pay_option_id
+        );
+      }
+      addAnimationShake(payOptionDataFromMeta.pay_option_id);
+      configJson = {
+        ...configJson,
+        [payOptionDataFromMeta.opt]: payOptionDataFromMeta,
+      };
+      console.log(configJson);
+      unselectedPayOption();
+      $("#splashScreen").hide();
+      $("#payOptionAddedSuccess").show();
+      $("#editThisPayOption").attr(
+        "onClick",
+        `editThisPayOptionClick('${payOptionDataFromMeta.pay_option_id}')`
+      );
+    }
+    function addAnimationShake(payOption) {
+      console.log(payOption);
+      console.log($(`input[name=selectedPayOption][value=${payOption}]`));
+      $(`input[name=selectedPayOption][value=${payOption}]`)
+        .parent()
+        .addClass("shakeAnimation");
+      setTimeout(function () {
+        $(`input[name=selectedPayOption][value=${payOption}]`)
+          .parent()
+          .removeClass("shakeAnimation");
+      }, 1000);
+    }
+    function editThisPayOptionClick(payOption) {
+      $("input[name=selectedPayOption]").parent().removeClass("active");
+      $(`input[name=selectedPayOption][value=${payOption}]`)
+        .parent()
+        .addClass("active");
+      $(`input[name=selectedPayOption][value=${payOption}]`)
+        .prop("checked", true)
+        .change();
+      changeFormState("myform", false);
+    }
+    function unselectedPayOption() {
+      $("#myform").hide();
+      $("input[name=selectedPayOption]").parent().removeClass("active");
+      $("input[name=selectedPayOption]").prop("checked", false);
+    }
+    function addMoreClick() {
+      $("input[name=selectedPayOption]").parent().removeClass("active");
+      $("input[name=selectedPayOption][value=addMore]")
+        .parent()
+        .addClass("active");
+      $("input[name=selectedPayOption][value=addMore]")
+        .prop("checked", true)
+        .change();
+    }
+    function addPayOptionInList(desc, payOptionId) {
+      var html = `<label class="btn btn-pay-option waves-effect waves-themed my-2">
+        <input type="radio" name="selectedPayOption" value=${payOptionId} />
+        <div class="d-flex justify-content-between">
+          <div>${desc}</div>
+          <div>
+            <i class="fal fa-edit" title="Edit this Pay Option" onclick=editClick(event)></i>
+            <i class="fal fa-trash-alt ml-1" title="Delete this Pay Option" onclick="deleteClick(event,'${payOptionId}','${desc}')"></i>
+          </div>
+        </div>
+      </label>`;
+      $(html).insertBefore("#addMoreButton");
+    }
+    function editClick(event) {
+      event.stopPropagation();
+      changeFormState("myform", false);
+    }
+    function deleteClick(event, payOptionId, desc) {
+      event.preventDefault();
+      event.stopPropagation();
+      $("#payOptionToDelete").html(`<span id=${payOptionId} > ${desc} </span>`);
+      $("#deleteModalAlert").modal();
+    }
+    function deletePayOption(payOption) {
+      $(`input[name=selectedPayOption][value=${payOption}]`).parent().remove();
+      $("#deleteModalAlert").modal("hide");
+      $("#toastInfo").html("Your Pay Option is deleted successfully.");
+      $("#toast").toast("show");
+      unselectedPayOption();
+      $("#congratsConfigSaved").hide();
+      $("#splashScreen").show();
+
+      deletePayOptionFromConfigJson(payOption);
+    }
+    function deletePayOptionFromConfigJson(payOption) {
+      const entries = Object?.entries(configJson);
+      for (let i in entries) {
+        if (entries[i][1].pay_option_id === payOption) {
+          delete configJson[entries[i][0]];
+          return;
+        }
+      }
+    }
+    // function setForm(payOptionId) {
+    //   const payOptions = Object.values(config_json);
+    //   const payOptionConfig = payOptions.find(
+    //     (el) => el.pay_option_id === payOptionId
+    //   );
+    //   setDropdownValue("payOptionDropdown", payOptionId);
+    //   if (!!payOptionConfig?.show_due_date) {
+    //     setCheckbox("showDueDateCheckbox", true);
+    //   } else {
+    //     setCheckbox("showDueDateCheckbox", false);
+    //   }
+    // }
+
+    function setDropdownValue(id, value = "") {
+      $(`#${id}`).val(value).change();
+    }
+    function setCheckbox(id, bool) {
+      //for both radio and checkbox
+      $(`#${id}`).prop("checked", bool).change();
+    }
+    function unCheckRadio(name) {
+      $(`input[name=${name}]:checked`).prop("checked", false);
+    }
+    function getRadioValue(name) {
+      return $(`input[name=${name}]:checked`).val();
+    }
+
+    function isCheckboxSelected(id) {
+      return $(`#${id}`).is(":checked");
+    }
+
+    function setSourceColumnDropdown(sourceColumnsArray) {
+      var selectHtml = "<option value='' disabled selected>--Select--</option>";
+      for (let el in sourceColumnsArray) {
+        selectHtml +=
+          "<option value='" +
+          sourceColumnsArray[el]?.opt +
+          "'>" +
+          sourceColumnsArray[el]?.desc +
+          "</option>";
+      }
+      console.log(selectHtml);
+      $("#sourceColumn").html(selectHtml);
+      $("#modalSourceColumnDropdown").html(selectHtml);
+    }
+
+    function setMethodNameDropdown(methodNamesArray) {
+      var selectHtml = "<option value='' disabled selected>--Select--</option>";
+      for (let el in methodNamesArray) {
+        selectHtml +=
+          "<option value='" +
+          methodNamesArray[el]?.opt +
+          "'>" +
+          methodNamesArray[el]?.desc +
+          "</option>";
+      }
+      $("#methodName").html(selectHtml);
+      $("#validationMethodDropdown").html(selectHtml);
+      $("#modalMethodNameDropdown").html(selectHtml);
+    }
+    function saveTransporter() {
+      $("#congoToast").toast("show");
+    }
+
+    function isPayOptionAvailableInConfig(payOption) {
+      const entries = Object?.entries(configJson);
+      for (let i in entries) {
+        if (entries[i][1].pay_option_id === payOption) {
+          return true;
+        }
+      }
+      return false;
+    }
+    function getModalConfig(payOption, option) {
+      //from Config JSON
+      const entries = Object?.entries(configJson);
+      for (let i in entries) {
+        if (entries[i][1].pay_option_id === payOption) {
+          if (option === "original_amount") {
+            return entries[i][1].original_amount;
+          } else if (option === "pay_meta_min_validation") {
+            return entries[i][1].pay_meta.validations.min;
+          } else if (option === "pay_meta_max_validation") {
+            return entries[i][1].pay_meta.validations.max;
+          }
+        }
+      }
+      return null;
+    }
+
+    function setModalConfig(config) {
+      $(`#modalModeDiv :input[type=radio][name=mode][value=${config.mode}]`)
+        .prop("checked", true)
+        .change();
+      if (!!config?.method_name) {
+        $("#paymentConfigModal select[name=method_name]")
+          .val(config?.method_name)
+          .change();
+      }
+      if (!!config?.source_column) {
+        $("#paymentConfigModal select[name=source_column]")
+          .val(config?.source_column)
+          .change();
+      }
+      $(`input[name=type_cast_to][value=${config.type_cast_to}]`).prop(
+        "checked",
+        true
+      );
+      if (!!config?.allow_deduction) {
+        $("input[name=allow_deduction]").prop("checked", true);
+      }
+      if (!!config?.default) {
+        $("input[name=default]").val(config?.default);
+      }
+      if (!!config?.validation_method) {
+        $("#paymentConfigModal select[name=validation_method]")
+          .val(config?.validation_method)
+          .change();
+      }
+    }
+
+    function resetModalConfig() {
+      $("#modalModeDiv :input[type=radio][name=mode]")
+        .prop("checked", false)
+        .change();
+      $("#paymentConfigModal select[name=method_name]").val("").change();
+      $("#paymentConfigModal select[name=source_column]").val("").change();
+      $(`input[name=type_cast_to]`).prop("checked", false);
+      $("input[name=allow_deduction]").prop("checked", false);
+      $("input[name=default]").val("");
+      $("#paymentConfigModal select[name=validation_method]").val("").change();
+    }
+
+    function configureModal(option) {
+      const selectedPayOption = $("#payOptionDropdown").val();
+      const modalConfig = getModalConfig(selectedPayOption, option); //Get Modal Config from Saved Config Json
+      if (
+        option === "original_amount" &&
+        !!modalFormData?.original_amount &&
+        !!Object.entries(modalFormData.original_amount).length
+      ) {
+        setModalConfig(modalFormData.original_amount);
+      } else if (
+        option === "pay_meta_min_validation" &&
+        !!modalFormData?.min &&
+        !!Object.entries(modalFormData.min).length
+      ) {
+        setModalConfig(modalFormData.min);
+      } else if (
+        option === "pay_meta_max_validation" &&
+        !!modalFormData?.max &&
+        !!Object.entries(modalFormData.max).length
+      ) {
+        setModalConfig(modalFormData.max);
+      } else if (!!modalConfig) {
+        setModalConfig(modalConfig);
+      } else {
+        resetModalConfig();
+      }
+      var innerText = "";
+      if (
+        option === "pay_meta_min_validation" ||
+        option === "pay_meta_max_validation"
+      ) {
+        if (option === "pay_meta_min_validation")
+          innerText = "Pay meta min validation";
+        else if (option === "pay_meta_max_validation")
+          innerText = "Pay meta max validation";
+        $("#modalDefaultValueDiv").show();
+        $("#validationMethodDropdown").removeAttr("disabled");
+        $("#modalValidationMethodDiv").show();
+        $("#defaultValueInputBox").removeAttr("disabled");
+      } else if (option === "original_amount") {
+        innerText = "Original amount";
+        $("#defaultValueInputBox").attr("disabled", true);
+        $("#validationMethodDropdown").attr("disabled", true);
+        $("#modalDefaultValueDiv").hide();
+        $("#modalValidationMethodDiv").hide();
+      }
+
+      $("#paymentConfigModal").modal();
+      $("#config-modal-title").html(
+        `Configure <span style="font-style: italic;font-weight: 600;color: black;" id=${option} > ${innerText} </span>`
+      );
+    }
+    // Example starter JavaScript for disabling form submissions if there are invalid fields
+    // (function () {
+    //   "use strict";
+    //   window.addEventListener(
+    //     "load",
+    //     function () {
+    //       // Fetch all the forms we want to apply custom Bootstrap validation styles to
+    //       var forms = document.getElementsByClassName("needs-validation");
+    //       // Loop over them and prevent submission
+    //       var validation = Array.prototype.filter.call(forms, function (form) {
+    //         form.addEventListener(
+    //           "submit",
+    //           function (event) {
+    //             console.log("submmiting");
+    //             if (form.checkValidity() === false) {
+    //               event.preventDefault();
+    //               event.stopPropagation();
+    //             }
+    //             form.classList.add("was-validated");
+    //           },
+    //           false
+    //         );
+    //       });
+    //     },
+    //     false
+    //   );
+    // })();
+    function voptChanged() {
+      let selectedVoption = $("#vopt").val();
+      $("#ethera-data-field-main").hide();
+      $("#custom-resolver-method-main").hide();
+      if (selectedVoption == "direct") {
+        $("#ethera-data-field-main").show();
+      }
+
+      if (selectedVoption == "method") {
+        $("#custom-resolver-method-main").show();
+      }
+    }
+  </script>
+</html>

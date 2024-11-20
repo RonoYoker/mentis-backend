@@ -1,0 +1,598 @@
+<link rel="stylesheet" media="screen, print" href="/static/mentis/css/datatables.bundle.css" />
+<script src="/static/mentis/js/datatables.bundle.js"></script>
+<script src="/static/mentis/js/datatables.export.js"></script>
+<script src="/static/mentis/js/underscore-1.6.0.min.js"></script>
+<link rel="stylesheet" media="screen, print" href="/static/mentis/css/select2.bundle.css" />
+
+<style type="text/css">
+  .form-field-custom {
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  .catselect {
+    font-size: 17px;
+    line-height: 22px;
+    width: 200px;
+    display: none;
+  }
+
+  .fl {
+    float: left;
+  }
+
+  .ui-datepicker {
+    z-index: 9999999 !important;
+  }
+
+  .linkItem {
+    float: left;
+    background-color: #ccc;
+    color: #222;
+    border-radius: 2px;
+    font-weight: bold;
+    padding: 6px;
+    margin-left: 20px;
+    cursor: pointer;
+    margin-top: 10px;
+    font-size: 15px;
+  }
+
+  .dtr-data {
+    text-transform: uppercase;
+  }
+
+  .smart-form .input input,
+  .smart-form .select select,
+  .smart-form .textarea textarea {
+    font-size: 15px !important;
+    font-weight: bold !important;
+  }
+
+  .optiontext {
+    font-weight: bold !important;
+  }
+
+  .radio,
+  .checkbox {
+    float: left;
+    margin-top: 0px !important;
+    margin-bottom: 0px !important;
+    padding-left: 35px !important;
+  }
+
+  .radio+.radio,
+  .checkbox+.checkbox {
+    margin: 0px !important;
+  }
+
+  .width20 {
+    width: 20%;
+  }
+
+  .width15 {
+    width: 15%;
+  }
+
+  .width30 {
+    width: 30%;
+  }
+
+  .width60 {
+    width: 60%;
+  }
+
+  .width100 {
+    width: 100%;
+  }
+
+  #raw-item-div .form-control {
+    color: #004d99 !important;
+  }
+
+  .bor-left {
+    border: 1px solid #ddd;
+    padding: 6px;
+    font-weight: bold;
+    background-color: #bbb;
+    color: #000;
+  }
+
+  .bor-mid {
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    padding: 3px 2px;
+  }
+
+  .left-col {
+    width: 10%;
+    float: left;
+  }
+
+  .mid-col {
+    float: left;
+  }
+</style>
+
+<div id="invoices-data-div" style="margin-top: 30px" class="row">
+  <div class="col-xl-12">
+    <div class="panel" id="bankConfigurationPanel">
+      <div class="panel-hdr">
+        <h2>
+          <span class="fw-900"><i>Bank configuration</i></span>
+        </h2>
+        <div class="panel-toolbar">
+          <button class="btn btn-panel" data-action="panel-collapse" data-toggle="tooltip" data-offset="0,10"
+            data-original-title="Collapse"></button>
+          <button class="btn btn-panel" data-action="panel-fullscreen" data-toggle="tooltip" data-offset="0,10"
+            data-original-title="Fullscreen"></button>
+          <button class="btn btn-panel" data-action="panel-close" data-toggle="tooltip" data-offset="0,10"
+            data-original-title="Close"></button>
+        </div>
+      </div>
+      <div class="panel-container">
+        <div class="form-group row m-3">
+          <div class="col-4">
+            <label for="bankName">Bank name</label>
+            <select class="form-control select2" id="bankName" name="bankName" data-placeholder="Select Bank name"
+              required></select>
+          </div>
+          <div class="col-4" style="display: none">
+            <label for="environment">Environment</label>
+            <select class="form-control select2" id="environment" name="environment"
+              data-placeholder="Select Environment" required></select>
+          </div>
+          <div class="col-4" style="display: none">
+            <label for="project">Project</label>
+            <select class="form-control select2" id="project" name="project" data-placeholder="Select Project"
+              required></select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="panel-1" class="panel">
+      <div class="panel-hdr">
+        <h2>
+          View <span class="fw-900"><i>Published configs</i></span>
+        </h2>
+        <div class="panel-toolbar">
+          <button class="btn btn-panel" data-action="panel-collapse" data-toggle="tooltip" data-offset="0,10"
+            data-original-title="Collapse"></button>
+          <button class="btn btn-panel" data-action="panel-fullscreen" data-toggle="tooltip" data-offset="0,10"
+            data-original-title="Fullscreen"></button>
+          <button class="btn btn-panel" data-action="panel-close" data-toggle="tooltip" data-offset="0,10"
+            data-original-title="Close"></button>
+        </div>
+      </div>
+      <div class="panel-container show" style="min-height: 60vh">
+        <div id="splashScreen" style="">
+          <div class="position-absolute d-flex flex-column justify-content-center align-items-center w-100" style="
+              z-index: 2;
+              background-color: rgba(255, 255, 255, 0.9);
+              min-height: 90%;
+            ">
+            <div style="font-size: 26px">
+              Please Select Bank Configurations first.
+            </div>
+          </div>
+        </div>
+
+        <div id="divLoader" style="display: none">
+          <div class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+            style="z-index: 2; background-color: rgba(255, 255, 255, 0.7)">
+            <div class="spinner-border mb-2" role="status"></div>
+            <div style="font-size: 16px">Loading...</div>
+          </div>
+        </div>
+        <div id="congratsConfigSaved" style="display: none">
+          <div class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+            style="z-index: 2; background-color: rgba(255, 255, 255, 1)">
+            <div class="h-100 d-flex justify-content-center align-items-center">
+              <div class="panel p-6 d-flex flex-column justify-content-center align-items-center text-center"
+                style="font-size: 20px">
+                <img src="/static/mentis/img/accepted.png" class="img-fluid mb-5" width="75" height="75" />
+                <span class="mx-2 mb-5">Congratulations,Your configuration has been moved to
+                  production successfully!</span>
+                <!--                      <a-->
+                <!--                        href="#manageConfigurations"-->
+                <!--                        class="btn btn-lg btn-outline-info waves-effect waves-themed"-->
+                <!--                        ><i class="fal fa-eye"></i-->
+                <!--                        ><span class="ml-2">View Configurations</span></a-->
+                <!--                      >-->
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel-content">
+          <div class="panel-tag">
+            <p id="po-data-title">
+              Below is a list of currently published configs
+            </p>
+          </div>
+          <!-- datatable start -->
+          <div id="main-table"></div>
+          <!-- datatable end -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal modal-alert fade show" id="saveChangesConfirmationModal" tabindex="-1" role="dialog"
+  style="display: none; padding-right: 15px" aria-modal="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          Please confirm that you want to make version :&nbsp;<b id="confirmationVersion"> </b>&nbsp;live on&nbsp;
+          <b id="confirmationEnv"></b> &nbsp;!!!
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true"><i class="fal fa-times"></i></span>
+        </button>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary waves-effect waves-themed" data-dismiss="modal">
+          Close
+        </button>
+        <button type="button" id="confirmAndProceedBtn" data-name="" data-version=""
+          class="btn btn-primary waves-effect waves-themed" onclick="confirmAndProceed(this)">
+          Confirm & Proceed
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast hide" style="
+    position: absolute;
+    top: 50%;
+    right: 45%;
+    background-color: rgb(220 53 69);
+    color: white;
+    min-width: 250px;
+    z-index: 2;
+  " id="somethingWentWrongAlert" data-delay="2000">
+  <div class="toast-header">
+    <strong class="mr-auto">Alert</strong>
+    <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="toast-body">Somthing went wrong, Please try again.</div>
+  <!-- <div class="toast-header">
+<strong class="mr-auto" id="toastInfo">lmcklwkmeck</strong>
+</div> -->
+</div>
+<div class="toast hide" style="
+    position: absolute;
+    top: 50%;
+    right: 45%;
+    background-color: #090;
+    color: white;
+    min-width: 250px;
+    z-index: 2;
+  " id="successAlert" data-delay="2000">
+  <div class="toast-header">
+    <strong class="mr-auto">Success</strong>
+    <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="toast-body" id="successAlertBody"></div>
+  <!-- <div class="toast-header">
+<strong class="mr-auto" id="toastInfo">lmcklwkmeck</strong>
+</div> -->
+</div>
+
+<script type="text/template" id="table-template">
+  <table id="datatable-invoice-data-<%=table_id%>" class="table table-bordered table-hover table-striped w-100">
+    <thead class="bg-primary-600">
+    <tr>
+      <th class="new-col">S3 Config Name</th>
+      <th class="new-col">Publish Version</th>
+      <th class="new-col">Created By</th>
+      <th class="new-col">Creation Time</th>
+      <th class="new-col">Active</th>
+      <th class="new-col"></th>
+      <!-- <th class="new-col">Delete</th> -->
+    </tr>
+    </thead>
+    <tbody>
+    <%=table_html%>
+    </tbody>
+    <tfoot>
+   <tr>
+      <th class="new-col">S3 Config Name</th>
+      <th class="new-col">Publish Version</th>
+      <th class="new-col">Created By</th>
+      <th class="new-col">Creation Time</th>
+      <th class="new-col">Active</th>
+      <th class="new-col"></th>
+      <!-- <th class="new-col">Delete</th> -->
+    </tr>
+    </tfoot>
+  </table>
+</script>
+<script src="/static/mentis/js/moment.js"></script>
+<script type="text/javascript">
+  var lock = false;
+  var pluginsDataMap = {};
+  var tableCounter = 1;
+  var user_bank_settings = {{ user_bank_settings| safe}};
+  var apiBasePath = "";
+  var currentEnvironment = "";
+  var currentProject = "";
+  var currentBank = "";
+  var currentUser = "{{ user }}";
+  var currentActiveConfigs = [];
+  $(document).ready(function () {
+    $(".select2").select2();
+    var bankNameOptionsHtml = "<option value='' disabled selected></option>";
+    for (const bank of Object.keys(user_bank_settings)) {
+      bankNameOptionsHtml += `<option value='${bank}'>${bank}</option>`;
+    }
+    $("#bankName").html(bankNameOptionsHtml);
+  });
+  $("#bankName").on("change", function () {
+    $("#environment").parent().show();
+    var environmentOptionsHtml = "<option value='' disabled selected></option>";
+    for (const environment of Object.keys(user_bank_settings[this.value])) {
+      environmentOptionsHtml += `<option value='${environment}'>${environment}</option>`;
+    }
+    $("#environment").html(environmentOptionsHtml);
+    $("#project").parent().hide();
+    $("#project").html("");
+    currentBank = this.value;
+  });
+  $("#environment").on("change", function () {
+    $("#project").parent().show();
+    const bank = $("#bankName").val();
+    var projectOptionsHtml = "<option value='' disabled selected></option>";
+    for (const project of Object.keys(user_bank_settings[bank][this.value])) {
+      projectOptionsHtml += `<option value='${project}'>${project}</option>`;
+    }
+    $("#project").html(projectOptionsHtml);
+    currentEnvironment = this.value;
+  });
+  $("#project").on("change", function () {
+    const bank = $("#bankName").val();
+    const env = $("#environment").val();
+    // apiBasePath = user_bank_settings?.[bank]?.[env]?.[this.value]?.url;
+    currentProject = this.value;
+    if (!!this.value) {
+      console.log("project changed", this.value);
+      getAllConfigurations();
+      $("#splashScreen").hide();
+    }
+  });
+  $(document).on("change", "#bankName, #environment, #project", function () {
+    $("#bankName, #environment, #project").map(function () {
+      if (!this.value) {
+        $("#main-table").html("");
+        $("#splashScreen").show();
+      }
+    });
+  });
+
+  function getAllConfigurations() {
+    if (lock == true) return;
+    $("#divLoader").show();
+    lock = true;
+    const bank = $("#bankName").val();
+    const env = $("#environment").val();
+    const project = $("#project").val();
+    const postParamsData = {};
+
+    $.ajax({
+      url: apiBasePath + "/polyglot/get_all_publish_config/",
+      type: "POST",
+      data: JSON.stringify({
+        "bank": $("#bankName").val(),
+        "env": $("#environment").val(),
+        "project": $("#project").val(),
+        "type": "LANG_PUBLISH",
+      }),
+      success: function (response) {
+        lock = false;
+        if (response?.success) {
+          var tableHtml = "";
+          console.log(response?.data);
+          const configData = response?.data;
+          currentActiveConfigs = [];
+          for (var i = 0; i < configData.length; i++) {
+            tableHtml +=
+              "<tr><td>" +
+              (!!configData[i]["name"] ? configData[i]["name"] : "NA") +
+              "</td><td>" +
+              (!!configData[i]["version"] ? configData[i]["version"] : "NA") +
+              "</td><td>" +
+              (!!configData[i]["created_by"] ? configData[i]["created_by"] : "NA") +
+              "</td><td>" +
+              (!!configData[i]["creation_time"] ? moment(configData[i]["creation_time"]).format("D MMM YYYY, hh:mm A") : "NA") +
+              "</td><td>" +
+              (!!configData[i]["active"] ? "Active" : "Inactive") +
+              "</td><td class='d-flex justify-content-around'>" +
+              `<button type="button" onclick="handleConfigCtaClick('edit','${configData[i]["name"]}','${configData[i]["version"]}')" class="btn btn-warning waves-effect waves-themed">Edit</button>
+              <button type="button" onclick="makeActive('${configData[i]["name"]}','${configData[i]["version"]}')" class="btn btn-info waves-effect waves-themed ${!!configData[i]["active"]?"d-none":""}">Make Active</button>
+              <button type="button" onclick="copyTestLink(this,'${configData[i]["name"]}','${configData[i]["version"]}')" class="btn btn-success waves-effect waves-themed">Copy Test Link</button>` +
+              "</td>" +
+              "</tr>";
+
+            if (configData[i]["active"]) {
+              currentActiveConfigs.push(configData[i]);
+            }
+          }
+          $("#invoices-data-div").show();
+
+          $("#main-table").html(
+            _.template($("#table-template").text(), {
+              table_html: tableHtml,
+              table_id: tableCounter,
+            })
+          );
+          initDatatable();
+          $("#divLoader").hide();
+        } else {
+          $("#divLoader").hide();
+          console.log("Api success false");
+          $("#somethingWentWrongAlert").toast("show");
+          $("#main-table").html("");
+          $("#splashScreen").show();
+        }
+      },
+      error: function (error) {
+        lock = false;
+        $("#divLoader").hide();
+        $("#somethingWentWrongAlert").toast("show");
+        $("#main-table").html("");
+        $("#splashScreen").show();
+      },
+    });
+  }
+  function handleConfigCtaClick(mode, key, version) {
+    const bank = $("#bankName").val();
+    const env = $("#environment").val();
+    const project = $("#project").val();
+    var configLink = `${window.location.origin}/mentis/editor/?#publishConfiguration?mode=${mode}&bank=${bank}&env=${env}&project=${project}&confName=${key}&version=${version}`;
+    window.open(configLink, "_blank");
+  }
+  function initDatatable() {
+    $("#datatable-invoice-data-1").dataTable({
+      responsive: true,
+      lengthChange: false,
+      dom:
+        /*	--- Layout Structure
+            --- Options
+            l	-	length changing input control
+            f	-	filtering input
+            t	-	The table!
+            i	-	Table information summary
+            p	-	pagination control
+            r	-	processing display element
+            B	-	buttons
+            R	-	ColReorder
+            S	-	Select
+
+            --- Markup
+            < and >				- div element
+            <"class" and >		- div with a class
+            <"#id" and >		- div with an ID
+            <"#id.class" and >	- div with an ID and a class
+
+            --- Further reading
+            https://datatables.net/reference/option/dom
+            --------------------------------------
+         */
+        "<'row mb-3'<'col-sm-12 col-md-6 d-flex align-items-center justify-content-start'f><'col-sm-12 col-md-6 d-flex align-items-center justify-content-end'lB>>" +
+        "<'row'<'col-sm-12'tr>>" +
+        "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+      buttons: [
+        /*{
+              extend:    'colvis',
+              text:      'Column Visibility',
+              titleAttr: 'Col visibility',
+              className: 'mr-sm-3'
+          },*/
+        {
+          extend: "pdfHtml5",
+          text: "PDF",
+          titleAttr: "Generate PDF",
+          className: "btn-outline-danger btn-sm mr-1",
+        },
+        {
+          extend: "excelHtml5",
+          text: "Excel",
+          titleAttr: "Generate Excel",
+          className: "btn-outline-success btn-sm mr-1",
+        },
+        {
+          extend: "csvHtml5",
+          text: "CSV",
+          titleAttr: "Generate CSV",
+          className: "btn-outline-primary btn-sm mr-1",
+        },
+        {
+          extend: "copyHtml5",
+          text: "Copy",
+          titleAttr: "Copy to clipboard",
+          className: "btn-outline-primary btn-sm mr-1",
+        },
+        {
+          extend: "print",
+          text: "Print",
+          titleAttr: "Print Table",
+          className: "btn-outline-primary btn-sm",
+        },
+      ],
+    });
+  }
+
+  var lock = false;
+
+  function makeActive(s3ConfigName, publishedVersion) {
+    $("#confirmationVersion").html(publishedVersion);
+    $("#confirmationEnv").html($("#environment").val());
+    $("#saveChangesConfirmationModal").modal();
+    $("#confirmAndProceedBtn").data("name", s3ConfigName)
+    $("#confirmAndProceedBtn").data("version", publishedVersion)
+  }
+
+  function confirmAndProceed(button) {
+    $("#saveChangesConfirmationModal").modal("hide");
+    if (lock == true) return;
+    $("#divLoader").show();
+    lock = true;
+    const bank = $("#bankName").val();
+    const env = $("#environment").val();
+    const project = $("#project").val();
+
+    $.ajax({
+      url: apiBasePath + "/polyglot/make_active/",
+      type: "POST",
+      data: JSON.stringify({
+        "bank": $("#bankName").val(),
+        "env": $("#environment").val(),
+        "project": $("#project").val(),
+        "s3ConfigName": $(button).data("name"),
+        "publishedVersion": $(button).data("version"),
+      }),
+      success: function (response) {
+        lock = false;
+        $("#divLoader").hide();
+        if (response?.success) {
+          $("#successAlertBody").html("Configuration activated!!")
+          $("#successAlert").toast("show");
+          getAllConfigurations()
+        } else {
+          $("#failureAlertBody").html(response?.details_message || 'Something went wrong!')
+          $("#somethingWentWrongAlert").toast("show");
+        }
+      },
+      error: function (error) {
+        lock = false;
+        $("#divLoader").hide();
+        $("#failureAlertBody").html(error?.responseJSON?.details_message || 'Something went wrong!')
+        $("#somethingWentWrongAlert").toast("show");
+      },
+    });
+  }
+  function copyTestLink(button, s3ConfigName, publishedVersion) {
+    copyToClipboard(`?lang_version=v${publishedVersion}`).then(function (response) {
+      $(button).html("Link copied <i class='fal fa-check'></i>");
+      setTimeout(() => {
+        $(button).html("Copy Test Link");
+      }, 2000);
+    })
+  }
+  async function copyToClipboard(textToCopy) {
+    if (navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+      } catch (err) {
+        console.error("Failed to copy: ", err);
+      }
+    } else {
+      console.error("Clipboard API not supported in this browser.");
+    }
+  }
+
+</script>

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Configure Languages</title>
+    <link rel="stylesheet" media="screen, print" href="/static/mentis/css/select2.bundle.css" />
+    <link rel="stylesheet" media="screen, print" href="/static/mentis/css/datatables.bundle.css" />
+    <link rel="stylesheet" media="screen, print" href="/static/mentis/css/dropzone.css" />
+    <script src="/static/mentis/js/moment.js"></script>
+    <style type="text/css">
+        th,
+        td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+            max-width: 50px;
+            /* Set max-width for cells */
+            white-space: nowrap;
+            /* Prevent text from wrapping */
+            overflow: auto;
+            /* text-overflow: ellipsis; Show ellipsis for overflowed content */
+        }
+
+        .fileListItem {
+            margin: 15px 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-left: 5px;
+            background: #efebf5;
+            border: 1px solid #967bbd;
+            color: #563d7c;
+            border-radius: 4px;
+            cursor: grab;
+        }
+
+        .fileListItemCross {
+            margin: 0;
+            padding-left: 7px;
+            padding-right: 7px;
+            font-size: 16px;
+            border-left: 1px solid rgba(0, 0, 0, 0.1);
+            margin-left: 5px;
+            cursor: pointer;
+            color: #a38cc6;
+        }
+
+        .fal.fa-ellipsis-v {
+            margin-inline: 2px;
+            font-size: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="panel" id="bankConfigurationPanel">
+        <div class="panel-hdr">
+            <h2>
+                <span class="fw-900"><i>Bank configuration</i></span>
+            </h2>
+            <div class="panel-toolbar">
+                <button class="btn btn-panel" data-action="panel-collapse" data-toggle="tooltip" data-offset="0,10"
+                    data-original-title="Collapse"></button>
+                <button class="btn btn-panel" data-action="panel-fullscreen" data-toggle="tooltip" data-offset="0,10"
+                    data-original-title="Fullscreen"></button>
+                <button class="btn btn-panel" data-action="panel-close" data-toggle="tooltip" data-offset="0,10"
+                    data-original-title="Close"></button>
+            </div>
+        </div>
+        <div class="panel-container">
+            <div class="form-group row m-3">
+                <div class="col-4">
+                    <label for="bankName">Bank name</label>
+                    <select class="form-control select2" id="bankName" name="bankName"
+                        data-placeholder="Select Bank name" required></select>
+                </div>
+                <div class="col-4" style="display: none">
+                    <label for="environment">Environment</label>
+                    <select class="form-control select2" id="environment" name="environment"
+                        data-placeholder="Select Environment" required></select>
+                </div>
+                <div class="col-4" style="display: none">
+                    <label for="project">Project</label>
+                    <select class="form-control select2" id="project" name="project" data-placeholder="Select Project"
+                        required></select>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="panel" style="min-height: 40vh;">
+        <div class="panel-hdr">
+            <h2>
+                <span class="fw-900"><i>Create S3 configurations</i></span>
+            </h2>
+            <div class="panel-toolbar">
+                <button class="btn btn-panel" data-action="panel-collapse" data-toggle="tooltip" data-offset="0,10"
+                    data-original-title="Collapse"></button>
+                <button class="btn btn-panel" data-action="panel-fullscreen" data-toggle="tooltip" data-offset="0,10"
+                    data-original-title="Fullscreen"></button>
+                <button class="btn btn-panel" data-action="panel-close" data-toggle="tooltip" data-offset="0,10"
+                    data-original-title="Close"></button>
+            </div>
+        </div>
+        <div id="divLoader" style="display: none; z-index: 3;">
+            <div class="position-absolute d-flex flex-column justify-content-center align-items-center w-100" style="
+      z-index: 2;
+      background-color: rgba(255, 255, 255, 0.7);
+      height: -webkit-fill-available;
+    ">
+                <div class="spinner-border mb-2" role="status"></div>
+                <div style="font-size: 16px">Loading...</div>
+            </div>
+        </div>
+        <div id="splashScreen">
+            <div class="position-absolute d-flex flex-column justify-content-center align-items-center w-100" style="
+      z-index: 2;
+      background-color: rgba(255, 255, 255, 0.9);
+      height: -webkit-fill-available;
+    ">
+                <div style="font-size: 26px">
+                    Please Select Bank Configurations first.
+                </div>
+            </div>
+        </div>
+
+        <div id="congratsConfigSaved" style="display: none;">
+            <div class="position-absolute d-flex flex-column justify-content-center align-items-center w-100" style="
+      z-index: 2;
+      background-color: rgba(255, 255, 255, 1);
+      height: -webkit-fill-available;
+    ">
+                <div class="h-100 d-flex justify-content-center align-items-center">
+                    <div class="panel p-6 d-flex flex-column justify-content-center align-items-center text-center"
+                        style="font-size: 20px">
+                        <img src="/static/mentis/img/accepted.png" class="img-fluid mb-5" width="75" height="75" />
+                        <span class="mx-2 mb-5">Congratulations, Your configuration has been saved
+                            successfully!</span>
+                        <div>
+                            <a href="#viewS3LangConfigurations"
+                                class="btn btn-lg btn-outline-info waves-effect waves-themed"><i
+                                    class="fal fa-eye"></i><span class="ml-2">View S3 configurations</span></a>
+                            <button onclick="createNewConfiguration()"
+                                class="btn btn-lg btn-outline-success  waves-effect waves-themed ml-2"><i
+                                    class="fal fa-plus"></i><span class="ml-2">Create new
+                                    configuration</span></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <form class="panel-container m-5" onsubmit="formSubmit(event)">
+
+            <div class="form-group row justify-content-between">
+                <div class="col-4">
+                    <label class="form-label" for="s3ConfigName">S3 Configuration Name</label>
+                    <input type="text" id="s3ConfigName" class="form-control" name="key"
+                        placeholder="Enter S3 configuration Name" pattern="^[a-zA-Z0-9]+$" required />
+                </div>
+                <div id="versionDropdownDiv" style="display: none; width: 30%;">
+                    <label class="form-label" for="versionDropdown">Versions
+                    </label>
+                    <select class="form-control select2" id="versionDropdown" style="width: 25% !important;"
+                        data-placeholder="Select version">
+                    </select>
+                </div>
+            </div>
+            <div class="col-4 mb-4 row">
+                <label class="form-label" for="langFiles">Language files</label>
+                <select class="form-control select2" id="langFiles" name="langFiles"
+                    data-placeholder="Select Language files" multiple required>
+                </select>
+            </div>
+            <div class="col-4 mb-4" id="fileOrderDiv" style="display: none;">
+                <label class="form-label">Order to patch Files</label>
+                <div id="sortRules" class="d-flex">
+                    <ul class="sortableList pl-0" id="sortableFiles" style="
+                    list-style: none;
+                  ">
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-4 d-flex justify-content-center">
+                <button type="submit" class="ml-2 btn btn-lg btn-primary waves-effect waves-themed">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="modal modal-alert fade show" id="saveChangesConfirmationModal" tabindex="-1" role="dialog"
+        style="display: none; padding-right: 15px" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        Please confirm that you want to Save these changes !!
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true"><i class="fal fa-times"></i></span>
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary waves-effect waves-themed" data-dismiss="modal">
+                        Close
+                    </button>
+                    <button type="button" class="btn btn-primary waves-effect waves-themed"
+                        onclick="confirmAndProceed()">
+                        Confirm & Proceed
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div>
+    <div class="toast hide" style="
+                position: absolute;
+                top: 50%;
+                right: 45%;
+                background-color: rgb(220 53 69);
+                color: white;
+                min-width: 250px;
+                z-index: 2;
+                padding: 0;" id="somethingWentWrongAlert" data-delay="2000">
+        <div class="toast-header">
+            <strong class="mr-auto">Alert</strong>
+            <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="toast-body" id="failureAlertBody">Somthing went wrong, Please try again.</div>
+        <!-- <div class="toast-header">
+<strong class="mr-auto" id="toastInfo">lmcklwkmeck</strong>
+</div> -->
+    </div>
+</body>
+
+<script src="/static/mentis/js/datatables.bundle.js"></script>
+<script src="/static/mentis/js/dropzone.js"></script>
+<script type="text/javascript">
+    var lock = false;
+    var currentUser = "{{ user }}";
+    var mode = "{{ mode }}";
+    var fileName = "{{ fileId }}";
+    var version = "{{ version }}";
+    var apiBasePath = "{{apiBasePath}}";
+    var user_bank_settings = {{ user_bank_settings| safe}};
+    $(document).ready(async function () {
+        $(".select2").select2()
+        $(".sortableList").sortable({
+            revert: true,
+        });
+        var bankNameOptionsHtml =
+            "<option value='' disabled selected></option>";
+        for (const bank of Object.keys(user_bank_settings)) {
+            bankNameOptionsHtml += `<option value='${bank}'>${bank}</option>`;
+        }
+        $("#bankName").html(bankNameOptionsHtml);
+        if (mode == "edit") {
+            $("#s3ConfigName").val(fileName);
+            $("#s3ConfigName").prop("disabled", true);
+            getFilesList().then(function () {
+                getConfig(fileName, version);
+            });
+
+        } else {
+            getFilesList();
+        }
+    })
+
+    $("#bankName").on("change", async function () {
+        if (this.value) {
+            $("#splashScreen").hide();
+        } else {
+            $("#splashScreen").show();
+        }
+
+    });
+    async function getConfig(fileName, version) {
+        if (!fileName) return;
+        $("#divLoader").show();
+        $.ajax({
+            url: apiBasePath + "/polyglot/get_one_config/",
+            type: "POST",
+            data: JSON.stringify({
+                "type": "LANG_MERGE",
+                "name": fileName,
+                "version": version
+            }),
+            contentType: "application/json",
+            success: function (response) {
+                console.log("response", response);
+                $("#divLoader").hide();
+                if (response?.success && response?.data) {
+                    var versionDropdownHtml = "<option value='' disabled ></option>";
+                    for (var el of response?.version_meta) {
+                        versionDropdownHtml += `<option value='${el?.version}' ${el?.version === response?.data?.version ? "selected='selected'" : ""
+                            } >Version ${el?.version} ${!!el?.created_by ? `, Created by ${el?.created_by} ${!!el?.creation_time ? ` on ${moment(el?.creation_time).format("D MMM YYYY, hh:mm A")}` : ""}` : ""} </option>`;
+                    }
+                    $("#versionDropdownDiv").show();
+                    $("#versionDropdown").html(versionDropdownHtml);
+                    const selectedLangFiles = JSON.parse(response?.data?.data) || []
+                    $("#sortableFiles").html("")
+                    $("#bankName").val(response?.data?.bank).change()
+                    console.log("selectedLangFiles", selectedLangFiles)
+                    $("#langFiles").val(selectedLangFiles).change()
+                    $("#bankName").attr("disabled", true);
+                    for (var selectedValue of selectedLangFiles) {
+                        $("#sortableFiles").append(`<li class="fileListItem" id="${selectedValue}" value="${selectedValue}"><div class="d-flex"> <i class="fal fa-ellipsis-v"></i> <i class="fal fa-ellipsis-v mr-2"></i>  ${selectedValue} </div> <div class="fileListItemCross" onClick="unselectFile(this,'${selectedValue}')">×</div></li>`);
+                        $("#fileOrderDiv").show();
+                    }
+
+                } else {
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            },
+            error: function (error) {
+                $("#divLoader").hide();
+                $("#somethingWentWrongAlert").toast("show");
+            },
+        });
+
+    }
+
+    async function getFilesList() {
+        $("#divLoader").show();
+        await $.ajax({
+            url: apiBasePath + "/polyglot/get_all_config/",
+            type: "POST",
+            contentType: 'application/json',
+            data: JSON.stringify({
+                "type": "LANG_UPLOAD",
+            }),
+            success: function (response) {
+                lock = false;
+                $("#divLoader").hide();
+                if (response?.success && response?.data?.length > 0) {
+                    
+                    console.log("response", response)
+                    var langFilesHtml = "";
+                    for (var el of response?.data) {
+                        langFilesHtml += `<option value='${el?.name}' 
+                            } > ${el?.name} </option>`;
+                    }
+                    $("#langFiles").html(langFilesHtml)
+                } else {
+                    console.log("Api success false");
+                    if (!!response?.details_message) {
+                        $("#failureAlertBody").html(response?.details_message)
+                    }
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            },
+            error: function (error) {
+                lock = false;
+                $("#divLoader").hide();
+                $("#somethingWentWrongAlert").toast("show");
+            },
+        });
+
+    }
+    $("#versionDropdown").change(function () {
+        getConfig(fileName, this.value);
+    });
+    $('#langFiles').on('select2:select', function (e) {
+        // Do something
+        var selectedValue = e?.params?.data?.element?.value;
+        $("#sortableFiles").append(`<li class="fileListItem" id="${selectedValue}" value="${selectedValue}"><div class="d-flex"> <i class="fal fa-ellipsis-v"></i> <i class="fal fa-ellipsis-v mr-2"></i>  ${selectedValue} </div> <div class="fileListItemCross" onClick="unselectFile(this,'${selectedValue}')">×</div></li>`)
+        if ($('#langFiles').val().length > 0) {
+            $("#fileOrderDiv").show();
+        }
+    });
+    $('#langFiles').on('select2:unselect', function (e) {
+        // Do something
+        console.log("e", e)
+        var deSelectedValue = e.params.data.element.value;
+        $("#sortableFiles").children().each(function () {
+            if (deSelectedValue === $(this).attr("value")) {
+                $(this).remove()
+            }
+        })
+        if ($('#langFiles').val().length === 0) {
+            $("#fileOrderDiv").hide();
+        }
+    });
+    function unselectFile(liEl, value) {
+        console.log("liEl", liEl)
+        console.log("$(liEl).parent()", $(liEl).parent())
+        $(liEl).parent().remove()
+        $('#langFiles').val($('#langFiles').val().filter((el) => el !== value)).change();
+        if ($('#langFiles').val().length === 0) {
+            $("#fileOrderDiv").hide();
+        }
+        // $('#langFiles').trigger({
+        //     type: 'select2:unselecting',
+        //     params: {
+        //         data: { element: { value: value, } }
+        //     }
+        // });
+    }
+    function formSubmit(event) {
+        event.preventDefault();
+
+        $("#saveChangesConfirmationModal").modal()
+    }
+    function confirmAndProceed() {
+        $("#saveChangesConfirmationModal").modal("hide")
+        const payload = {
+            name: $("#s3ConfigName").val(),
+            data: $("#sortableFiles").sortable("toArray"),
+            user: currentUser,
+            bank: $("#bankName").val(),
+            type: "LANG_MERGE",
+        };
+        submitNewConfiguration(payload);
+    }
+    function submitNewConfiguration(data) {
+        $("#divLoader").show();
+        $.ajax({
+            url: apiBasePath + "/polyglot/save_update_config/",
+            type: "POST",
+            data: JSON.stringify({ data }),
+            contentType: "application/json",
+            success: function (response) {
+                console.log("response", response);
+                $("#divLoader").hide();
+                if (response?.success) {
+                    $("#congratsConfigSaved").show();
+                } else {
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            },
+            error: function (error) {
+                $("#divLoader").hide();
+                $("#somethingWentWrongAlert").toast("show");
+            },
+        });
+    }
+    function createNewConfiguration() {
+        window.open(`${window.location.origin}/mentis/editor/?#createS3LangConfiguration`, "_self");
+    }
+</script>
