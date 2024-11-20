@@ -99,7 +99,7 @@ RUN /usr/local/python3.10/bin/pip3.10 install -r /etc/pip/requirements.txt
 COPY ./ /usr/local/mentis/mentis
 
 RUN \
-  /usr/local/python3.10/bin/python3.10  /usr/local/mentis/mentis/manage.py collectstatic && \
+  /usr/local/python3.10/bin/python3.10  /usr/local/mentis/mentis/mentis_proj/manage.py collectstatic && \
   chmod 755 /etc/rc.d/init.d/supervisord
 
 #CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.d/mentis_web_service.conf"]
