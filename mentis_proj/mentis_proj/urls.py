@@ -15,6 +15,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf.urls.static import static
+from django.conf import settings
 from mentis_proj.apps.user import urls as user_urls
 from mentis_proj.apps.assessment import urls as assessment_urls
 from mentis_proj.apps.therapist import urls as therapist_urls
@@ -29,6 +31,6 @@ urlpatterns = [
     path("api/v1/therapist/",include(therapist_urls)),
     path("api/v1/booking/",include(booking_urls)),
     path("dsh/",include(dashboard_urls))
-]
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 
