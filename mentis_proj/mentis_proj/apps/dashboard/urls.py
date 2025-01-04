@@ -4,5 +4,9 @@ from mentis_proj.apps.dashboard.views import *
 
 urlpatterns = [
     path("main/", main),
+    path("main/manage_profile/",manage_profile),
+    path("register/",register),
+    path("login/",login_view),
+    path("logout/",logout_view)
 ]
 
