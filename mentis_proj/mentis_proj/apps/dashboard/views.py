@@ -1,3 +1,4 @@
+import base64
 import json
 
 from django.template.loader import render_to_string
@@ -65,6 +66,8 @@ def update_profile(request):
     request_data = json.loads(request.body)
     img_data = request_data.get("img")
     if img_data is not None:
+        img_data = img_data[22:]
+        img_data = base64.b64decode(img_data)
         img_name = request_data["img_name"]
         bucket = settings.S3_CONF["images"]["bucket_name"]
         resp = S3Helper().upload_object_from_string(bucket=bucket,key=img_name,data=img_data,params={'Content-Type':'image/jpeg'})
