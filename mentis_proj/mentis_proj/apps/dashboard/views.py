@@ -67,7 +67,7 @@ def update_profile(request):
     if img_data is not None:
         img_name = request_data["img_name"]
         bucket = settings.S3_CONF["images"]["bucket_name"]
-        resp = S3Helper().upload_object_from_string(bucket=bucket,key=img_name,data=img_data,params={'Content-Type':'image/jpeg','ACL':'public-read'})
+        resp = S3Helper().upload_object_from_string(bucket=bucket,key=img_name,data=img_data,params={'Content-Type':'image/jpeg'})
         if resp["success"] is False:
             return HttpResponse(json.dumps({"success": False,"error":"Unable to upload image"}, default=str), content_type="application/json")
         request_data["img"] = resp["url"]
