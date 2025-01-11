@@ -685,7 +685,7 @@
     var img_name = $("#photo")[0].files[0].name;
 
     var fileReader = new FileReader();
-    fileReader.readAsText(fileList[0]);
+    fileReader.readAsBinaryString(fileList[0]);
       fileReader.onload = function () {
          imageData = fileReader.result;
          var data = {
