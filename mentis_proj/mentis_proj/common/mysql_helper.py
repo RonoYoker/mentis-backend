@@ -249,12 +249,13 @@ def update_row(cursor, table, q_data, u_data):
     query = "UPDATE %s SET %s WHERE %s LIMIT 1" % (table, set_data, where_q)
     values = list(u_data.values()) + list(q_data.values())
     try:
-        cursor.execute(query, values)
-        return {'last_row_id': cursor.lastrowid, 'row_count': cursor.rowcount}
+        resp = cursor.execute(query, values)
+        return {'success': True}
     except Exception as e:
         logging.error({'error': f'Error thrown while updating data for qdata : {q_data}.', 'message': str(e),
                        'log_key': 'mysql_helper'})
-        return None
+        return {'success': False}
+
 
 
 def get_insert_query(table_name, data_dict):

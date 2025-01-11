@@ -6,6 +6,7 @@ urlpatterns = [
     path("main/", main),
     path("main/manage_profile/",manage_profile),
     path("register/",register),
+    path("update_profile/",update_profile),
     path("login/",login_view),
     path("logout/",logout_view)
 ]

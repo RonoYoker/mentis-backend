@@ -64,3 +64,22 @@ class S3Helper:
     def get_s3_url(self, bucket, key, region_name="ap-south-1"):
         url = f"https://s3-{region_name}.amazonaws.com/{bucket}/{key}"
         return url
+
+    def upload_object_from_string(self, bucket, key, data, params={}):
+        try:
+            if self.s3_client is None:
+                print(f"unable to make S3 connection, BUCKET : {bucket}, KEY: {key}")
+            result = self.s3_client.put_object(Bucket=bucket, Key=key, Body=data,
+                                            ContentType=params.get('Content-Type', 'text/plain'),
+                                            ACL=params.get('ACL', 'private'))
+            res = result.get('ResponseMetadata')
+
+            if res.get('HTTPStatusCode') == 200:
+                logging.info('File Uploaded Successfully')
+                return {"success":True,"url":self.get_s3_url(bucket,key)}
+            else:
+                logging.info('File Not Uploaded')
+                return {"success": False}
+        except Exception as uploadExp:
+            logging.error(f"log_key: upload_object_from_string, err: {uploadExp}")
+            return {"success": False}

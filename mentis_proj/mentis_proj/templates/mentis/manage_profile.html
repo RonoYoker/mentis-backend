@@ -6,6 +6,7 @@
 <script src="/static/mentis/js/datatables.bundle.js"></script>
 <script src="/static/mentis/js/datatables.export.js"></script>
 <script src="/static/mentis/js/underscore-1.6.0.min.js"></script>
+<script src="/static/mentis/js/select2.bundle.js"></script>
 <link
   rel="stylesheet"
   media="screen, print"
@@ -124,74 +125,10 @@
 
 <div id="invoices-data-div" style="margin-top: 30px" class="row">
   <div class="col-xl-12">
-    <div class="panel" id="bankConfigurationPanel">
-      <div class="panel-hdr">
-        <h2>
-          <span class="fw-900"><i>Bank configuration</i></span>
-        </h2>
-        <div class="panel-toolbar">
-          <button
-            class="btn btn-panel"
-            data-action="panel-collapse"
-            data-toggle="tooltip"
-            data-offset="0,10"
-            data-original-title="Collapse"
-          ></button>
-          <button
-            class="btn btn-panel"
-            data-action="panel-fullscreen"
-            data-toggle="tooltip"
-            data-offset="0,10"
-            data-original-title="Fullscreen"
-          ></button>
-          <button
-            class="btn btn-panel"
-            data-action="panel-close"
-            data-toggle="tooltip"
-            data-offset="0,10"
-            data-original-title="Close"
-          ></button>
-        </div>
-      </div>
-      <div class="panel-container">
-        <div class="form-group row m-3">
-          <div class="col-4">
-            <label for="bankName">Bank name</label>
-            <select
-              class="form-control select2"
-              id="bankName"
-              name="bankName"
-              data-placeholder="Select Bank name"
-              required
-            ></select>
-          </div>
-          <div class="col-4" style="display: none">
-            <label for="environment">Environment</label>
-            <select
-              class="form-control select2"
-              id="environment"
-              name="environment"
-              data-placeholder="Select Environment"
-              required
-            ></select>
-          </div>
-          <div class="col-4" style="display: none">
-            <label for="project">Project</label>
-            <select
-              class="form-control select2"
-              id="project"
-              name="project"
-              data-placeholder="Select Project"
-              required
-            ></select>
-          </div>
-        </div>
-      </div>
-    </div>
     <div id="panel-1" class="panel">
       <div class="panel-hdr">
         <h2>
-          View <span class="fw-900"><i>Generated configs</i></span>
+           <span class="fw-900"><i>Manage Profile</i></span>
         </h2>
         <div class="panel-toolbar">
           <button
@@ -217,71 +154,98 @@
           ></button>
         </div>
       </div>
-      <div class="panel-container show" style="min-height: 60vh">
-        <div id="splashScreen" style="">
-          <div
-            class="position-absolute d-flex flex-column justify-content-center align-items-center w-100"
-            style="
-              z-index: 2;
-              background-color: rgba(255, 255, 255, 0.9);
-              min-height: 90%;
-            "
-          >
-            <div style="font-size: 26px">
-              Please Select Bank Configurations first.
-            </div>
-          </div>
-        </div>
+<!--      <div class="panel-container show align-items-center justify-content-center" style="min-height: 60vh">-->
+<!--<div class="col-12">-->
+<!--                                            <div class="d-flex flex-column align-items-center justify-content-center p-4">-->
+<!--                                                <img src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png" class="rounded-circle shadow-2 img-thumbnail" alt="" style="height:200px">-->
+<!--                                                <div class="form-group col-xl-5 mt-4 p-3">-->
+<!--                                                    <label class="form-label" for="example-email-2">Name</label>-->
+<!--                                                    <input type="email" id="example-email-2" name="example-email-2" class="form-control" placeholder="Email">-->
+<!--                                                  <label class="form-label" for="example-email-2">Email</label>-->
+<!--                                                    <input type="email" id="example-email-2" name="example-email-2" class="form-control" placeholder="Email">-->
+<!--                                                  <label class="form-label" for="example-email-2">Email</label>-->
+<!--                                                    <input type="email" id="example-email-2" name="example-email-2" class="form-control" placeholder="Email">-->
+<!--                                                </div>-->
 
-        <div id="divLoader" style="display: none">
-          <div
-            class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
-            style="z-index: 2; background-color: rgba(255, 255, 255, 0.7)"
-          >
-            <div class="spinner-border mb-2" role="status"></div>
-            <div style="font-size: 16px">Loading...</div>
-          </div>
-        </div>
-        <div id="congratsConfigSaved" style="display: none">
-          <div
-            class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
-            style="z-index: 2; background-color: rgba(255, 255, 255, 1)"
-          >
-            <div class="h-100 d-flex justify-content-center align-items-center">
-              <div
-                class="panel p-6 d-flex flex-column justify-content-center align-items-center text-center"
-                style="font-size: 20px"
-              >
-                <img
-                  src="/static/mentis/img/accepted.png"
-                  class="img-fluid mb-5"
-                  width="75"
-                  height="75"
-                />
-                <span class="mx-2 mb-5"
-                  >Congratulations,Your configuration has been moved to
-                  production successfully!</span
-                >
-                <!--                      <a-->
-                <!--                        href="#manageConfigurations"-->
-                <!--                        class="btn btn-lg btn-outline-info waves-effect waves-themed"-->
-                <!--                        ><i class="fal fa-eye"></i-->
-                <!--                        ><span class="ml-2">View Configurations</span></a-->
-                <!--                      >-->
-              </div>
+<!--                                                </h5>-->
+<!--                                            </div>-->
+<!--                                        </div>-->
+        <div class="d-flex flex-column align-items-center justify-content-center p-4 ">
+        <div class="profile-form col-xl-6" id = "userData" >
+            {% csrf_token %}
+
+            <!-- Error message block -->
+            {% if messages %}
+            <div class="error-message">
+                {% for message in messages %}
+                    {{ message }}<br>
+                {% endfor %}
             </div>
-          </div>
+            {% endif %}
+
+            <div class="profile-photo">
+              {% if user.img %}
+                <img src="{{ user.img }}" class="rounded-circle shadow-2 img-thumbnail" style="height:200px;width:200px" alt="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png">
+              {% else %}
+              <img src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png" class="rounded-circle shadow-2 img-thumbnail" alt="" style="height:200px">
+                {% endif %}
+
+            </div>
+
+            <div class="form-group" >
+                <label for="photo" class="form-field-custom"></label>
+                <input type="file" id="photo" name="photo" class="form-control" style="border:none">
+            </div>
+
+            <div class="form-group">
+                <label for="name" class="form-field-custom">Name</label>
+                <input type="text" id="name" name="name" class="form-control" value="{{ user.name }}" required>
+            </div>
+
+          <div class="form-group">
+                <label for="exp-year" class="form-field-custom">Experience (Years/Months)</label>
+            <div class="input-group">
+                <input type="text" id="experience_years" aria-label="" class="form-control" placeholder="Years" value="{{ user.experience_years }}"  >
+                <input type="text" id ="experience_months" aria-label="" class="form-control" placeholder="Months" value="{{ user.experience_months }}">
+            </div>
+            </div>
+
+            <div class="form-group">
+                <label for="about_me" class="form-field-custom">Introduction</label>
+                <textarea id="about_me" name="about_me" class="form-control" rows="3" placeholder="Write a brief introduction...">{{ user.extra_info.about_me }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="specialisations" class="form-field-custom">Specialisations</label>
+                <select id="specialisations" name="specialisations" class="form-control select2" multiple="multiple">
+                    {% for specialisation in specialisations %}
+                        <option value="{{ specialisation }}" {% if specialisation in user.specialisations %}selected{% endif %}>{{ specialisation }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="registration_number" class="form-field-custom">Registration Number</label>
+                <input type="text" id="registration_number" name="registration_no" class="form-control" value="{{ user.registration_number }}">
+            </div>
+
+            <div class="form-group">
+                <label for="languages" class="form-field-custom">Languages</label>
+                <select id="languages" name="languages" class="select2 select2-placeholder-multiple form-control select2-hidden-accessible" multiple="multiple">
+                    {% for language in languages %}
+                        <option value="{{ language }}"  data-select2-id="{{ language }}"{% if language in user.extra_info.languages %}selected{% endif %}>{{ language }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="custom-control custom-switch form-group">
+                <input type="checkbox" class="custom-control-input" id="active" >
+                <label class="custom-control-label" for="active">Make Your Profile Active</label>
+            </div>
+
+            <button onclick="updateProfile()" class="btn btn-primary waves-effect waves-themed">Update Profile</button>
         </div>
-        <div class="panel-content">
-          <div class="panel-tag">
-            <p id="po-data-title">
-              Below is a list of currently generated configs
-            </p>
-          </div>
-          <!-- datatable start -->
-          <div id="main-table"></div>
-          <!-- datatable end -->
-        </div>
+    </div>
       </div>
     </div>
   </div>
@@ -457,7 +421,7 @@
       <span aria-hidden="true">&times;</span>
     </button>
   </div>
-  <div class="toast-body">Config successfully moved to production.</div>
+  <div class="toast-body">Profile Successfully Updated</div>
   <!-- <div class="toast-header">
 <strong class="mr-auto" id="toastInfo">lmcklwkmeck</strong>
 </div> -->
@@ -511,21 +475,22 @@
   var lock = false;
   var pluginsDataMap = {};
   var tableCounter = 1;
-  var user_bank_settings={{user_bank_settings|safe}};
+  var user_bank_settings="";
   var apiBasePath = "";
   var currentEnvironment = "";
   var currentProject = "";
   var currentBank = "";
   var currentUser = "{{ user }}";
+  var activeUser = "{{user.active}}"
   var currentActiveConfigs = [];
   $(document).ready(function () {
-    $(".select2").select2();
-    var bankNameOptionsHtml = "<option value='' disabled selected></option>";
-    for (const bank of Object.keys(user_bank_settings)) {
-      bankNameOptionsHtml += `<option value='${bank}'>${bank}</option>`;
-    }
-    $("#bankName").html(bankNameOptionsHtml);
-  });
+            $('.select2').select2();
+            if (activeUser == '1'){
+                $("#active").click();
+            }
+
+        });
+
   $("#bankName").on("change", function () {
     $("#environment").parent().show();
     var environmentOptionsHtml = "<option value='' disabled selected></option>";
@@ -695,6 +660,125 @@
     var configLink = `${window.location.origin}/mentis/editor/?#addConfiguration?mode=${mode}&bank=${bank}&env=${env}&project=${project}&conf_key=${key}&conf_version=${version}`;
     window.open(configLink, "_blank");
   }
+
+
+  function updateProfile(){
+    const name = $("#name").val();
+    const registration_number = $("#registration_number").val();
+    const experience_years = $("#experience_years").val();
+    const experience_months = $("#experience_months").val();
+    const specialisations = $("#specialisations").val();
+    const languages = $("#languages").val();
+    const about_me = $("#about_me").val();
+    const fileList = $("#photo")[0].files;
+    console.log(fileList.length);
+    var extra_info = {};
+    extra_info["about_me"]= about_me;
+    extra_info["languages"]= languages;
+
+
+    var specialisation = {};
+    specialisation["specialisations"]= specialisations;
+    var imageData = "";
+
+    if (fileList.length > 0){
+    var img_name = $("#photo")[0].files[0].name;
+
+    var fileReader = new FileReader();
+    fileReader.readAsText(fileList[0]);
+      fileReader.onload = function () {
+         imageData = fileReader.result;
+         var data = {
+        "name":name,
+        "registration_number":registration_number,
+        "experience_years":experience_years,
+        "experience_months":experience_months,
+        "extra_info":JSON.stringify(extra_info),
+        "specialisation":JSON.stringify(specialisation),
+        "img":imageData,
+        "img_name":img_name,
+        "active":$("#active").is(":checked")
+        }
+     console.log(imageData);
+
+     console.log(JSON.stringify(data));
+
+     $.ajax({
+              url: "/dsh/update_profile/",
+              type: "POST",
+              data: JSON.stringify(data),
+              contentType: "application/json",
+              success: function (response) {
+                lock = false;
+                if (response?.success) {
+                  if (!moveAll) {
+                    $("#divLoader").hide();
+                    $("#successAlert").toast("show");
+                  }
+                } else {
+                  if (moveAll) {
+                    $("#screenLoader").hide();
+                  } else {
+                    $("#divLoader").hide();
+                  }
+                  $("#somethingWentWrongAlert").toast("show");
+                }
+              },
+              error: function (error) {
+                lock = false;
+                if (moveAll) {
+                  $("#screenLoader").hide();
+                } else {
+                  $("#divLoader").hide();
+                }
+                $("#somethingWentWrongAlert").toast("show");
+              },
+            });
+      };
+      }
+      else{
+
+      var data = {
+        "name":name,
+        "registration_number":registration_number,
+        "experience_years":experience_years,
+        "experience_months":experience_months,
+        "extra_info":JSON.stringify(extra_info),
+        "specialisation":JSON.stringify(specialisation),
+         "active":$("#active").is(":checked")
+        }
+
+     console.log(JSON.stringify(data));
+
+     $.ajax({
+              url: "/dsh/update_profile/",
+              type: "POST",
+              data: JSON.stringify(data),
+              contentType: "application/json",
+              success: function (response) {
+                lock = false;
+                if (response?.success) {
+                    $("#divLoader").hide();
+                    $("#successAlert").toast("show");
+
+                } else {
+
+                  $("#somethingWentWrongAlert").toast("show");
+                }
+              },
+              error: function (error) {
+                lock = false;
+
+                $("#somethingWentWrongAlert").toast("show");
+              },
+            });
+
+
+      }
+
+
+  }
+
   function initDatatable() {
     $("#datatable-invoice-data-1").dataTable({
       responsive: true,

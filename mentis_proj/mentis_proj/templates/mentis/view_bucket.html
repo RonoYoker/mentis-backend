@@ -1,944 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>View Buckets</title>
-    <style type="text/css"></style>
-    <link
-      rel="stylesheet"
-      media="screen, print"
-      href="/static/mentis/css/datatables.bundle.css"
-    />
-    <link rel="stylesheet" href="/static/mentis/css/dateRangePicker.css" />
-    <script src="/static/mentis/js/moment.js"></script>
-    <script src="/static/mentis/js/dateRangePicker.js"></script>
-    <script src="/static/mentis/js/underscore-1.6.0.min.js"></script>
-    <script src="/static/mentis/js/datatables.bundle.js"></script>
-    <script src="/static/mentis/js/datatables.export.js"></script>
-    <link
-      rel="stylesheet"
-      media="screen, print"
-      href="/static/mentis/css/select2.bundle.css"
-    />
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Update</title>
+
+    <!-- Including styles from the provided file -->
+    <link rel="stylesheet" href="/static/mentis/css/datatables.bundle.css">
+    <link rel="stylesheet" href="/static/mentis/css/select2.bundle.css">
 
     <style>
-      #bucket-data-table th,
-      #bucket-data-table td {
-        text-align: left;
-        padding: 10px;
-      }
+        .profile-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
 
-      #bucket-data-table th {
-        background-color: #c5c5c5;
-      }
+        .profile-form {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 600px;
+        }
 
-      #bucket-data-table tbody tr:hover {
-        background-color: #f0f0f0;
-      }
+        .form-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        .error-message {
+            color: #ff0000;
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .profile-photo {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .profile-photo img {
+            border-radius: 50%;
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+        }
+
+        .select2-container--default .select2-selection--multiple {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 5px;
+        }
     </style>
-  </head>
+</head>
 
-  <body>
-    <div id="main-form-div">
-      <div class="row">
-        <div class="col-xl-12">
-          <div class="panel" id="bankConfigurationPanel">
-            <div class="panel-hdr">
-              <h2>
-                <span class="fw-900"><i>Bank configuration</i></span>
-              </h2>
-              <div class="panel-toolbar">
-                <button
-                  class="btn btn-panel"
-                  data-action="panel-collapse"
-                  data-toggle="tooltip"
-                  data-offset="0,10"
-                  data-original-title="Collapse"
-                ></button>
-              </div>
-            </div>
-            <div id="bankConfig" class="panel-container">
-              <div class="form-group row m-3">
-                <div class="col-3">
-                  <label for="bankName">Bank name</label>
-                  <select
-                    class="form-control select2"
-                    id="bankName"
-                    name="bankName"
-                    data-placeholder="Select Bank name"
-                    required
-                  ></select>
-                </div>
-                <div class="col-3" style="display: none">
-                  <label for="environment">Environment</label>
-                  <select
-                    class="form-control select2"
-                    id="environment"
-                    name="environment"
-                    data-placeholder="Select Environment"
-                    required
-                  ></select>
-                </div>
-                <div class="col-3" style="display: none">
-                  <label for="project">Project</label>
-                  <select
-                    class="form-control select2"
-                    id="project"
-                    name="project"
-                    data-placeholder="Select Project"
-                    required
-                  ></select>
-                </div>
-              </div>
-            </div>
-          </div>
+<body>
+    <div class="profile-container">
+        <form class="profile-form" method="POST" action="/update-profile/" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-title">Update Profile</div>
 
-          <div class="panel" id="connectorConfigurationPanel">
-            <div class="panel-hdr">
-              <h2>
-                <span class="fw-900"
-                  ><i id="formTitle">Virtual Connector Configurations</i></span
-                >
-              </h2>
-              <div class="panel-toolbar">
-                <button
-                  class="btn btn-panel"
-                  data-action="panel-collapse"
-                  data-toggle="tooltip"
-                  data-offset="0,10"
-                  data-original-title="Collapse"
-                ></button>
-              </div>
+            <!-- Error message block -->
+            {% if messages %}
+            <div class="error-message">
+                {% for message in messages %}
+                    {{ message }}<br>
+                {% endfor %}
             </div>
-            <div class="panel-container">
-              <div class="splashScreen">
-                <div
-                  class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
-                  style="z-index: 2; background-color: rgba(255, 255, 255, 0.9)"
-                >
-                  <div style="font-size: 26px">
-                    Please Select Bank Configurations first.
-                  </div>
-                </div>
-              </div>
-              <form id="bucketConfigurations">
-                <div class="form-group row m-3 items-center">
-                  <div class="col-3">
-                    <label for="bucketType">Type</label>
-                    <select
-                      class="form-control select2"
-                      id="bucketType"
-                      name="bucketType"
-                      data-placeholder="Select Type"
-                      required
-                    ></select>
-                  </div>
-                  <div class="col-3" style="display: none">
-                    <label for="selectedConfig">Configuration</label>
-                    <select
-                      class="form-control select2"
-                      id="selectedConfig"
-                      name="selectedConfig"
-                      data-placeholder="Select Configuration"
-                      required
-                    ></select>
-                  </div>
-                  <div class="col-3" style="display: none">
-                    <label for="bucket">Bucket Name</label>
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="bucket"
-                      name="bucket"
-                      placeholder="Enter Bucket Name"
-                      required
-                    />
-                  </div>
-                  <div class="form-group col col-3" style="display: none">
-                    <label for="dateRangePicker">Select Date Range</label>
+            {% endif %}
 
-                    <div class="input-group">
-                      <input
-                        type="text"
-                        class="form-control"
-                        placeholder="Select date"
-                        id="dateRangePicker"
-                        required
-                      />
-                      <div class="input-group-append">
-                        <span class="input-group-text fs-xl">
-                          <i class="fal fa-calendar"></i>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    class="col-3 self-end text-center align-self-center"
-                    style="display: none"
-                  >
-                    <button
-                      type="button"
-                      id="showFiles"
-                      title="Get Files and Folders"
-                      onclick="showButtonClicked('')"
-                      disabled="true"
-                      class="btn btn-primary width-sm waves-effect waves-themed py-1 fs-xl"
-                    >
-                      Get
-                    </button>
-                  </div>
-                </div>
-              </form>
+            <div class="profile-photo">
+                <img src="{{ user.profile.photo.url }}" alt="Profile Photo">
             </div>
-          </div>
-          <div id="panel-1" class="panel">
-            <div class="panel-hdr">
-              <h2>
-                <span class="fw-900"><i id="bucketDetails"></i></span>
-              </h2>
-              <div class="panel-toolbar">
-                <button
-                  class="btn btn-panel"
-                  data-action="panel-collapse"
-                  data-toggle="tooltip"
-                  data-offset="0,10"
-                  data-original-title="Collapse"
-                ></button>
-                <button
-                  class="btn btn-panel"
-                  data-action="panel-fullscreen"
-                  data-toggle="tooltip"
-                  data-offset="0,10"
-                  data-original-title="Fullscreen"
-                ></button>
-              </div>
-            </div>
-            <div class="panel-container" style="min-height: 40vh">
-              <div id="divLoader" style="display: none">
-                <div
-                  class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
-                  style="z-index: 3; background-color: rgba(255, 255, 255, 0.7)"
-                >
-                  <div class="spinner-border mb-2" role="status"></div>
-                  <div style="font-size: 16px">Loading...</div>
-                </div>
-              </div>
-              <div class="splashScreen1">
-                <div
-                  class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
-                  style="z-index: 2; background-color: rgba(255, 255, 255, 0.9)"
-                >
-                  <div style="font-size: 26px">
-                    Please Select Virtual Connector Configurations.
-                  </div>
-                </div>
-              </div>
-              <div class="panel-content mx-3">
-                <div class="panel-tag d-flex">
-                  <ol
-                    class="breadcrumb flex-nowrap mb-1"
-                    id="breadcrumb"
-                    style="background: #eef7fd"
-                  ></ol>
-                  <form
-                    onsubmit="editPathBtnHandler(event)"
-                    class="col-11 d-flex px-0 pr-4 justify-content-between flex-1"
-                  >
-                    <input
-                      style="display: none; height: 32px;"
-                      type="text"
-                      class="form-control my-2 mr-3 py-0"
-                      id="connectorPath"
-                      name="connectorPath"
-                      placeholder="eg: abc/def/"
-                    />
-                    <button
-                      type="submit"
-                      id="editPathBtn"
-                      class="btn btn-light px-1 py-0"
-                      style="height: 24px; margin-top: 12px"
-                    >
-                      <i
-                        class="fal fa-pencil-alt color-warning-500"
-                        title="Edit Path"
-                        style="font-size: 14px"
-                      ></i>
-                    </button>
 
-                    <button
-                      type="button"
-                      id="closeEditPath"
-                      onclick="cancelEditting()"
-                      class="btn btn-light px-1 py-0 border-danger ml-3"
-                      style="height: 24px; margin-top: 12px; display: none"
-                    >
-                      <i
-                        class="fal fa-times color-danger-500"
-                        title="Cancel"
-                        style="font-size: 14px"
-                      ></i>
-                    </button>
-                    <button
-                      type="button"
-                      id="copyPathBtn"
-                      onclick="copyPath()"
-                      class="btn px-1 py-0 color-primary-700"
-                      style="height: 24px;"
-                    >
-                      <u>Copy Path</u>
-                    </button>
-                  </form>
-                </div>
-                <!-- datatable start -->
-                <div id="main-table"></div>
-                <!-- datatable end -->
-              </div>
+            <div class="form-group">
+                <label for="photo" class="form-field-custom">Profile Photo</label>
+                <input type="file" id="photo" name="photo" class="form-control">
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Modal -->
-    <div
-      class="toast hide"
-      style="
-        position: fixed;
-        top: 50%;
-        right: 45%;
-        background-color: #090;
-        color: white;
-        min-width: 250px;
-        z-index: 3000;
-      "
-      id="copyToast"
-      data-delay="1500"
-    >
-      <div class="toast-header">
-        <strong class="mr-auto">Path Copied</strong>
-        <button
-          type="button"
-          class="ml-2 mb-1 close"
-          data-dismiss="toast"
-          aria-label="Close"
-        >
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <!-- <div class="toast-body" id="toastInfo"></div> -->
+
+            <div class="form-group">
+                <label for="name" class="form-field-custom">Name</label>
+                <input type="text" id="name" name="name" class="form-control" value="{{ user.profile.name }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="experience" class="form-field-custom">Experience (Years/Months)</label>
+                <input type="text" id="experience" name="experience" class="form-control" placeholder="e.g., 5 Years 3 Months" value="{{ user.profile.experience }}">
+            </div>
+
+            <div class="form-group">
+                <label for="intro" class="form-field-custom">Introduction</label>
+                <textarea id="intro" name="intro" class="form-control" rows="3" placeholder="Write a brief introduction...">{{ user.profile.intro }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="specialisations" class="form-field-custom">Specialisations</label>
+                <select id="specialisations" name="specialisations" class="form-control select2" multiple="multiple">
+                    {% for specialisation in specialisations %}
+                        <option value="{{ specialisation.id }}" {% if specialisation.id in user.profile.specialisations %}selected{% endif %}>{{ specialisation.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="registration_no" class="form-field-custom">Registration Number</label>
+                <input type="text" id="registration_no" name="registration_no" class="form-control" value="{{ user.profile.registration_no }}">
+            </div>
+
+            <div class="form-group">
+                <label for="languages" class="form-field-custom">Languages</label>
+                <select id="languages" name="languages" class="form-control select2" multiple="multiple">
+                    {% for language in languages %}
+                        <option value="{{ language.id }}" {% if language.id in user.profile.languages %}selected{% endif %}>{{ language.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="btn">Update Profile</button>
+        </form>
     </div>
 
-    <div
-      class="toast hide"
-      style="
-        position: fixed;
-        top: 50%;
-        right: 45%;
-        background-color: rgb(220 53 69);
-        color: white;
-        min-width: 250px;
-        z-index: 3000;
-      "
-      id="somethingWentWrongAlert"
-      data-delay="3000"
-    >
-      <div class="toast-header">
-        <strong class="mr-auto">Alert</strong>
-        <button
-          type="button"
-          class="ml-2 mb-1 close"
-          data-dismiss="toast"
-          aria-label="Close"
-        >
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="toast-body" id="failureAlertBody">
-        Somthing went wrong, Please try again.
-      </div>
-    </div>
-  </body>
+    <script src="/static/mentis/js/jquery.min.js"></script>
+    <script src="/static/mentis/js/select2.bundle.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('.select2').select2();
+        });
+    </script>
+</body>
 
-  <script type="text/template" id="table-template">
-
-    <table id="bucket-data-table" class="table table-hover w-100">
-      <thead class="bg-primary-600">
-        <tr>
-          <th class="new-col">Name</th>
-          <th class="new-col">Last Modified</th>
-          <th class="new-col">Count / Size</th>
-        </tr>
-      </thead>
-      <tbody>
-        <%=table_html%>
-      </tbody>
-      <tfoot></tfoot>
-    </table>
-  </script>
-
-  <script type="text/javascript">
-    var currentUser = "{{ user }}";
-    var conf_key = "{{ conf_key }}";
-    var tableCounter = 1;
-    var lock = false
-    var conf_version = "{{ conf_version }}";
-    var mode = "{{mode}}";
-    var user_bank_settings = {{ user_bank_settings| safe}};
-    var apiBasePath = "";
-    var pathEditMode = false
-    var defaultStartDate = moment().subtract(6, 'days');
-    var defaultEndDate = moment();
-    var pickedConfig = ""
-    var pickedBucket = ""
-    var pickedType = ""
-    var pickedConfigName = ""
-
-    $(document).ready(function () {
-      $("#main-table").html("");
-      selectedConnector = {}
-      currentPath = ""
-      bankConfiguration()
-      $("#breadcrumb").show()
-      $(".select2").select2();
-      $("#dateRangePicker").daterangepicker(
-        {
-          timePicker: true,
-          opens: "left",
-          startDate: defaultStartDate,
-          endDate: defaultEndDate,
-          locale: {
-            format: 'D MMM YYYY, hh:mm A',
-          },
-        }
-      );
-    });
-
-    function copyPath(){
-      var copiedPath = currentPath
-      if($("#bucketType").val() == 'sftp'){
-        copiedPath = "/"+copiedPath
-      }
-      console.log("copied ",copiedPath)
-      var tempTextarea = $("<textarea>");
-        $("body").append(tempTextarea);
-        tempTextarea.val(copiedPath).select();
-        document.execCommand("copy");
-        tempTextarea.remove();
-        $("#copyToast").toast("show");
-    }
-
-    function cancelEditting() {
-      $('#closeEditPath').hide();
-      $('#copyPathBtn').show();
-      $("#connectorPath").hide()
-      pathEditMode = !pathEditMode
-      updateBreadcrumb(currentPath);
-      $("#breadcrumb").show()
-      $("#breadcrumb").removeClass("pr-2");
-      $("#editPathBtn").html(`<i class="fal fa-pencil-alt color-warning-500" title="Edit Path" style="font-size:14px"></i>`)
-      $('#editPathBtn').addClass('border-warning');
-      $('#editPathBtn').removeClass('border-success');
-    }
-
-    function editPathBtnHandler(event) {
-      event.preventDefault()
-      pathEditMode = !pathEditMode
-      if (!!pathEditMode) {
-        $('#closeEditPath').show();
-        $('#copyPathBtn').hide();
-        updateBreadcrumb("/");
-        $("#breadcrumb").addClass("pr-2");
-        $("#connectorPath").show()
-        $("#connectorPath").val(currentPath)
-        $("#editPathBtn").html(`<i class="fal fa-arrow-right color-success-500" title="Set Path" style="font-size:14px"></i>`)
-        $('#editPathBtn').removeClass('border-warning');
-        $('#editPathBtn').addClass('border-success');
-      } else {
-        $('#closeEditPath').hide();
-        $('#copyPathBtn').show();
-        $("#breadcrumb").removeClass("pr-2");
-        let edittedPathVal = $("#connectorPath").val()
-        if (!!edittedPathVal?.length) {
-          if (edittedPathVal[edittedPathVal?.length - 1] != '/') {
-            edittedPathVal += '/'
-          }
-        }
-        if (edittedPathVal != currentPath) {
-          showFilesAndFolder(edittedPathVal, "pathUpdated")
-        } else {
-          $("#connectorPath").hide()
-          updateBreadcrumb(currentPath);
-          $("#breadcrumb").show()
-          $('#closeEditPath').hide();
-          $("#editPathBtn").html(`<i class="fal fa-pencil-alt color-warning-500" title="Edit Path" style="font-size:14px"></i>`)
-          $('#editPathBtn').addClass('border-warning');
-          $('#editPathBtn').removeClass('border-success');
-        }
-      }
-    }
-
-    function bankConfiguration() {
-      var bankNameOptionsHtml =
-        "<option value='' disabled selected></option>";
-      for (const bank of Object.keys(user_bank_settings)) {
-        bankNameOptionsHtml += `<option value='${bank}'>${bank}</option>`;
-      }
-      $("#bankName").html(bankNameOptionsHtml);
-      const selected_project_config = getSessionStorageItem("selected_bucket_project_config");
-      if (!!selected_project_config) {
-        const bank = $("#bankName").val(selected_project_config?.bank).change();
-        const env = $("#environment").val(selected_project_config?.env).change();
-        const project = $("#project").val(selected_project_config?.project).change();
-      }
-    }
-
-    $('#connectorPath').on('keydown', function (event) {
-      // Check if the pressed key is the "Escape" key
-      if (event.key === 'Escape' || event.keyCode === 27) {
-        $("#connectorPath").val(currentPath)
-        editPathBtnHandler(event)
-      }
-    });
-
-    $("#bankName").on("change", function () {
-      currentBank = this.value;
-      resetForm()
-      $(".splashScreen").show();
-      $(".splashScreen1").show();
-      $("#environment").parent().show();
-      var environmentOptionsHtml =
-        "<option value='' disabled selected></option>";
-      for (const environment of Object.keys(user_bank_settings[this.value])) {
-        environmentOptionsHtml += `<option value='${environment}'>${environment}</option>`;
-      }
-      $("#environment").html(environmentOptionsHtml);
-      $("#project").parent().hide();
-      $("#project").html("");
-    });
-
-    $("#environment").on("change", function () {
-      currentEnvironment = this.value;
-      resetForm()
-      $(".splashScreen").show();
-      $(".splashScreen1").show();
-      const bank = $("#bankName").val();
-      apiBasePath = user_bank_settings?.[bank]?.[this.value]?.url;
-      $("#divLoader").show();
-      $.get({
-        url: apiBasePath + "/get_projects/",
-        type: "GET",
-        contentType: "application/json",
-        success: function (response) {
-          $("#divLoader").hide()
-          if (response?.result == "SUCCESS") {
-            $("#project").parent().show();
-            var projectOptionsHtml = "<option value='' disabled selected></option>";
-            for (var i = 0; i < response['response'].length; i++) {
-              if (user_bank_settings[bank][currentEnvironment]['projects'].indexOf(response['response'][i]['name']) >= 0) {
-                projectOptionsHtml += `<option value='${response['response'][i]['name']}'>${response['response'][i]['name']}</option>`;
-              }
-            }
-            $("#project").html(projectOptionsHtml);
-            const selected_project_config = getSessionStorageItem("selected_bucket_project_config");
-            if (!!selected_project_config) {
-              $("#project").val(selected_project_config?.project).change();
-            }
-
-          } else {
-            $("#somethingWentWrongAlert").toast("show");
-          }
-        },
-        error: function (error) {
-          $("#divLoader").hide()
-          if (!!error?.responseJSON?.details_message) {
-            $("#failureAlertBody").html(error?.responseJSON?.details_message)
-          }
-          $("#somethingWentWrongAlert").toast("show");
-        },
-      });
-    });
-
-    $("#project").on("change", function () {
-      resetForm()
-      const bank = $("#bankName").val();
-      const env = $("#environment").val();
-
-      if (!!this.value) {
-        apiBasePath = user_bank_settings?.[bank]?.[env]?.url;
-        setSessionStorageItem("selected_bucket_project_config", { "bank": bank, "env": env, "project": this.value })
-        $(".splashScreen").hide();
-        getNewConnectorConfigData();
-      }
-    });
-    $(document).on("change", "#bankName, #environment", "#project", function () {
-      $("#bankName, #environment, #project").map(function () {
-        if (!this.value) {
-          $(".splashScreen").show();
-        }
-      });
-    });
-
-    function refreshPage() {
-      location.reload()
-    }
-
-    function initDatatable() {
-      $("#bucket-data-table").dataTable({
-        lengthChange: false,
-        autoWidth: false,
-        "columns": [
-          { "width": "550px" },
-          { "width": "150px" },
-          { "width": "100px" }
-        ],
-        order: [],
-        "language": {
-          "emptyTable": "No Data Available"
-        },
-        "pageLength": 25,
-        fnDrawCallback: function () {
-          $("#datatable-invoice-data-1").DataTable().columns.adjust()
-        },
-        dom:
-          /*	--- Layout Structure
-              --- Options
-              l	-	length changing input control
-              f	-	filtering input
-              t	-	The table!
-              i	-	Table information summary
-              p	-	pagination control
-              r	-	processing display element
-              B	-	buttons
-              R	-	ColReorder
-              S	-	Select
-
-              --- Markup
-              < and >				- div element
-              <"class" and >		- div with a class
-              <"#id" and >		- div with an ID
-              <"#id.class" and >	- div with an ID and a class
-
-              --- Further reading
-              https://datatables.net/reference/option/dom
-              --------------------------------------
-           */
-          "<'row mb-3'<'col-sm-12 col-md-6 d-flex align-items-center justify-content-start'f><'col-sm-12 col-md-6 d-flex align-items-center justify-content-end'lB>>" +
-          "<'row'<'col-sm-12'tr>>" +
-          "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-      });
-    }
-
-    function showButtonClicked(path) {
-      let configJson = JSON.parse($("#selectedConfig").val())
-      pickedBucket = $("#bucket").val()
-      pickedConfig = configJson?.key
-      pickedConfigName = configJson?.key + (configJson?.ip ? ' | ' + configJson?.ip : '') + (configJson?.user ? ' | ' + configJson?.user : '')
-      pickedType = $("#bucketType").val()
-      showFilesAndFolder(path, "btnClick")
-    }
-    function showFilesAndFolder(path, action) {
-      if (!!lock) {
-        return;
-      }
-      $("#connectorPath").hide()
-      $("#breadcrumb").show()
-      $("#editPathBtn").html(`<i class="fal fa-pencil-alt color-warning-500" title="Edit Path" style="font-size:14px"></i>`)
-      $('#editPathBtn').addClass('border-warning');
-      $('#editPathBtn').removeClass('border-success');
-      lock = true
-      let url = ""
-      const startDate = new Date($('#dateRangePicker').data('daterangepicker').startDate._d)
-      const endDate = new Date($('#dateRangePicker').data('daterangepicker').endDate._d)
-
-      let payload = {
-        "start_date_time": moment(startDate).format('YYYY-MM-DD HH:mm:ss'),
-        "end_date_time": moment(endDate).format('YYYY-MM-DD HH:mm:ss')
-      }
-      if (pickedType == "s3") {
-        url = apiBasePath + "/get_s3_list/"
-        payload.path = path
-        payload.bucket = pickedBucket
-      } else if (pickedType == "sftp") {
-        url = apiBasePath + "/get_sftp_list/"
-        payload.path = "/" + path
-        payload.conf = pickedConfig
-      }
-      showLoader()
-      $.ajax({
-        url: url,
-        type: "POST",
-        data: JSON.stringify({ ...payload }),
-        contentType: "application/json",
-        success: function (response) {
-          lock = false
-
-          $("#bucketDetails").html("<span>" + pickedType + " -> " + (pickedType == "s3" ? pickedBucket : pickedConfigName) + "</span>")
-          $(".splashScreen1").hide();
-          if (response?.result == "SUCCESS") {
-            pathEditMode = false
-            populateTable(response?.response)
-
-            currentPath = path
-            updateBreadcrumb(path);
-            $('#closeEditPath').hide();
-            $("#breadcrumb").removeClass("pr-2");
-            hideLoader();
-          } else {
-            hideLoader();
-            $("#somethingWentWrongAlert").toast("show");
-          }
-        },
-        error: function (error) {
-          lock = false
-          updateBreadcrumb(currentPath);
-          $("#breadcrumb").removeClass("pr-2");
-          if (action != "rowClick" && action != "pathUpdated") {
-            $("#breadcrumb").html("")
-            $("#main-table").html("");
-            $("#bucketDetails").html("")
-            $(".splashScreen1").show();
-          }
-          hideLoader();
-          if (!!error?.responseJSON?.details_message) {
-            $("#failureAlertBody").html(error?.responseJSON?.details_message)
-          }
-          $("#somethingWentWrongAlert").toast("show");
-        },
-      });
-    }
-
-    function updateBreadcrumb(path) {
-      var pathArray = path.split('/');
-      let breadcrumbHtml = `<li class="breadcrumb-item ${pathArray?.length != 1 ? 'color-primary-500 cursor-pointer' : 'active'}">
-                              <span ${pathArray?.length != 1 ? `onclick="showFilesAndFolder('')"` : ""}> <span title="root directory" style="font-size:16px">Home</span></span>
-                            </li>`
-      let breadcrumbPath = ""
-      for (var i = 0; i < pathArray?.length - 1; i++) {
-        breadcrumbPath += pathArray[i].trim() + "/"
-        breadcrumbHtml += `<li class="breadcrumb-item ${i == pathArray?.length - 2 ? 'active' : ''}" style="font-size:16px">
-                              <span ${i == pathArray?.length - 2 ? '' : `class="color-primary-500 cursor-pointer" onclick="showFilesAndFolder('` + breadcrumbPath + `')"`}> ${pathArray[i]}</span>
-                            </li>`
-      }
-      $("#breadcrumb").html(breadcrumbHtml)
-    }
-
-    function populateTable(data) {
-      if(!!data?.folder?.length || !!data?.file?.length){
-      tableHtml = ""
-      for (var i = 0; i < data?.folder?.length; i++) {
-        tableHtml +=
-          `<tr onclick='tableRowClick("` + data.folder[i]["name"] + `")' class="cursor-pointer"><td>` +
-          "<i class='fal fa-folder pr-2'></i>" +
-          (!!data.folder[i]["name"] ? data.folder[i]["name"] : "-") +
-          "</td><td>" +
-          (!!data.folder[i]["last_modified"] ? data.folder[i]["last_modified"] : "-") +
-          "</td><td>" +
-          (!!data.folder[i]["file_count"] ? data.folder[i]["file_count"] + " items" : "-") +
-          "</td></tr>";
-      }
-
-      for (var i = 0; i < data?.file?.length; i++) {
-        tableHtml +=
-          "<tr><td>" +
-          "<i class='fal fa-file pr-2'></i>" +
-          (!!data.file[i]["name"] ? data.file[i]["name"] : "-") +
-          "</td><td>" +
-          (!!data.file[i]["last_modified"] ? data.file[i]["last_modified"] : "-") +
-          "</td><td>" +
-          (!!data.file[i]["size"] ? readableBytes(data.file[i]["size"]) : data.file[i]["size"] === 0 ? "0 B" : "-") +
-          "</td></tr>";
-      }
-
-      $("#main-table").html(
-        _.template($("#table-template").text(), {
-          table_html: tableHtml,
-          table_id: tableCounter,
-        })
-      );
-      initDatatable();
-
-      $(".dt-buttons").html("")
-      } else {
-        $("#main-table").html("<div class='color-danger-300 fa-2x pl-2'>Path is Empty</div>")
-      }
-    }
-
-    function tableRowClick(updatedPath) {
-      if (!!currentPath?.length) {
-        if (currentPath[currentPath?.length - 1] != '/') {
-          currentPath += '/'
-        }
-      }
-      currentPath = currentPath + updatedPath + "/"
-      showFilesAndFolder(currentPath, "rowClick")
-    }
-
-    function readableBytes(bytes) {
-      var i = Math.floor(Math.log(bytes) / Math.log(1024)),
-        sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-
-      return (bytes / Math.pow(1024, i)).toFixed(2) * 1 + ' ' + sizes[i];
-    }
-
-    function getNewConnectorConfigData() {
-      if (!!lock) {
-        return
-      }
-      lock = true
-      showLoader()
-      $.ajax({
-        url: apiBasePath + "/get_connector_conf/",
-        type: "GET",
-        contentType: "application/json",
-        success: function (response) {
-          lock = false
-          if (response?.result == "SUCCESS") {
-            selectedConnector = response?.response
-            populateForm(selectedConnector)
-            hideLoader();
-          } else {
-            hideLoader();
-            $("#somethingWentWrongAlert").toast("show");
-          }
-        },
-        error: function (error) {
-          lock = false
-          hideLoader();
-          if (!!error?.responseJSON?.details_message) {
-            $("#failureAlertBody").html(error?.responseJSON?.details_message)
-          }
-          $("#somethingWentWrongAlert").toast("show");
-        },
-      });
-    }
-
-    function populateForm(data) {
-      var bucketTypeOptionsHtml =
-        "<option value='' disabled selected></option>";
-      for (const bucketType of Object.keys(data)) {
-        bucketTypeOptionsHtml += `<option value='${bucketType}'>${bucketType}</option>`;
-      }
-      $("#bucketType").html(bucketTypeOptionsHtml);
-    }
-
-    $("#bucketType").on("change", function () {
-      currentBucketType = this.value;
-      $("#dateRangePicker").parent().parent().show()
-      if (!$("#dateRangePicker").val()) {
-        $("#dateRangePicker").daterangepicker(
-          {
-            timePicker: true,
-            opens: "left",
-            startDate: defaultStartDate,
-            endDate: defaultEndDate,
-            locale: {
-              format: 'D MMM YYYY, hh:mm A',
-            },
-          }
-        );
-      }
-      if (currentBucketType == "s3") {
-        $("#bucket").parent().show();
-        $("#bucket").val("")
-        $("#selectedConfig").parent().hide();
-        checkButtonStatus()
-      } else if (currentBucketType == "sftp") {
-        $("#selectedConfig").parent().show();
-        $("#bucket").parent().hide();
-        $("#selectedConfig").val("")
-        var selectedConfigOptionsHtml =
-          "<option value='' disabled selected></option>";
-        for (const selectedConfig of selectedConnector[currentBucketType]) {
-          selectedConfigOptionsHtml += `<option value='${JSON.stringify(selectedConfig)}'>${selectedConfig?.key} ${selectedConfig?.ip ? '<strong> | </strong>' + selectedConfig?.ip : ''} ${selectedConfig?.user ? '<strong> | </strong>' + selectedConfig?.user : ''}</option>`;
-        }
-        $("#selectedConfig").html(selectedConfigOptionsHtml);
-        checkButtonStatus()
-      }
-
-      $("#path").parent().show();
-      $("#path").val("");
-      $("#showFiles").parent().show()
-    });
-
-    $("#selectedConfig").on("change", function () {
-      checkButtonStatus()
-    })
-
-    $("#dateRangePicker").on("change", function () {
-      checkButtonStatus()
-    })
-
-    $("#bucket").on("keyup", function () {
-      checkButtonStatus()
-    })
-
-    function checkButtonStatus() {
-      if ($("#bucketType").val() == "s3") {
-        if (!!$("#bucket").val() && !!$("#dateRangePicker").val()) {
-
-          $("#showFiles").attr("disabled", false);
-        } else {
-          $("#showFiles").attr("disabled", true);
-        }
-      } else if ($("#bucketType").val() == "sftp") {
-        if (!!$("#selectedConfig").val() && !!$("#dateRangePicker").val()) {
-          $("#showFiles").attr("disabled", false);
-
-        } else {
-          $("#showFiles").attr("disabled", true);
-        }
-      }
-    }
-
-    function hideLoader() {
-      $("#divLoader").hide();
-    }
-
-    function showLoader() {
-      $("#divLoader").show();
-    }
-
-    function setDropdownVal(id, val) {
-      if (!!id) {
-        $(`#${id}`).val(val).change();
-      }
-    }
-
-    function setCheckbox(id, bool) {
-      //for both radio and checkbox
-      $(`#${id}`).prop("checked", bool).change();
-    }
-
-    // Function to set a key in session storage
-    function setSessionStorageItem(key, value) {
-      sessionStorage.setItem(key, JSON.stringify(value));
-    }
-
-    // Function to get a key from session storage
-    function getSessionStorageItem(key) {
-      const item = sessionStorage.getItem(key);
-      return item ? JSON.parse(item) : null;
-    }
-
-    // Function to remove a key from session storage
-    function removeSessionStorageItem(key) {
-      sessionStorage.removeItem(key);
-    }
-
-    function resetForm() {
-      $("#bucketType").val("")
-      $("#selectedConfig").val("")
-      $("#selectedConfig").parent().hide()
-      $("#dateRangePicker").val("")
-      $("#dateRangePicker").parent().parent().hide()
-      $("#bucket").val("")
-      $("#bucket").parent().hide()
-      $("#breadcrumb").html("")
-      $("#main-table").html("");
-      $(".splashScreen").show();
-      $(".splashScreen1").show();
-      $("#bucketDetails").html("")
-      $("#showFiles").parent().hide()
-
-    }
-  </script>
 </html>
