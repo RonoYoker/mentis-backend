@@ -1,4 +1,4 @@
-from common.mysql_helper import update_row
+from mentis_proj.common.mysql_helper import update_row
 from mentis_proj.common.sqlalchemy_helper import execute_query, sql_alchemy_connect, insert_single_row, \
     execute_update_query
 
