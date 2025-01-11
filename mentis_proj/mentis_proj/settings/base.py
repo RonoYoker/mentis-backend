@@ -50,7 +50,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'mentis_proj.middlewares.HttpRequestInterceptor.HttpRequestInterceptor'
+    'mentis_proj.middlewares.HttpRequestInterceptor.HttpRequestInterceptor'
 
 ]
 
@@ -216,11 +216,8 @@ LOGGING = {
 }
 
 
-IGNORE_AUTH_PATHS = [
-    "/api/v1/user/login",
-    "/api/v1/user/therapist_lead",
-    "/api/v1/assessment/get_assessment",
-    "/api/v1/assessment/get_assessment_result"
+AUTH_PATHS = [
+    "/api/v1/user/logout"
 ]
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 # STATIC_ROOT = os.path.join(BASE_DIR, 'stellar_proj', 'static')

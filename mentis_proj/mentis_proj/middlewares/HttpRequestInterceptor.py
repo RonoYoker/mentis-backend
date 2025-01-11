@@ -36,19 +36,16 @@ class HttpRequestInterceptor:
         session_obj = Session()
         session_obj.set_user_session_object(None)
         auth_token = request.COOKIES.get("X-AuthToken", None)
-        if auth_token is None and request.path not in settings.IGNORE_AUTH_PATHS:
+        if auth_token is None and request.path in settings.AUTH_PATHS:
             return HttpResponse(json.dumps({"success":False}),
                                 content_type="application/json",
                                 status=http.HTTPStatus.UNAUTHORIZED)
-        if request.path in settings.IGNORE_AUTH_PATHS:
-            return None
-
         session_resp = User().fetch_valid_session(auth_token)
-        if session_resp ["success"] is False:
+        if session_resp ["success"] is False and request.path in settings.AUTH_PATHS:
             return HttpResponse(json.dumps({"success":False}),
                                 content_type="application/json",
                                 status=http.HTTPStatus.UNAUTHORIZED)
-        session_obj.set_user_session_object(session_resp["data"])
+        session_obj.set_user_session_object(session_resp.get("data"))
 
 
 
