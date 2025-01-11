@@ -15,7 +15,7 @@ class Therapist:
         return {"success":True,"data":resp[0]}
 
     def fetch_therapist_from_django_id(self,django_user):
-        query = f"Select * from therapist where django_user = '{django_user}'"
+        query = f"Select * from therapist where django_user = '{django_user}' and active = 1"
         resp = execute_query(self.engine,query)
         if resp is None or len(resp)<1:
             return {"success":False}
