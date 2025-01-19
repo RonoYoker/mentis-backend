@@ -122,6 +122,27 @@
     float: left;
   }
 </style>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCDCOXYvxljHSee6VIttrpWN_p27WrrTuo&libraries=places&callback=initMap"></script>
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+        #search-container {
+            margin: 10px 0;
+            display: flex;
+            gap: 10px;
+        }
+        #search-bar {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #details {
+            margin: 10px 0;
+            font-family: Arial, sans-serif;
+        }
+    </style>
 
 <div id="invoices-data-div" style="margin-top: 30px" class="row">
   <div class="col-xl-12">
@@ -236,6 +257,29 @@
                         <option value="{{ language }}"  data-select2-id="{{ language }}"{% if language in user.extra_info.languages %}selected{% endif %}>{{ language }}</option>
                     {% endfor %}
                 </select>
+            </div>
+
+            <div class="form-group">
+                <label for="city" class="form-field-custom">City</label>
+                <select id="city" name="city" class="select2 select2-placeholder-multiple form-control select2-hidden-accessible">
+                    {% for city in cities %}
+                        <option value="{{ city }}"  data-select2-id="{{ city }}"{% if city in user.city %}selected{% endif %}>{{ city }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="location" class="form-field-custom">location</label>
+               <div id="search-container">
+                    <input id="search-bar" type="text" placeholder="Search for a location..." />
+                </div>
+                <div id="map"></div>
+<!--                <div id="details">-->
+<!--                    <div><strong>Coordinates:</strong> <span id="coordinates">Select a location</span></div>-->
+<!--                     <div><strong>Address:</strong> <span id="address">None</span></div>-->
+<!--                    <div><strong>Embed Link:</strong> <span id="embed-link"></span></div>-->
+<!--        <div><strong>Shareable URL:</strong> <a id="shareable-url" href="#" target="_blank">None</a></div>                    <iframe id="embed-preview" width="100%" height="300" frameborder="0" style="border:0; margin-top: 10px;" allowfullscreen></iframe>-->
+<!--                </div>-->
             </div>
 
             <div class="custom-control custom-switch form-group">
@@ -470,8 +514,85 @@
     </tfoot>
   </table>
 </script>
+<script>
+        let map, marker, autocomplete, geocoder,lat,lng,address,embedLink,shareLink;
 
-<script type="text/javascript">
+        // Initialize the map
+        function initMap() {
+            const defaultLocation = { lat: 28.7041, lng: 77.1025 }; // Default: San Francisco
+            // Create the map
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: defaultLocation,
+                zoom: 12,
+            });
+
+            // Create a draggable marker
+            marker = new google.maps.Marker({
+                position: defaultLocation,
+                map: map,
+                draggable: true,
+                title: "Drag to select a location",
+            });
+
+            // Initialize the geocoder
+            geocoder = new google.maps.Geocoder();
+
+            // Update details when the marker is dragged
+            marker.addListener("dragend", () => {
+                updateLocation(marker.getPosition());
+            });
+
+            // Add autocomplete to the search bar
+            const searchBar = document.getElementById("search-bar");
+            autocomplete = new google.maps.places.Autocomplete(searchBar, {
+                fields: ["geometry"],
+            });
+
+            // Listen for place selection
+            autocomplete.addListener("place_changed", () => {
+                const place = autocomplete.getPlace();
+                if (place.geometry && place.geometry.location) {
+                    const location = place.geometry.location;
+                    map.setCenter(location);
+                    marker.setPosition(location);
+                    updateLocation(location);
+                }
+            });
+
+            // Add click event listener on the map
+            map.addListener("click", (event) => {
+                const clickedLocation = event.latLng;
+                marker.setPosition(clickedLocation);
+                updateLocation(clickedLocation);
+            });
+        }
+
+        // Update coordinates, address, embed link, and shareable URL
+        function updateLocation(location) {
+             lat = location.lat().toFixed(6);
+             lng = location.lng().toFixed(6);
+
+            // Update coordinates
+<!--            document.getElementById("coordinates").textContent = `Latitude: ${lat}, Longitude: ${lng}`;-->
+
+            // Fetch and update address using geocoder
+            geocoder.geocode({ location: location }, (results, status) => {
+                if (status === "OK" && results[0]) {
+                    address=results[0].formatted_address;
+                } else {
+                    document.getElementById("address").textContent = "Address not found";
+                }
+            });
+
+            // Update embed link
+             embedLink = `https://www.google.com/maps/embed/v1/view?key=AIzaSyCDCOXYvxljHSee6VIttrpWN_p27WrrTuo&center=${lat},${lng}&zoom=14`;
+
+            // Update shareable URL
+             shareLink = `https://www.google.com/maps?q=${lat},${lng}`;
+        }
+        </script>
+
+        <script type="text/javascript">
   var lock = false;
   var pluginsDataMap = {};
   var tableCounter = 1;
@@ -483,12 +604,12 @@
   var currentUser = "{{ user }}";
   var activeUser = "{{user.active}}"
   var currentActiveConfigs = [];
+<!--  initMap();-->
   $(document).ready(function () {
             $('.select2').select2();
             if (activeUser == '1'){
                 $("#active").click();
             }
-
         });
 
   $("#bankName").on("change", function () {
@@ -669,6 +790,14 @@
     const experience_months = $("#experience_months").val();
     const specialisations = $("#specialisations").val();
     const languages = $("#languages").val();
+    const city = $("#city").val();
+    const coord = [lat,lng];
+    const location_meta = JSON.Stringify({
+    "coord':coord,
+    "embed_map":embedLink,
+    "google_link";shareLink,
+    "address":address})
+
     const about_me = $("#about_me").val();
     const fileList = $("#photo")[0].files;
     console.log(fileList.length);
@@ -690,6 +819,8 @@
          imageData = fileReader.result;
          var data = {
         "name":name,
+        "city":city,
+        "location_meta":location_meta,
         "registration_number":registration_number,
         "experience_years":experience_years,
         "experience_months":experience_months,
@@ -740,6 +871,8 @@
 
       var data = {
         "name":name,
+        "city":city,
+        "location_meta":location_meta,
         "registration_number":registration_number,
         "experience_years":experience_years,
         "experience_months":experience_months,

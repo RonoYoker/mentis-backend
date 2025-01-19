@@ -11,6 +11,7 @@ from django.conf import settings
 
 from mentis_proj.apps.therapist.db_helper import Therapist
 from mentis_proj.common.utils.s3_utils import S3Helper
+from mentis_proj.apps.dashboard.app_settings import cities_list
 
 
 def main(request):
@@ -20,9 +21,12 @@ def main(request):
 def manage_profile(request):
     django_user = request.user.username
     user = Therapist().fetch_therapist_from_django_id(django_user)
-    user["data"]["extra_info"] = json.loads(user["data"]["extra_info"])
-    user["data"]["specialisations"] = json.loads(user["data"]["specialisation"])["specialisations"]
-    rendered_page = render_to_string('mentis/manage_profile.html',{"languages":["English","Hindi","Marathi"],"specialisations":["OCD","Anxiety Disorder","Depression","Couples Therapy"],"user":user["data"]})
+    if user["success"] is True:
+        user["data"]["extra_info"] = json.loads(user["data"]["extra_info"])
+        user["data"]["specialisations"] = json.loads(user["data"]["specialisation"])["specialisations"]
+    else:
+        user["data"]={}
+    rendered_page = render_to_string('mentis/manage_profile.html',{"cities":cities_list,"languages":["English","Hindi","Marathi"],"specialisations":["OCD","Anxiety Disorder","Depression","Couples Therapy"],"user":user["data"]})
     return HttpResponse(rendered_page)
 
 
