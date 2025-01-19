@@ -602,7 +602,7 @@
   var currentBank = "";
   var currentUser = "{{ user }}";
   var activeUser = "{{user.active}}";
-  var loc_meta = {{user.location_meta}};
+  var loc_meta = {{user.location_meta|safe}};
   var defaultLocation = { lat: 28.7041, lng: 77.1025 }; // Default: Delhi
   if (loc_meta.length !=  0){
     loc_meta = JSON.parse(loc_meta);
