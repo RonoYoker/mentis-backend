@@ -605,7 +605,7 @@
   var loc_meta = {{user.location_meta|safe}};
   var defaultLocation = { lat: 28.7041, lng: 77.1025 }; // Default: Delhi
   if (loc_meta.length !=  0){
-    loc_meta = JSON.parse(loc_meta);
+<!--    loc_meta = JSON.parse(loc_meta);-->
         defaultLocation = {lat:loc_meta["coord"][0],lng:loc_meta["coord"][1]}
   }
   var currentActiveConfigs = [];
