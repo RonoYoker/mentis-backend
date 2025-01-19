@@ -796,7 +796,7 @@
     const specialisations = $("#specialisations").val();
     const languages = $("#languages").val();
     const city = $("#city").val();
-    const coord = [lat,lng];
+    const coord = [parseFloat(lat),parseFloat(lng)];
     const location_meta = JSON.stringify({
     "coord":coord,
     "embed_map":embedLink,
