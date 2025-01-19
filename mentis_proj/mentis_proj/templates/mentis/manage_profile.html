@@ -519,7 +519,6 @@
 
         // Initialize the map
         function initMap() {
-            const defaultLocation = { lat: 28.7041, lng: 77.1025 }; // Default: San Francisco
             // Create the map
             map = new google.maps.Map(document.getElementById("map"), {
                 center: defaultLocation,
@@ -603,6 +602,12 @@
   var currentBank = "";
   var currentUser = "{{ user }}";
   var activeUser = "{{user.active}}"
+  var loc_meta = "{{user.location_meta}}"
+  var defaultLocation = { lat: 28.7041, lng: 77.1025 }; // Default: Delhi
+  if (loc_meta.length !=  0){
+    loc_meta = JSON.parse(loc_meta);
+        defaultLocation = {lat:loc_meta["coord"][0],lng:loc_meta["coord"][1]}
+  }
   var currentActiveConfigs = [];
 <!--  initMap();-->
   $(document).ready(function () {
