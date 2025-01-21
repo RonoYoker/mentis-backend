@@ -44,6 +44,7 @@ def fetch_therapist_slots(therapist_id,from_date,to_date,timeframe_mins):
                     avail_slots.append(remaining_slots[i].strftime("%H:%M"))
 
         resp[date.strftime("%Y-%m-%d")]=avail_slots
+        date = date + timedelta(days=1)
     return {"success": True, "avail_slots": resp}
 
 
