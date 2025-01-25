@@ -12,10 +12,10 @@ def fetch_therapist_avl_slots(request):
     request_body = json.loads(request.body.decode("utf-8"))
     therapist_id = request_body["therapist_id"]
     timeframe = request_body["timeframe"]
-    curr_date = datetime.now()
+    curr_date = datetime.now().date()
     from_date = datetime.strptime(request_body["from_date"],"%Y-%m-%d")
     to_date = datetime.strptime(request_body["to_date"],"%Y-%m-%d")
-    if from_date >= to_date or from_date < curr_date or to_date < curr_date:
+    if from_date >= to_date or from_date.date() < curr_date or to_date.date() < curr_date:
         raise ValidationFailedException(reason="Invalid dates supplied")
     resp = fetch_therapist_slots(therapist_id,from_date,to_date,timeframe)
     return HttpResponse(json.dumps(resp, default=str), content_type="application/json")
