@@ -17,7 +17,7 @@ def fetch_therapist_slots(therapist_id,from_date,to_date,timeframe_mins):
     while date < to_date:
 
         if date.strftime("%A") in avail_info["non_avail_days"]:
-            return {"success":False , "avail_slots":avail_slots}
+            continue
         starting_slot = datetime.strptime(avail_info["general_avail"]["start_time"],"%H:%M")
         ending_slot = datetime.strptime(avail_info["general_avail"]["end_time"],"%H:%M")
         all_slots = []
@@ -27,7 +27,7 @@ def fetch_therapist_slots(therapist_id,from_date,to_date,timeframe_mins):
                 break
         non_avail_slots_data = Booking().fetch_therapist_slots(therapist_id,date)
         if non_avail_slots_data["success"] is False:
-            return {"success":False , "avail_slots":avail_slots}
+            non_avail_slots_data["data"] = []
         non_avail_slots = []
         for slot in non_avail_slots_data["data"]:
             if slot["end_time"] - slot["start_time"] == timedelta(minutes=60):
