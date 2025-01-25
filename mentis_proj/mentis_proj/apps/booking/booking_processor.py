@@ -17,6 +17,7 @@ def fetch_therapist_slots(therapist_id,from_date,to_date,timeframe_mins):
     while date < to_date:
 
         if date.strftime("%A") in avail_info["non_avail_days"]:
+            date = date + timedelta(days=1)
             continue
         starting_slot = datetime.strptime(avail_info["general_avail"]["start_time"],"%H:%M")
         ending_slot = datetime.strptime(avail_info["general_avail"]["end_time"],"%H:%M")
@@ -41,7 +42,8 @@ def fetch_therapist_slots(therapist_id,from_date,to_date,timeframe_mins):
         elif timeframe_mins == 50:
             for i in range(0,len(remaining_slots)-1):
                 if datetime.combine(datetime.now().date(),remaining_slots[i+1]) - datetime.combine(datetime.now().date(),remaining_slots[i]) == timedelta(minutes=30):
-                    avail_slots.append(remaining_slots[i].strftime("%H:%M"))
+                    if datetime.combine(datetime.now().date(),remaining_slots[i]) > datetime.now() + timedelta(hours=1):
+                        avail_slots.append(remaining_slots[i].strftime("%H:%M"))
 
         resp[date.strftime("%Y-%m-%d")]=avail_slots
         date = date + timedelta(days=1)
