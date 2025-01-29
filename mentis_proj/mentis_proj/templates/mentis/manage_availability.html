@@ -1,0 +1,1579 @@
+<link
+  rel="stylesheet"
+  media="screen, print"
+  href="/static/mentis/css/datatables.bundle.css"
+/>
+<script src="/static/mentis/js/datatables.bundle.js"></script>
+<script src="/static/mentis/js/datatables.export.js"></script>
+<script src="/static/mentis/js/underscore-1.6.0.min.js"></script>
+<script src="/static/mentis/js/select2.bundle.js"></script>
+<link
+  rel="stylesheet"
+  media="screen, print"
+  href="/static/mentis/css/select2.bundle.css">
+
+  
+<style type="text/css">
+  .form-field-custom {
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  .catselect {
+    font-size: 17px;
+    line-height: 22px;
+    width: 200px;
+    display: none;
+  }
+
+  .fl {
+    float: left;
+  }
+
+  .ui-datepicker {
+    z-index: 9999999 !important;
+  }
+
+  .linkItem {
+    float: left;
+    background-color: #ccc;
+    color: #222;
+    border-radius: 2px;
+    font-weight: bold;
+    padding: 6px;
+    margin-left: 20px;
+    cursor: pointer;
+    margin-top: 10px;
+    font-size: 15px;
+  }
+
+  .dtr-data {
+    text-transform: uppercase;
+  }
+
+  .smart-form .input input,
+  .smart-form .select select,
+  .smart-form .textarea textarea {
+    font-size: 15px !important;
+    font-weight: bold !important;
+  }
+
+  .optiontext {
+    font-weight: bold !important;
+  }
+
+  .radio,
+  .checkbox {
+    float: left;
+    margin-top: 0px !important;
+    margin-bottom: 0px !important;
+    padding-left: 35px !important;
+  }
+
+  .radio + .radio,
+  .checkbox + .checkbox {
+    margin: 0px !important;
+  }
+
+  .width20 {
+    width: 20%;
+  }
+
+  .width15 {
+    width: 15%;
+  }
+
+  .width30 {
+    width: 30%;
+  }
+
+  .width60 {
+    width: 60%;
+  }
+
+  .width100 {
+    width: 100%;
+  }
+
+  #raw-item-div .form-control {
+    color: #004d99 !important;
+  }
+
+  .bor-left {
+    border: 1px solid #ddd;
+    padding: 6px;
+    font-weight: bold;
+    background-color: #bbb;
+    color: #000;
+  }
+
+  .bor-mid {
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    padding: 3px 2px;
+  }
+
+  .left-col {
+    width: 10%;
+    float: left;
+  }
+
+  .mid-col {
+    float: left;
+  }
+</style>
+<!--    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCDCOXYvxljHSee6VIttrpWN_p27WrrTuo&libraries=places&callback=initMap"></script>-->
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+        #search-container {
+            margin: 10px 0;
+            display: flex;
+            gap: 10px;
+        }
+        #search-bar {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #details {
+            margin: 10px 0;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+<div id="invoices-data-div" style="margin-top: 30px" class="row">
+  <div class="col-xl-12">
+    <div id="panel-1" class="panel">
+      <div class="panel-hdr">
+        <h2>
+           <span class="fw-900"><i>Set General Availability</i></span>
+        </h2>
+        <div class="panel-toolbar">
+          <button
+            class="btn btn-panel"
+            data-action="panel-collapse"
+            data-toggle="tooltip"
+            data-offset="0,10"
+            data-original-title="Collapse"
+          ></button>
+          <button
+            class="btn btn-panel"
+            data-action="panel-fullscreen"
+            data-toggle="tooltip"
+            data-offset="0,10"
+            data-original-title="Fullscreen"
+          ></button>
+          <button
+            class="btn btn-panel"
+            data-action="panel-close"
+            data-toggle="tooltip"
+            data-offset="0,10"
+            data-original-title="Close"
+          ></button>
+        </div>
+      </div>
+      <div class="d-flex flex-column align-items-center justify-content-center p-4">
+        <div class="profile-form col-xl-6" id="userData">
+            {% csrf_token %}
+            
+            {% if messages %}
+            <div class="error-message">
+                {% for message in messages %}
+                    {{ message }}<br>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+
+                    <form id="availabilityForm">
+                        <div class="form-group row">
+                            <label class="col-form-label col-lg-3">Available Hours</label>
+                            <div class="col-lg-9 d-flex">
+                                <select class="form-control mr-2" id="from_time" name="from_time" required>
+                                    <option value="">Select Start Time</option>
+                                </select>
+                                <span class="align-self-center mx-2">to</span>
+                                <select class="form-control" id="to_time" name="to_time" required>
+                                    <option value="">Select End Time</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-form-label col-lg-3">Non-Available Days</label>
+                            <div class="col-lg-9">
+                                <select class="form-control select2" id="non_avail_days" multiple>
+                                    <option value="Monday">Monday</option>
+                                    <option value="Tuesday">Tuesday</option>
+                                    <option value="Wednesday">Wednesday</option>
+                                    <option value="Thursday">Thursday</option>
+                                    <option value="Friday">Friday</option>
+                                    <option value="Saturday">Saturday</option>
+                                    <option value="Sunday">Sunday</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-form-label col-lg-3">Break Times</label>
+                            <div class="col-lg-9">
+                                <div id="breakTimesContainer">
+                                    <!-- Break time slots will be added here dynamically -->
+                                </div>
+                                <button type="button" class="btn btn-sm btn-secondary mt-2" onclick="addBreakTimeSlot()">
+                                    Add Break Time
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <button type="button" class="btn btn-primary" onclick="updateGeneralAvailability()">
+                                Update Availability
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="invoices-data-div" style="margin-top: 30px" class="row">
+  <div class="col-xl-12">
+    <div id="panel-1" class="panel">
+      <div class="panel-hdr">
+        <h2>
+           <span class="fw-900"><i>Mark NA Slots</i></span>
+        </h2>
+        <div class="panel-toolbar">
+          <button
+            class="btn btn-panel"
+            data-action="panel-collapse"
+            data-toggle="tooltip"
+            data-offset="0,10"
+            data-original-title="Collapse"
+          ></button>
+          <button
+            class="btn btn-panel"
+            data-action="panel-fullscreen"
+            data-toggle="tooltip"
+            data-offset="0,10"
+            data-original-title="Fullscreen"
+          ></button>
+          <button
+            class="btn btn-panel"
+            data-action="panel-close"
+            data-toggle="tooltip"
+            data-offset="0,10"
+            data-original-title="Close"
+          ></button>
+        </div>
+      </div>
+      <div class="d-flex flex-column align-items-center justify-content-center p-4">
+        <div class="profile-form col-xl-6" id="userData">
+            {% csrf_token %}
+
+            {% if messages %}
+            <div class="error-message">
+                {% for message in messages %}
+                    {{ message }}<br>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label class="form-label">Select Date</label>
+                <input type="date" id="slot_date" class="form-control" onchange="fetchSlots(this.value)">
+            </div>
+
+            <div id="existing_slots_container" style="display: none;" class="form-group">
+                <label class="form-label">Existing Slots</label>
+                <div id="existing_slots_list" class="mb-3">
+                    <!-- Slots will be populated here dynamically -->
+                </div>
+            </div>
+
+            <div class="card mb-4" id="naSlotSection" style="display: none;">
+                <div class="card-header">
+                    <h5 class="mb-0">Add New NA Slot</h5>
+                </div>
+                <div class="card-body">
+                    <form id="naSlotForm">
+                        <div class="form-group row">
+                            <label class="col-form-label col-lg-3">Time Range</label>
+                            <div class="col-lg-9 d-flex">
+                                <select class="form-control mr-2" id="na_from_time" name="na_from_time" required>
+                                    <option value="">Select Start Time</option>
+                                </select>
+                                <span class="align-self-center mx-2">to</span>
+                                <select class="form-control" id="na_to_time" name="na_to_time" required>
+                                    <option value="">Select End Time</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <button type="button" class="btn btn-primary" onclick="addNASlot()">
+                                Add Restriction
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="toast hide"
+  style="
+    position: absolute;
+    top: 50%;
+    right: 45%;
+    background-color: rgb(220 53 69);
+    color: white;
+    min-width: 250px;
+    z-index: 2;
+  "
+  id="somethingWentWrongAlert"
+  data-delay="2000"
+>
+  <div class="toast-header">
+    <strong class="mr-auto">Alert</strong>
+    <button
+      type="button"
+      class="ml-2 mb-1 close"
+      data-dismiss="toast"
+      aria-label="Close"
+    >
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="toast-body">Somthing went wrong, Please try again.</div>
+  <!-- <div class="toast-header">
+<strong class="mr-auto" id="toastInfo">lmcklwkmeck</strong>
+</div> -->
+</div>
+<div
+  class="modal"
+  id="moveToProdModal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="myModalLabel"
+  aria-hidden="false"
+  style="background-color: rgba(0, 0, 0, 0.15)"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header" style="padding-bottom: 0px">
+        <h2 class="modal-title">Move configurations to Production</h2>
+        <button
+          type="button"
+          class="close"
+          data-dismiss="modal"
+          aria-label="Close"
+        >
+          <span aria-hidden="true"><i class="fal fa-times"></i></span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <h3>Current Active configurations</h3>
+        <div style="height: 50vh; overflow-y: overlay">
+          <table
+            class="table m-0 table-bordered table-striped"
+            id="table-example"
+          >
+            <thead>
+              <tr>
+                <th>Config key</th>
+                <th>Version</th>
+                <th>Created By</th>
+                <th>Move to prod</th>
+              </tr>
+            </thead>
+            <tbody id="currentActiveConfigTable"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary waves-effect waves-themed"
+          data-dismiss="modal"
+        >
+          Close
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary waves-effect waves-themed"
+          onclick="moveToProd()"
+        >
+          Move to Prod
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="screenLoader" style="display: none">
+    <div
+      class="position-absolute d-flex flex-column justify-content-center align-items-center h-100 w-100"
+      style="z-index: 2; background-color: rgba(255, 255, 255, 0.7); top: 0"
+    >
+      <div class="spinner-border mb-2" role="status"></div>
+      <div style="font-size: 16px">Loading...</div>
+    </div>
+  </div>
+</div>
+<div
+  class="modal modal-alert fade show"
+  id="moveToProdConfirmationModal"
+  tabindex="-1"
+  role="dialog"
+  style="display: none; padding-right: 15px"
+  aria-modal="true"
+>
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          Please confirm that you want to move this config &nbsp;<span
+            id="confirmationModalConfigKey"
+          >
+          </span>
+          to prod!!
+        </h5>
+        <button
+          type="button"
+          class="close"
+          data-dismiss="modal"
+          aria-label="Close"
+        >
+          <span aria-hidden="true"><i class="fal fa-times"></i></span>
+        </button>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary waves-effect waves-themed"
+          data-dismiss="modal"
+        >
+          Close
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary waves-effect waves-themed"
+          onclick="confirmAndProceed()"
+        >
+          Confirm & Proceed
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div
+  class="toast hide"
+  style="
+    position: absolute;
+    top: 50%;
+    right: 45%;
+    background-color: #090;
+    color: white;
+    min-width: 250px;
+    z-index: 2;
+  "
+  id="successAlert"
+  data-delay="2000"
+>
+  <div class="toast-header">
+    <strong class="mr-auto">Alert</strong>
+    <button
+      type="button"
+      class="ml-2 mb-1 close"
+      data-dismiss="toast"
+      aria-label="Close"
+    >
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="toast-body">Profile Successfully Updated</div>
+  <!-- <div class="toast-header">
+<strong class="mr-auto" id="toastInfo">lmcklwkmeck</strong>
+</div> -->
+</div>
+
+<script type="text/template" id="table-template">
+  <% if(prod_access){ %>
+  <button class="btn buttons-pdf buttons-html5 btn-outline-danger btn-sm mr-1" style="float: right;margin-top: 5px;color: #99898;" onclick="moveAllToProdButtonClick()">Move To Production</button>
+  <% } %>
+  <table id="datatable-invoice-data-<%=table_id%>" class="table table-bordered table-hover table-striped w-100">
+    <thead class="bg-primary-600">
+    <tr>
+      <th class="new-col">ID</th>
+      <th class="new-col">Config Key</th>
+      <th class="new-col">Version</th>
+      <th class="new-col">Active</th>
+      <th class="new-col">Created By</th>
+      <th class="new-col">Created On</th>
+      <th class="new-col">View</th>
+      <th class="new-col">Edit</th>
+      <% if(prod_access){ %>
+        <th class="new-col">Move To Prod</th>
+      <% } %>
+      <!-- <th class="new-col">Delete</th> -->
+    </tr>
+    </thead>
+    <tbody>
+    <%=table_html%>
+    </tbody>
+    <tfoot>
+   <tr>
+      <th class="new-col">ID</th>
+      <th class="new-col">Config Key</th>
+      <th class="new-col">Version</th>
+      <th class="new-col">Active</th>
+      <th class="new-col">Created By</th>
+      <th class="new-col">Created On</th>
+      <th class="new-col">View</th>
+      <th class="new-col">Edit</th>
+
+     <% if(prod_access){ %>
+        <th class="new-col">Move To Prod</th>
+      <% } %>
+      <!-- <th class="new-col">Delete</th> -->
+    </tr>
+    </tfoot>
+  </table>
+</script>
+<script>
+        let map, marker, autocomplete, geocoder,lat,lng,address,embedLink,shareLink;
+
+        // Initialize the map
+        function initMap() {
+            // Create the map
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: defaultLocation,
+                zoom: 12,
+            });
+
+            // Create a draggable marker
+            marker = new google.maps.Marker({
+                position: defaultLocation,
+                map: map,
+                draggable: true,
+                title: "Drag to select a location",
+            });
+
+            // Initialize the geocoder
+            geocoder = new google.maps.Geocoder();
+
+            // Update details when the marker is dragged
+            marker.addListener("dragend", () => {
+                updateLocation(marker.getPosition());
+            });
+
+            // Add autocomplete to the search bar
+            const searchBar = document.getElementById("search-bar");
+            autocomplete = new google.maps.places.Autocomplete(searchBar, {
+                fields: ["geometry"],
+            });
+
+            // Listen for place selection
+            autocomplete.addListener("place_changed", () => {
+                const place = autocomplete.getPlace();
+                if (place.geometry && place.geometry.location) {
+                    const location = place.geometry.location;
+                    map.setCenter(location);
+                    marker.setPosition(location);
+                    updateLocation(location);
+                }
+            });
+
+            // Add click event listener on the map
+            map.addListener("click", (event) => {
+                const clickedLocation = event.latLng;
+                marker.setPosition(clickedLocation);
+                updateLocation(clickedLocation);
+            });
+        }
+
+        // Update coordinates, address, embed link, and shareable URL
+        function updateLocation(location) {
+             lat = location.lat().toFixed(6);
+             lng = location.lng().toFixed(6);
+
+            // Update coordinates
+<!--            document.getElementById("coordinates").textContent = `Latitude: ${lat}, Longitude: ${lng}`;-->
+
+            // Fetch and update address using geocoder
+            geocoder.geocode({ location: location }, (results, status) => {
+                if (status === "OK" && results[0]) {
+                    address=results[0].formatted_address;
+                } else {
+                    document.getElementById("address").textContent = "Address not found";
+                }
+            });
+
+            // Update embed link
+             embedLink = `https://www.google.com/maps/embed/v1/view?key=AIzaSyCDCOXYvxljHSee6VIttrpWN_p27WrrTuo&center=${lat},${lng}&zoom=14`;
+
+            // Update shareable URL
+             shareLink = `https://www.google.com/maps?q=${lat},${lng}`;
+        }
+        </script>
+
+        <script type="text/javascript">
+  var lock = false;
+  var pluginsDataMap = {};
+  var tableCounter = 1;
+  var user_bank_settings="";
+  var apiBasePath = "";
+  var currentEnvironment = "";
+  var currentProject = "";
+  var currentBank = "";
+  var currentUser = "{{ user }}";
+<!--  var activeUser = "{{user.active}}";-->
+<!--  var loc_meta = {{user.location_meta|safe}};-->
+  var defaultLocation = { lat: 28.7041, lng: 77.1025 }; // Default: Delhi
+<!--  if (loc_meta.length !=  0){-->
+<!--&lt;!&ndash;    loc_meta = JSON.parse(loc_meta);&ndash;&gt;-->
+<!--        defaultLocation = {lat:loc_meta["coord"][0],lng:loc_meta["coord"][1]}-->
+<!--  }-->
+  var currentActiveConfigs = [];
+<!--  initMap();-->
+  $(document).ready(function () {
+            $('.select2').select2();
+
+        });
+
+  $("#bankName").on("change", function () {
+    $("#environment").parent().show();
+    var environmentOptionsHtml = "<option value='' disabled selected></option>";
+    for (const environment of Object.keys(user_bank_settings[this.value])) {
+      environmentOptionsHtml += `<option value='${environment}'>${environment}</option>`;
+    }
+    $("#environment").html(environmentOptionsHtml);
+    $("#project").parent().hide();
+    $("#project").html("");
+    currentBank = this.value;
+  });
+  $("#environment").on("change", function () {
+    $("#project").parent().show();
+    const bank = $("#bankName").val();
+    var projectOptionsHtml = "<option value='' disabled selected></option>";
+    for (const project of Object.keys(user_bank_settings[bank][this.value])) {
+      projectOptionsHtml += `<option value='${project}'>${project}</option>`;
+    }
+    $("#project").html(projectOptionsHtml);
+    currentEnvironment = this.value;
+  });
+  $("#project").on("change", function () {
+    const bank = $("#bankName").val();
+    const env = $("#environment").val();
+    apiBasePath = user_bank_settings?.[bank]?.[env]?.[this.value]?.url;
+    currentProject = this.value;
+    if (!!this.value) {
+      console.log("project changed", this.value);
+      getAllConfigurations();
+      $("#splashScreen").hide();
+    }
+  });
+  $(document).on("change", "#bankName, #environment, #project", function () {
+    $("#bankName, #environment, #project").map(function () {
+      if (!this.value) {
+        $("#main-table").html("");
+        $("#splashScreen").show();
+      }
+    });
+  });
+
+  function getAllConfigurations() {
+    if (lock == true) return;
+    $("#divLoader").show();
+    lock = true;
+    const bank = $("#bankName").val();
+    const env = $("#environment").val();
+    const project = $("#project").val();
+    const postParamsData = {};
+    if (
+      user_bank_settings?.[bank]?.[env]?.[project]?.url_params?.post &&
+      Array.isArray(
+        user_bank_settings?.[bank]?.[env]?.[project]?.url_params?.post
+      )
+    ) {
+      user_bank_settings?.[bank]?.[env]?.[project]?.url_params?.post.forEach(
+        (el) => {
+          postParamsData[el.key] = el.value;
+        }
+      );
+    }
+    $.ajax({
+      url: apiBasePath + "/api/cms/v1/get_all_config/",
+      type: "POST",
+      data: JSON.stringify({ ...postParamsData }),
+      success: function (response) {
+        lock = false;
+        if (response?.success) {
+          var tableHtml = "";
+          console.log(response?.data);
+          const configData = response?.data;
+          let move_to_prod_enabled =
+            !!(currentEnvironment == "UAT") &&
+            !!(
+              user_bank_settings[currentBank]["PROD"] &&
+              user_bank_settings[currentBank]["PROD"][currentProject]
+            );
+          currentActiveConfigs = [];
+          for (var i = 0; i < configData.length; i++) {
+            tableHtml +=
+              "<tr><td>" +
+              (!!configData[i]["uid"] ? configData[i]["uid"] : "NA") +
+              "</td><td>" +
+              (!!configData[i]["conf_key"] ? configData[i]["conf_key"] : "NA") +
+              "</td><td>" +
+              (!!configData[i]["version"] ? configData[i]["version"] : "NA") +
+              "</td><td>" +
+              (!!configData[i]["active"] ? "Active" : "Inactive") +
+              "</td><td>" +
+              (!!configData[i]["user"] ? configData[i]["user"] : "NA") +
+              "</td><td>" +
+              (!!configData[i]["created_time"]
+                ? configData[i]["created_time"]
+                : "NA") +
+              "</td><td>" +
+              `<button type="button" onclick="handleConfigCtaClick('view','${configData[i]["conf_key"]}','${configData[i]["version"]}')" class="btn btn-block btn-success waves-effect waves-themed">View</button>` +
+              "</td><td>" +
+              `<button type="button" onclick="handleConfigCtaClick('edit','${configData[i]["conf_key"]}','${configData[i]["version"]}')" class="btn btn-block btn-warning waves-effect waves-themed">Edit</button>` +
+              "</td>" +
+              (move_to_prod_enabled
+                ? `<td><button type="button" onclick="moveSingleConfigToProdCtaClick('${configData[i]["conf_key"]}','${configData[i]["version"]}')" class="btn btn-block btn-danger waves-effect waves-themed">Move To Prod</button></td>`
+                : "") +
+              "</tr>";
+
+            if (configData[i]["active"]) {
+              currentActiveConfigs.push(configData[i]);
+            }
+          }
+          $("#invoices-data-div").show();
+
+          $("#main-table").html(
+            _.template($("#table-template").text(), {
+              table_html: tableHtml,
+              table_id: tableCounter,
+              prod_access: move_to_prod_enabled,
+            })
+          );
+          initDatatable();
+          $("#divLoader").hide();
+        } else {
+          $("#divLoader").hide();
+          console.log("Api success false");
+          $("#somethingWentWrongAlert").toast("show");
+          $("#main-table").html("");
+          $("#splashScreen").show();
+        }
+      },
+      error: function (error) {
+        lock = false;
+        $("#divLoader").hide();
+        $("#somethingWentWrongAlert").toast("show");
+        $("#main-table").html("");
+        $("#splashScreen").show();
+      },
+    });
+  }
+  async function moveToProd() {
+    const selectedActiveConfs = currentActiveConfigs.filter(
+      (el) => !!$(`#${el?.conf_key}_checkbox`).is(":checked")
+    );
+
+    if (!selectedActiveConfs?.length) {
+      alert("No selected config found");
+      return;
+    }
+    $("#screenLoader").show();
+    const apiCalls = selectedActiveConfs.map((conf) => {
+      return moveConfigToProduction(conf["conf_key"], conf["version"], true);
+    });
+
+    try {
+      await Promise.all(apiCalls);
+
+      console.log("all api calls done");
+      $("#screenLoader").hide();
+      $("#moveToProdModal").modal("hide");
+      $("#successAlert").toast("show");
+    } catch (error) {
+      $("#screenLoader").hide();
+      console.error(error);
+    }
+  }
+  function handleConfigCtaClick(mode, key, version) {
+    const bank = $("#bankName").val();
+    const env = $("#environment").val();
+    const project = $("#project").val();
+    var configLink = `${window.location.origin}/mentis/editor/?#addConfiguration?mode=${mode}&bank=${bank}&env=${env}&project=${project}&conf_key=${key}&conf_version=${version}`;
+    window.open(configLink, "_blank");
+  }
+
+
+  function updateProfile(){
+    const name = $("#name").val();
+    const registration_number = $("#registration_number").val();
+    const experience_years = $("#experience_years").val();
+    const experience_months = $("#experience_months").val();
+    const specialisations = $("#specialisations").val();
+    const languages = $("#languages").val();
+    const city = $("#city").val();
+    const coord = [parseFloat(lat),parseFloat(lng)];
+    const location_meta = JSON.stringify({
+    "coord":coord,
+    "embed_map":embedLink,
+    "google_link":shareLink,
+    "address":address})
+
+    const about_me = $("#about_me").val();
+    const fileList = $("#photo")[0].files;
+    console.log(fileList.length);
+    var extra_info = {};
+    extra_info["about_me"]= about_me;
+    extra_info["languages"]= languages;
+
+
+    var specialisation = {};
+    specialisation["specialisations"]= specialisations;
+    var imageData = "";
+
+    if (fileList.length > 0){
+    var img_name = $("#photo")[0].files[0].name;
+
+    var fileReader = new FileReader();
+    fileReader.readAsDataURL(fileList[0]);
+      fileReader.onload = function () {
+         imageData = fileReader.result;
+         var data = {
+        "name":name,
+        "city":city,
+        "location_meta":location_meta,
+        "registration_number":registration_number,
+        "experience_years":experience_years,
+        "experience_months":experience_months,
+        "extra_info":JSON.stringify(extra_info),
+        "specialisation":JSON.stringify(specialisation),
+        "img":imageData,
+        "img_name":img_name,
+        "active":$("#active").is(":checked")
+        }
+     console.log(imageData);
+
+     console.log(JSON.stringify(data));
+
+     $.ajax({
+              url: "/dsh/update_profile/",
+              type: "POST",
+              data: JSON.stringify(data),
+              contentType: "application/json",
+              success: function (response) {
+                lock = false;
+                if (response?.success) {
+                  if (!moveAll) {
+                    $("#divLoader").hide();
+                    $("#successAlert").toast("show");
+                  }
+                } else {
+                  if (moveAll) {
+                    $("#screenLoader").hide();
+                  } else {
+                    $("#divLoader").hide();
+                  }
+                  $("#somethingWentWrongAlert").toast("show");
+                }
+              },
+              error: function (error) {
+                lock = false;
+                if (moveAll) {
+                  $("#screenLoader").hide();
+                } else {
+                  $("#divLoader").hide();
+                }
+                $("#somethingWentWrongAlert").toast("show");
+              },
+            });
+      };
+      }
+      else{
+
+      var data = {
+        "name":name,
+        "city":city,
+        "location_meta":location_meta,
+        "registration_number":registration_number,
+        "experience_years":experience_years,
+        "experience_months":experience_months,
+        "extra_info":JSON.stringify(extra_info),
+        "specialisation":JSON.stringify(specialisation),
+         "active":$("#active").is(":checked")
+        }
+
+     console.log(JSON.stringify(data));
+
+     $.ajax({
+              url: "/dsh/update_profile/",
+              type: "POST",
+              data: JSON.stringify(data),
+              contentType: "application/json",
+              success: function (response) {
+                lock = false;
+                if (response?.success) {
+                    $("#divLoader").hide();
+                    $("#successAlert").toast("show");
+
+                } else {
+
+                  $("#somethingWentWrongAlert").toast("show");
+                }
+              },
+              error: function (error) {
+                lock = false;
+
+                $("#somethingWentWrongAlert").toast("show");
+              },
+            });
+
+
+      }
+
+
+  }
+
+  function initDatatable() {
+    $("#datatable-invoice-data-1").dataTable({
+      responsive: true,
+      lengthChange: false,
+      dom:
+        /*	--- Layout Structure
+            --- Options
+            l	-	length changing input control
+            f	-	filtering input
+            t	-	The table!
+            i	-	Table information summary
+            p	-	pagination control
+            r	-	processing display element
+            B	-	buttons
+            R	-	ColReorder
+            S	-	Select
+
+            --- Markup
+            < and >				- div element
+            <"class" and >		- div with a class
+            <"#id" and >		- div with an ID
+            <"#id.class" and >	- div with an ID and a class
+
+            --- Further reading
+            https://datatables.net/reference/option/dom
+            --------------------------------------
+         */
+        "<'row mb-3'<'col-sm-12 col-md-6 d-flex align-items-center justify-content-start'f><'col-sm-12 col-md-6 d-flex align-items-center justify-content-end'lB>>" +
+        "<'row'<'col-sm-12'tr>>" +
+        "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+      buttons: [
+        /*{
+              extend:    'colvis',
+              text:      'Column Visibility',
+              titleAttr: 'Col visibility',
+              className: 'mr-sm-3'
+          },*/
+        {
+          extend: "pdfHtml5",
+          text: "PDF",
+          titleAttr: "Generate PDF",
+          className: "btn-outline-danger btn-sm mr-1",
+        },
+        {
+          extend: "excelHtml5",
+          text: "Excel",
+          titleAttr: "Generate Excel",
+          className: "btn-outline-success btn-sm mr-1",
+        },
+        {
+          extend: "csvHtml5",
+          text: "CSV",
+          titleAttr: "Generate CSV",
+          className: "btn-outline-primary btn-sm mr-1",
+        },
+        {
+          extend: "copyHtml5",
+          text: "Copy",
+          titleAttr: "Copy to clipboard",
+          className: "btn-outline-primary btn-sm mr-1",
+        },
+        {
+          extend: "print",
+          text: "Print",
+          titleAttr: "Print Table",
+          className: "btn-outline-primary btn-sm",
+        },
+      ],
+    });
+  }
+
+  var lock = false;
+
+  function moveConfigToProduction(configKey, configVersion, moveAll = false) {
+
+    lock = true;
+    $.ajax({
+              url: "/mentis/editor/migrate_config/",
+              type: "POST",
+              data: JSON.stringify({"config_key":configKey,"config_version":configVersion,"source":{"env":"UAT","bank":currentBank,"project":currentProject} ,"destination":{"env":"PROD","bank":currentBank,"project":currentProject}}),
+              contentType: "application/json",
+              success: function (response) {
+                lock = false;
+                if (response?.success) {
+                  if (!moveAll) {
+                    $("#divLoader").hide();
+                    $("#successAlert").toast("show");
+                  }
+                } else {
+                  if (moveAll) {
+                    $("#screenLoader").hide();
+                  } else {
+                    $("#divLoader").hide();
+                  }
+                  $("#somethingWentWrongAlert").toast("show");
+                }
+              },
+              error: function (error) {
+                lock = false;
+                if (moveAll) {
+                  $("#screenLoader").hide();
+                } else {
+                  $("#divLoader").hide();
+                }
+                $("#somethingWentWrongAlert").toast("show");
+              },
+            });
+  }
+
+
+  function moveConfigToProductionV2(configKey, configVersion, moveAll = false) {
+    var apiBasePath =
+      user_bank_settings[currentBank]["UAT"][currentProject]["url"];
+    lock = true;
+    if (moveAll) {
+      $("#screenLoader").show();
+    } else {
+      $("#divLoader").show();
+    }
+    const bank = $("#bankName").val();
+    const env = $("#environment").val();
+    const project = $("#project").val();
+    const postParamsData = {};
+    if (
+      user_bank_settings?.[bank]?.[env]?.[project]?.url_params?.post &&
+      Array.isArray(
+        user_bank_settings?.[bank]?.[env]?.[project]?.url_params?.post
+      )
+    ) {
+      user_bank_settings?.[bank]?.[env]?.[project]?.url_params?.post.forEach(
+        (el) => {
+          postParamsData[el.key] = el.value;
+        }
+      );
+    }
+    return new Promise((resolve, reject) => {
+      $.ajax({
+        url: apiBasePath + "/api/cms/v1/get_config_from_key/",
+        // url: "http://demo5867723.mockable.io/get_config_from_key  ",
+        type: "POST",
+        data: JSON.stringify({
+          ...postParamsData,
+          key: configKey,
+          version: configVersion,
+        }),
+        contentType: "application/json",
+        success: function (response) {
+          console.log("response", response);
+          if (response?.success) {
+            const prodUrl =
+              user_bank_settings[currentBank]["PROD"][currentProject]["url"];
+            var configData = {
+              user: currentUser,
+              key: configKey,
+              conf_value: response["data"]["conf_val"],
+              diff_meta: response["data"]["diff_meta"],
+            };
+            $.ajax({
+              url: prodUrl + "/api/cms/v1/create_update_config/",
+              type: "POST",
+              data: JSON.stringify({ ...configData, ...postParamsData }),
+              contentType: "application/json",
+              success: function (response) {
+                lock = false;
+                if (response?.success) {
+                  resolve();
+                  if (!moveAll) {
+                    $("#divLoader").hide();
+                    $("#successAlert").toast("show");
+                  }
+                } else {
+                  if (moveAll) {
+                    $("#screenLoader").hide();
+                  } else {
+                    $("#divLoader").hide();
+                  }
+                  $("#somethingWentWrongAlert").toast("show");
+                }
+              },
+              error: function (error) {
+                lock = false;
+                // $("#screenLoader").hide();
+                if (moveAll) {
+                  $("#screenLoader").hide();
+                } else {
+                  $("#divLoader").hide();
+                }
+                $("#somethingWentWrongAlert").toast("show");
+              },
+            });
+          } else {
+            if (moveAll) {
+              $("#screenLoader").hide();
+            } else {
+              $("#divLoader").hide();
+            }
+            $("#somethingWentWrongAlert").toast("show");
+          }
+        },
+        error: function (error) {
+          lock = false;
+          // $("#screenLoader").hide();
+          if (moveAll) {
+            $("#screenLoader").hide();
+          } else {
+            $("#divLoader").hide();
+          }
+          $("#somethingWentWrongAlert").toast("show");
+        },
+      });
+    });
+  }
+
+
+
+  function moveSingleConfigToProdCtaClick(conf_key, conf_version) {
+    console.log(conf_key, conf_version);
+    $("#confirmationModalConfigKey").data("conf_key", `${conf_key}`);
+    $("#confirmationModalConfigKey").data("conf_version", `${conf_version}`);
+    // $("#confirmationModalConfigKey").html(`conf_key : ${conf_key}, conf_version : ${conf_version}`)
+    $("#moveToProdConfirmationModal").modal();
+  }
+  function confirmAndProceed(conf_key, conf_version) {
+    $("#moveToProdConfirmationModal").modal("hide");
+    moveConfigToProduction(
+      $("#confirmationModalConfigKey").data("conf_key"),
+      $("#confirmationModalConfigKey").data("conf_version")
+    );
+    $("#confirmationModalConfigKey").data("conf_key", "");
+    $("#confirmationModalConfigKey").data("conf_version", "");
+  }
+  $("#moveToProdConfirmationModal").on("hidden.bs.modal", function (e) {
+    $("#confirmationModalConfigKey").data("conf_key", "");
+    $("#confirmationModalConfigKey").data("conf_version", "");
+  });
+  function moveAllToProdButtonClick() {
+    $("#moveToProdModal").modal();
+    var selectedActiveConfig = currentActiveConfigs;
+    var tableHtml = "";
+    for (var i = 0; i < currentActiveConfigs.length; i++) {
+      tableHtml += `<tr>
+                  <td>${currentActiveConfigs?.[i]?.conf_key}</td>
+                  <td>${currentActiveConfigs?.[i]?.version}</td>
+                  <td>${currentActiveConfigs?.[i]?.user}</td>
+                  <td><input id="${currentActiveConfigs?.[i]?.conf_key}_checkbox" type="checkbox" style="accent-color: #7a59ad;height: 20px;width: 20px;cursor: pointer;" checked></td>
+              </tr>`;
+    }
+
+    $("#currentActiveConfigTable").html(tableHtml);
+  }
+
+  function moveAllConfigToProduction() {
+    if (currentActiveConfigs.length == 0) {
+      alert("No active configs found");
+      return;
+    }
+
+    for (var i = 0; i < currentActiveConfigs.length; i++) {
+      moveConfigToProduction(
+        currentActiveConfigs[i]["conf_key"],
+        currentActiveConfigs[i]["version"]
+      );
+    }
+
+    alert("Done");
+  }
+</script>
+
+<script>
+    // Modify the existing generateTimeOptions to handle both general and NA slots
+    function generateTimeOptions() {
+        const fromSelects = ['from_time', 'na_from_time'];
+        const toSelects = ['to_time', 'na_to_time'];
+        
+        fromSelects.forEach(id => {
+            const fromSelect = document.getElementById(id);
+            if (fromSelect) {
+                fromSelect.innerHTML = '<option value="">Select Start Time</option>';
+                for (let hour = 0; hour < 24; hour++) {
+                    for (let minute of ['00', '30']) {
+                        const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+                        fromSelect.add(new Option(time, time));
+                    }
+                }
+            }
+        });
+        
+        toSelects.forEach(id => {
+            const toSelect = document.getElementById(id);
+            if (toSelect) {
+                toSelect.innerHTML = '<option value="">Select End Time</option>';
+                for (let hour = 0; hour < 24; hour++) {
+                    for (let minute of ['00', '30']) {
+                        const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+                        toSelect.add(new Option(time, time));
+                    }
+                }
+            }
+        });
+        
+        // Add change event listeners for both from_time selects
+        fromSelects.forEach(id => {
+            const fromSelect = document.getElementById(id);
+            const toSelect = document.getElementById(id.replace('from_', 'to_'));
+            if (fromSelect && toSelect) {
+                fromSelect.addEventListener('change', function() {
+                    const selectedTime = this.value;
+                    if (selectedTime) {
+                        toSelect.innerHTML = '<option value="">Select End Time</option>';
+                        const [selectedHour, selectedMinute] = selectedTime.split(':').map(Number);
+                        
+                        for (let hour = selectedHour; hour < 24; hour++) {
+                            for (let minute of ['00', '30']) {
+                                const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+                                if (hour > selectedHour || (hour === selectedHour && minute > selectedMinute)) {
+                                    toSelect.add(new Option(time, time));
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    // Call generateTimeOptions on page load
+    $(document).ready(function() {
+        generateTimeOptions();
+    });
+</script>
+
+<script>
+    // Function to fetch slots for selected date
+    function fetchSlots(date) {
+        if (!date) return;
+        
+        // Show loading state
+        const container = document.getElementById('existing_slots_container');
+        const slotsList = document.getElementById('existing_slots_list');
+        slotsList.innerHTML = '<div class="text-center">Loading...</div>';
+        container.style.display = 'block';
+
+        // Make API call to fetch slots
+        $.ajax({
+            url: '/dsh/fetch_slots/',  // Updated to match your backend
+            type: 'POST',
+            data: JSON.stringify({
+                date: date
+            }),
+            contentType: 'application/json',
+            success: function(response) {
+                displaySlots(response.slots);
+                $("#naSlotSection").show();
+            },
+            error: function(error) {
+                slotsList.innerHTML = '<div class="text-danger">Error loading slots</div>';
+            }
+        });
+    }
+
+    // Function to display slots
+    function displaySlots(slots) {
+        const slotsList = document.getElementById('existing_slots_list');
+        slotsList.innerHTML = '';
+
+        if (!slots || slots.length === 0) {
+            slotsList.innerHTML = '<div class="text-muted">No slots found for this date</div>';
+            return;
+        }
+
+        // Group slots by type
+        const BOOKEDSlots = slots.filter(slot => slot.type === 'BOOKED');
+        const NASlots = slots.filter(slot => slot.type === 'NA');
+
+        // Display BOOKED slots
+        if (BOOKEDSlots.length > 0) {
+            const BOOKEDSection = document.createElement('div');
+            BOOKEDSection.className = 'mb-3';
+            BOOKEDSection.innerHTML = '<h6 class="text-danger mb-2">BOOKED Slots (Cannot be modified)</h6>';
+            
+            BOOKEDSlots.forEach(slot => {
+                const slotElement = document.createElement('div');
+                slotElement.className = 'mb-2 p-2 border rounded d-flex justify-content-between align-items-center bg-light';
+                slotElement.innerHTML = `
+                    <span>${slot.start_time} - ${slot.end_time}</span>
+                    <span class="badge badge-danger">BOOKED</span>
+                `;
+                BOOKEDSection.appendChild(slotElement);
+            });
+            slotsList.appendChild(BOOKEDSection);
+        }
+
+        // Display NA slots
+        if (NASlots.length > 0) {
+            const NASection = document.createElement('div');
+            NASection.className = 'mb-3';
+            NASection.innerHTML = '<h6 class="text-warning mb-2">NA Slots</h6>';
+            
+            NASlots.forEach(slot => {
+                const slotElement = document.createElement('div');
+                slotElement.className = 'mb-2 p-2 border rounded d-flex justify-content-between align-items-center';
+                slotElement.innerHTML = `
+                    <span>${slot.start_time} - ${slot.end_time}</span>
+                    <button onclick="removeSlot('${slot.id}')" class="btn btn-danger btn-sm">Remove Restriction</button>
+                `;
+                NASection.appendChild(slotElement);
+            });
+            slotsList.appendChild(NASection);
+        }
+    }
+
+    // Function to add new NA slot
+    function addNASlot() {
+        const date = $('#slot_date').val();
+        const fromTime = $('#na_from_time').val();
+        const toTime = $('#na_to_time').val();
+        
+        if (!date || !fromTime || !toTime) {
+            alert('Please select date and time range');
+            return;
+        }
+        
+        if (fromTime >= toTime) {
+            alert('End time must be after start time');
+            return;
+        }
+
+        $.ajax({
+            url: '/dsh/add_NA_slot/',
+            type: 'POST',
+            data: JSON.stringify({
+                date: date,
+                from_time: fromTime,
+                to_time: toTime
+            }),
+            contentType: 'application/json',
+            success: function(response) {
+                if (response.success) {
+                    // Refresh the slots display
+                    fetchSlots(date);
+                    // Clear the form
+                    $('#na_from_time').val('');
+                    $('#na_to_time').val('');
+                    $("#successAlert").toast("show");
+                } else {
+                    alert(response.error || 'Failed to add restriction');
+                }
+            },
+            error: function() {
+                $("#somethingWentWrongAlert").toast("show");
+            }
+        });
+    }
+
+    // Function to remove a restricted slot
+    function removeSlot(slotId) {
+        const date = document.getElementById('slot_date').value;
+
+        $.ajax({
+            url: '/dsh/remove_NA_slot/',  // Updated endpoint
+            type: 'POST',
+            data: JSON.stringify({
+                slot_id: slotId
+            }),
+            contentType: 'application/json',
+            success: function(response) {
+                if (response.success) {
+                    fetchSlots(date);  // Refresh the slots list
+                    $("#successAlert").toast("show");
+                } else {
+                    $("#somethingWentWrongAlert").toast("show");
+                }
+            },
+            error: function(error) {
+                $("#somethingWentWrongAlert").toast("show");
+            }
+        });
+    }
+</script>
+
+<script>
+    function fetchCurrentAvailability() {
+        $.ajax({
+            url: '/dsh/fetch_availability/',
+            type: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    const availInfo = response.availability_info;
+                    
+                    // First generate all time options
+                    generateTimeOptions();
+                    
+                    // Then set the values
+                    $('#from_time').val(availInfo.general_avail.start_time);
+                    $('#to_time').val(availInfo.general_avail.end_time);
+                    
+                    // Handle break times
+                    if (availInfo.general_avail.break_times && availInfo.general_avail.break_times.length > 0) {
+                        availInfo.general_avail.break_times.forEach(breakTime => {
+                            addBreakTimeSlot(breakTime.start, breakTime.end);
+                        });
+                    }
+                    
+                    $('#non_avail_days').val(availInfo.non_avail_days).trigger('change');
+                }
+            }
+        });
+    }
+
+    // Modify addBreakTimeSlot to accept initial values
+    function addBreakTimeSlot(startTime = '', endTime = '') {
+        const container = document.getElementById('breakTimesContainer');
+        const breakSlotId = Date.now();
+        
+        const breakSlotHtml = `
+            <div class="d-flex mb-2 break-slot" id="break-${breakSlotId}">
+                <select class="form-control mr-2 break-from-time">
+                    <option value="">Start Time</option>
+                </select>
+                <span class="align-self-center mx-2">to</span>
+                <select class="form-control mr-2 break-to-time">
+                    <option value="">End Time</option>
+                </select>
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeBreakSlot('break-${breakSlotId}')">
+                    Remove
+                </button>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', breakSlotHtml);
+        
+        // Get the newly added selects
+        const newBreakSlot = document.getElementById(`break-${breakSlotId}`);
+        const fromSelect = newBreakSlot.querySelector('.break-from-time');
+        const toSelect = newBreakSlot.querySelector('.break-to-time');
+        
+        // Populate time options
+        populateTimeSelect(fromSelect);
+        populateTimeSelect(toSelect);
+        
+        // Set initial values if provided
+        if (startTime) fromSelect.value = startTime;
+        if (endTime) toSelect.value = endTime;
+    }
+
+    function populateTimeSelect(select) {
+        select.innerHTML = '<option value="">Select Time</option>';
+        for (let hour = 0; hour < 24; hour++) {
+            for (let minute of ['00', '30']) {
+                const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+                select.add(new Option(time, time));
+            }
+        }
+    }
+
+    // Call this when the page loads
+    $(document).ready(function() {
+        // Initialize select2
+        $('#non_avail_days').select2();
+        
+        // Generate time options for general availability
+        populateTimeSelect(document.getElementById('from_time'));
+        populateTimeSelect(document.getElementById('to_time'));
+        
+        // Fetch and populate current availability settings
+        fetchCurrentAvailability();
+    });
+</script>
+
+<script>
+    function updateGeneralAvailability() {
+        const fromTime = $('#from_time').val();
+        const toTime = $('#to_time').val();
+        const nonAvailDays = $('#non_avail_days').val();
+        
+        if (!fromTime || !toTime) {
+            $("#validationAlert").toast("show");
+            return;
+        }
+        
+        // Collect all break times
+        const breakTimes = [];
+        document.querySelectorAll('.break-slot').forEach(slot => {
+            const fromTime = slot.querySelector('.break-from-time').value;
+            const toTime = slot.querySelector('.break-to-time').value;
+            
+            // Only add if both times are selected
+            if (fromTime && toTime) {
+                // Validate break time is within working hours
+                if (fromTime < $('#from_time').val() || toTime > $('#to_time').val()) {
+                    alert('Break time must be within working hours');
+                    return;
+                }
+                breakTimes.push({ start: fromTime, end: toTime });
+            }
+        });
+        
+        // Sort break times by start time
+        breakTimes.sort((a, b) => a.start.localeCompare(b.start));
+        
+        // Check for overlapping break times
+        for (let i = 1; i < breakTimes.length; i++) {
+            if (breakTimes[i].start <= breakTimes[i-1].end) {
+                alert('Break times cannot overlap');
+                return;
+            }
+        }
+        
+        $.ajax({
+            url: '/dsh/update_availability/',
+            type: 'POST',
+            data: JSON.stringify({
+                from_time: fromTime,
+                to_time: toTime,
+                break_times: breakTimes,
+                non_avail_days: nonAvailDays || []
+            }),
+            contentType: 'application/json',
+            success: function(response) {
+                if (response.success) {
+                    $("#successAlert").toast("show");
+                } else {
+                    alert(response.error || 'Failed to update availability');
+                }
+            },
+            error: function() {
+                $("#somethingWentWrongAlert").toast("show");
+            }
+        });
+    }
+</script>

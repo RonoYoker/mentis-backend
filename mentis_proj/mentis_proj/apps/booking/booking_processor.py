@@ -21,9 +21,30 @@ def fetch_therapist_slots(therapist_id,from_date,to_date,timeframe_mins):
             continue
         starting_slot = datetime.strptime(avail_info["general_avail"]["start_time"],"%H:%M")
         ending_slot = datetime.strptime(avail_info["general_avail"]["end_time"],"%H:%M")
+        
+        # Get break times
+        break_times = []
+        if "break_times" in avail_info["general_avail"]:
+            break_times = [(datetime.strptime(break_time["start"], "%H:%M"),
+                           datetime.strptime(break_time["end"], "%H:%M"))
+                          for break_time in avail_info["general_avail"]["break_times"]]
+        
         all_slots = []
         for x in range(0,100):
-            all_slots.append((starting_slot + timedelta(minutes=30*x)).time())
+            current_slot = (starting_slot + timedelta(minutes=30*x)).time()
+            current_slot_dt = datetime.combine(date, current_slot)
+            
+            # Skip slots during any break time
+            is_break_time = False
+            for break_start, break_end in break_times:
+                if break_start.time() <= current_slot <= break_end.time():
+                    is_break_time = True
+                    break
+                    
+            if is_break_time:
+                continue
+                    
+            all_slots.append(current_slot)
             if (starting_slot + timedelta(minutes=30*(x-1))) == ending_slot:
                 break
         non_avail_slots_data = Booking().fetch_therapist_slots(therapist_id,date)
@@ -31,11 +52,8 @@ def fetch_therapist_slots(therapist_id,from_date,to_date,timeframe_mins):
             non_avail_slots_data["data"] = []
         non_avail_slots = []
         for slot in non_avail_slots_data["data"]:
-            if slot["end_time"] - slot["start_time"] == timedelta(minutes=60):
-                non_avail_slots.append(slot["start_time"].time())
-                non_avail_slots.append((slot["start_time"]+timedelta(minutes=30)).time())
-            else:
-                non_avail_slots.append(slot["start_time"].time())
+            for l in range(0,int((slot["end_time"] - slot["start_time"])/timedelta(minutes=30))):
+                non_avail_slots.append((slot["start_time"]+timedelta(minutes=l*30)).time())
         remaining_slots = sorted(list(set(all_slots)-set(non_avail_slots)))
         if timeframe_mins == 30:
             avail_slots = [x.strftime("%H:%M") for x in remaining_slots]
