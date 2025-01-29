@@ -223,17 +223,13 @@
                 <input type="text" id="name" name="name" class="form-control" value="{{ user.name }}" required>
             </div>
 
-             <div class="form-group row">
-                <label class="col-form-label col-lg-3">Mobile Number</label>
-                <div class="col-lg-9">
+             <div class="form-group">
+                <label class="form-field-custom">Mobile Number</label>
                     <input type="tel" class="form-control" id="mobile" name="mobile" pattern="[0-9]{10}" value="{{ user.mobile }}"  required>
-                </div>
             </div>
-            <div class="form-group row">
-                <label class="col-form-label col-lg-3">Email</label>
-                <div class="col-lg-9">
+            <div class="form-group">
+                <label class="form-field-custom">Email</label>
                     <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
-                </div>
             </div>
 
           <div class="form-group">
