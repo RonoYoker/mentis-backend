@@ -223,6 +223,19 @@
                 <input type="text" id="name" name="name" class="form-control" value="{{ user.name }}" required>
             </div>
 
+             <div class="form-group row">
+                <label class="col-form-label col-lg-3">Mobile Number</label>
+                <div class="col-lg-9">
+                    <input type="tel" class="form-control" id="mobile" name="mobile" pattern="[0-9]{10}" value="{{ user.mobile }}"  required>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-form-label col-lg-3">Email</label>
+                <div class="col-lg-9">
+                    <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                </div>
+            </div>
+
           <div class="form-group">
                 <label for="exp-year" class="form-field-custom">Experience (Years/Months)</label>
             <div class="input-group">
@@ -287,18 +300,7 @@
                 <label class="custom-control-label" for="active">Make Your Profile Active</label>
             </div>
 
-            <div class="form-group row">
-                <label class="col-form-label col-lg-3">Mobile Number</label>
-                <div class="col-lg-9">
-                    <input type="tel" class="form-control" id="mobile" name="mobile" pattern="[0-9]{10}" required>
-                </div>
-            </div>
-            <div class="form-group row">
-                <label class="col-form-label col-lg-3">Email</label>
-                <div class="col-lg-9">
-                    <input type="email" class="form-control" id="email" name="email" required>
-                </div>
-            </div>
+
 
             <button onclick="updateProfile()" class="btn btn-primary waves-effect waves-themed">Update Profile</button>
         </div>
