@@ -58,9 +58,10 @@ def fetch_therapist_slots(therapist_id,from_date,to_date,timeframe_mins):
         if timeframe_mins == 30:
             avail_slots = [x.strftime("%H:%M") for x in remaining_slots]
         elif timeframe_mins == 50:
+            avail_slots = []
             for i in range(0,len(remaining_slots)-1):
                 if datetime.combine(datetime.now().date(),remaining_slots[i+1]) - datetime.combine(datetime.now().date(),remaining_slots[i]) == timedelta(minutes=30):
-                    if datetime.combine(datetime.now().date(),remaining_slots[i]) > datetime.now() + timedelta(hours=1):
+                    if datetime.combine(date,remaining_slots[i]) > datetime.now() + timedelta(hours=1):
                         avail_slots.append(remaining_slots[i].strftime("%H:%M"))
 
         resp[date.strftime("%Y-%m-%d")]=avail_slots
