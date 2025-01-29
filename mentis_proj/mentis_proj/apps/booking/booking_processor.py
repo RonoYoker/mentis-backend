@@ -37,7 +37,7 @@ def fetch_therapist_slots(therapist_id,from_date,to_date,timeframe_mins):
             # Skip slots during any break time
             is_break_time = False
             for break_start, break_end in break_times:
-                if break_start.time() <= current_slot <= break_end.time():
+                if break_start.time() <= current_slot < break_end.time():
                     is_break_time = True
                     break
                     
